@@ -3,11 +3,12 @@ import Metal
 @testable import PhotoP
 
 final class MetalLUTTests: XCTestCase {
-    private func renderer(header: String = "LUT_3D_SIZE 2", transform: (Double, Double, Double) -> SIMD3<Double>) throws -> (CubeLUT, MetalLUTRenderer) {
+    private func renderer(header: String = "LUT_3D_SIZE 2", dimension: Int = 2, transform: (Double, Double, Double) -> SIMD3<Double>) throws -> (CubeLUT, MetalLUTRenderer) {
         guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal GPU unavailable; device validation remains required") }
         var lines = [header]
-        for b in 0...1 { for g in 0...1 { for r in 0...1 {
-            let v = transform(Double(r), Double(g), Double(b))
+        for b in 0..<dimension { for g in 0..<dimension { for r in 0..<dimension {
+            let scale = Double(dimension - 1)
+            let v = transform(Double(r) / scale, Double(g) / scale, Double(b) / scale)
             lines.append("\(v.x) \(v.y) \(v.z)")
         } } }
         let lut = try CubeLUT.parse(lines.joined(separator: "\n"))
@@ -19,7 +20,8 @@ final class MetalLUTTests: XCTestCase {
         var bytes: [UInt8] = []
         for i in 0..<257 {
             let alpha = UInt8(i % 256)
-            bytes += [UInt8(i % (Int(alpha) + 1)), alpha / 2, alpha / 3, alpha]
+            let range = Int(alpha) + 1
+            bytes += [UInt8((i * 73) % range), UInt8((i * 29 + 3) % range), UInt8((i * 11 + 7) % range), alpha]
         }
         for strength in [0.0, 0.5, 1.0] {
             let result = [UInt8](try await gpu.render(Data(bytes), width: 257, height: 1, intensity: strength))
@@ -69,6 +71,26 @@ final class MetalLUTTests: XCTestCase {
             _ = try await gpu.render(Data(), width: 4200, height: 3001, intensity: 0)
             XCTFail("Expected pixel limit rejection")
         } catch { XCTAssertTrue(error is MetalLUTError) }
+    }
+
+    func testCrossChannelInterpolation() async throws {
+        try await compare { r, g, b in SIMD3(r * g, g * b, r * b) }
+    }
+    func testNonlinearThreeByThreeLUTUsesInteriorCells() async throws {
+        let (lut, gpu) = try renderer(header: "LUT_3D_SIZE 3", dimension: 3) { r, g, b in SIMD3(r * r, g * b, b * b) }
+        let bytes: [UInt8] = [64, 128, 192, 255, 210, 30, 140, 255, 128, 128, 128, 255]
+        let output = [UInt8](try await gpu.render(Data(bytes), width: 3, height: 1, intensity: 1))
+        for pixel in 0..<3 {
+            let offset = pixel * 4
+            let input = SIMD3(Double(bytes[offset]), Double(bytes[offset + 1]), Double(bytes[offset + 2])) / 255
+            let expected = try lut.sample(input)
+            for channel in 0..<3 {
+                XCTAssertEqual(Double(output[offset + channel]), (expected[channel] * 255).rounded(), accuracy: 1)
+            }
+            XCTAssertEqual(output[offset + 3], 255)
+        }
+        // 64/255 lies halfway through the first r cell, rather than evaluating r² analytically.
+        XCTAssertEqual(Double(output[0]), 32, accuracy: 1)
     }
 
 }
