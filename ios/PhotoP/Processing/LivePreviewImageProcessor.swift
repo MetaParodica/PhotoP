@@ -26,11 +26,15 @@ final class LivePreviewImageProcessor {
               [kCVImageBufferYCbCrMatrix_ITU_R_709_2 as String, kCVImageBufferYCbCrMatrix_ITU_R_601_4 as String].contains(matrix),
               let transfer = metadata[kCVImageBufferTransferFunctionKey as String] as? String
         else { throw ImageEditingError.invalid("프리뷰 색 프로파일을 확인할 수 없습니다.") }
-        let name: CFString
-        if transfer == kCVImageBufferTransferFunction_ITU_R_709_2 as String { name = CGColorSpace.coreMedia709 }
-        else if transfer == kCVImageBufferTransferFunction_sRGB as String { name = CGColorSpace.sRGB }
+        guard [kCVImageBufferTransferFunction_ITU_R_709_2 as String, kCVImageBufferTransferFunction_sRGB as String].contains(transfer)
         else { throw ImageEditingError.invalid("HDR/Log 프리뷰는 아직 지원하지 않습니다.") }
-        guard let space = CGColorSpace(name: name) else { throw ImageEditingError.invalid("입력 색공간을 만들 수 없습니다.") }
+        // Ask Core Video for its video matching profile, including on iOS 17.
+        // Do not substitute the display-referred ITU-709 profile or an attached ICC override.
+        let profile: [String: Any] = [kCVImageBufferColorPrimariesKey as String: kCVImageBufferColorPrimaries_ITU_R_709_2,
+                                      kCVImageBufferTransferFunctionKey as String: transfer,
+                                      kCVImageBufferYCbCrMatrixKey as String: matrix]
+        guard let space = CVImageBufferCreateColorSpaceFromAttachments(profile as CFDictionary)?.takeRetainedValue()
+        else { throw ImageEditingError.invalid("입력 색공간을 만들 수 없습니다.") }
         return space
     }
 
