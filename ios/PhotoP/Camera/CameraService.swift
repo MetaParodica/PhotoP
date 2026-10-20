@@ -158,6 +158,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             manualExposure: d.isExposureModeSupported(.custom),
             manualFocus: d.isLockingFocusWithCustomLensPositionSupported,
             manualWhiteBalance: d.isWhiteBalanceModeSupported(.locked) && d.isLockingWhiteBalanceWithCustomDeviceGainsSupported,
+            exposureLock: d.isExposureModeSupported(.locked),
+            focusLock: d.isFocusModeSupported(.locked),
+            whiteBalanceLock: d.isWhiteBalanceModeSupported(.locked),
             photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes)
         )
     }
@@ -180,14 +183,14 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                               completion: CheckedContinuation<CameraReadout, Error>? = nil) throws {
         guard let d = input?.device, let caps = capabilities() else { throw CameraError.unavailable }
         try CameraSettingsValidator.validate(settings, for: caps)
-        guard settings.exposure.manual || d.isExposureModeSupported(.continuousAutoExposure)
+        guard settings.exposure.manual || settings.exposure.locked || d.isExposureModeSupported(.continuousAutoExposure)
         else { throw CameraError.invalidSettings }
         try d.lockForConfiguration()
         defer { d.unlockForConfiguration() }
 
         var steps: Set<CameraControlApplication.Step> = [.exposure]
-        if settings.focus.manual { steps.insert(.focus) }
-        if settings.whiteBalance.manual { steps.insert(.whiteBalance) }
+        if settings.focus.manual || settings.focus.locked { steps.insert(.focus) }
+        if settings.whiteBalance.manual || settings.whiteBalance.locked { steps.insert(.whiteBalance) }
         let id = try controls.begin(steps: steps)
         settingsCompletion = completion
 
@@ -206,7 +209,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                                   currentSeconds.isFinite ? max(0, currentSeconds) : 0)
         queue.asyncAfter(deadline: .now() + max(5, longestExposure + 3), execute: timeout)
 
-        if settings.exposure.manual {
+        if settings.exposure.locked {
+            // This mode setter is synchronous; it has no device completion callback.
+            d.exposureMode = .locked
+            queue.async { [self] in acknowledgeControl(.exposure, id: id) }
+        } else if settings.exposure.manual {
             d.setExposureModeCustom(
                 duration: CMTime(seconds: settings.exposure.shutterSeconds, preferredTimescale: 1_000_000_000),
                 iso: Float(settings.exposure.iso),
@@ -216,11 +223,14 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             d.setExposureTargetBias(Float(settings.exposure.ev),
                                     completionHandler: controlCompletion(.exposure, id: id))
         }
-        if settings.focus.manual {
-            d.setFocusModeLocked(lensPosition: Float(settings.focus.lensPosition),
+        if settings.focus.manual || settings.focus.locked {
+            d.setFocusModeLocked(lensPosition: settings.focus.locked ? AVCaptureDevice.currentLensPosition : Float(settings.focus.lensPosition),
                                 completionHandler: controlCompletion(.focus, id: id))
         } else if d.isFocusModeSupported(.continuousAutoFocus) { d.focusMode = .continuousAutoFocus }
-        if settings.whiteBalance.manual {
+        if settings.whiteBalance.locked {
+            d.setWhiteBalanceModeLocked(with: AVCaptureDevice.currentWhiteBalanceGains,
+                                       completionHandler: controlCompletion(.whiteBalance, id: id))
+        } else if settings.whiteBalance.manual {
             let values = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
                 temperature: Float(settings.whiteBalance.kelvin), tint: Float(settings.whiteBalance.tint))
             var gains = d.deviceWhiteBalanceGains(for: values)
@@ -239,11 +249,15 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         { [weak self] _ in
             guard let self else { return }
             self.queue.async {
-                guard self.controls.acknowledge(step, id: id) else { return }
-                if let readout = self.currentReadout() { self.finishApplying(.success(readout)) }
-                else { self.finishApplying(.failure(CameraError.configuration)) }
+                self.acknowledgeControl(step, id: id)
             }
         }
+    }
+
+    private func acknowledgeControl(_ step: CameraControlApplication.Step, id: UUID) {
+        guard controls.acknowledge(step, id: id) else { return }
+        if let readout = currentReadout() { finishApplying(.success(readout)) }
+        else { finishApplying(.failure(CameraError.configuration)) }
     }
 
     private func finishApplying(_ result: Result<CameraReadout, Error>) {
@@ -282,7 +296,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
         return CameraReadout(iso: iso, shutterSeconds: seconds, exposureBias: bias,
                              lensPosition: position, kelvin: kelvin, tint: tint,
-                             isAdjusting: d.isAdjustingExposure || d.isAdjustingFocus || d.isAdjustingWhiteBalance)
+                             isAdjusting: d.isAdjustingExposure || d.isAdjustingFocus || d.isAdjustingWhiteBalance,
+                             exposureLocked: d.exposureMode == .locked || d.exposureMode == .custom,
+                             focusLocked: d.focusMode == .locked, whiteBalanceLocked: d.whiteBalanceMode == .locked)
     }
 
     private func startReadouts() {
@@ -301,6 +317,37 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private func stopReadouts() {
         readoutTimer?.cancel()
         readoutTimer = nil
+    }
+
+    func focusAndMeter(at point: CameraMeteringPoint, lensID: String) async throws -> PointMeteringActions {
+        try await withCheckedThrowingContinuation { completion in
+            queue.async { [self] in
+                do {
+                    guard state == .running, session.isRunning, !session.isInterrupted,
+                          let d = input?.device, d.uniqueID == lensID else { throw CameraError.interrupted }
+                    guard continuation == nil, !controls.isPending else { throw CameraError.busy }
+                    let actions = PointMeteringPolicy.actions(
+                        focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(.continuousAutoFocus),
+                        exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
+                        focusLocked: d.focusMode == .locked,
+                        exposureLocked: d.exposureMode == .locked || d.exposureMode == .custom)
+                    guard !actions.isEmpty else { throw CameraError.invalidSettings }
+                    try d.lockForConfiguration()
+                    if actions.focus {
+                        d.focusPointOfInterest = point.cgPoint
+                        d.focusMode = .continuousAutoFocus
+                    }
+                    if actions.exposure {
+                        d.exposurePointOfInterest = point.cgPoint
+                        d.exposureMode = .continuousAutoExposure
+                    }
+                    d.unlockForConfiguration()
+                    publish()
+                    // A point request is accepted; AF/AE may still be adjusting.
+                    completion.resume(returning: actions)
+                } catch { completion.resume(throwing: error) }
+            }
+        }
     }
 
     func capturePhoto(format: PhotoFileFormat) async throws -> CapturedPhoto {

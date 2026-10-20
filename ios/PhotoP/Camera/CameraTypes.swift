@@ -14,11 +14,15 @@ struct CameraCapabilities: Equatable, Sendable {
     let manualExposure: Bool
     let manualFocus: Bool
     let manualWhiteBalance: Bool
+    var exposureLock = false
+    var focusLock = false
+    var whiteBalanceLock = false
     var photoFormats: [PhotoFileFormat] = [.jpeg]
 }
 
 struct ExposureSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     var iso: Double = 100
     var shutterSeconds: Double = 1.0 / 125
     var ev: Double = 0
@@ -26,12 +30,14 @@ struct ExposureSettings: Equatable, Sendable {
 
 struct FocusSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     // Normalized lens position, not a distance in metres.
     var lensPosition: Double = 0.5
 }
 
 struct WhiteBalanceSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     var kelvin: Double = 5000
     var tint: Double = 0
 }
@@ -54,6 +60,9 @@ struct CameraReadout: Sendable {
     let kelvin: Double?
     let tint: Double?
     let isAdjusting: Bool
+    let exposureLocked: Bool
+    let focusLocked: Bool
+    let whiteBalanceLocked: Bool
 }
 
 struct CameraSnapshot: Sendable {
@@ -92,10 +101,14 @@ enum CameraSettingsValidator {
         let w = settings.whiteBalance
         guard [e.iso, e.shutterSeconds, e.ev, f.lensPosition, w.kelvin, w.tint].allSatisfy(\.isFinite)
         else { throw CameraError.invalidSettings }
+        guard !(e.manual && e.locked), !(f.manual && f.locked), !(w.manual && w.locked),
+              !e.locked || capabilities.exposureLock,
+              !f.locked || capabilities.focusLock,
+              !w.locked || capabilities.whiteBalanceLock else { throw CameraError.invalidSettings }
         if e.manual {
             guard capabilities.manualExposure, capabilities.iso.contains(e.iso),
                   capabilities.shutterSeconds.contains(e.shutterSeconds) else { throw CameraError.invalidSettings }
-        } else if !capabilities.exposureBias.contains(e.ev) { throw CameraError.invalidSettings }
+        } else if !e.locked && !capabilities.exposureBias.contains(e.ev) { throw CameraError.invalidSettings }
         if f.manual && (!capabilities.manualFocus || !(0...1).contains(f.lensPosition)) {
             throw CameraError.invalidSettings
         }

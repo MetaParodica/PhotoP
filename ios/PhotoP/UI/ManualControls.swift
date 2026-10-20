@@ -14,11 +14,15 @@ struct ManualControls: View {
                     Section("노출 · 요청값") {
                         Toggle("수동 ISO · 셔터", isOn: $model.settings.exposure.manual)
                             .disabled(!caps.manualExposure)
+                            .onChange(of: model.settings.exposure.manual) { _, value in if value { model.settings.exposure.locked = false } }
+                        Toggle("AE Lock", isOn: $model.settings.exposure.locked)
+                            .disabled(!caps.exposureLock)
+                            .onChange(of: model.settings.exposure.locked) { _, value in if value { model.settings.exposure.manual = false } }
                         if model.settings.exposure.manual {
                             valueSlider("ISO", value: $model.settings.exposure.iso, range: caps.iso, logarithmic: true)
                             valueSlider("셔터 (초)", value: $model.settings.exposure.shutterSeconds,
                                         range: caps.shutterSeconds, logarithmic: true)
-                        } else {
+                        } else if !model.settings.exposure.locked {
                             valueSlider("EV", value: $model.settings.exposure.ev, range: caps.exposureBias)
                         }
                         Text("수동 노출에서는 ISO와 셔터를 함께 고정합니다. EV는 자동 노출에서 적용합니다.")
@@ -27,6 +31,10 @@ struct ManualControls: View {
                     Section("초점") {
                         Toggle("수동 초점", isOn: $model.settings.focus.manual)
                             .disabled(!caps.manualFocus)
+                            .onChange(of: model.settings.focus.manual) { _, value in if value { model.settings.focus.locked = false } }
+                        Toggle("AF Lock", isOn: $model.settings.focus.locked)
+                            .disabled(!caps.focusLock)
+                            .onChange(of: model.settings.focus.locked) { _, value in if value { model.settings.focus.manual = false } }
                         if model.settings.focus.manual {
                             valueSlider("렌즈 위치", value: $model.settings.focus.lensPosition, range: 0...1)
                             Text("0~1은 정규화된 렌즈 위치이며 실제 거리(m)가 아닙니다.").font(.caption)
@@ -35,12 +43,17 @@ struct ManualControls: View {
                     Section("화이트밸런스") {
                         Toggle("수동 WB", isOn: $model.settings.whiteBalance.manual)
                             .disabled(!caps.manualWhiteBalance)
+                            .onChange(of: model.settings.whiteBalance.manual) { _, value in if value { model.settings.whiteBalance.locked = false } }
+                        Toggle("WB Lock", isOn: $model.settings.whiteBalance.locked)
+                            .disabled(!caps.whiteBalanceLock)
+                            .onChange(of: model.settings.whiteBalance.locked) { _, value in if value { model.settings.whiteBalance.manual = false } }
                         if model.settings.whiteBalance.manual {
                             valueSlider("Kelvin", value: $model.settings.whiteBalance.kelvin, range: 2000...10000)
                             valueSlider("Tint", value: $model.settings.whiteBalance.tint, range: -150...150)
                             Text("변환된 RGB 게인은 기기의 허용 범위로 제한됩니다.").font(.caption)
                         }
                     }
+                    Text("Lock은 설정 적용 시점의 현재값을 유지합니다. 잠금 해제 후 다시 적용하면 자동 제어로 돌아갑니다.").font(.caption)
                     Button(model.snapshot.isApplyingSettings ? "변경 확인 중…" : "설정 적용") { Task { await model.applySettings() } }
                         .disabled(model.busy || model.snapshot.isApplyingSettings || model.snapshot.state != .running)
                 } else { Text("카메라를 시작하면 지원 범위가 표시됩니다.") }

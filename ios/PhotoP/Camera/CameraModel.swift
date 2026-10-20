@@ -52,6 +52,18 @@ final class CameraModel: ObservableObject {
         } catch { message = error.localizedDescription }
     }
 
+    func focusAndMeter(_ point: CameraMeteringPoint, lensID: String) async {
+        guard canCapture else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let actions = try await service.focusAndMeter(at: point, lensID: lensID)
+            if actions.focus && actions.exposure { message = "터치 위치를 초점·노출 기준으로 지정했습니다." }
+            else if actions.focus { message = "터치 초점 기준을 지정했습니다. 노출은 변경하지 않았습니다." }
+            else { message = "터치 노출 기준을 지정했습니다. 초점은 변경하지 않았습니다." }
+        } catch { message = error.localizedDescription }
+    }
+
     func capture() async {
         guard canCapture else { return }
         busy = true

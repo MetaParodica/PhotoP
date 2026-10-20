@@ -10,7 +10,12 @@ struct CameraReadoutView: View {
             if let kelvin = readout.kelvin, let tint = readout.tint {
                 Text("WB \(kelvin.formatted(.number.precision(.fractionLength(0)))) K · Tint \(tint.formatted(.number.precision(.fractionLength(1))))")
             }
-            if readout.isAdjusting { Text("자동 조정 중").foregroundStyle(.yellow) }
+            HStack {
+                if readout.exposureLocked { Text("AE 고정") }
+                if readout.focusLocked { Text("AF 고정") }
+                if readout.whiteBalanceLocked { Text("WB 고정") }
+            }
+            if readout.isAdjusting { Text("조정 중").foregroundStyle(.yellow) }
         }
         .font(.caption2.monospacedDigit())
         .accessibilityElement(children: .combine)
@@ -23,3 +28,4 @@ struct CameraReadoutView: View {
         return "\(readout.shutterSeconds.formatted(.number.precision(.fractionLength(2)))) s"
     }
 }
+

@@ -22,7 +22,9 @@ struct CameraView: View {
                         .accessibilityLabel("삼분할 격자 전환")
                 }
                 .padding(.horizontal)
-                CameraPreview(session: model.previewSession, mirrored: selectedFront)
+                CameraPreview(session: model.previewSession, mirrored: selectedFront, lensID: model.snapshot.selectedLens) { point, lensID in
+                    Task { await model.focusAndMeter(point, lensID: lensID) }
+                }
                     .frame(width: previewHeight * 3 / 4, height: previewHeight)
                     .overlay { if model.showGrid { ThirdsGrid() } }
                     .overlay(alignment: .bottom) {

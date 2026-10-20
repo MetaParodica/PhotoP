@@ -10,15 +10,21 @@ final class PreviewView: UIView {
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let mirrored: Bool
+    let lensID: String?
+    let onMeter: (CameraMeteringPoint, String) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
         view.previewLayer.videoGravity = .resizeAspect
         view.previewLayer.session = session
+        view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:))))
         return view
     }
 
     func updateUIView(_ view: PreviewView, context: Context) {
+        context.coordinator.parent = self
         guard let connection = view.previewLayer.connection else { return }
         if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
         if connection.isVideoMirroringSupported {
@@ -26,6 +32,22 @@ struct CameraPreview: UIViewRepresentable {
             connection.isVideoMirrored = mirrored
         }
     }
+    final class Coordinator: NSObject {
+        var parent: CameraPreview
+        init(_ parent: CameraPreview) { self.parent = parent }
+
+        @objc func tap(_ gesture: UITapGestureRecognizer) {
+            guard let view = gesture.view as? PreviewView, let lensID = parent.lensID,
+                  view.previewLayer.connection != nil else { return }
+            let location = gesture.location(in: view)
+            let imageRect = view.previewLayer.layerRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1))
+            guard imageRect.contains(location) else { return }
+            let point = view.previewLayer.captureDevicePointConverted(fromLayerPoint: location)
+            guard let normalized = try? CameraMeteringPoint(x: point.x, y: point.y) else { return }
+            parent.onMeter(normalized, lensID)
+        }
+    }
+
 }
 
 struct ThirdsGrid: View {
