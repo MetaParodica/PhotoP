@@ -1,6 +1,7 @@
 import XCTest
 import CoreVideo
 import Metal
+import QuartzCore
 @testable import PhotoP
 
 final class LivePreviewTests: XCTestCase {
@@ -117,6 +118,30 @@ final class LivePreviewTests: XCTestCase {
             guard case CameraError.interrupted = error else { return XCTFail("Unexpected error: \(error)") }
         }
         service.removeLivePreview()
+    }
+
+    func testLateLifecycleEventsCannotReplaceLatestEvent() throws {
+        let (_, lut) = try fixture()
+        let recorder = EventRecorder()
+        let preview = try LiveLUTPreview(lut: lut) { _, event in recorder.append(event) }
+        let surface = CAMetalLayer()
+        preview.attach(surface)
+        let attached = try XCTUnwrap(recorder.events.last)
+        preview.setRunning(false)
+        let stopped = try XCTUnwrap(recorder.events.last)
+        XCTAssertFalse(preview.isCurrentEvent(attached))
+        XCTAssertTrue(preview.isCurrentEvent(stopped))
+        preview.detach(surface)
+        let detached = try XCTUnwrap(recorder.events.last)
+        XCTAssertFalse(preview.isCurrentEvent(stopped))
+        XCTAssertTrue(preview.isCurrentEvent(detached))
+    }
+
+    private final class EventRecorder: @unchecked Sendable {
+        private let lock = NSLock()
+        private var values: [LiveLUTPreview.Event] = []
+        var events: [LiveLUTPreview.Event] { lock.withLock { values } }
+        func append(_ event: LiveLUTPreview.Event) { lock.withLock { values.append(event) } }
     }
 
 }

@@ -48,7 +48,6 @@ final class CameraModel: ObservableObject {
             message = "현재 렌즈에서 지원하지 않는 포맷이므로 \(first.title)로 전환했습니다."
         }
         snapshot = value
-        if value.state != .running { liveHasFrame = false }
         if let text = value.message { message = text }
     }
 
@@ -135,10 +134,10 @@ final class CameraModel: ObservableObject {
     private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {
         let onEvent: @Sendable (UUID, LiveLUTPreview.Event) -> Void = { [weak self] id, event in
             Task { @MainActor [weak self] in
-                guard let self, self.livePreview?.id == id else { return }
-                switch event {
+                guard let self, let preview = self.livePreview, preview.id == id, preview.isCurrentEvent(event) else { return }
+                switch event.kind {
                 case .waiting: self.liveHasFrame = false
-                case .ready: self.liveHasFrame = self.snapshot.state == .running
+                case .ready: self.liveHasFrame = true
                 case .failed(let reason):
                     self.disableLiveLUT()
                     self.message = "LUT 프리뷰를 해제했습니다: \(reason)"

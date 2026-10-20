@@ -5,7 +5,11 @@ import QuartzCore
 
 // Only the frame queue accesses processor/display. The lock protects UI/lifecycle state.
 final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOutputSampleBufferDelegate {
-    enum Event: Sendable { case waiting, ready, failed(String) }
+    struct Event: Sendable {
+        enum Kind: Sendable { case waiting, ready, failed(String) }
+        let revision: UInt64
+        let kind: Kind
+    }
     let id = UUID()
     let device: MTLDevice
     let frameQueue = DispatchQueue(label: "com.photop.live-lut", qos: .userInteractive)
@@ -17,6 +21,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private weak var layer: CAMetalLayer?
     private var intensity = 1.0
     private var announcedGeneration: UInt64?
+    private var eventRevision: UInt64 = 0
     private let onEvent: @Sendable (UUID, Event) -> Void
 
     init(lut: CubeLUT, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
@@ -31,17 +36,32 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     }
 
     func attach(_ surface: CAMetalLayer) {
-        lock.withLock { layer = surface; state.invalidate(); announcedGeneration = nil }
-        onEvent(id, .waiting)
+        let event = lock.withLock { () -> Event in
+            layer = surface; state.invalidate(); announcedGeneration = nil
+            return makeEvent(.waiting)
+        }
+        onEvent(id, event)
     }
     func detach(_ surface: CAMetalLayer) {
-        lock.withLock {
-            if layer === surface { layer = nil; state.invalidate(); announcedGeneration = nil }
+        let event: Event? = lock.withLock {
+            guard layer === surface else { return nil }
+            layer = nil; state.invalidate(); announcedGeneration = nil
+            return makeEvent(.waiting)
         }
+        if let event { onEvent(id, event) }
     }
     func setRunning(_ running: Bool) {
-        lock.withLock { state.setRunning(running); announcedGeneration = nil }
-        if !running { onEvent(id, .waiting) }
+        let event: Event? = lock.withLock {
+            state.setRunning(running); announcedGeneration = nil
+            return running ? nil : makeEvent(.waiting)
+        }
+        if let event { onEvent(id, event) }
+    }
+    // MainActor deliveries from different queues can arrive in a different order.
+    func isCurrentEvent(_ event: Event) -> Bool { lock.withLock { event.revision == eventRevision } }
+    private func makeEvent(_ kind: Event.Kind) -> Event {
+        eventRevision &+= 1
+        return Event(revision: eventRevision, kind: kind)
     }
     func setIntensity(_ value: Double) {
         guard value.isFinite, (0...1).contains(value) else { return }
@@ -76,23 +96,23 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                         guard state.complete(ticket) else { return nil }
                         if completed.status != .completed {
                             state.setRunning(false)
-                            return .failed(completed.error?.localizedDescription ?? "GPU 프리뷰가 중단됐습니다.")
+                            return makeEvent(.failed(completed.error?.localizedDescription ?? "GPU 프리뷰가 중단됐습니다."))
                         }
                         guard announcedGeneration != ticket.generation else { return nil }
                         announcedGeneration = ticket.generation
-                        return .ready
+                        return makeEvent(.ready)
                     }
                     if let event { onEvent(id, event) }
                 }
                 submitted = true
                 command.commit()
             } catch {
-                let report = lock.withLock { () -> Bool in
-                    guard state.complete(ticket) else { return false }
+                let event: Event? = lock.withLock {
+                    guard state.complete(ticket) else { return nil }
                     state.setRunning(false)
-                    return true
+                    return makeEvent(.failed(error.localizedDescription))
                 }
-                if report { onEvent(id, .failed(error.localizedDescription)) }
+                if let event { onEvent(id, event) }
             }
         }
     }
