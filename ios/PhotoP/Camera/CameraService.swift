@@ -12,6 +12,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var observers: [NSObjectProtocol] = []
     private var wantsRunning = false
     private var state: CaptureSessionState = .stopped
+    private var snapshotRevision: UInt64 = 0
+    private var readoutTimer: DispatchSourceTimer?
+    private var controls = CameraControlApplication()
+    private var settingsCompletion: CheckedContinuation<CameraReadout, Error>?
+    private var settingsTimeout: DispatchWorkItem?
     private var photoID: Int64?
     private var photoData: Data?
     private var continuation: CheckedContinuation<Data, Error>?
@@ -31,7 +36,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
     }
 
-    deinit { observers.forEach(NotificationCenter.default.removeObserver) }
+    deinit {
+        readoutTimer?.cancel()
+        settingsTimeout?.cancel()
+        observers.forEach(NotificationCenter.default.removeObserver)
+    }
 
     func setActive(_ active: Bool) {
         #if targetEnvironment(simulator)
@@ -43,6 +52,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             wantsRunning = active
             if !active {
+                state = .stopped
+                stopReadouts()
+                finishApplying(.failure(CameraError.interrupted))
                 finishPhoto(.failure(CameraError.interrupted))
                 if session.isRunning { session.stopRunning() }
                 state = .stopped
@@ -73,6 +85,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             }
             if !session.isRunning { session.startRunning() }
             state = session.isRunning ? .running : .stopped
+            if state == .running { startReadouts() }
             publish(session.isRunning ? nil : "카메라를 시작하지 못했습니다.")
         } catch { state = .stopped; publish(error.localizedDescription) }
     }
@@ -102,7 +115,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     func selectLens(_ id: String) {
         queue.async { [self] in
-            guard continuation == nil else { publish(CameraError.busy.localizedDescription); return }
+            guard continuation == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
             guard let old = input, let device = devices.first(where: { $0.uniqueID == id }),
                   device.uniqueID != old.device.uniqueID else { return }
             do {
@@ -143,36 +156,67 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             exposureBias: Double(d.minExposureTargetBias)...Double(d.maxExposureTargetBias),
             manualExposure: d.isExposureModeSupported(.custom),
             manualFocus: d.isLockingFocusWithCustomLensPositionSupported,
-            manualWhiteBalance: d.isWhiteBalanceModeSupported(.locked)
+            manualWhiteBalance: d.isWhiteBalanceModeSupported(.locked) && d.isLockingWhiteBalanceWithCustomDeviceGainsSupported
         )
     }
 
-    func apply(_ settings: CameraSettings) async throws {
-        try await withCheckedThrowingContinuation { (completion: CheckedContinuation<Void, Error>) in
+    func apply(_ settings: CameraSettings) async throws -> CameraReadout {
+        try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 do {
-                    guard continuation == nil, state == .running else { throw CameraError.busy }
-                    try applyOnQueue(settings)
-                    completion.resume()
+                    guard state == .running, session.isRunning, !session.isInterrupted else {
+                        throw CameraError.interrupted
+                    }
+                    guard continuation == nil, !controls.isPending else { throw CameraError.busy }
+                    try applyOnQueue(settings, completion: completion)
                 } catch { completion.resume(throwing: error) }
             }
         }
     }
 
-    private func applyOnQueue(_ settings: CameraSettings) throws {
+    private func applyOnQueue(_ settings: CameraSettings,
+                              completion: CheckedContinuation<CameraReadout, Error>? = nil) throws {
         guard let d = input?.device, let caps = capabilities() else { throw CameraError.unavailable }
         try CameraSettingsValidator.validate(settings, for: caps)
+        guard settings.exposure.manual || d.isExposureModeSupported(.continuousAutoExposure)
+        else { throw CameraError.invalidSettings }
         try d.lockForConfiguration()
         defer { d.unlockForConfiguration() }
+
+        var steps: Set<CameraControlApplication.Step> = [.exposure]
+        if settings.focus.manual { steps.insert(.focus) }
+        if settings.whiteBalance.manual { steps.insert(.whiteBalance) }
+        let id = try controls.begin(steps: steps)
+        settingsCompletion = completion
+
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, self.controls.id == id else { return }
+            self.wantsRunning = false
+            self.state = .stopped
+            self.stopReadouts()
+            if self.session.isRunning { self.session.stopRunning() }
+            self.finishApplying(.failure(CameraError.settingsTimedOut))
+        }
+        settingsTimeout = timeout
+        // The completion may require a full exposure interval.
+        let currentSeconds = d.exposureDuration.seconds
+        let longestExposure = max(settings.exposure.shutterSeconds,
+                                  currentSeconds.isFinite ? max(0, currentSeconds) : 0)
+        queue.asyncAfter(deadline: .now() + max(5, longestExposure + 3), execute: timeout)
+
         if settings.exposure.manual {
-            d.setExposureModeCustom(duration: CMTime(seconds: settings.exposure.shutterSeconds, preferredTimescale: 1_000_000_000),
-                                    iso: Float(settings.exposure.iso), completionHandler: nil)
-        } else if d.isExposureModeSupported(.continuousAutoExposure) {
+            d.setExposureModeCustom(
+                duration: CMTime(seconds: settings.exposure.shutterSeconds, preferredTimescale: 1_000_000_000),
+                iso: Float(settings.exposure.iso),
+                completionHandler: controlCompletion(.exposure, id: id))
+        } else {
             d.exposureMode = .continuousAutoExposure
-            d.setExposureTargetBias(Float(settings.exposure.ev), completionHandler: nil)
+            d.setExposureTargetBias(Float(settings.exposure.ev),
+                                    completionHandler: controlCompletion(.exposure, id: id))
         }
         if settings.focus.manual {
-            d.setFocusModeLocked(lensPosition: Float(settings.focus.lensPosition), completionHandler: nil)
+            d.setFocusModeLocked(lensPosition: Float(settings.focus.lensPosition),
+                                completionHandler: controlCompletion(.focus, id: id))
         } else if d.isFocusModeSupported(.continuousAutoFocus) { d.focusMode = .continuousAutoFocus }
         if settings.whiteBalance.manual {
             let values = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
@@ -181,10 +225,80 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             gains.redGain = min(max(gains.redGain, 1), d.maxWhiteBalanceGain)
             gains.greenGain = min(max(gains.greenGain, 1), d.maxWhiteBalanceGain)
             gains.blueGain = min(max(gains.blueGain, 1), d.maxWhiteBalanceGain)
-            d.setWhiteBalanceModeLocked(with: gains, completionHandler: nil)
+            d.setWhiteBalanceModeLocked(with: gains,
+                                       completionHandler: controlCompletion(.whiteBalance, id: id))
         } else if d.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
             d.whiteBalanceMode = .continuousAutoWhiteBalance
         }
+        publish()
+    }
+
+    private func controlCompletion(_ step: CameraControlApplication.Step, id: UUID) -> (CMTime) -> Void {
+        { [weak self] _ in
+            guard let self else { return }
+            self.queue.async {
+                guard self.controls.acknowledge(step, id: id) else { return }
+                if let readout = self.currentReadout() { self.finishApplying(.success(readout)) }
+                else { self.finishApplying(.failure(CameraError.configuration)) }
+            }
+        }
+    }
+
+    private func finishApplying(_ result: Result<CameraReadout, Error>) {
+        let wasPending = controls.isPending || settingsCompletion != nil || settingsTimeout != nil
+        controls.cancel()
+        settingsTimeout?.cancel()
+        settingsTimeout = nil
+        let completion = settingsCompletion
+        settingsCompletion = nil
+        guard wasPending else { return }
+        switch result {
+        case .success: publish()
+        case .failure(let error): publish(error.localizedDescription)
+        }
+        completion?.resume(with: result)
+    }
+
+    private func currentReadout() -> CameraReadout? {
+        guard state == .running, let d = input?.device else { return nil }
+        let iso = Double(d.iso)
+        let seconds = d.exposureDuration.seconds
+        let bias = Double(d.exposureTargetBias)
+        let position = Double(d.lensPosition)
+        guard [iso, seconds, bias, position].allSatisfy(\.isFinite), iso > 0, seconds > 0 else { return nil }
+        let gains = d.deviceWhiteBalanceGains
+        var kelvin: Double?
+        var tint: Double?
+        if [gains.redGain, gains.greenGain, gains.blueGain].allSatisfy({
+            $0.isFinite && $0 >= 1 && $0 <= d.maxWhiteBalanceGain
+        }) {
+            let values = d.temperatureAndTintValues(for: gains)
+            if values.temperature.isFinite, values.tint.isFinite {
+                kelvin = Double(values.temperature)
+                tint = Double(values.tint)
+            }
+        }
+        return CameraReadout(iso: iso, shutterSeconds: seconds, exposureBias: bias,
+                             lensPosition: position, kelvin: kelvin, tint: tint,
+                             isAdjusting: d.isAdjustingExposure || d.isAdjustingFocus || d.isAdjustingWhiteBalance)
+    }
+
+    private func startReadouts() {
+        guard readoutTimer == nil else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now() + .milliseconds(250), repeating: .milliseconds(250))
+        timer.setEventHandler { [weak self] in
+            guard let self, self.wantsRunning, self.state == .running,
+                  self.session.isRunning, !self.session.isInterrupted else { return }
+            self.publish()
+        }
+        readoutTimer = timer
+        timer.resume()
+    }
+
+    private func stopReadouts() {
+        readoutTimer?.cancel()
+        readoutTimer = nil
     }
 
     func capturePhoto() async throws -> Data {
@@ -193,10 +307,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 guard state == .running, session.isRunning, !session.isInterrupted else {
                     completion.resume(throwing: CameraError.interrupted); return
                 }
-                guard continuation == nil else { completion.resume(throwing: CameraError.busy); return }
+                guard continuation == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
                 let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
                 settings.maxPhotoDimensions = output.maxPhotoDimensions
-                settings.photoQualityPrioritization = .quality
+                settings.photoQualityPrioritization = PhotoCapturePolicy.quality(for: input?.device.exposureMode)
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
                 if let connection = output.connection(with: .video) {
                     if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
@@ -242,21 +356,41 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private func handleNotification(_ name: Notification.Name, reset: Bool) {
         if name == AVCaptureSession.wasInterruptedNotification {
             state = .interrupted
+            stopReadouts()
+            finishApplying(.failure(CameraError.interrupted))
             finishPhoto(.failure(CameraError.interrupted))
             publish(CameraError.interrupted.localizedDescription)
         } else if name == AVCaptureSession.interruptionEndedNotification || reset {
-            if reset { finishPhoto(.failure(CameraError.interrupted)) }
+            if reset {
+                finishApplying(.failure(CameraError.interrupted))
+                finishPhoto(.failure(CameraError.interrupted))
+            }
             if wantsRunning { startAuthorized() }
         } else {
             state = .stopped
+            stopReadouts()
+            finishApplying(.failure(CameraError.interrupted))
             finishPhoto(.failure(CameraError.interrupted))
             publish("카메라 오류가 발생했습니다. 다시 시작을 눌러 주세요.")
         }
     }
 
     private func publish(_ message: String? = nil) {
+        snapshotRevision += 1
         onSnapshot(CameraSnapshot(lenses: devices.map { d in
             CameraLens(id: d.uniqueID, name: d.localizedName, isFront: d.position == .front)
-        }, selectedLens: input?.device.uniqueID, capabilities: capabilities(), state: state, message: message))
+        }, selectedLens: input?.device.uniqueID, capabilities: capabilities(), state: state, message: message,
+           revision: snapshotRevision, readout: currentReadout(), isApplyingSettings: controls.isPending))
+    }
+}
+
+enum PhotoCapturePolicy {
+    // Apple's custom-exposure contract requires speed to honor ISO/duration.
+    // This does not change JPEG compression or the requested photo dimensions.
+    static func quality(for exposureMode: AVCaptureDevice.ExposureMode?) -> AVCapturePhotoOutput.QualityPrioritization {
+        switch exposureMode {
+        case .custom?, .locked?: return .speed
+        default: return .quality
+        }
     }
 }

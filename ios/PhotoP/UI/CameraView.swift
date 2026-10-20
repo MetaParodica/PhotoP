@@ -7,7 +7,7 @@ struct CameraView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let previewHeight = min(geometry.size.width * 4 / 3, max(120, geometry.size.height - 300))
+            let previewHeight = min(geometry.size.width * 4 / 3, max(120, geometry.size.height - 420))
             VStack(spacing: 14) {
                 HStack {
                     Text("PhotoP").font(.headline)
@@ -33,13 +33,13 @@ struct CameraView: View {
                                 .font(.caption)
                                 .buttonStyle(.bordered)
                                 .tint(lens.id == model.snapshot.selectedLens ? .yellow : .gray)
-                                .disabled(model.busy)
+                                .disabled(model.busy || model.snapshot.isApplyingSettings)
                         }
                     }.padding(.horizontal)
                 }
                 HStack {
                     Button("PRO") { model.showControls = true }
-                        .disabled(model.busy)
+                        .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Spacer()
                     Button { Task { await model.capture() } } label: {
                         Circle().fill(.white).frame(width: 66, height: 66)
@@ -54,13 +54,17 @@ struct CameraView: View {
                             .accessibilityLabel("마지막 촬영 원본 공유")
                     } else { Color.clear.frame(width: 30, height: 30) }
                 }.padding(.horizontal, 28)
-                if model.busy { ProgressView() }
+                if model.busy || model.snapshot.isApplyingSettings { ProgressView() }
+                if let readout = model.snapshot.readout {
+                    CameraReadoutView(readout: readout)
+                        .padding(.horizontal)
+                }
                 if let message = model.message {
                     Text(message).font(.caption).multilineTextAlignment(.center).padding(.horizontal)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 if model.latestOriginal != nil && !model.savedToPhotos {
-                    Button("사진 앱에 저장") { Task { await model.saveLatestToPhotos() } }.disabled(model.busy)
+                    Button("사진 앱에 저장") { Task { await model.saveLatestToPhotos() } }.disabled(model.busy || model.snapshot.isApplyingSettings)
                 }
                 Spacer(minLength: 0)
             }

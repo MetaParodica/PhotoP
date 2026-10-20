@@ -4,7 +4,8 @@ import SwiftUI
 @MainActor
 final class CameraModel: ObservableObject {
     @Published private(set) var snapshot = CameraSnapshot(lenses: [], selectedLens: nil, capabilities: nil,
-                                                       state: .stopped, message: nil)
+                                                       state: .stopped, message: nil, revision: 0,
+                                                       readout: nil, isApplyingSettings: false)
     @Published var settings = CameraSettings()
     @Published private(set) var busy = false
     @Published private(set) var latestOriginal: URL?
@@ -17,15 +18,16 @@ final class CameraModel: ObservableObject {
         Task { @MainActor [weak self] in self?.receive(value) }
     }
     var previewSession: AVCaptureSession { service.session }
-    var canCapture: Bool { snapshot.state == .running && !busy }
+    var canCapture: Bool { snapshot.state == .running && !busy && !snapshot.isApplyingSettings }
 
     func setActive(_ active: Bool) { service.setActive(active) }
     func selectLens(_ id: String) {
-        guard !busy else { return }
+        guard !busy, !snapshot.isApplyingSettings else { return }
         service.selectLens(id)
     }
 
     private func receive(_ value: CameraSnapshot) {
+        guard value.revision > snapshot.revision else { return }
         if value.selectedLens != snapshot.selectedLens, let caps = value.capabilities {
             settings = CameraSettings()
             settings.exposure.iso = min(max(100, caps.iso.lowerBound), caps.iso.upperBound)
@@ -36,12 +38,12 @@ final class CameraModel: ObservableObject {
     }
 
     func applySettings() async {
-        guard !busy else { return }
+        guard !busy, !snapshot.isApplyingSettings else { return }
         busy = true
         defer { busy = false }
         do {
-            try await service.apply(settings)
-            message = "설정을 카메라에 전달했습니다. 자동 모드의 실제 값은 촬영 파일에서 확인하세요."
+            _ = try await service.apply(settings)
+            message = "카메라의 설정 변경 완료를 확인했습니다. 현재값을 확인해 주세요."
         } catch { message = error.localizedDescription }
     }
 

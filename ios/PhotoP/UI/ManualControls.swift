@@ -8,7 +8,10 @@ struct ManualControls: View {
         NavigationStack {
             Form {
                 if let caps = model.snapshot.capabilities {
-                    Section("노출") {
+                    if let readout = model.snapshot.readout {
+                        Section("카메라 현재값") { CameraReadoutView(readout: readout) }
+                    }
+                    Section("노출 · 요청값") {
                         Toggle("수동 ISO · 셔터", isOn: $model.settings.exposure.manual)
                             .disabled(!caps.manualExposure)
                         if model.settings.exposure.manual {
@@ -38,8 +41,8 @@ struct ManualControls: View {
                             Text("변환된 RGB 게인은 기기의 허용 범위로 제한됩니다.").font(.caption)
                         }
                     }
-                    Button("설정 적용") { Task { await model.applySettings() } }
-                        .disabled(model.busy || model.snapshot.state != .running)
+                    Button(model.snapshot.isApplyingSettings ? "변경 확인 중…" : "설정 적용") { Task { await model.applySettings() } }
+                        .disabled(model.busy || model.snapshot.isApplyingSettings || model.snapshot.state != .running)
                 } else { Text("카메라를 시작하면 지원 범위가 표시됩니다.") }
             }
             .navigationTitle("PRO 설정")
