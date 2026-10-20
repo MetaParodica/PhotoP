@@ -16,8 +16,6 @@ targets:
     type: application
     platform: iOS
     sources: [PhotoP]
-    info:
-      path: PhotoP/Info.plist
     settings:
       base:
         INFOPLIST_FILE: PhotoP/Info.plist

@@ -34,6 +34,12 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     deinit { observers.forEach(NotificationCenter.default.removeObserver) }
 
     func setActive(_ active: Bool) {
+        #if targetEnvironment(simulator)
+        if active {
+            queue.async { [self] in publish(CameraError.unavailable.localizedDescription) }
+            return
+        }
+        #endif
         queue.async { [self] in
             wantsRunning = active
             if !active {
