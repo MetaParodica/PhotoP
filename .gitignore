@@ -1,0 +1,8 @@
+.DS_Store
+DerivedData/
+*.xcuserstate
+xcuserdata/
+ios/PhotoP.xcodeproj/
+.build/
+__pycache__/
+assets/luts/private-research/
