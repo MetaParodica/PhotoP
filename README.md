@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, and basic manual ISO/shutter/EV/focus/WB controls. It does not yet implement RAW, LUT rendering, long exposure, composition AI or video.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, and live device readouts. It does not yet implement RAW, LUT rendering, long exposure, composition AI or video.
 
 ## Start here
 
@@ -13,6 +13,14 @@ An iPhone-first professional camera platform, with native Android planned after 
 - [Build, tests and device checklist](docs/05-BUILD-AND-VALIDATION.ko.md)
 - [LUT sources and asset policy](docs/06-LUT-CATALOG.ko.md)
 - [Implementation report](docs/07-IMPLEMENTATION-REPORT.ko.md)
+
+## Camera controls
+
+Manual ISO/shutter, manual focus and manual WB wait for the device completion callbacks. Capture and lens changes are blocked while those changes are pending. Interruption and a bounded timeout cancel pending work; late callbacks from an older operation cannot complete a newer one.
+
+The camera screen and PRO sheet show current device ISO, exposure duration, EV bias, normalized lens position and WB estimates at up to 4 Hz. These values are separate from editable requests and are not the saved photo's EXIF. Automatic AE/AF/AWB can continue adjusting after a configuration callback.
+
+Processed captures use Apple's speed prioritization in custom/locked exposure mode to honor manual ISO/duration. Automatic exposure retains quality prioritization. This prioritization choice does not change JPEG compression or the requested dimensions; its computational image-quality tradeoff still needs device evaluation.
 
 ## Build on a Mac
 

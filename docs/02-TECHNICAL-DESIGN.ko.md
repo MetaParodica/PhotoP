@@ -60,11 +60,15 @@ init(onSnapshot: @escaping @Sendable (CameraSnapshot) -> Void)
 let session: AVCaptureSession
 func setActive(_ active: Bool)
 func selectLens(_ id: String)
-func apply(_ settings: CameraSettings) async throws
+func apply(_ settings: CameraSettings) async throws -> CameraReadout
 func capturePhoto() async throws -> Data
 ```
 
-CameraModel이 오류와 저장 상태를 UI에 전달한다. `apply` 성공은 API에 설정을 전달했다는 의미다. 실제 광학·센서 적용 및 안정화 완료의 증거가 아니므로, 후속 단계에서 set completion/KVO와 촬영 EXIF를 결합한다. 요청값과 실측값은 별도 필드로 보관한다.
+CameraModel이 오류와 저장 상태를 UI에 전달한다. `apply`는 노출/EV·수동 초점·수동 WB의 변경 완료 콜백이 모두 도착한 뒤 장치 현재값을 반환한다. CameraControlApplication의 작업 UUID와 남은 step 집합으로 중복·순서 뒤바뀜·이전 작업의 늦은 콜백을 거른다. 설정 변경 중 촬영·렌즈 전환을 차단한다. 중단/백그라운드/장치 오류는 pending continuation을 한 번 완료하고, 타임아웃은 세션을 멈춰 명시적 재시작을 요구한다.
+
+최소 타임아웃은 5초이며 현재/요청 노출시간이 더 길면 해당 구간+3초로 늘린다. 설정 콜백은 AUTO AE/AF/AWB의 최종 수렴이나 최종 파일 EXIF까지 보증하지 않는다. 현재값은 직렬 캡처 큐의 4Hz timer로 읽고 정지·인터럽션·타임아웃 때 timer를 취소한다. snapshot revision으로 MainActor에 늦게 도착한 과거 상태를 거부한다.
+
+수동/locked 노출 사진은 PhotoCapturePolicy에서 `.speed`, 자동 노출은 `.quality`를 사용한다. Apple은 custom/locked ISO·노출시간을 존중하려면 speed prioritization이 필요함을 [공식 API](https://developer.apple.com/documentation/avfoundation/avcapturedevice/setexposuremodecustom(duration:iso:completionhandler:))에 명시한다. JPEG 압축 설정·출력 치수를 낮추는 의미는 아니지만 계산 사진 처리와의 화질 tradeoff는 실기기에서 평가해야 한다. 수동 WB는 locked mode 외에 [custom device gains 지원](https://developer.apple.com/documentation/avfoundation/avcapturedevice/islockingwhitebalancewithcustomdevicegainssupported)도 검사한다.
 
 ## 기능 계약과 조합 협상
 
@@ -131,8 +135,8 @@ Mean은 픽셀별 유효 가중치·평균을 누적한다. Lighten의 channel-w
 | ExposureSettings | mode, ISO, seconds, EV; 유한값·범위 검사 | 기본 구현 |
 | FocusSettings | normalizedLensPosition, mode; 거리와 구분 | 기본 구현 |
 | WhiteBalanceSettings | mode, Kelvin, tint; device gains 별도 | 기본 구현 |
-| CaptureSessionState | 초기 stopped/running/interrupted | 기본 구현 |
-| CaptureConfiguration | lens/format/photoSize/RAW/codec/outputColor + negotiation result | 설계 |
+| CaptureSessionState | stopped/running/interrupted + snapshot.isApplyingSettings·revision | 기본 구현 |
+| CameraReadout | 장치 ISO·노출시간·EV·렌즈 위치·WB 추정·조정 상태; 파일 EXIF와 구분 | 구현 |\n| CaptureConfiguration | lens/format/photoSize/RAW/codec/outputColor + negotiation result | 설계 |
 | LongExposureConfiguration | algorithm, wall time, frame exposure, alignment, retention, budget | 설계 |
 | CaptureJob | id, state, progress, cancel token, original refs, failure, checkpoint | 설계 |
 | FrameMetadata | monotonic timestamp, duration, ISO, WB, dimensions, transform, validity | 설계 |

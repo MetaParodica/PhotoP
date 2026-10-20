@@ -1,6 +1,6 @@
 # D. 개발 로드맵과 완료 기준
 
-일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재는 Phase 0 1차 조사와 Phase 1 최소 코드 단계다.
+일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재는 Phase 0 1차 조사와 Phase 1 기본 촬영·수동 제어 보완 단계다. 실제 iPhone 검증은 대기 중이다.
 
 | Phase | 구현 범위 | 선행 조건 | 기술 위험 | 테스트 방법 | 완료 기준 |
 | --- | --- | --- | --- | --- | --- |
@@ -23,8 +23,8 @@
 | F2 세션·권한 | CameraService | 메인 스레드 비블로킹; permission 거부/복귀 | 코드 작성·기기 미검증 |
 | F3 프리뷰·렌즈 | CameraPreview, physical discovery | 전후면·실제 렌즈별 프리뷰와 저장 방향 | 코드 작성·기기 미검증 |
 | F4 촬영·저장 | delegate, PhotoStore | 중복 continuation 없음; JPEG 원본 bytes 동일·Photos 거부 시 원본 유지 | 코드 작성·기기 미검증 |
-| F5 PRO 입력 | models, validator, controls | 범위 밖/NaN 거부·미지원 toggle off; EXIF 실제값 대조 | 단위 테스트 코드·기기 미검증 |
-| F6 작업 내구성 | interruption/runtime error/background | 화면 복귀 후 재시작·pending capture 명시 실패 | 기본 코드·실기기 fault test 대기 |
+| F5 PRO 입력 | models, validator, controls, completion gate, readout | 범위/지원·콜백 중복/순서/취소·노출 우선순위 테스트; EXIF 실제값 대조 | 완료 콜백·장치 readout 코드 추가, 기기 미검증 |
+| F6 작업 내구성 | interruption/runtime error/background/settings timeout | 화면 복귀 후 재시작·pending capture/settings 명시 실패 | 설정 작업 ID·취소 회귀 테스트 추가, 실기기 fault test 대기 |
 | F7 번들 권한 | manifest gate | 허가·hash·profile 누락/경로 이탈 차단 | 로컬 회귀 테스트 통과 |
 
 다음 개발 gate는 실제 iPhone의 JPEG 촬영과 메타데이터 확인이다. 그 이전에는 LUT·AI를 화면에 완성된 도구처럼 표시하지 않는다.
