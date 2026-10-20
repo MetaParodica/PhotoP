@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. It does not yet implement RAW, live camera LUT rendering, long exposure, composition AI or video.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. RAW, film grain, long exposure, composition AI and video recording remain future work.
 
 ## Start here
 
@@ -50,4 +50,17 @@ After capture, choose **LUT 사진 편집**. Confirm that your LUT expects and o
 
 The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB trilinear LUT → strength mix → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
 
-Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Favorite LUTs, recipe reopening, gallery browsing and live preview processing remain future work.
+Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Recipe reopening and gallery browsing remain future work.
+
+
+## Live LUT preview and favorites
+
+Open **LUT** on the camera screen, confirm sRGB input/output and import a `.cube`, or load a saved favorite. The LUT applies to the preview only; capture continues saving the original HEIF/JPEG. Strength and original-color comparison are available. Turn LUT off before switching lenses, touch AF/AE or importing another LUT; manual PRO controls remain available.
+
+The native 8-bit NV12 stream accepts BT.709 primaries, 709/sRGB transfer and 601/709 matrix metadata. Core Video derives the video matching profile; Core Image converts it to encoded sRGB on the GPU before the shared Metal LUT and aspect-fit display pass. Unknown/HDR/Log profiles disable the LUT with an explanation. Camera device color/HDR settings are not forcibly changed. Front portrait rotation/mirroring is requested through the supported connection APIs.
+
+One frame is allowed in flight; late frames are dropped. Two intermediate textures are reused at up to 1024px on the long edge. The capture buffer stays alive through GPU completion. This live path performs no CPU pixel readback or GPU completion wait. Actual camera delivery, screen color match, FPS and thermal performance still require device measurements.
+
+Favorites are saved only when requested, under Application Support/UserLUTFavorites with SHA-256 IDs, original `.cube` bytes and sRGB profile metadata. Both the editor and live preview can load them after restarting the app. Changed file hashes or unsupported metadata are rejected. Removing a favorite does not delete the original imported source or existing photo edit bundles. Favorites are user documents and never become distributable bundle assets.
+
+Development proceeds after each automated test stage passes; outstanding iPhone validation is tracked separately and does not block the next implementation stage.

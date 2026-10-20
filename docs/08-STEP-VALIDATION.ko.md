@@ -1,6 +1,6 @@
 # 단계별 구현·검증 기록
 
-운영 방식: 각 구현 단위의 CI 결과를 확인한 다음 다음 단위 코드를 진행한다. 실패하면 해당 단위를 수정·재검증한다. 실기기 검증을 자동 테스트로 대체하거나 전체 Phase 완료로 처리하지 않는다.
+운영 방식: 각 구현 단위의 CI 결과를 확인한 다음 다음 단위 코드를 진행한다. 실패하면 해당 단위를 수정·재검증한다. 2026-10-21 사용자 지시에 따라 실기기 검증은 개발 진행을 막는 조건에서 제외한다. 미수행 실기기 항목은 별도 대기 상태로 추적하며, 자동 테스트 통과와 실기기 품질 검증을 구분한다. 실기기 확인이 필요한 Phase 전체를 검증 완료로 표시하지 않는다.
 
 ## 1. HEIF/JPEG와 원본 컨테이너
 
@@ -69,6 +69,51 @@
 
 ## 다음 제품 gate
 
-실제 iPhone에서 HEIF/JPEG·요청/장치/EXIF·전면 터치·잠금·편집 진입/복귀·Display P3→sRGB 차트·12.6MP peak memory·발열을 확인한다. 이 환경에는 연결된 iPhone이 없어 실기기 검증은 미수행이다. Phase 1/2 전체는 미완료로 유지한다.
+실제 iPhone에서 HEIF/JPEG·요청/장치/EXIF·전면 터치·잠금·편집 진입/복귀·Display P3→sRGB 차트·12.6MP peak memory·발열을 확인한다. 이 환경에는 연결된 iPhone이 없어 실기기 검증은 미수행이다. 해당 검증을 기다리며 개발을 멈추지 않고 자동 테스트가 통과한 후 후속 기능을 구현한다. Phase 1/2의 실기기 품질 검증은 미완료로 유지한다.
 
 실시간 LUT는 CVPixelBuffer→Metal texture 경로·버퍼 수명·backpressure를 별도 구현하고, 현재 정지 사진용 waitUntilCompleted 경로를 매 프레임 호출하지 않는다. RAW/ProRAW·즐겨찾기·recipe 재열기·장노출·AI·영상·Android는 이후 작업이다. 원본/레시피/LUT 파일은 앱 삭제 시 함께 삭제되므로 필요한 자료는 앱 컨테이너에서 별도 보관해야 한다.
+
+## 9. 실시간 처리를 위한 texture LUT 경로
+
+- 구현: 사진 buffer와 live texture가 같은 Metal 보간 함수를 사용한다. LUT table·숫자 검증·Swift/Metal 파라미터 ABI를 공유한다. texture 경로는 명령만 인코딩하며 CPU readback이나 waitUntilCompleted를 호출하지 않는다.
+- 테스트: 3×3×3 LUT·중간 RGB·alpha·강도 0/0.5/1을 CPU Double과 기존 사진 buffer 경로에 비교. BGRA 채널 순서·in-place·크기 불일치·암묵적 sRGB texture·잘못된 강도 거부.
+- 코드 revision: cdae706d8972af6c9b0ed2458cfc56dc263dbbc0.
+- [CI 39510047929](https://github.com/MetaParodica/PhotoP/actions/runs/39510047929) 성공. iPhone SDK build·Swift 52개·Python 7개 통과. 새 texture GPU 테스트 3개 모두 실제 실행했다.
+- 실기기 FPS·메모리·발열은 대기 항목이며 후속 구현 진행을 막지 않는다.
+
+## 10. YUV 색관리·화면·프레임 수명
+
+- 구현: 8비트 NV12에서 명시된 BT.709 primaries·709/sRGB transfer·601/709 matrix만 허용한다. Core Video 메타데이터로 입력 ColorSync 프로파일을 생성하고 Core Image GPU에서 encoded sRGB texture로 변환한다. HDR/Log·불명 프로파일은 거부한다.
+- 표시: 긴 변 1024px의 재사용 texture 2개, aspect-fit·검은 여백, Core Image→Metal 상하 방향 보정. 1프레임 in-flight와 세대별 ticket으로 중단/화면 변경 후 오래된 완료를 무시한다.
+- 발견·수정: Metal 예약어/Swift CFString 비교 컴파일 오류, 상하 반전, display 709와 video matching 프로파일 차이, iOS 18 전용 profile 상수, 합성 프로파일의 optional name 가정을 수정했다. CPU 기준은 명시된 동일 입력 프로파일의 독립 ColorSync 색 변환이며 단순 BT.709 수식과 동일하다고 주장하지 않는다.
+- 코드 revision: 3ae13dd69e0fc561a7db5ca92a02574cfbb1c1a3.
+- [CI 39511844179](https://github.com/MetaParodica/PhotoP/actions/runs/39511844179) 성공. iPhone SDK build·Swift 56개·Python 7개 통과. YUV→sRGB→Metal 화면의 회색·방향·alpha·letterbox GPU 검증과 프레임 수명 검증 통과.
+
+## 11. 카메라 실시간 LUT 연결
+
+- 구현: 켤 때만 AVCaptureVideoDataOutput 추가, 광고한 NV12 full/video range 중 선택, portrait 90도·전면 mirror 연결. GPU 완성 프레임을 받기 전에는 기존 프리뷰와 대기 표시를 유지한다. 입력/인코딩 오류는 LUT를 해제하고 설명한다.
+- 처리: Core Image GPU sRGB 변환→공통 Metal LUT→CAMetalLayer. 최대 1개 in-flight, discard late frames, GPU 완료까지 CVPixelBuffer 유지. live 경로에 CPU 픽셀 복사/readback·waitUntilCompleted 없음.
+- 수명: 백그라운드·인터럽션·설정 timeout 시 중단, resume 시 새 세대. 촬영/설정 중 LUT 제거는 작업 완료까지 지연한다. 사진 캡처는 기존 PhotoOutput 원본 경로이며 LUT를 굽지 않는다. Stream 변경 후 현재 activeFormat에서 photo 치수를 다시 조회한다.
+- UI: 사용자 .cube·sRGB 확인·강도·원본 비교·켜기/끄기. 현재 LUT를 켠 동안 렌즈 전환·터치 AF/AE·다른 LUT import는 제한하며 화면에 표시한다. 카메라 device color/HDR 설정을 강제로 바꾸지 않으며 미지원 입력 프로파일이면 해제한다.
+- 코드 revision: 9263e8dda643dd24b98ee64f896dddae1e9a972a.
+- [CI 39512508734](https://github.com/MetaParodica/PhotoP/actions/runs/39512508734) 성공. iPhone SDK build·Swift 58개·Python 7개 통과. NV12 video range와 stopped camera 거부 검증 추가. 새 Swift concurrency 경고 없음.
+- 실기기 프레임 전달·실제 preview/사진 화각·색상 일치·전면 mirror·복귀·FPS·발열은 미검증으로 별도 대기한다. 이 항목을 기다리며 다음 기능 개발을 중단하지 않는다.
+
+## 12. LUT 즐겨찾기 영속 저장·공통 선택
+
+- 구현: Application Support/UserLUTFavorites 아래 SHA256 ID 폴더에 원본 .cube·sRGB profile.json 저장. 완성 전 임시 폴더를 쓰고 성공 시 이동한다. 동일 파일 중복 저장을 막고 저장된 bytes·프로파일·ID를 다시 검증한다.
+- UI: 사진 편집과 live preview 모두 현재 LUT 저장·즐겨찾기 불러오기·삭제 지원. LUT 원본 파일과 사진 edit bundle은 삭제하지 않는다. 사용자 파일을 app bundle이나 상용 LUT 승인 목록에 자동 추가하지 않는다.
+- 코드 revision: 3ccccb90182ce2de95fd68e9c7273a7ca99d3a7f.
+- [CI 39513020492](https://github.com/MetaParodica/PhotoP/actions/runs/39513020492) 성공. iPhone SDK build·Swift 64개·Python 7개 통과. 재시작/중복, 변조 bytes, 프로파일 mismatch, 경로 이탈, 삭제 후 원본 보존, 저장 준비 실패 전파의 6개 테스트 추가.
+- 라이선스: 독립 작성, 추가 의존성 없음. 저장하는 LUT는 사용자 import이며 번들 LUT 0개를 유지한다.
+
+## 13. Live UI 알림 순서 회귀
+
+- 발견: frame queue·GPU completion·UI lifecycle에서 MainActor로 보낸 waiting/ready 알림의 도착 순서가 바뀌면 오래된 알림이 새 화면 상태를 덮을 수 있다. CameraSnapshot과 live 이벤트의 도착 순서도 보장되지 않는다.
+- 수정: lock 안에서 이벤트 순번을 발급하고 MainActor는 현재 renderer ID·현재 순번만 수용한다. 프레임 준비 여부와 session snapshot은 각각 보존하고 화면 표시 때 두 상태를 함께 확인한다. detach도 이전 이벤트를 무효화한다.
+- 코드 revision: caa73055bb2bfc96273884b1a3bfe444bf8e275e.
+- [CI 39514120122](https://github.com/MetaParodica/PhotoP/actions/runs/39514120122) 성공. iPhone SDK build·Swift 65개·Python 7개 통과. 이전 attach/stop 알림의 늦은 수용을 거부하는 회귀 테스트 추가.
+
+## 현재 후속 범위
+
+실기기 항목은 계속 대기 목록으로 유지한다. 개발은 자동 테스트 통과를 기준으로 이어간다. 기본 grain·레시피 재열기·RAW/고급 촬영·장노출·가이드·영상·Android는 후속 구현 대상이다. 현재 live LUT는 BT.709 SDR 입력, sRGB creative LUT, portrait, 렌즈/터치 제한을 가진 초기 구현이다. 실기기 화질/FPS를 측정한 완성 제품으로 표시하지 않는다.

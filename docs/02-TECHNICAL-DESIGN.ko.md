@@ -176,3 +176,16 @@ CubeLUT는 red-fastest 3D .cube를 파싱하고 Double trilinear 기준값을 �
 렌더러는 12.6MP 이하의 버퍼만 허용하고 LUT·pipeline과 동일 크기의 입출력 Metal shared buffer를 재사용한다. 이 구현은 정지 사진용 기초 처리이며 영상 zero-copy preview 경로가 아니다. waitUntilCompleted는 actor 작업 스레드에서 호출하며 UI main thread에서 GPU 완료를 기다리지 않는다. HDR/Log·ICC 입력 해석·출력 인코딩은 별도 계층의 책임이다.
 
 근거: [Apple Metal command completion](https://developer.apple.com/documentation/metal/mtlcommandbuffer/waituntilcompleted()), [ImageIO thumbnail orientation](https://developer.apple.com/documentation/imageio/kcgimagesourcecreatethumbnailwithtransform). 구현은 독립 작성했으며 제3자 코드를 복사하지 않았다.
+
+
+## 실시간 LUT 구현 경로
+
+AVCaptureVideoDataOutput의 광고한 NV12 8비트 full/video range → 명시된 709 primaries·709/sRGB transfer·601/709 matrix 검사 → CVImageBufferCreateColorSpaceFromAttachments → Core Image GPU encoded sRGB texture → 공통 Metal LUT 함수 → aspect-fit CAMetalLayer(sRGB).
+
+프레임 큐가 processor·재사용 texture를 소유한다. lock으로 UI surface·강도·in-flight ticket·세대·알림 순번만 보호한다. 오래된 GPU 완료나 MainActor 알림은 새 상태를 덮어쓰지 않는다. 원본 사진은 PhotoOutput에서 분리 보존한다. LUT를 켤 때만 추가 output을 연결하고 해제 요청이 capture/settings 중이면 완료까지 제거를 지연한다.
+
+권한 있는 source metadata만 선택해 ColorSync 입력 profile을 합성한다. 이름이 없는 합성 profile도 허용하고 실제 색값으로 검증한다. preview의 transfer 처리와 정지 사진 ICC 현상은 각 입력 프로파일을 따르므로 동일 장면의 색감 일치는 실제 사진/프리뷰 측정이 추가로 필요하다. 자동 GPU 테스트는 같은 입력값·명시 profile에서 처리의 일관성을 검증한다.
+
+사용자 LUT 즐겨찾기는 별도 actor에서 hash ID·원본 cube·sRGB profile을 보존한다. 사진 편집과 live preview는 같은 bounded importer와 favorite 선택 UI를 쓴다. 앱 번들 자산·재배포 허가 manifest와는 분리한다.
+
+공식 API 근거: [Core Video profile 합성](https://developer.apple.com/documentation/corevideo/cvimagebuffercreatecolorspacefromattachments(_:)), [GPU CI/Metal command 통합](https://developer.apple.com/documentation/coreimage/cicontext/render(_:to:commandbuffer:bounds:colorspace:)), [픽셀 포맷 조회](https://developer.apple.com/documentation/avfoundation/avcapturevideodataoutput/availablevideopixelformattypes), [CAMetalLayer](https://developer.apple.com/documentation/quartzcore/cametallayer). 제3자 코드를 복사하지 않고 독립 작성했다.

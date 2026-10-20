@@ -73,8 +73,8 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         render(buffer)
     }
 
-    // Also used by the synthetic-frame integration test; caller uses frameQueue.
-    func render(_ buffer: CVPixelBuffer) {
+    // The capture delegate calls this only on frameQueue.
+    private func render(_ buffer: CVPixelBuffer) {
         let request: (CAMetalLayer, PreviewFrameState.Ticket, Double)? = lock.withLock {
             guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }

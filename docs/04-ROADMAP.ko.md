@@ -1,6 +1,6 @@
 # D. 개발 로드맵과 완료 기준
 
-일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2의 독립적인 SDR LUT 편집/처리 기반을 구현했다. Phase 1/2 전체 완료는 아니다. 실제 iPhone 검증은 대기 중이다.
+일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2의 SDR LUT 편집·실시간 프리뷰·즐겨찾기 기반을 구현했다. Phase 1/2 전체 완료는 아니다. 실제 iPhone 검증은 대기 중이다.
 
 | Phase | 구현 범위 | 선행 조건 | 기술 위험 | 테스트 방법 | 완료 기준 |
 | --- | --- | --- | --- | --- | --- |
@@ -27,4 +27,4 @@
 | F6 작업 내구성 | interruption/runtime error/background/settings timeout | 화면 복귀 후 재시작·pending capture/settings 명시 실패 | 설정 작업 ID·취소 회귀 테스트 추가, 실기기 fault test 대기 |
 | F7 번들 권한 | manifest gate | 허가·hash·profile 누락/경로 이탈 차단 | 로컬 회귀 테스트 통과 |
 
-다음 제품 gate는 실제 iPhone의 HEIF/JPEG 촬영·메타데이터와 SDR 편집 확인이다. 독립적으로 검증한 LUT 파서·CPU/GPU 수학·SDR 편집 구현은 존재하지만 실시간 LUT·HDR/Log·AI와 Phase 1/2 전체는 완료로 표시하지 않는다. 단계별 범위와 실행 근거는 08-STEP-VALIDATION.ko.md를 따른다.
+개발 진행 조건은 구현 단위의 자동 테스트 통과다. 사용자 지시에 따라 실제 iPhone 검증 대기는 다음 코드 작업을 막지 않는다. LUT 파서·CPU/GPU 수학·SDR 사진 편집·실시간 프리뷰·즐겨찾기를 구현했다. 기본 grain·HDR/Log·AI와 Phase 1/2의 실기기 품질 검증은 미완료다. 단계별 범위와 실행 근거는 08-STEP-VALIDATION.ko.md를 따른다.
