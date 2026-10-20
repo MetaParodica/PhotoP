@@ -50,7 +50,7 @@ actor MetalLUTRenderer {
         guard rgba.count == byteCount else { throw MetalLUTError.failed("RGBA 데이터 크기가 이미지와 다릅니다.") }
         // Preserve exact source bytes at strength zero, including transparent pixels.
         if intensity == 0 { return rgba }
-        if sourceBuffer?.length != byteCount {
+        if sourceBuffer?.length != byteCount || destinationBuffer?.length != byteCount {
             sourceBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
             destinationBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
         }

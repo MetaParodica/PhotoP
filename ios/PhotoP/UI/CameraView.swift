@@ -3,6 +3,7 @@ import SwiftUI
 @MainActor
 struct CameraView: View {
     @StateObject private var model = CameraModel()
+    @State private var showEditor = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -70,6 +71,12 @@ struct CameraView: View {
                     Text(message).font(.caption).multilineTextAlignment(.center).padding(.horizontal)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
+                if model.latestOriginal != nil {
+                    Button("LUT 사진 편집") {
+                        model.setActive(false)
+                        showEditor = true
+                    }.disabled(model.busy || model.snapshot.isApplyingSettings)
+                }
                 if model.latestOriginal != nil && !model.savedToPhotos {
                     Button("사진 앱에 저장") { Task { await model.saveLatestToPhotos() } }.disabled(model.busy || model.snapshot.isApplyingSettings)
                 }
@@ -78,8 +85,11 @@ struct CameraView: View {
         }
         .background(.black).foregroundStyle(.white)
         .sheet(isPresented: $model.showControls) { ManualControls(model: model) }
-        .onAppear { model.setActive(scenePhase == .active) }
-        .onChange(of: scenePhase) { _, phase in model.setActive(phase == .active) }
+        .fullScreenCover(isPresented: $showEditor, onDismiss: { model.setActive(scenePhase == .active) }) {
+            if let original = model.latestOriginal { LUTEditorView(original: original) }
+        }
+        .onAppear { model.setActive(scenePhase == .active && !showEditor) }
+        .onChange(of: scenePhase) { _, phase in model.setActive(phase == .active && !showEditor) }
         .onDisappear { model.setActive(false) }
         .preferredColorScheme(.dark)
     }
