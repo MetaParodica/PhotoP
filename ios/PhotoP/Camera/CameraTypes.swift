@@ -14,6 +14,7 @@ struct CameraCapabilities: Equatable, Sendable {
     let manualExposure: Bool
     let manualFocus: Bool
     let manualWhiteBalance: Bool
+    var photoFormats: [PhotoFileFormat] = [.jpeg]
 }
 
 struct ExposureSettings: Equatable, Sendable {
@@ -67,7 +68,7 @@ struct CameraSnapshot: Sendable {
 }
 
 enum CameraError: LocalizedError {
-    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto, settingsTimedOut
+    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto, settingsTimedOut, invalidPhotoData
     var errorDescription: String? {
         switch self {
         case .permission: return "설정에서 카메라 접근을 허용해 주세요."
@@ -77,6 +78,7 @@ enum CameraError: LocalizedError {
         case .interrupted: return "카메라 사용이 중단되었습니다. 촬영 화면에서 다시 시작해 주세요."
         case .invalidSettings: return "현재 렌즈에서 지원하지 않는 설정입니다."
         case .missingPhoto: return "촬영한 사진 데이터를 받지 못했습니다."
+        case .invalidPhotoData: return "받은 사진의 파일 포맷이 요청한 포맷과 다릅니다."
         case .settingsTimedOut: return "카메라 설정 변경이 지연되어 중단했습니다. 다시 시작해 주세요."
         }
     }

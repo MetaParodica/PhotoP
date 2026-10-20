@@ -19,7 +19,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var settingsTimeout: DispatchWorkItem?
     private var photoID: Int64?
     private var photoData: Data?
-    private var continuation: CheckedContinuation<Data, Error>?
+    private var photoFormat: PhotoFileFormat?
+    private var continuation: CheckedContinuation<CapturedPhoto, Error>?
     private let onSnapshot: @Sendable (CameraSnapshot) -> Void
 
     init(onSnapshot: @escaping @Sendable (CameraSnapshot) -> Void) {
@@ -156,7 +157,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             exposureBias: Double(d.minExposureTargetBias)...Double(d.maxExposureTargetBias),
             manualExposure: d.isExposureModeSupported(.custom),
             manualFocus: d.isLockingFocusWithCustomLensPositionSupported,
-            manualWhiteBalance: d.isWhiteBalanceModeSupported(.locked) && d.isLockingWhiteBalanceWithCustomDeviceGainsSupported
+            manualWhiteBalance: d.isWhiteBalanceModeSupported(.locked) && d.isLockingWhiteBalanceWithCustomDeviceGainsSupported,
+            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes)
         )
     }
 
@@ -301,14 +303,17 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         readoutTimer = nil
     }
 
-    func capturePhoto() async throws -> Data {
+    func capturePhoto(format: PhotoFileFormat) async throws -> CapturedPhoto {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
                     completion.resume(throwing: CameraError.interrupted); return
                 }
                 guard continuation == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
-                let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg])
+                guard output.availablePhotoCodecTypes.contains(format.codec) else {
+                    completion.resume(throwing: CameraError.invalidSettings); return
+                }
+                let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: format.codec])
                 settings.maxPhotoDimensions = output.maxPhotoDimensions
                 settings.photoQualityPrioritization = PhotoCapturePolicy.quality(for: input?.device.exposureMode)
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
@@ -320,6 +325,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     }
                 }
                 continuation = completion
+                photoFormat = format
                 photoID = settings.uniqueID
                 photoData = nil
                 output.capturePhoto(with: settings, delegate: self)
@@ -342,14 +348,17 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             guard photoID == id else { return }
             if let error { finishPhoto(.failure(error)) }
-            else if let photoData { finishPhoto(.success(photoData)) }
+            else if let photoData, let photoFormat {
+                do { finishPhoto(.success(try CapturedPhoto(data: photoData, expectedFormat: photoFormat))) }
+                catch { finishPhoto(.failure(error)) }
+            }
             else { finishPhoto(.failure(CameraError.missingPhoto)) }
         }
     }
 
-    private func finishPhoto(_ result: Result<Data, Error>) {
+    private func finishPhoto(_ result: Result<CapturedPhoto, Error>) {
         let pending = continuation
-        continuation = nil; photoID = nil; photoData = nil
+        continuation = nil; photoID = nil; photoData = nil; photoFormat = nil
         pending?.resume(with: result)
     }
 

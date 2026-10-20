@@ -7,6 +7,7 @@ final class CameraModel: ObservableObject {
                                                        state: .stopped, message: nil, revision: 0,
                                                        readout: nil, isApplyingSettings: false)
     @Published var settings = CameraSettings()
+    @Published var photoFormat: PhotoFileFormat = .jpeg
     @Published private(set) var busy = false
     @Published private(set) var latestOriginal: URL?
     @Published private(set) var savedToPhotos = false
@@ -18,7 +19,7 @@ final class CameraModel: ObservableObject {
         Task { @MainActor [weak self] in self?.receive(value) }
     }
     var previewSession: AVCaptureSession { service.session }
-    var canCapture: Bool { snapshot.state == .running && !busy && !snapshot.isApplyingSettings }
+    var canCapture: Bool { snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) { service.setActive(active) }
     func selectLens(_ id: String) {
@@ -32,6 +33,10 @@ final class CameraModel: ObservableObject {
             settings = CameraSettings()
             settings.exposure.iso = min(max(100, caps.iso.lowerBound), caps.iso.upperBound)
             settings.exposure.shutterSeconds = min(max(1.0 / 125, caps.shutterSeconds.lowerBound), caps.shutterSeconds.upperBound)
+        }
+        if let formats = value.capabilities?.photoFormats, !formats.contains(photoFormat), let first = formats.first {
+            photoFormat = first
+            message = "현재 렌즈에서 지원하지 않는 포맷이므로 \(first.title)로 전환했습니다."
         }
         snapshot = value
         if let text = value.message { message = text }
@@ -52,8 +57,8 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            let data = try await service.capturePhoto()
-            let url = try await PhotoStore.preserveOriginal(data)
+            let photo = try await service.capturePhoto(format: photoFormat)
+            let url = try await PhotoStore.preserveOriginal(photo)
             latestOriginal = url
             savedToPhotos = false
             try await PhotoStore.addToPhotos(url)

@@ -12,7 +12,12 @@ struct CameraView: View {
                 HStack {
                     Text("PhotoP").font(.headline)
                     Spacer()
-                    Text("JPEG · PHOTO").font(.caption.monospaced())
+                    Picker("사진 포맷", selection: $model.photoFormat) {
+                        ForEach(model.snapshot.capabilities?.photoFormats ?? [.jpeg]) { format in
+                            Text(format.title).tag(format)
+                        }
+                    }
+                    .disabled(!model.canCapture)
                     Button { model.showGrid.toggle() } label: { Image(systemName: "grid") }
                         .accessibilityLabel("삼분할 격자 전환")
                 }
