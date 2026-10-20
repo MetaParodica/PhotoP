@@ -27,7 +27,9 @@ struct CubeLUT: Sendable {
         var seen: Set<String> = []
         var values: [SIMD3<Double>] = []
 
-        for (index, raw) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+        // CRLF is one Swift Character; normalize before splitting on LF.
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+        for (index, raw) in normalized.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             guard raw.utf8.count <= 4096 else { throw CubeLUTError.invalid("\(index + 1)행이 너무 깁니다.") }
             let line = withoutComment(String(raw)).trimmingCharacters(in: .whitespacesAndNewlines)
             if line.isEmpty { continue }

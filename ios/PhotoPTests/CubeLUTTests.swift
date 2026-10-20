@@ -50,6 +50,12 @@ final class CubeLUTTests: XCTestCase {
             XCTAssertThrowsError(try CubeLUT.parse(text), text)
         }
     }
+    func testLFCRLFAndCRLineEndings() throws {
+        for ending in ["\n", "\r\n", "\r"] {
+            let text = cube(header: "# comment\nTITLE \"Line endings\"\nLUT_3D_SIZE 2").replacingOccurrences(of: "\n", with: ending)
+            XCTAssertEqual(try CubeLUT.parse(text).title, "Line endings")
+        }
+    }
     func testRejectsUnknownAndShaperFormats() {
         XCTAssertThrowsError(try CubeLUT.parse("LUT_1D_SIZE 2\n0 0 0\n1 1 1"))
         XCTAssertThrowsError(try CubeLUT.parse(cube(header: "LUT_3D_SIZE 2\nLUT_1D_SIZE 2")))
