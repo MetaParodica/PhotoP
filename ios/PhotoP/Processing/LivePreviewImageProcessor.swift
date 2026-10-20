@@ -27,11 +27,9 @@ final class LivePreviewImageProcessor {
               let transfer = metadata[kCVImageBufferTransferFunctionKey as String] as? String
         else { throw ImageEditingError.invalid("프리뷰 색 프로파일을 확인할 수 없습니다.") }
         let name: CFString
-        switch transfer {
-        case kCVImageBufferTransferFunction_ITU_R_709_2 as String: name = CGColorSpace.itur_709
-        case kCVImageBufferTransferFunction_sRGB as String: name = CGColorSpace.sRGB
-        default: throw ImageEditingError.invalid("HDR/Log 프리뷰는 아직 지원하지 않습니다.")
-        }
+        if transfer == kCVImageBufferTransferFunction_ITU_R_709_2 as String { name = CGColorSpace.itur_709 }
+        else if transfer == kCVImageBufferTransferFunction_sRGB as String { name = CGColorSpace.sRGB }
+        else { throw ImageEditingError.invalid("HDR/Log 프리뷰는 아직 지원하지 않습니다.") }
         guard let space = CGColorSpace(name: name) else { throw ImageEditingError.invalid("입력 색공간을 만들 수 없습니다.") }
         return space
     }
