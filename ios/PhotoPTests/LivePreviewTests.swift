@@ -70,7 +70,8 @@ final class LivePreviewTests: XCTestCase {
     func testRejectsUntaggedAndHDRFrames() throws {
         XCTAssertThrowsError(try LivePreviewImageProcessor.inputColorSpace(buffer(tagged: false)))
         XCTAssertThrowsError(try LivePreviewImageProcessor.inputColorSpace(buffer(transfer: kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ)))
-        XCTAssertEqual(try LivePreviewImageProcessor.inputColorSpace(buffer(transfer: kCVImageBufferTransferFunction_sRGB)).name, CGColorSpace.sRGB)
+        let srgb = try LivePreviewImageProcessor.inputColorSpace(buffer(transfer: kCVImageBufferTransferFunction_sRGB))
+        XCTAssertEqual(try srgbFrom709(128, space: srgb), 128, accuracy: 1)
     }
     func testFrameGateBoundsWorkAndReleasesResourcesAfterStop() throws {
         var state = PreviewFrameState()
