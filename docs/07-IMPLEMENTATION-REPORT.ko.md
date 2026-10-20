@@ -1,57 +1,42 @@
 # 현재 개발 단계 보고
 
-기준: 2026-10-21 KST. 작업 저장소: MetaParodica/PhotoP, 개발 브랜치 `codex/ios-camera-foundation`, Draft PR #1.
+기준: 2026-10-21 KST. 저장소 MetaParodica/PhotoP, 브랜치 `codex/ios-camera-foundation`, Draft PR #1. 각 구현 단위의 테스트 결과는 [단계별 검증 기록](08-STEP-VALIDATION.ko.md)에 유지한다.
 
-## 1. 현재 상태 확인
+## 구현 기능
 
-재개 시 최신 revision은 `1a9dbae0e2a6b711cd346429e1048cb55cb220a4`였다. PR #1은 열려 있고 main에는 초기 README만 있으며 기능 코드는 개발 브랜치에 있다. 이 revision의 macOS CI run 39453856953 / 39453849981은 성공했다. 기존 앱은 SwiftUI preview·JPEG·물리 렌즈·PRO 입력·격자·원본 보관/Photos export를 포함했다.
+- SwiftUI·AVFoundation preview, 물리 렌즈 선택, 전후면, 기본 격자.
+- 장치 지원 목록에서 HEIF/JPEG 선택, ImageIO로 실제 컨테이너 확인, 원본 bytes 보관 후 Photos add-only export.
+- 수동 ISO·셔터·EV·초점·WB, 독립 AE/AF/WB 잠금, 터치 AF/AE. 수동 또는 잠금 항목은 터치로 덮어쓰지 않는다.
+- 완료 콜백 집계, UUID로 중단·중복·이전 콜백 격리, timeout 복구. 설정 변경 중 촬영·렌즈 전환 차단.
+- 최대 4Hz 장치 readout과 snapshot 순서 보호. custom/locked exposure는 speed 우선순위를 사용한다.
+- 엄격한 3D .cube 파서와 CPU trilinear 기준 구현: 2~65 차원, 32MiB 제한, domain·행 수·숫자·헤더 검사, 강도 혼합, 입력 edge clamp.
 
-## 2. 이번 구현
+- Metal actor 렌더러와 CPU/GPU 픽셀 비교: LUT·pipeline·입출력 버퍼 재사용, premultiplied alpha, SDR clamp.
+- 마지막 사진의 비파괴 SDR/sRGB LUT 편집: 입력/출력 프로파일 확인, .cube import, 강도·원본 비교, 1024px 미리보기, 12.6MP 이하 JPEG export/공유.
+- 편집본 폴더에 recipe.json·look.cube 저장. 원본/LUT SHA256, 강도, 색 프로파일과 처리 순서 기록. 원본 bytes 유지, 실패 시 부분 폴더 정리.
 
-- custom/locked 노출에서 ISO·셔터를 보존하도록 사진 우선순위를 speed로 선택한다. AUTO는 quality를 유지한다.
-- 설정 적용은 노출/EV, 수동 초점, 수동 WB의 완료 콜백을 모두 기다린다.
-- 작업 UUID·step 집합으로 중복·순서 역전·중단 후 이전 콜백·이전 timeout을 구별한다.
-- 설정 변경 중 촬영·렌즈 전환을 차단한다. 중단/백그라운드/오류는 대기를 종료하고 timeout은 카메라 정지 후 재시작을 안내한다.
-- ISO·셔터·EV·정규화 렌즈 위치·WB 추정값과 조정 상태를 4Hz로 표시한다. 편집 가능한 요청값과 구분한다.
-- snapshot revision으로 UI에 늦게 도착한 과거 상태를 무시한다.
-- 수동 WB는 custom device gains 지원 여부까지 확인한다.
+## 참고 소스와 접근
 
-## 3. 참고 자료와 접근
+Apple AVFoundation·ImageIO·CoreGraphics·Metal·CryptoKit 공식 API에 기반해 독립 작성했다. 외부 소스·라이브러리·LUT·모델 weights를 추가하지 않았다. 프로젝트별 조사 및 라이선스는 [오픈소스 실사](03-OPEN-SOURCE-AUDIT.ko.md)에 별도 기록한다.
 
-Apple AVFoundation 공식 API를 기반으로 독립 작성했다. 외부 라이브러리나 LUT/모델 파일을 추가하지 않았다.
+카메라는 기존 직렬 큐, UI는 MainActor가 소유한다. Capture request와 실제 device readout, 지원 가능성과 현재 실행 가능성을 구분한다. LUT 수학에는 임의의 색공간 변환을 숨기지 않는다.
 
-- [Custom exposure](https://developer.apple.com/documentation/avfoundation/avcapturedevice/setexposuremodecustom(duration:iso:completionhandler:)): manual/locked 노출과 사진 품질 우선순위 계약.
-- [Focus completion](https://developer.apple.com/documentation/avfoundation/avcapturedevice/setfocusmodelocked(lensposition:completionhandler:)): 변경 완료 콜백.
-- [WB custom gains](https://developer.apple.com/documentation/avfoundation/avcapturedevice/islockingwhitebalancewithcustomdevicegainssupported): 수동 게인 지원 조건.
+## 주요 파일
 
-기존 직렬 큐·MainActor 구조를 유지한다. CameraControlApplication은 콜백 집계와 취소를 하드웨어 없이 검증하는 작은 값 타입이다. 범용 카메라 프레임워크나 별도 서비스 추상화는 추가하지 않았다.
+Camera: CameraService.swift, CameraModel.swift, CameraTypes.swift, CameraControlApplication.swift, CapturedPhoto.swift, PointMeteringPolicy.swift.
+UI: CameraView.swift, CameraPreview.swift, ManualControls.swift, CameraReadoutView.swift.
+저장: PhotoStore.swift. 처리: CubeLUT.swift, MetalLUTRenderer.swift, LUT.metal, SDRImage.swift, LUTPhotoEditor.swift. 편집 UI: LUTEditorView.swift. 관련 XCTest는 ios/PhotoPTests에 유지한다.
 
-## 4. 생성·수정 파일
+## 검증
 
-새 파일: CameraControlApplication.swift, CameraReadoutView.swift, CameraControlApplicationTests.swift.
+현재 Linux 작업 환경에는 Xcode가 없다. iPhone SDK unsigned build와 Simulator XCTest는 GitHub macOS CI로 실행한다. 실기기 검증은 수행하지 않았다. 각 단계 commit·CI·테스트 수·실패와 수정 결과는 단계별 기록이 기준이다.
 
-수정: CameraService.swift, CameraTypes.swift, CameraModel.swift, CameraView.swift, ManualControls.swift와 README·기술 설계·로드맵·검증 문서. 전체 diff는 PR Files changed가 기준이다.
+## 제약과 미완료
 
-## 5. 실행·테스트
+현재값은 장치 readout이며 최종 사진 EXIF가 아니다. WB는 게인에서 환산한 추정이다. 설정 콜백은 자동 AE/AF/AWB의 최종 수렴을 보장하지 않는다. speed 우선순위의 화질 tradeoff는 기기에서 평가해야 한다.
 
-재개 작업의 로컬 실행 환경은 사용할 수 없어 코드 수정은 GitHub에 직접 반영하고 macOS CI로 빌드·테스트했다. 실기기 실행을 수행했다고 주장하지 않는다.
+실제 iPhone 설치·HEIF 촬영·EXIF·전면 좌표·잠금 유지·인터럽션·FPS·발열은 미검증이다. portrait-only이며 현재 activeFormat 내 최대 치수를 요청한다. 앱 재시작 시 마지막 사진 복원·전체 갤러리·RAW/ProRAW·실시간 LUT·장노출·AI·영상·Android는 미완료다. 포함 LUT는 0개다. Phase 1과 Phase 2 전체를 완료로 표시하지 않는다.
 
-검증 대상 코드 revision: `e07f695d0ac91fb1902cd811207f116fa0504af1`.
+## 다음 검증
 
-기존 Swift 설정 테스트 5개에 회귀 테스트 7개를 추가했다. 새 검증은 전체 완료 대기, 중복 콜백, 중단 후 늦은 콜백, 이전 timeout, 겹친 작업 거부, custom/locked speed 정책, AUTO quality 정책이다. Python 자산 정책 테스트 7개는 유지한다.
-
-macOS CI에서 unsigned iPhone SDK build·권한 설명 검사·Swift XCTest 12개·Python 자산 정책 테스트 7개가 모두 통과했다.
-
-## 6. 제약과 미완료
-
-현재값은 장치 readout이며 최종 사진 EXIF가 아니다. WB는 게인을 Kelvin/Tint로 환산한 추정이다. 설정 완료 콜백은 자동 AE/AF/AWB의 최종 수렴을 보장하지 않는다. speed 우선순위의 계산 사진 화질 tradeoff·요청/장치/EXIF 일치 여부는 기기에서 확인해야 한다.
-
-실제 iPhone 설치·촬영·EXIF·화면 배치·발열·FPS·인터럽션·timeout 복구는 미검증이다. JPEG 전용·portrait-only, 현재 activeFormat 내 최대 치수 요청, 마지막 원본만 공유하는 제약은 유지된다. 앱 재시작 시 마지막 사진 복원·전체 갤러리·터치 AF·HEIF·AE/AF/WB Lock·RAW/ProRAW·LUT 렌더링·장노출·AI·영상·Android는 아직 미완료다. 포함 LUT는 0개다.
-
-## 7. 다음 단계
-
-실제 iPhone에서 요청값→완료 콜백→장치 현재값→촬영 EXIF를 대조하고 수동/자동 촬영의 화질을 비교한다. 설정 변경 중 잠금/홈/전화·기기 오류·렌즈 전환을 반복 검증한다. Phase 1의 터치 AF/노출 point·HEIF·기록/복구를 이어서 보완한 뒤 LUT 파서·Metal 단계로 넘어간다. Phase 1 전체는 아직 완료 처리하지 않는다.
-
-## 검증 기록
-
-[CI run 39456300371](https://github.com/MetaParodica/PhotoP/actions/runs/39456300371) 성공. 코드 revision `e07f695d0ac91fb1902cd811207f116fa0504af1`에서 iPhone SDK 빌드·권한 설명 검사·Simulator Swift 테스트 12개(0 failures)·Python 7개(OK)·빈 LUT 허용 목록 검증이 모두 통과했다. 문서만 수정하는 후속 commit과 실기기 검증은 이 코드 실행 증거와 구분한다.
+CPU/GPU 비교와 SDR 입출력 통합 테스트를 통과했다. 다음 제품 gate는 실제 iPhone의 사진·색관리·세션 복귀 검증과 실시간 LUT texture 경로 설계다. 현재 buffer 렌더러를 고주파 preview에 그대로 사용하지 않는다. 실기기에서는 요청값→완료 콜백→장치값→사진 EXIF를 대조한다.

@@ -114,7 +114,7 @@ Mean은 픽셀별 유효 가중치·평균을 누적한다. Lighten의 channel-w
 
 총시간 1~300초와 사용자 지정은 벽시계 목표다. sensorExposureSeconds, elapsedSeconds, acceptedFrameCount, droppedFrames, coverage와 실제 누적 노출을 별도 기록한다. 프레임 공백이 있는 궤적은 누락을 표시한다. 발열 serious에서 AI/프리뷰 해상도부터 낮추고 critical은 안전 종료·중간 결과 보존한다. 장노출 중 백그라운드 캡처를 보장하지 않는다.
 
-12MP RGBA32F 누적 텍스처 하나는 약 192MB, 48MP는 약 768MB다. 여기에 분산·마스크·입력·디스플레이 풀이 더해진다. 따라서 고해상도 full-frame FP32 다중 버퍼를 기본으로 두지 않는다. 축소 정렬+디스크 중간 파일+타일 누적을 비교하고 peak resident memory를 기기별로 제한한다. 재처리는 원프레임을 사용자가 보관한 작업만 완전 지원한다. mean 누적본만으로 median/재정렬을 재현할 수 없다.
+12.6MP RGBA32F 누적 텍스처 하나는 약 192MB, 48MP는 약 768MB다. 여기에 분산·마스크·입력·디스플레이 풀이 더해진다. 따라서 고해상도 full-frame FP32 다중 버퍼를 기본으로 두지 않는다. 축소 정렬+디스크 중간 파일+타일 누적을 비교하고 peak resident memory를 기기별로 제한한다. 재처리는 원프레임을 사용자가 보관한 작업만 완전 지원한다. mean 누적본만으로 median/재정렬을 재현할 수 없다.
 
 ## AI 구도 가이드
 
@@ -167,3 +167,12 @@ Mean은 픽셀별 유효 가중치·평균을 누적한다. Lighten의 channel-w
 | .github/workflows | macOS iOS build·Simulator 모델 테스트 |
 
 Android 디렉터리와 공통 C++ target은 지금 만들지 않는다. 계약이 fixture로 안정된 후 실제 재사용 코드에만 도입한다.
+
+
+## 구현된 LUT 수학 계약
+
+CubeLUT는 red-fastest 3D .cube를 파싱하고 Double trilinear 기준값을 제공한다. MetalLUTRenderer는 actor에서 동일한 수학을 수행한다. 입력은 호출자가 색변환을 마친 encoded sRGB premultiplied RGBA8, 출력은 같은 형식의 SDR이다. GPU 출력은 0~1 clamp·8bit 양자화를 수행한다. 알파를 분리한 RGB에 LUT를 적용하고 다시 premultiply한다. 강도 0은 bytes를 그대로 반환한다.
+
+렌더러는 12.6MP 이하의 버퍼만 허용하고 LUT·pipeline과 동일 크기의 입출력 Metal shared buffer를 재사용한다. 이 구현은 정지 사진용 기초 처리이며 영상 zero-copy preview 경로가 아니다. waitUntilCompleted는 actor 작업 스레드에서 호출하며 UI main thread에서 GPU 완료를 기다리지 않는다. HDR/Log·ICC 입력 해석·출력 인코딩은 별도 계층의 책임이다.
+
+근거: [Apple Metal command completion](https://developer.apple.com/documentation/metal/mtlcommandbuffer/waituntilcompleted()), [ImageIO thumbnail orientation](https://developer.apple.com/documentation/imageio/kcgimagesourcecreatethumbnailwithtransform). 구현은 독립 작성했으며 제3자 코드를 복사하지 않았다.

@@ -2,7 +2,7 @@
 
 ## 환경과 빌드
 
-최초 작업 환경은 Linux였으며, 재개 작업에서는 로컬 실행 환경이 연결되지 않아 GitHub에서 파일을 수정하고 macOS CI로 검증한다. 로컬에서 iOS 코드를 실행했다고 주장하지 않는다. GitHub macOS CI는 별도의 빌드·모델 테스트 증거이며 실기기 카메라 검증을 대체하지 않는다. 결과는 구현 보고서와 PR checks에서 확인한다.
+현재 작업 환경은 Linux이며 소스 편집과 Python 테스트를 수행할 수 있다. Xcode/Swift iOS SDK는 없어 iOS 빌드와 XCTest는 GitHub macOS CI에서 실행한다. 로컬에서 iOS 코드를 실행했다고 주장하지 않는다. GitHub macOS CI는 별도의 빌드·모델 테스트 증거이며 실기기 카메라 검증을 대체하지 않는다. 결과는 구현 보고서와 PR checks에서 확인한다.
 
 Mac에는 iOS 17 이상 SDK를 제공하는 Xcode와 XcodeGen이 필요하다. 최신 Xcode의 Swift compiler에서 Swift 5 language mode를 쓴다. XcodeGen 버전은 초기 CI 설치 결과를 기준으로 기록하고, 반복 가능한 릴리스 파이프라인에서 고정한다.
 
@@ -31,7 +31,9 @@ python3 scripts/check_lut_bundle.py
 
 Python 7개 테스트는 정상 asset, 미등록 파일, 불명 재배포권, research-only 상용 포함, hash 변조, 경로 이탈, 입력 프로파일 누락을 검사한다. 빈 LUT manifest가 통과해도 LUT 엔진을 구현했다는 뜻은 아니다.
 
-Swift XCTest 12개는 기존 설정 검증 5개와 새 콜백/촬영 정책 검증 7개다. 수동 범위·비유한값·경계값·미지원 controls·AUTO EV·WB/초점, 완료 콜백 순서/중복, 중단 후 늦은 콜백, 이전 timeout, 작업 중복, custom/locked/auto 사진 우선순위를 검사한다. `.github/workflows/ios.yml`이 XcodeGen 생성 → unsigned device build → 사용 가능한 iPhone simulator의 모델 테스트 → 자산 검사 순서로 수행한다. Simulator 카메라 실행은 성공 기준으로 쓰지 않는다.
+Swift XCTest 49개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
+
+`.github/workflows/ios.yml`은 XcodeGen 생성 → unsigned iPhone SDK build → iPhone Simulator XCTest → Python 자산 검사 순서로 실행한다. Simulator의 성공은 실제 카메라 촬영 성공 기준으로 쓰지 않는다.
 
 ## 실기기 매트릭스
 
@@ -41,7 +43,7 @@ Swift XCTest 12개는 기존 설정 검증 5개와 새 콜백/촬영 정책 검�
 | --- | --- | --- |
 | CAM-01 | 최초 실행에서 카메라 허용·거부 각각 수행 | 허용 시 프리뷰; 거부 시 명확한 설명, shutter 비활성; Settings 허용 후 재시도 |
 | CAM-02 | 후면 wide·ultrawide·tele와 전면 중 존재하는 것만 순환 | 물리 lensID·capabilities 갱신; 화면/저장 방향·mirror 정책 일치 |
-| CAM-03 | 10장 연속 촬영·빠른 중복 탭 | 1회 in-flight, JPEG decode 가능, 원본 수·Photos 수 대조 |
+| CAM-03 | 10장 연속 촬영·빠른 중복 탭 | 1회 in-flight, 선택한 HEIF/JPEG decode 가능, 원본 수·Photos 수 대조 |
 | CAM-04 | ISO·셔터 최소/중간/최대에서 설정 완료 대기 후 촬영 | 요청값·장치 현재값·ImageIO EXIF ISO/ExposureTime 비교. custom/locked .speed와 AUTO .quality 확인; 양자화·settling·화질 차이 평가 |
 | CAM-05 | AUTO EV -/0/+ 촬영 | 실제 밝기·bias metadata·노출 변화 확인. full manual에 EV가 적용된다고 표시하지 않음 |
 | CAM-06 | 수동 focus / AUTO 복귀, WB warm/cool/Tint | 카메라 동작·초점/색 변화 확인; 미지원 controls 비활성. Kelvin 정확도는 광원 기준 별도 측정 |
@@ -58,7 +60,7 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 
 화면의 현재값은 4Hz 장치 readout이며 최종 사진 EXIF가 아니다. 수동 WB의 Kelvin/Tint는 장치 게인으로부터 환산한 추정값이다. 초점 0~1은 실제 거리(m)가 아니다. AUTO 모드에서 설정 콜백이 도착한 뒤에도 AE/AF/AWB 수렴이 계속될 수 있다.
 
-현재 자동 테스트는 작업 ID·완료 집계와 촬영 정책의 순수 로직을 검증한다. 실제 AVFoundation 콜백 발생·장치값 정확도·timeout 복구·발열·화면 배치는 실기기 검증이 필요하다.
+자동 테스트는 카메라 정책 로직과 GPU·ImageIO 처리/파일 저장을 검증한다. 실제 AVFoundation 콜백 발생·장치값 정확도·timeout 복구·발열·화면 배치는 실기기 검증이 필요하다.
 
 ## 후속 처리 품질 gate
 
@@ -68,3 +70,15 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 - 영상: frame timestamp/stride·writer backpressure, 오디오 sync, 최대 지속시간·발열·디스크, bake off 원본 보존·태그.
 
 각 결과에는 commit, OS, 기종, lensID, active format, requested/applied settings, 사진 hash·metadata, FPS p50/p95·drop count, memory peak, thermal trace, 재현 절차를 남긴다. 미측정 값은 비워두고 '미검증'이라고 적는다.
+
+
+## SDR LUT 사진 편집 기기 확인
+
+- HEIF/JPEG·전후면·EXIF 1~8 방향에서 원본/편집본 방향과 크기를 대조한다.
+- sRGB·Display P3 차트의 ICC→sRGB 변환을 확인한다. HDR 사진은 SDR base만 편집하고 gain map이 편집본에 붙지 않는지 확인한다.
+- 사용자 .cube 가져오기 취소·손상·32MiB 초과·잘못된 domain을 검사한다. Log LUT를 sRGB로 오선언하면 색 결과는 보장되지 않는다.
+- 강도 변경·원본 비교·LUT 교체 중 오래된 preview가 덮어쓰지 않는지 확인한다.
+- 12.6MP 이하 원본과 12.6MP 초과 원본을 시험한다. 초과 시 저장 거부 안내, 원본 bytes 유지가 기준이다.
+- export 결과의 orientation=1·sRGB profile·원본/사용 LUT SHA256·JPEG 공유를 확인한다. 디스크 부족 시 부분 export 폴더가 없어야 한다.
+- 편집 진입/복귀·앱 background·재활성화 때 capture session이 편집 중 재시작하지 않는지 확인한다.
+- 실시간 카메라 LUT·HDR/Log·즐겨찾기·recipe 재열기는 구현 완료로 표시하지 않는다.

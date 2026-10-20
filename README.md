@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, and live device readouts. It does not yet implement RAW, LUT rendering, long exposure, composition AI or video.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. It does not yet implement RAW, live camera LUT rendering, long exposure, composition AI or video.
 
 ## Start here
 
@@ -13,6 +13,7 @@ An iPhone-first professional camera platform, with native Android planned after 
 - [Build, tests and device checklist](docs/05-BUILD-AND-VALIDATION.ko.md)
 - [LUT sources and asset policy](docs/06-LUT-CATALOG.ko.md)
 - [Implementation report](docs/07-IMPLEMENTATION-REPORT.ko.md)
+- [Step validation log](docs/08-STEP-VALIDATION.ko.md)
 
 ## Camera controls
 
@@ -36,8 +37,17 @@ Select a unique bundle ID and your signing team in Xcode; choose a physical iPho
 
 The baseline is iOS 17, built in Swift 5 language mode with complete concurrency diagnostics. A serial queue owns AVFoundation state. Strict Swift 6 migration is a later, separately validated change.
 
-Original JPEG bytes are retained in the app's Documents/Originals directory before Photos export. Deleting the app also deletes those app-local originals. A successful Photos export creates a separate Photos asset.
+Original HEIF/JPEG bytes are retained in the app's Documents/Originals directory before Photos export. Deleting the app also deletes those app-local originals. A successful Photos export creates a separate Photos asset.
 
 All 14 requested modes remain the product roadmap; the initial app exposes photo capture only. Frame duration, RAW/ProRAW, Log and maximum resolution depend on the device and active capture configuration.
 
 Third-party project and LUT rights are tracked separately. No third-party source code, LUT binaries, model weights or commercial UI assets are bundled in this initial implementation.
+
+
+## SDR LUT photo editor
+
+After capture, choose **LUT 사진 편집**. Confirm that your LUT expects and outputs sRGB, import a UTF-8 3D `.cube`, adjust strength and compare with the SDR original. The camera session pauses while this editor is open. Preview is limited to 1024px; full-resolution derivative export currently supports up to 12.6MP and explicitly rejects larger photos.
+
+The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB trilinear LUT → strength mix → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
+
+Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Favorite LUTs, recipe reopening, gallery browsing and live preview processing remain future work.
