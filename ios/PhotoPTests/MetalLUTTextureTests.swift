@@ -73,11 +73,16 @@ final class MetalLUTTextureTests: XCTestCase {
         let gpu = try MetalLUTTextureRenderer(lut: lut, device: device)
         let source = try texture(device)
         let queue = try XCTUnwrap(device.makeCommandQueue())
-        for destination in [source, try texture(device, width: 8), try texture(device, format: .rgba8Unorm_srgb)] {
+        for destination in [source, try texture(device, width: 8), try texture(device, format: .rgba16Float)] {
             let command = try XCTUnwrap(queue.makeCommandBuffer())
             XCTAssertThrowsError(try gpu.encode(source: source, destination: destination, intensity: 1, command: command))
         }
         let destination = try texture(device)
+        let srgbDescriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm_srgb, width: 7, height: 5, mipmapped: false)
+        srgbDescriptor.usage = .shaderRead
+        let srgb = try XCTUnwrap(device.makeTexture(descriptor: srgbDescriptor))
+        XCTAssertThrowsError(try gpu.encode(source: srgb, destination: destination, intensity: 1,
+                                           command: XCTUnwrap(queue.makeCommandBuffer())))
         for strength in [-0.1, .nan, 1.1] {
             let command = try XCTUnwrap(queue.makeCommandBuffer())
             XCTAssertThrowsError(try gpu.encode(source: source, destination: destination, intensity: strength, command: command))
