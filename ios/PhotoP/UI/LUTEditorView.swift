@@ -14,6 +14,7 @@ struct LUTEditorView: View {
     @State private var profileConfirmed = false
     @State private var showOriginal = false
     @State private var importing = false
+    @State private var showFavorites = false
     @State private var busy = false
     @State private var rendering = false
     @State private var message: String?
@@ -36,6 +37,17 @@ struct LUTEditorView: View {
                         .disabled(busy || title != nil)
                     Button(".cube 가져오기") { importing = true }
                         .disabled(!profileConfirmed || busy || originalImage == nil)
+                    HStack {
+                        Button("즐겨찾기 불러오기") { showFavorites = true }.disabled(busy || originalImage == nil)
+                        Button("즐겨찾기에 저장") {
+                            busy = true
+                            Task {
+                                defer { busy = false }
+                                do { try await editor.favoriteCurrent(); message = "LUT 즐겨찾기에 저장했습니다." }
+                                catch { message = error.localizedDescription }
+                            }
+                        }.disabled(busy || title == nil)
+                    }
                     Text("Log/HDR LUT는 아직 지원하지 않습니다.").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Text("강도")
@@ -82,6 +94,18 @@ struct LUTEditorView: View {
                         } catch { message = error.localizedDescription }
                     }
                 case .failure(let error): message = error.localizedDescription
+                }
+            }
+            .sheet(isPresented: $showFavorites) {
+                LUTFavoritesView { imported in
+                    busy = true
+                    defer { busy = false }
+                    title = try await editor.useLUT(imported)
+                    profileConfirmed = true
+                    exported = nil
+                    renderedImage = nil
+                    revision += 1
+                    message = nil
                 }
             }
             .task {

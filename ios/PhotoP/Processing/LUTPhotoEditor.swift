@@ -22,6 +22,7 @@ actor LUTPhotoEditor {
     private var renderer: MetalLUTRenderer?
     private var cubeData: Data?
     private var lut: CubeLUT?
+    private var lutDisplayName: String?
 
     init(original: URL) { self.original = original }
 
@@ -32,12 +33,22 @@ actor LUTPhotoEditor {
     }
 
     func importCube(_ url: URL) throws -> String {
-        let imported = try ImportedLUT.read(url)
+        try useLUT(ImportedLUT.read(url))
+    }
+
+    func useLUT(_ imported: ImportedLUT) throws -> String {
         let next = try MetalLUTRenderer(lut: imported.lut)
         lut = imported.lut
+        lutDisplayName = imported.displayName
         renderer = next
         cubeData = imported.data
         return imported.displayName
+    }
+
+    func favoriteCurrent() async throws {
+        guard let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
+        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT")
+        try await LUTLibrary.shared.save(imported)
     }
 
     func renderPreview(intensity: Double) async throws -> SDRImage {

@@ -80,15 +80,32 @@ final class CameraModel: ObservableObject {
         defer { busy = false }
         do {
             let imported = try await Task.detached(priority: .userInitiated) { try ImportedLUT.read(url) }.value
-            let preview = try await makeLivePreview(imported.lut)
-            try await service.setLivePreview(preview)
-            importedLiveLUT = imported
-            liveLUTTitle = imported.displayName
-            liveHasFrame = false
-            livePreview = preview
-            updateLiveIntensity()
-            message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
+            try await activateLiveLUT(imported)
         } catch { message = error.localizedDescription }
+    }
+
+    func useLiveLUT(_ imported: ImportedLUT) async throws {
+        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { throw CameraError.busy }
+        busy = true
+        defer { busy = false }
+        try await activateLiveLUT(imported)
+    }
+
+    private func activateLiveLUT(_ imported: ImportedLUT) async throws {
+        let preview = try await makeLivePreview(imported.lut)
+        try await service.setLivePreview(preview)
+        importedLiveLUT = imported
+        liveLUTTitle = imported.displayName
+        liveHasFrame = false
+        livePreview = preview
+        updateLiveIntensity()
+        message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
+    }
+
+    func favoriteLiveLUT() async {
+        guard let importedLiveLUT else { return }
+        do { try await LUTLibrary.shared.save(importedLiveLUT); message = "LUT 즐겨찾기에 저장했습니다." }
+        catch { message = error.localizedDescription }
     }
 
     func enableLiveLUT() async {

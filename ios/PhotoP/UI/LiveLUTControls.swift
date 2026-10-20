@@ -7,6 +7,7 @@ struct LiveLUTControls: View {
     @Environment(\.dismiss) private var dismiss
     @State private var profileConfirmed = false
     @State private var importing = false
+    @State private var showFavorites = false
 
     var body: some View {
         NavigationStack {
@@ -16,6 +17,10 @@ struct LiveLUTControls: View {
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                     Button(".cube 가져오기") { importing = true }
                         .disabled(!profileConfirmed || model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
+                    Button("즐겨찾기에서 불러오기") { showFavorites = true }
+                        .disabled(model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
+                    Button("현재 LUT 즐겨찾기에 저장") { Task { await model.favoriteLiveLUT() } }
+                        .disabled(model.liveLUTTitle == nil || model.busy)
                     Toggle("미리보기 적용", isOn: Binding(get: { model.livePreview != nil }, set: { value in
                         if value { Task { await model.enableLiveLUT() } }
                         else { model.disableLiveLUT() }
@@ -41,6 +46,9 @@ struct LiveLUTControls: View {
                 case .success(let url): Task { await model.importLiveLUT(url) }
                 case .failure(let error): model.message = error.localizedDescription
                 }
+            }
+            .sheet(isPresented: $showFavorites) {
+                LUTFavoritesView { imported in try await model.useLiveLUT(imported) }
             }
             .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
