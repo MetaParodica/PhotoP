@@ -1,0 +1,773 @@
+[
+  {
+    "repo": "IgnacioPro/iphone-raw",
+    "url": "https://github.com/IgnacioPro/iphone-raw",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:09.611382+00:00",
+    "full_name": "IgnacioPro/iphone-raw",
+    "default_branch": "main",
+    "language": "Swift",
+    "license": null,
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-02-08T11:56:41Z",
+    "updated_at": "2026-10-04T12:22:23Z",
+    "description": null,
+    "size": 154,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "5603070b4ab0507c1a28ae20ad6bc3d6837d1b35",
+      "date": "2026-02-08T11:56:36Z",
+      "message": "Add root README with setup and usage"
+    },
+    "retrieved_files": [
+      "README.md"
+    ]
+  },
+  {
+    "repo": "NextLevel/NextLevel",
+    "url": "https://github.com/NextLevel/NextLevel",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:09.670855+00:00",
+    "full_name": "NextLevel/NextLevel",
+    "default_branch": "main",
+    "language": "Swift",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-06-08T04:57:05Z",
+    "updated_at": "2026-10-19T10:45:46Z",
+    "description": "⬆️ Media Capture in Swift",
+    "size": 5322,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "2fa42500caf7edd7136d23b64d9ecb5684d93d07",
+      "date": "2026-06-08T04:56:35Z",
+      "message": "Release 0.19.1: bump version so SwiftPM resolves Swift 6 fixes"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "ooper-shlab/AVCamManual-Swift",
+    "url": "https://github.com/ooper-shlab/AVCamManual-Swift",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:09.700698+00:00",
+    "full_name": "ooper-shlab/AVCamManual-Swift",
+    "default_branch": "master",
+    "language": "Objective-C",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2017-08-08T15:45:20Z",
+    "updated_at": "2025-11-10T16:50:38Z",
+    "description": "A translation of Apple's sample code \"AVCamManual: Extending AVCam to Use Manual Capture API\" into Swift",
+    "size": 485,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "685c940ad56ebe41702fdec293b4ad5b7c73d3eb",
+      "date": "2017-08-08T15:44:53Z",
+      "message": "Adapted to Swift 4/Xcode 9 beta 5"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE.txt"
+    ]
+  },
+  {
+    "repo": "bjzhou/PhotonCamera",
+    "url": "https://github.com/bjzhou/PhotonCamera",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:09.614078+00:00",
+    "full_name": "bjzhou/PhotonCamera",
+    "default_branch": "main",
+    "language": "Kotlin",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T08:03:21Z",
+    "updated_at": "2026-10-20T15:17:07Z",
+    "description": "Open-source Android camera application focused on static photography",
+    "size": 189683,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "2eb10b2721be471eea7ebdf517e1626c2eae77cc",
+      "date": "2026-10-20T08:03:16Z",
+      "message": "feat: location tracking optimizations"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "LibreStatic/opencinecam",
+    "url": "https://github.com/LibreStatic/opencinecam",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:09.725347+00:00",
+    "full_name": "LibreStatic/opencinecam",
+    "default_branch": "main",
+    "language": "Kotlin",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-12T01:41:15Z",
+    "updated_at": "2026-10-19T17:00:07Z",
+    "description": "Native, open-source cinema camera for Android built on Camera2: OCLog2 LOG and HLG10 video, real 120/240 fps high-speed, RAW/DNG, focus peaking, zebra, false color, waveform and LUTs. No accounts, ads or telemetry, and nothing is shown as supported until the device proves it.",
+    "size": 13576,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "c76295b3c352912575f7b20e432b4a6b70f62284",
+      "date": "2026-10-12T01:31:29Z",
+      "message": "docs(release): add 0.4.2-beta release notes"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "ryuheiyokokawa/FilmFrame",
+    "url": "https://github.com/ryuheiyokokawa/FilmFrame",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:33.197066+00:00",
+    "full_name": "ryuheiyokokawa/FilmFrame",
+    "default_branch": "main",
+    "language": "Kotlin",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-05-07T03:40:46Z",
+    "updated_at": "2026-09-18T07:53:16Z",
+    "description": "Native Android camera app with film simulation LUTs, XPan crop, manual controls. Pixel 10 Pro only.",
+    "size": 5893,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "13f74c3ba8146406ece96127eefe3657476f00e9",
+      "date": "2026-05-07T03:40:45Z",
+      "message": "readme: add hero screenshot (#7)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "fortunto2/starlapse",
+    "url": "https://github.com/fortunto2/starlapse",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:33.288097+00:00",
+    "full_name": "fortunto2/starlapse",
+    "default_branch": "main",
+    "language": "Swift",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T09:04:16Z",
+    "updated_at": "2026-10-20T09:04:20Z",
+    "description": "Long-exposure astrophotography for iPhone: manual camera control that holds, frame stacking from 10s to an hour, star alignment, night time-lapse, and a dark-sky aiming overlay",
+    "size": 9253,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "714890a0a19b77281a84b9a6721de9ea2233f21e",
+      "date": "2026-10-20T09:04:13Z",
+      "message": "plan: science track (RNAAS, DOI release, NOIRLab, NLnet, STEP) and what is not eligible"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "deepskystacker/DSS",
+    "url": "https://github.com/deepskystacker/DSS",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:33.236576+00:00",
+    "full_name": "deepskystacker/DSS",
+    "default_branch": "master",
+    "language": "C",
+    "license": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-02T08:36:21Z",
+    "updated_at": "2026-10-08T02:18:56Z",
+    "description": "DeepSkyStacker",
+    "size": 944224,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "7989bcdd9db84a7cc0821e18bf84852c4ecb343d",
+      "date": "2026-10-02T07:55:08Z",
+      "message": "Update expiry of beta to the end of Decmber"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "opencv/opencv",
+    "url": "https://github.com/opencv/opencv",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:50.382219+00:00",
+    "full_name": "opencv/opencv",
+    "default_branch": "5.x",
+    "language": "C++",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T15:34:56Z",
+    "updated_at": "2026-10-20T15:40:48Z",
+    "description": "Open Source Computer Vision Library",
+    "size": 569710,
+    "homepage": "https://opencv.org",
+    "latest_commit": {
+      "sha": "e70c9dab7c9ecd9f4e9c82005d882b3cd2567256",
+      "date": "2026-10-20T14:39:10Z",
+      "message": "Merge pull request #30412 from lazerg:fix/issue-30410-mcc-chart-type"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "MetalPetal/MetalPetal",
+    "url": "https://github.com/MetalPetal/MetalPetal",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:50.386112+00:00",
+    "full_name": "MetalPetal/MetalPetal",
+    "default_branch": "master",
+    "language": "Objective-C",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2024-04-10T13:30:17Z",
+    "updated_at": "2026-10-19T11:54:11Z",
+    "description": "A GPU accelerated image and video processing framework built on Metal.",
+    "size": 17231,
+    "homepage": "https://github.com/MetalPetal/MetalPetal",
+    "latest_commit": {
+      "sha": "f9b78897bd4214bb097f352a1bde0a4f4a1e2ddb",
+      "date": "2023-02-21T03:47:14Z",
+      "message": "Add autoreleasepool in MTIAsyncVideoCompositionRequestHandler"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "BradLarson/GPUImage3",
+    "url": "https://github.com/BradLarson/GPUImage3",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:50.352819+00:00",
+    "full_name": "BradLarson/GPUImage3",
+    "default_branch": "main",
+    "language": "Swift",
+    "license": {
+      "key": "bsd-3-clause",
+      "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+      "spdx_id": "BSD-3-Clause",
+      "url": "https://api.github.com/licenses/bsd-3-clause",
+      "node_id": "MDc6TGljZW5zZTU="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2024-07-25T15:40:27Z",
+    "updated_at": "2026-10-15T04:38:45Z",
+    "description": "GPUImage 3 is a BSD-licensed Swift framework for GPU-accelerated video and image processing using Metal.",
+    "size": 5058,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "84466fc344e1220238c1c07e94e91207caaabe51",
+      "date": "2024-02-19T01:05:24Z",
+      "message": "Enable Sharpen operation, update README. (#135)"
+    },
+    "retrieved_files": [
+      "README.md"
+    ]
+  },
+  {
+    "repo": "Silence-GitHub/BBMetalImage",
+    "url": "https://github.com/Silence-GitHub/BBMetalImage",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:50.305498+00:00",
+    "full_name": "Silence-GitHub/BBMetalImage",
+    "default_branch": "master",
+    "language": "Swift",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2022-10-10T06:57:14Z",
+    "updated_at": "2026-09-07T12:02:55Z",
+    "description": "A high performance Swift library for GPU-accelerated image/video processing based on Metal.",
+    "size": 96867,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "4313f835dab00c225ede1111679c7bae2f0bb8a2",
+      "date": "2021-10-25T17:57:01Z",
+      "message": "Update demo"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "AcademySoftwareFoundation/OpenColorIO",
+    "url": "https://github.com/AcademySoftwareFoundation/OpenColorIO",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:43:54.537593+00:00",
+    "full_name": "AcademySoftwareFoundation/OpenColorIO",
+    "default_branch": "main",
+    "language": "C++",
+    "license": {
+      "key": "bsd-3-clause",
+      "name": "BSD 3-Clause \"New\" or \"Revised\" License",
+      "spdx_id": "BSD-3-Clause",
+      "url": "https://api.github.com/licenses/bsd-3-clause",
+      "node_id": "MDc6TGljZW5zZTU="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-01T02:11:10Z",
+    "updated_at": "2026-10-19T13:54:11Z",
+    "description": "A color management framework for visual effects and animation.",
+    "size": 69340,
+    "homepage": "https://opencolorio.org",
+    "latest_commit": {
+      "sha": "22dd9c4faa0d1b7cfb3d64d1a6e9cb454acc6cfd",
+      "date": "2026-10-01T01:27:18Z",
+      "message": "Adsk Contrib - Update notes for 2.6 release (#2355)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "TomPoczos/PoLUT",
+    "url": "https://github.com/TomPoczos/PoLUT",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:11.705158+00:00",
+    "full_name": "TomPoczos/PoLUT",
+    "default_branch": "main",
+    "language": "HTML",
+    "license": {
+      "key": "gpl-3.0",
+      "name": "GNU General Public License v3.0",
+      "spdx_id": "GPL-3.0",
+      "url": "https://api.github.com/licenses/gpl-3.0",
+      "node_id": "MDc6TGljZW5zZTk="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-08-04T14:17:26Z",
+    "updated_at": "2026-10-06T18:36:09Z",
+    "description": null,
+    "size": 813126,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "8172157b6600394d718ea2091c501805b2108eb5",
+      "date": "2026-08-04T14:17:15Z",
+      "message": "spectrafilm-digitizer: fix Ilford Multigrade IV RC print-dark bug, share paper anchor across products"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "cedeber/hald-clut",
+    "url": "https://github.com/cedeber/hald-clut",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:11.687585+00:00",
+    "full_name": "cedeber/hald-clut",
+    "default_branch": "master",
+    "language": "Shell",
+    "license": {
+      "key": "gpl-3.0",
+      "name": "GNU General Public License v3.0",
+      "spdx_id": "GPL-3.0",
+      "url": "https://api.github.com/licenses/gpl-3.0",
+      "node_id": "MDc6TGljZW5zZTk="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2023-10-23T22:48:40Z",
+    "updated_at": "2026-10-20T09:23:52Z",
+    "description": "A collection of HaldCLUT",
+    "size": 755039,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "3b3180f82d4dcea1e6e8c5648473539a910d7f49",
+      "date": "2019-03-21T11:17:41Z",
+      "message": "Add Pixelmator Pro filters"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "NatronGitHub/clut",
+    "url": "https://github.com/NatronGitHub/clut",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:11.763734+00:00",
+    "full_name": "NatronGitHub/clut",
+    "default_branch": "master",
+    "language": null,
+    "license": null,
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2016-09-16T20:08:02Z",
+    "updated_at": "2026-10-18T03:11:41Z",
+    "description": "HaldCLUT Presets",
+    "size": 75820,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "af7b50d4caf6244fb6895a647f5b6a84efe7931a",
+      "date": "2016-09-16T20:08:02Z",
+      "message": "Update README.md"
+    },
+    "retrieved_files": [
+      "README.md"
+    ]
+  },
+  {
+    "repo": "graplo/obs-film-luts",
+    "url": "https://github.com/graplo/obs-film-luts",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:11.735896+00:00",
+    "full_name": "graplo/obs-film-luts",
+    "default_branch": "main",
+    "language": null,
+    "license": null,
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-09-20T16:10:29Z",
+    "updated_at": "2026-09-20T16:10:33Z",
+    "description": null,
+    "size": 38731,
+    "homepage": null,
+    "latest_commit": {
+      "sha": "2cab0d401b8b525aed2e3fb3a334f8b29834961d",
+      "date": "2026-09-20T16:10:23Z",
+      "message": "Completando los films faltantes"
+    },
+    "retrieved_files": [
+      "README.md"
+    ]
+  },
+  {
+    "repo": "YahiaAngelo/Film-Simulator",
+    "url": "https://github.com/YahiaAngelo/Film-Simulator",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:24.069705+00:00",
+    "full_name": "YahiaAngelo/Film-Simulator",
+    "default_branch": "main",
+    "language": "Kotlin",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-05-29T15:11:59Z",
+    "updated_at": "2026-10-19T03:18:07Z",
+    "description": "Film Simulator KMM App",
+    "size": 93450,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "f4f640b091f86b22f73af7931da99398214b090a",
+      "date": "2026-05-29T15:07:18Z",
+      "message": "Version 0.6.3 (15)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE.txt"
+    ]
+  },
+  {
+    "repo": "DeMeerleerGilles/Lumix-film-simulation",
+    "url": "https://github.com/DeMeerleerGilles/Lumix-film-simulation",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:29.732171+00:00",
+    "full_name": "DeMeerleerGilles/Lumix-film-simulation",
+    "default_branch": "main",
+    "language": null,
+    "license": null,
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-03-13T15:31:54Z",
+    "updated_at": "2026-10-20T15:41:49Z",
+    "description": "LUT for film simulation on Lumix cameras",
+    "size": 21784,
+    "homepage": "",
+    "latest_commit": {
+      "sha": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "date": "2026-03-13T15:31:53Z",
+      "message": "Fix formatting issues in README.md"
+    },
+    "retrieved_files": [
+      "README.md"
+    ]
+  },
+  {
+    "repo": "darktable-org/darktable",
+    "url": "https://github.com/darktable-org/darktable",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:29.743976+00:00",
+    "full_name": "darktable-org/darktable",
+    "default_branch": "master",
+    "language": "C",
+    "license": {
+      "key": "gpl-3.0",
+      "name": "GNU General Public License v3.0",
+      "spdx_id": "GPL-3.0",
+      "url": "https://api.github.com/licenses/gpl-3.0",
+      "node_id": "MDc6TGljZW5zZTk="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T15:42:59Z",
+    "updated_at": "2026-10-20T15:43:04Z",
+    "description": "darktable is an open source photography workflow application and raw developer",
+    "size": 1368276,
+    "homepage": "https://www.darktable.org",
+    "latest_commit": {
+      "sha": "70409b7e47c4113dc6d8a8719c0c4f9196f292a2",
+      "date": "2026-10-20T15:42:58Z",
+      "message": "Improved --opencl-diffstat data"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "RawTherapee/RawTherapee",
+    "url": "https://github.com/RawTherapee/RawTherapee",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:45.741985+00:00",
+    "full_name": "RawTherapee/RawTherapee",
+    "default_branch": "dev",
+    "language": "C++",
+    "license": {
+      "key": "gpl-3.0",
+      "name": "GNU General Public License v3.0",
+      "spdx_id": "GPL-3.0",
+      "url": "https://api.github.com/licenses/gpl-3.0",
+      "node_id": "MDc6TGljZW5zZTk="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T12:01:53Z",
+    "updated_at": "2026-10-20T15:12:58Z",
+    "description": "A powerful cross-platform raw photo processing program",
+    "size": 207270,
+    "homepage": "https://rawtherapee.com",
+    "latest_commit": {
+      "sha": "b2ee504c47e5e6d5e054395aa12bf1fe43bd1c3c",
+      "date": "2026-10-13T05:36:55Z",
+      "message": "Fix Uses reversed RGB/XYZ conversion matrices in Selective Editing CAM16 final gamut compression and others locations (#7777)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "mergeos-bounties/PoseGuide",
+    "url": "https://github.com/mergeos-bounties/PoseGuide",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:45.741789+00:00",
+    "full_name": "mergeos-bounties/PoseGuide",
+    "default_branch": "master",
+    "language": "Python",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-07-21T22:08:04Z",
+    "updated_at": "2026-10-12T10:48:59Z",
+    "description": "PoseGuide: photography pose guidance and composition coaching",
+    "size": 275,
+    "homepage": "https://mergeos.shop",
+    "latest_commit": {
+      "sha": "acd3e075240330d8ab6bbb3615a7a848b3b88072",
+      "date": "2026-07-21T22:08:04Z",
+      "message": "feat: add poses show command with pretty JSON output (fixes #53) (#117)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "ngocquy020196/Composition-Grid",
+    "url": "https://github.com/ngocquy020196/Composition-Grid",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:49.045740+00:00",
+    "full_name": "ngocquy020196/Composition-Grid",
+    "default_branch": "main",
+    "language": "HTML",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-06-18T17:49:30Z",
+    "updated_at": "2026-08-28T09:10:15Z",
+    "description": "A lightweight Chrome, Firefox & Microsoft Edge extension that overlays Rule of Thirds, Golden Ratio, Fibonacci Spiral, and Golden Triangle composition grids directly onto images and video on any website. Perfect for photographers, designers, and visual artists who want to analyze compositional balance without leaving the browser.",
+    "size": 3402,
+    "homepage": "https://composition-grid.ngocquy.dev/?ref=github",
+    "latest_commit": {
+      "sha": "0f4da229d61e4bba0645d979fb27212a7e538c64",
+      "date": "2026-06-18T17:49:28Z",
+      "message": "chore(landing): bump structured data softwareVersion to 1.1.6"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "google-ai-edge/mediapipe",
+    "url": "https://github.com/google-ai-edge/mediapipe",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:44:48.981482+00:00",
+    "full_name": "google-ai-edge/mediapipe",
+    "default_branch": "master",
+    "language": "C++",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-20T13:42:34Z",
+    "updated_at": "2026-10-20T14:39:36Z",
+    "description": "Cross-platform, customizable ML solutions for live and streaming media.",
+    "size": 609687,
+    "homepage": "https://ai.google.dev/edge/mediapipe",
+    "latest_commit": {
+      "sha": "4970c6a4926b3e0e8d1d663056a0b5eb980902ca",
+      "date": "2026-10-20T13:42:22Z",
+      "message": "Rollback due to breakage in gmscore.build."
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  },
+  {
+    "repo": "open-mmlab/mmpose",
+    "url": "https://github.com/open-mmlab/mmpose",
+    "http_status": 200,
+    "checked_at": "2026-10-20T15:45:05.061198+00:00",
+    "full_name": "open-mmlab/mmpose",
+    "default_branch": "main",
+    "language": "Python",
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2025-08-04T07:30:50Z",
+    "updated_at": "2026-10-20T14:46:15Z",
+    "description": "OpenMMLab Pose Estimation Toolbox and Benchmark.",
+    "size": 56136,
+    "homepage": "https://mmpose.readthedocs.io/en/latest/",
+    "latest_commit": {
+      "sha": "759b39c13fea6ba094afc1fa932f51dc1b11cbf9",
+      "date": "2025-08-04T07:30:49Z",
+      "message": "Update simcc_3d_label.py (#3112)"
+    },
+    "retrieved_files": [
+      "README.md",
+      "LICENSE"
+    ]
+  }
+]

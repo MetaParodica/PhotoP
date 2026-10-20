@@ -1,0 +1,21 @@
+[
+  {
+    "id": "bb91bcfe76af5ed6f59c449ea8f337f45f82798e",
+    "short_id": "bb91bcfe",
+    "created_at": "2026-10-20T14:56:37.000+02:00",
+    "parent_ids": [
+      "b67ab356137f4f6cf66b67e35b13cfdd350e8c22"
+    ],
+    "title": "Closes #2007 again",
+    "message": "Closes #2007 again\n",
+    "author_name": "Cyril Richard",
+    "author_email": "cyril.richard42@gmail.com",
+    "authored_date": "2026-10-20T14:56:37.000+02:00",
+    "committer_name": "Cyril Richard",
+    "committer_email": "cyril.richard42@gmail.com",
+    "committed_date": "2026-10-20T14:56:37.000+02:00",
+    "trailers": {},
+    "extended_trailers": {},
+    "web_url": "https://gitlab.com/free-astro/siril/-/commit/bb91bcfe76af5ed6f59c449ea8f337f45f82798e"
+  }
+]
