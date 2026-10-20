@@ -37,10 +37,11 @@ final class LivePreviewTests: XCTestCase {
         blit.endEncoding()
         return buffer
     }
-    private func srgbFrom709(_ byte: Double) -> Double {
-        let value = byte / 255
-        let linear = value < 0.081 ? value / 4.5 : pow((value + 0.099) / 1.099, 1 / 0.45)
-        return (linear <= 0.0031308 ? linear * 12.92 : 1.055 * pow(linear, 1 / 2.4) - 0.055) * 255
+    private func srgbFrom709(_ byte: Double, space: CGColorSpace) throws -> Double {
+        // Independent CPU ColorSync reference, using the same explicitly declared profile.
+        let color = try XCTUnwrap(CGColor(colorSpace: space, components: [byte / 255, byte / 255, byte / 255, 1]))
+        let converted = try XCTUnwrap(color.converted(to: XCTUnwrap(CGColorSpace(name: CGColorSpace.sRGB)), intent: .relativeColorimetric, options: nil))
+        return try XCTUnwrap(converted.components?.first) * 255
     }
     func testYUVColorTransformOrientationAndLetterboxingOnGPU() throws {
         let (device, lut) = try fixture()
@@ -60,7 +61,7 @@ final class LivePreviewTests: XCTestCase {
         for row in 0..<8 {
             for column in 0..<4 {
                 let offset = row * 256 + column * 4
-                let expected = (row < 2 || row >= 6) ? 0 : srgbFrom709(row < 4 ? 64 : 192)
+                let expected = (row < 2 || row >= 6) ? 0 : try srgbFrom709(row < 4 ? 64 : 192, space: LivePreviewImageProcessor.inputColorSpace(pixelBuffer))
                 for channel in 0..<3 { XCTAssertEqual(Double(data[offset + channel]), expected, accuracy: 3) }
                 XCTAssertEqual(data[offset + 3], 255)
             }

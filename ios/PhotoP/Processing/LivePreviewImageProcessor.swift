@@ -27,7 +27,7 @@ final class LivePreviewImageProcessor {
               let transfer = metadata[kCVImageBufferTransferFunctionKey as String] as? String
         else { throw ImageEditingError.invalid("프리뷰 색 프로파일을 확인할 수 없습니다.") }
         let name: CFString
-        if transfer == kCVImageBufferTransferFunction_ITU_R_709_2 as String { name = CGColorSpace.itur_709 }
+        if transfer == kCVImageBufferTransferFunction_ITU_R_709_2 as String { name = CGColorSpace.coreMedia709 }
         else if transfer == kCVImageBufferTransferFunction_sRGB as String { name = CGColorSpace.sRGB }
         else { throw ImageEditingError.invalid("HDR/Log 프리뷰는 아직 지원하지 않습니다.") }
         guard let space = CGColorSpace(name: name) else { throw ImageEditingError.invalid("입력 색공간을 만들 수 없습니다.") }
@@ -51,7 +51,9 @@ final class LivePreviewImageProcessor {
         }
         guard let source, let processed else { throw MetalLUTError.failed("프리뷰 texture 메모리를 확보할 수 없습니다.") }
         let scaled = image.transformed(by: CGAffineTransform(scaleX: Double(width) / Double(w), y: Double(height) / Double(h)))
-        context.render(scaled, to: source, commandBuffer: command,
+        // CI uses bottom-left coordinates; the presentation texture uses top-left rows.
+        let upright = scaled.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
+        context.render(upright, to: source, commandBuffer: command,
                        bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
         try renderer.encode(source: source, destination: processed, intensity: intensity, command: command)
         return processed
