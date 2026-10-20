@@ -37,7 +37,12 @@ actor LUTPhotoEditor {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         // Read a bounded amount even if file-size metadata is stale or absent.
-        let data = try handle.read(upToCount: CubeLUT.maximumFileBytes + 1) ?? Data()
+        var data = Data()
+        while data.count <= CubeLUT.maximumFileBytes {
+            let remaining = CubeLUT.maximumFileBytes + 1 - data.count
+            guard let chunk = try handle.read(upToCount: min(64 * 1024, remaining)), !chunk.isEmpty else { break }
+            data.append(chunk)
+        }
         guard data.count <= CubeLUT.maximumFileBytes, let text = String(data: data, encoding: .utf8)
         else { throw ImageEditingError.invalid("UTF-8 .cube 파일은 32MiB 이하여야 합니다.") }
         let parsed = try CubeLUT.parse(text)

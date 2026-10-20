@@ -32,6 +32,7 @@ struct CameraPreview: UIViewRepresentable {
             connection.isVideoMirrored = mirrored
         }
     }
+    @MainActor
     final class Coordinator: NSObject {
         var parent: CameraPreview
         init(_ parent: CameraPreview) { self.parent = parent }

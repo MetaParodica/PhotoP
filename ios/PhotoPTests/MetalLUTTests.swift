@@ -54,4 +54,10 @@ final class MetalLUTTests: XCTestCase {
             } catch { XCTAssertTrue(error is MetalLUTError) }
         }
     }
+    func testRejectsFloatDomainOverflowAndExtremeOutputs() throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal GPU unavailable") }
+        XCTAssertThrowsError(try renderer(header: "DOMAIN_MIN -3e38 0 0\nDOMAIN_MAX 3e38 1 1\nLUT_3D_SIZE 2") { SIMD3($0, $1, $2) })
+        XCTAssertThrowsError(try renderer { SIMD3($0 == 0 ? -3e38 : 3e38, $1, $2) })
+    }
+
 }

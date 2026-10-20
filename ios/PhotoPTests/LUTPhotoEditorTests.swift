@@ -111,4 +111,15 @@ final class LUTPhotoEditorTests: XCTestCase {
         XCTAssertThrowsError(try LUTPhotoEditor.writeBundle(jpeg: Data([1]), cube: identityCube(), recipe: recipe, in: root))
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), [])
     }
+    func testImportRejectsInvalidUTF8AndOversizedFiles() async throws {
+        let root = try folder()
+        let editor = LUTPhotoEditor(original: try imageFile(in: root))
+        let url = root.appendingPathComponent("input.cube")
+        for data in [Data([0xff, 0xfe]), Data(repeating: 32, count: CubeLUT.maximumFileBytes + 1)] {
+            try data.write(to: url)
+            do { _ = try await editor.importCube(url); XCTFail("Expected bounded UTF-8 import rejection") }
+            catch { XCTAssertTrue(error is ImageEditingError) }
+        }
+    }
+
 }
