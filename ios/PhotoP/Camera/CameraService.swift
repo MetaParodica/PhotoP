@@ -183,7 +183,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         guard session.canAddOutput(videoOutput) else { throw CameraError.configuration }
                         session.addOutput(videoOutput)
                         guard let format = [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
-                            .first(where: { videoOutput.availableVideoCVPixelFormatTypes.contains($0) }),
+                            .first(where: { videoOutput.availableVideoPixelFormatTypes.contains($0) }),
                               let connection = videoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90)
                         else { throw CameraError.configuration }
                         videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
@@ -199,6 +199,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         removeLivePreviewRequested = false
                         videoOutput.setSampleBufferDelegate(preview, queue: preview.frameQueue)
                         session.commitConfiguration()
+                        configureDimensions()
                         preview.setRunning(true)
                         publish()
                         completion.resume()
@@ -227,6 +228,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             session.beginConfiguration()
             session.removeOutput(videoOutput)
             session.commitConfiguration()
+            configureDimensions()
         }
         livePreview = nil
         removeLivePreviewRequested = false
