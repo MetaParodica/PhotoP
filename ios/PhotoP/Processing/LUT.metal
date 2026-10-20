@@ -58,7 +58,7 @@ vertex PreviewVertex photoPPreviewVertex(uint index [[vertex_id]], constant floa
     return {float4(positions[index] * scale, 0, 1), coordinates[index]};
 }
 
-fragment float4 photoPPreviewFragment(PreviewVertex vertex [[stage_in]], texture2d<float> image [[texture(0)]]) {
-    constexpr sampler sample(filter::linear, address::clamp_to_edge);
-    return image.sample(sample, vertex.uv);
+fragment float4 photoPPreviewFragment(PreviewVertex inputVertex [[stage_in]], texture2d<float> image [[texture(0)]]) {
+    constexpr sampler previewSampler(filter::linear, address::clamp_to_edge);
+    return image.sample(previewSampler, inputVertex.uv);
 }
