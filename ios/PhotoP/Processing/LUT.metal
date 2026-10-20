@@ -46,3 +46,19 @@ kernel void photoPLUTTexture(texture2d<float, access::read> source [[texture(0)]
     if (position.x >= source.get_width() || position.y >= source.get_height()) return;
     destination.write(applyLUT(source.read(position), table, p), position);
 }
+
+struct PreviewVertex {
+    float4 position [[position]];
+    float2 uv;
+};
+
+vertex PreviewVertex photoPPreviewVertex(uint index [[vertex_id]], constant float2 &scale [[buffer(0)]]) {
+    const float2 positions[] = {float2(-1, -1), float2(1, -1), float2(-1, 1), float2(1, 1)};
+    const float2 coordinates[] = {float2(0, 1), float2(1, 1), float2(0, 0), float2(1, 0)};
+    return {float4(positions[index] * scale, 0, 1), coordinates[index]};
+}
+
+fragment float4 photoPPreviewFragment(PreviewVertex vertex [[stage_in]], texture2d<float> image [[texture(0)]]) {
+    constexpr sampler sample(filter::linear, address::clamp_to_edge);
+    return image.sample(sample, vertex.uv);
+}
