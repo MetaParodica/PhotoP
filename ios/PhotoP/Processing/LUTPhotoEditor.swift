@@ -32,25 +32,12 @@ actor LUTPhotoEditor {
     }
 
     func importCube(_ url: URL) throws -> String {
-        let access = url.startAccessingSecurityScopedResource()
-        defer { if access { url.stopAccessingSecurityScopedResource() } }
-        let handle = try FileHandle(forReadingFrom: url)
-        defer { try? handle.close() }
-        // Read a bounded amount even if file-size metadata is stale or absent.
-        var data = Data()
-        while data.count <= CubeLUT.maximumFileBytes {
-            let remaining = CubeLUT.maximumFileBytes + 1 - data.count
-            guard let chunk = try handle.read(upToCount: min(64 * 1024, remaining)), !chunk.isEmpty else { break }
-            data.append(chunk)
-        }
-        guard data.count <= CubeLUT.maximumFileBytes, let text = String(data: data, encoding: .utf8)
-        else { throw ImageEditingError.invalid("UTF-8 .cube 파일은 32MiB 이하여야 합니다.") }
-        let parsed = try CubeLUT.parse(text)
-        let next = try MetalLUTRenderer(lut: parsed)
-        lut = parsed
+        let imported = try ImportedLUT.read(url)
+        let next = try MetalLUTRenderer(lut: imported.lut)
+        lut = imported.lut
         renderer = next
-        cubeData = data
-        return parsed.title ?? url.deletingPathExtension().lastPathComponent
+        cubeData = imported.data
+        return imported.displayName
     }
 
     func renderPreview(intensity: Double) async throws -> SDRImage {

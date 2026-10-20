@@ -4,10 +4,10 @@ import Metal
 @testable import PhotoP
 
 final class LivePreviewTests: XCTestCase {
-    private func buffer(transfer: CFString = kCVImageBufferTransferFunction_ITU_R_709_2, tagged: Bool = true) throws -> CVPixelBuffer {
+    private func buffer(transfer: CFString = kCVImageBufferTransferFunction_ITU_R_709_2, tagged: Bool = true, format: OSType = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) throws -> CVPixelBuffer {
         var result: CVPixelBuffer?
         let attributes: [CFString: Any] = [kCVPixelBufferMetalCompatibilityKey: true, kCVPixelBufferIOSurfacePropertiesKey: [:]]
-        XCTAssertEqual(CVPixelBufferCreate(kCFAllocatorDefault, 4, 4, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, attributes as CFDictionary, &result), kCVReturnSuccess)
+        XCTAssertEqual(CVPixelBufferCreate(kCFAllocatorDefault, 4, 4, format, attributes as CFDictionary, &result), kCVReturnSuccess)
         let resultBuffer = try XCTUnwrap(result)
         if tagged {
             CVBufferSetAttachment(resultBuffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_709_2, .shouldPropagate)
@@ -44,11 +44,17 @@ final class LivePreviewTests: XCTestCase {
         return try XCTUnwrap(converted.components?.first) * 255
     }
     func testYUVColorTransformOrientationAndLetterboxingOnGPU() throws {
+        try compareYUV(format: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+    }
+    func testVideoRangeYUVLevelsOnGPU() throws {
+        try compareYUV(format: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange)
+    }
+    private func compareYUV(format: OSType) throws {
         let (device, lut) = try fixture()
         let processor = try LivePreviewImageProcessor(lut: lut, device: device)
         let display = try MetalPreviewDisplay(device: device)
         let command = try XCTUnwrap(device.makeCommandQueue()?.makeCommandBuffer())
-        let pixelBuffer = try buffer()
+        let pixelBuffer = try buffer(format: format)
         let texture = try processor.encode(pixelBuffer, intensity: 0, command: command)
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .bgra8Unorm, width: 4, height: 8, mipmapped: false)
         descriptor.usage = [.renderTarget]
@@ -61,7 +67,9 @@ final class LivePreviewTests: XCTestCase {
         for row in 0..<8 {
             for column in 0..<4 {
                 let offset = row * 256 + column * 4
-                let expected = (row < 2 || row >= 6) ? 0 : try srgbFrom709(row < 4 ? 64 : 192, space: LivePreviewImageProcessor.inputColorSpace(pixelBuffer))
+                let y = Double(row < 4 ? 64 : 192)
+                let normalized = format == kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange ? (y - 16) * 255 / 219 : y
+                let expected = (row < 2 || row >= 6) ? 0 : try srgbFrom709(normalized, space: LivePreviewImageProcessor.inputColorSpace(pixelBuffer))
                 for channel in 0..<3 { XCTAssertEqual(Double(data[offset + channel]), expected, accuracy: 3) }
                 XCTAssertEqual(data[offset + 3], 255)
             }
@@ -98,4 +106,17 @@ final class LivePreviewTests: XCTestCase {
         XCTAssertTrue(state.complete(current))
         XCTAssertFalse(state.complete(current))
     }
+    func testStoppedCameraRejectsLiveOutputWithoutRequestingHardware() async throws {
+        let (_, lut) = try fixture()
+        let preview = try LiveLUTPreview(lut: lut) { _, _ in }
+        let service = CameraService { _ in }
+        do {
+            try await service.setLivePreview(preview)
+            XCTFail("Expected stopped session rejection")
+        } catch {
+            guard case CameraError.interrupted = error else { return XCTFail("Unexpected error: \(error)") }
+        }
+        service.removeLivePreview()
+    }
+
 }

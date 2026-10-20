@@ -4,6 +4,7 @@ import SwiftUI
 struct CameraView: View {
     @StateObject private var model = CameraModel()
     @State private var showEditor = false
+    @State private var showLiveControls = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -27,6 +28,13 @@ struct CameraView: View {
                     Task { await model.focusAndMeter(point, lensID: lensID) }
                 }
                     .frame(width: previewHeight * 3 / 4, height: previewHeight)
+                    .overlay {
+                        if let preview = model.livePreview {
+                            LivePreviewSurface(preview: preview)
+                                .opacity(model.liveHasFrame && model.snapshot.state == .running ? 1 : 0)
+                                .allowsHitTesting(false)
+                        }
+                    }
                     .overlay { if model.showGrid { ThirdsGrid() } }
                     .overlay(alignment: .bottom) {
                         if model.snapshot.state != .running {
@@ -41,11 +49,13 @@ struct CameraView: View {
                                 .font(.caption)
                                 .buttonStyle(.bordered)
                                 .tint(lens.id == model.snapshot.selectedLens ? .yellow : .gray)
-                                .disabled(model.busy || model.snapshot.isApplyingSettings)
+                                .disabled(model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil)
                         }
                     }.padding(.horizontal)
                 }
                 HStack {
+                    Button("LUT") { showLiveControls = true }
+                        .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Button("PRO") { model.showControls = true }
                         .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Spacer()
@@ -62,6 +72,10 @@ struct CameraView: View {
                             .accessibilityLabel("마지막 촬영 원본 공유")
                     } else { Color.clear.frame(width: 30, height: 30) }
                 }.padding(.horizontal, 28)
+                if model.livePreview != nil {
+                    Text(model.liveHasFrame ? "LUT 프리뷰 · 원본 촬영" : "LUT 프레임 대기 중")
+                        .font(.caption).foregroundStyle(.yellow)
+                }
                 if model.busy || model.snapshot.isApplyingSettings { ProgressView() }
                 if let readout = model.snapshot.readout {
                     CameraReadoutView(readout: readout)
@@ -85,6 +99,7 @@ struct CameraView: View {
         }
         .background(.black).foregroundStyle(.white)
         .sheet(isPresented: $model.showControls) { ManualControls(model: model) }
+        .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
         .fullScreenCover(isPresented: $showEditor, onDismiss: { model.setActive(scenePhase == .active) }) {
             if let original = model.latestOriginal { LUTEditorView(original: original) }
         }

@@ -14,6 +14,12 @@ final class CameraModel: ObservableObject {
     @Published var message: String?
     @Published var showGrid = true
     @Published var showControls = false
+    @Published private(set) var livePreview: LiveLUTPreview?
+    @Published private(set) var liveLUTTitle: String?
+    @Published private(set) var liveHasFrame = false
+    @Published var liveIntensity = 1.0
+    @Published var liveCompareOriginal = false
+    private var importedLiveLUT: ImportedLUT?
 
     private lazy var service = CameraService { [weak self] value in
         Task { @MainActor [weak self] in self?.receive(value) }
@@ -21,9 +27,12 @@ final class CameraModel: ObservableObject {
     var previewSession: AVCaptureSession { service.session }
     var canCapture: Bool { snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
-    func setActive(_ active: Bool) { service.setActive(active) }
+    func setActive(_ active: Bool) {
+        if !active { liveHasFrame = false }
+        service.setActive(active)
+    }
     func selectLens(_ id: String) {
-        guard !busy, !snapshot.isApplyingSettings else { return }
+        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
         service.selectLens(id)
     }
 
@@ -39,6 +48,7 @@ final class CameraModel: ObservableObject {
             message = "현재 렌즈에서 지원하지 않는 포맷이므로 \(first.title)로 전환했습니다."
         }
         snapshot = value
+        if value.state != .running { liveHasFrame = false }
         if let text = value.message { message = text }
     }
 
@@ -53,7 +63,7 @@ final class CameraModel: ObservableObject {
     }
 
     func focusAndMeter(_ point: CameraMeteringPoint, lensID: String) async {
-        guard canCapture else { return }
+        guard canCapture, livePreview == nil else { return }
         busy = true
         defer { busy = false }
         do {
@@ -62,6 +72,63 @@ final class CameraModel: ObservableObject {
             else if actions.focus { message = "터치 초점 기준을 지정했습니다. 노출은 변경하지 않았습니다." }
             else { message = "터치 노출 기준을 지정했습니다. 초점은 변경하지 않았습니다." }
         } catch { message = error.localizedDescription }
+    }
+
+    func importLiveLUT(_ url: URL) async {
+        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let imported = try await Task.detached(priority: .userInitiated) { try ImportedLUT.read(url) }.value
+            let preview = try await makeLivePreview(imported.lut)
+            try await service.setLivePreview(preview)
+            importedLiveLUT = imported
+            liveLUTTitle = imported.displayName
+            liveHasFrame = false
+            livePreview = preview
+            updateLiveIntensity()
+            message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
+        } catch { message = error.localizedDescription }
+    }
+
+    func enableLiveLUT() async {
+        guard !busy, !snapshot.isApplyingSettings, livePreview == nil, let importedLiveLUT else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let preview = try await makeLivePreview(importedLiveLUT.lut)
+            try await service.setLivePreview(preview)
+            liveHasFrame = false
+            livePreview = preview
+            updateLiveIntensity()
+        } catch { message = error.localizedDescription }
+    }
+
+    func disableLiveLUT() {
+        livePreview?.setRunning(false)
+        livePreview = nil
+        liveHasFrame = false
+        service.removeLivePreview()
+    }
+
+    func updateLiveIntensity() {
+        livePreview?.setIntensity(liveCompareOriginal ? 0 : liveIntensity)
+    }
+
+    private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {
+        let onEvent: @Sendable (UUID, LiveLUTPreview.Event) -> Void = { [weak self] id, event in
+            Task { @MainActor [weak self] in
+                guard let self, self.livePreview?.id == id else { return }
+                switch event {
+                case .waiting: self.liveHasFrame = false
+                case .ready: self.liveHasFrame = self.snapshot.state == .running
+                case .failed(let reason):
+                    self.disableLiveLUT()
+                    self.message = "LUT 프리뷰를 해제했습니다: \(reason)"
+                }
+            }
+        }
+        return try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onEvent: onEvent) }.value
     }
 
     func capture() async {

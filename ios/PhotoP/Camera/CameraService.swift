@@ -1,5 +1,6 @@
 @preconcurrency import AVFoundation
 import Foundation
+import CoreVideo
 
 // All session/device mutations and delegate state live on queue. Only the preview
 // layer binds to the immutable session reference on the main thread.
@@ -7,6 +8,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "com.photop.capture", qos: .userInitiated)
     private let output = AVCapturePhotoOutput()
+    private let videoOutput = AVCaptureVideoDataOutput()
+    private var livePreview: LiveLUTPreview?
+    private var removeLivePreviewRequested = false
     private var devices: [AVCaptureDevice] = []
     private var input: AVCaptureDeviceInput?
     private var observers: [NSObjectProtocol] = []
@@ -54,6 +58,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             wantsRunning = active
             if !active {
                 state = .stopped
+                livePreview?.setRunning(false)
                 stopReadouts()
                 finishApplying(.failure(CameraError.interrupted))
                 finishPhoto(.failure(CameraError.interrupted))
@@ -86,9 +91,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             }
             if !session.isRunning { session.startRunning() }
             state = session.isRunning ? .running : .stopped
+            livePreview?.setRunning(state == .running)
             if state == .running { startReadouts() }
             publish(session.isRunning ? nil : "카메라를 시작하지 못했습니다.")
-        } catch { state = .stopped; publish(error.localizedDescription) }
+        } catch { livePreview?.setRunning(false); state = .stopped; publish(error.localizedDescription) }
     }
 
     private func configure() throws {
@@ -117,6 +123,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     func selectLens(_ id: String) {
         queue.async { [self] in
             guard continuation == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
+            guard livePreview == nil else { publish("LUT를 끈 뒤 렌즈를 전환해 주세요."); return }
             guard let old = input, let device = devices.first(where: { $0.uniqueID == id }),
                   device.uniqueID != old.device.uniqueID else { return }
             do {
@@ -165,6 +172,67 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         )
     }
 
+    func setLivePreview(_ preview: LiveLUTPreview) async throws {
+        try await withCheckedThrowingContinuation { (completion: CheckedContinuation<Void, Error>) in
+            queue.async { [self] in
+                do {
+                    guard state == .running, session.isRunning, !session.isInterrupted, input != nil else { throw CameraError.interrupted }
+                    guard continuation == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                    session.beginConfiguration()
+                    do {
+                        guard session.canAddOutput(videoOutput) else { throw CameraError.configuration }
+                        session.addOutput(videoOutput)
+                        guard let format = [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
+                            .first(where: { videoOutput.availableVideoCVPixelFormatTypes.contains($0) }),
+                              let connection = videoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90)
+                        else { throw CameraError.configuration }
+                        videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
+                        videoOutput.alwaysDiscardsLateVideoFrames = true
+                        videoOutput.automaticallyConfiguresOutputBufferDimensions = true
+                        connection.videoRotationAngle = 90
+                        if input?.device.position == .front && !connection.isVideoMirroringSupported { throw CameraError.configuration }
+                        if connection.isVideoMirroringSupported {
+                            connection.automaticallyAdjustsVideoMirroring = false
+                            connection.isVideoMirrored = input?.device.position == .front
+                        }
+                        livePreview = preview
+                        removeLivePreviewRequested = false
+                        videoOutput.setSampleBufferDelegate(preview, queue: preview.frameQueue)
+                        session.commitConfiguration()
+                        preview.setRunning(true)
+                        publish()
+                        completion.resume()
+                    } catch {
+                        if session.outputs.contains(videoOutput) { session.removeOutput(videoOutput) }
+                        session.commitConfiguration()
+                        throw error
+                    }
+                } catch { completion.resume(throwing: error) }
+            }
+        }
+    }
+
+    func removeLivePreview() {
+        queue.async { [self] in
+            livePreview?.setRunning(false)
+            removeLivePreviewRequested = true
+            removeLivePreviewIfRequested()
+        }
+    }
+
+    private func removeLivePreviewIfRequested() {
+        guard removeLivePreviewRequested, continuation == nil, !controls.isPending else { return }
+        videoOutput.setSampleBufferDelegate(nil, queue: nil)
+        if session.outputs.contains(videoOutput) {
+            session.beginConfiguration()
+            session.removeOutput(videoOutput)
+            session.commitConfiguration()
+        }
+        livePreview = nil
+        removeLivePreviewRequested = false
+        publish()
+    }
+
     func apply(_ settings: CameraSettings) async throws -> CameraReadout {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
@@ -197,6 +265,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         let timeout = DispatchWorkItem { [weak self] in
             guard let self, self.controls.id == id else { return }
             self.wantsRunning = false
+            self.livePreview?.setRunning(false)
             self.state = .stopped
             self.stopReadouts()
             if self.session.isRunning { self.session.stopRunning() }
@@ -273,6 +342,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         case .failure(let error): publish(error.localizedDescription)
         }
         completion?.resume(with: result)
+        removeLivePreviewIfRequested()
     }
 
     private func currentReadout() -> CameraReadout? {
@@ -407,9 +477,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         let pending = continuation
         continuation = nil; photoID = nil; photoData = nil; photoFormat = nil
         pending?.resume(with: result)
+        removeLivePreviewIfRequested()
     }
 
     private func handleNotification(_ name: Notification.Name, reset: Bool) {
+        livePreview?.setRunning(false)
         if name == AVCaptureSession.wasInterruptedNotification {
             state = .interrupted
             stopReadouts()
