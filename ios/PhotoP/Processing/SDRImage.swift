@@ -37,7 +37,7 @@ struct SDRImage: Sendable {
             maxDimension = min(previewMaxDimension, max(width, height))
         } else {
             guard width <= MetalLUTRenderer.maximumPixels, height <= MetalLUTRenderer.maximumPixels / width
-            else { throw ImageEditingError.invalid("현재 편집본 저장은 12MP 이하만 지원합니다. 원본은 그대로 보존됩니다.") }
+            else { throw ImageEditingError.invalid("현재 편집본 저장은 12.6MP 이하만 지원합니다. 원본은 그대로 보존됩니다.") }
             maxDimension = max(width, height)
         }
         let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,

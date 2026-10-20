@@ -4,7 +4,8 @@ import Metal
 // SDR, encoded sRGB, premultiplied RGBA8. Color conversion belongs to the caller.
 // Actor isolation keeps buffer reuse and GPU waits away from the main actor.
 actor MetalLUTRenderer {
-    static let maximumPixels = 12_000_000
+    // Includes nominal 12MP iPhone photos (4032 × 3024 = 12,192,768 pixels).
+    static let maximumPixels = 12_600_000
     private let device: MTLDevice
     private let queue: MTLCommandQueue
     private let pipeline: MTLComputePipelineState
@@ -48,7 +49,7 @@ actor MetalLUTRenderer {
     func render(_ rgba: Data, width: Int, height: Int, intensity: Double) throws -> Data {
         guard width > 0, height > 0, width <= Self.maximumPixels,
               height <= Self.maximumPixels / width, intensity.isFinite, (0...1).contains(intensity)
-        else { throw MetalLUTError.failed("SDR 처리는 최대 12MP이며 크기와 강도가 유효해야 합니다.") }
+        else { throw MetalLUTError.failed("SDR 처리는 최대 12.6MP이며 크기와 강도가 유효해야 합니다.") }
         let count = width * height
         let byteCount = count * 4
         guard rgba.count == byteCount else { throw MetalLUTError.failed("RGBA 데이터 크기가 이미지와 다릅니다.") }

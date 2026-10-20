@@ -30,7 +30,7 @@ struct LUTEditorView: View {
                             .accessibilityLabel(showOriginal ? "원본 SDR 미리보기" : "LUT 미리보기")
                     } else { ProgressView().frame(height: 240) }
                     Text(title ?? "사용자 LUT 편집").font(.headline)
-                    Text("SDR · sRGB / 1024px 미리보기 · 최대 12MP 저장\nHDR gain map과 원본 EXIF는 편집본에 포함하지 않습니다.")
+                    Text("SDR · sRGB / 1024px 미리보기 · 최대 12.6MP 저장\nHDR gain map과 원본 EXIF는 편집본에 포함하지 않습니다.")
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                         .disabled(busy || title != nil)

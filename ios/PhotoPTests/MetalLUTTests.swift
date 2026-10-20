@@ -60,4 +60,15 @@ final class MetalLUTTests: XCTestCase {
         XCTAssertThrowsError(try renderer { SIMD3($0 == 0 ? -3e38 : 3e38, $1, $2) })
     }
 
+    func testNominalTwelveMPPhotoFitsAndLargerFrameIsRejected() async throws {
+        let (_, gpu) = try renderer { SIMD3($0, $1, $2) }
+        let data = Data(count: 4032 * 3024 * 4)
+        let result = try await gpu.render(data, width: 4032, height: 3024, intensity: 0)
+        XCTAssertEqual(result, data)
+        do {
+            _ = try await gpu.render(Data(), width: 4200, height: 3001, intensity: 0)
+            XCTFail("Expected pixel limit rejection")
+        } catch { XCTAssertTrue(error is MetalLUTError) }
+    }
+
 }
