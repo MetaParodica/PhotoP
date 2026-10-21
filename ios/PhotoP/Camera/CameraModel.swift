@@ -50,6 +50,8 @@ final class CameraModel: ObservableObject {
     @Published var selfTimer: SelfTimer = .off
     @Published var framing: FramingAspect = .native
     @Published var personGuide = PersonGuide()
+    @Published var compositionPresetID: String?
+    @Published private(set) var liveLookID: String?
     @Published private(set) var countdown: Int?
     @Published private(set) var latestThumbnail: PhotoThumbnailImage?
     private var countdownTask: Task<Void, Never>?
@@ -198,7 +200,50 @@ final class CameraModel: ObservableObject {
         } catch { message = error.localizedDescription }
     }
 
+    var compositionPreset: CompositionPreset? { CompositionPreset.preset(compositionPresetID) }
+
+    // Annotated presets replace the plain grid and silhouettes so only one guide is drawn.
+    func selectCompositionPreset(_ id: String?) {
+        compositionPresetID = id
+        if id != nil { guideGrid = .off; showGrid = false; personGuide.framing = .off; poseTemplate = .off }
+        if compositionPreset?.subject != nil { guideScene = .portrait; updateComposition() }
+    }
+
+    // Carousel selection: swap the preview look while keeping monitoring and AI guide settings.
+    func selectLook(id: String, load: @escaping @Sendable () async throws -> ImportedLUT) async {
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, snapshot.state == .running else { return }
+        busy = true
+        defer { busy = false }
+        do {
+            let imported = try await load()
+            if livePreview != nil { tearDownLivePreview() }
+            try await activateLiveLUT(imported)
+            liveLookID = id
+        } catch { message = error.localizedDescription }
+    }
+
+    func selectOriginalLook() async {
+        guard liveUsesLUT else { liveLookID = nil; return }
+        let keepAnalysis = monitoring.enabled || guideAIEnabled
+        tearDownLivePreview()
+        liveLookID = nil
+        if keepAnalysis { await enableMonitoring() }
+    }
+
+    private func tearDownLivePreview() {
+        livePreview?.setRunning(false)
+        livePreview = nil
+        liveHasFrame = false
+        liveUsesLUT = false
+        liveLUTTitle = nil
+        liveCredit = nil
+        histogram = nil
+        composition = nil
+        service.removeLivePreview()
+    }
+
     func disableLiveLUT() {
+        liveLookID = nil
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false

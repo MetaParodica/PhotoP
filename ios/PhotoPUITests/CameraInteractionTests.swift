@@ -10,6 +10,8 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(shutter.waitForExistence(timeout: 10))
         XCTAssertFalse(shutter.isEnabled, "Simulator review must never advertise a working camera")
         app.buttons["camera.guide"].tap()
+        XCTAssertTrue(app.buttons["세부 설정"].waitForExistence(timeout: 3))
+        app.buttons["세부 설정"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["camera.panel.close"].isHittable)
         XCTAssertTrue(app.staticTexts["구도선"].exists)
@@ -22,6 +24,7 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(shutter.exists)
         let guide = XCTAttachment(screenshot: app.screenshot()); guide.name = "PhotoP-inline-guide"; guide.lifetime = .keepAlways; add(guide)
         app.buttons["camera.panel.close"].tap()
+        app.buttons["camera.drawer.close"].tap()
         // AUTO keeps only EV on the rail; the look control is a separate button.
         XCTAssertFalse(app.buttons["camera.tool.iso"].exists)
         XCTAssertTrue(app.buttons["camera.tool.ev"].exists)
@@ -83,6 +86,8 @@ final class CameraInteractionTests: XCTestCase {
         app.launchArguments = ["--ui-review"]
         app.launch()
         app.buttons["camera.guide"].tap()
+        XCTAssertTrue(app.buttons["세부 설정"].waitForExistence(timeout: 3))
+        app.buttons["세부 설정"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         let person = app.buttons["camera.guide.person"]
         XCTAssertTrue(person.waitForExistence(timeout: 3))
@@ -96,6 +101,33 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertEqual(overlay.label, "인물 위치 가이드: 전신, 왼쪽 1/3")
         let capture = XCTAttachment(screenshot: app.screenshot())
         capture.name = "PhotoP-person-guide"; capture.lifetime = .keepAlways; add(capture)
+    }
+
+    @MainActor func testBottomCardsSelectCompositionGuidesAndLooks() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        app.buttons["camera.guide"].tap()
+        let triangle = app.buttons["삼각 구도"]
+        XCTAssertTrue(triangle.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["가이드 끔"].isSelected)
+        XCTAssertFalse(app.buttons["AUTO"].exists, "Cards replace the mode row while the drawer is open")
+        triangle.tap()
+        XCTAssertTrue(triangle.isSelected)
+        let overlay = app.descendants(matching: .any)["camera.composition.preset"]
+        XCTAssertTrue(overlay.waitForExistence(timeout: 3))
+        XCTAssertTrue(overlay.label.contains("삼각 구도"))
+        let composition = XCTAttachment(screenshot: app.screenshot())
+        composition.name = "PhotoP-composition-cards"; composition.lifetime = .keepAlways; add(composition)
+        app.buttons["camera.drawer.close"].tap()
+        XCTAssertTrue(app.buttons["AUTO"].waitForExistence(timeout: 3))
+        XCTAssertTrue(overlay.exists, "Closing the drawer keeps the chosen guide")
+        app.buttons["camera.tool.looks"].tap()
+        XCTAssertTrue(app.buttons["원본"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["원본"].isSelected)
+        XCTAssertTrue(app.buttons["Amber Portrait"].exists)
+        let looks = XCTAttachment(screenshot: app.screenshot())
+        looks.name = "PhotoP-look-cards"; looks.lifetime = .keepAlways; add(looks)
     }
 }
 

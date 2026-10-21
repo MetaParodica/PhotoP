@@ -1,5 +1,9 @@
 import SwiftUI
 
+enum CameraDrawer: String {
+    case composition, looks
+}
+
 enum CameraScreen: String, Identifiable {
     case review, editor, history, videos
     var id: String { rawValue }
@@ -10,14 +14,15 @@ struct CameraView: View {
     @StateObject private var model = CameraModel()
     @State private var tool: CameraTool?
     @State private var screen: CameraScreen?
+    @State private var drawer: CameraDrawer?
     @State private var showLiveControls = false
     @State private var showStyles = false
     @State private var showLongExposure = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let accent = Color(red: 0.78, green: 0.69, blue: 1)
-    // Shutter row, mode row and status line below the viewfinder.
-    private let bottomHeight: CGFloat = 190
+    // Shutter row, mode row or card drawer, and status line below the viewfinder.
+    private let bottomHeight: CGFloat = 226
     private var reviewing: Bool {
         #if DEBUG && targetEnvironment(simulator)
         return ProcessInfo.processInfo.arguments.contains("--ui-review")
@@ -58,7 +63,8 @@ struct CameraView: View {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
                 let arguments = ProcessInfo.processInfo.arguments
-                if arguments.contains("--review-guide") { tool = .guide; model.guideGrid = .thirds; model.showGrid = false }
+                if arguments.contains("--review-guide") { drawer = .composition; model.selectCompositionPreset("portrait-two-thirds") }
+                if arguments.contains("--review-looks") { drawer = .looks }
                 if arguments.contains("--review-video") { tool = .video }
                 if arguments.contains("--review-person") { model.personGuide = PersonGuide(framing: .full, position: .left); model.framing = .square }
             } else { resume() }
@@ -75,6 +81,9 @@ struct CameraView: View {
     }
     private func toggle(_ selected: CameraTool) {
         withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { tool = tool == selected ? nil : selected }
+    }
+    private func toggleDrawer(_ selected: CameraDrawer) {
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { drawer = drawer == selected ? nil : selected; tool = nil }
     }
 
     // MARK: Viewfinder
@@ -97,6 +106,7 @@ struct CameraView: View {
                                snapshot: model.composition, live: liveGuide, sourceSize: model.previewImageSize)
             PersonGuideOverlay(guide: model.personGuide, opacity: model.guideOpacity, snapshot: model.composition,
                                live: liveGuide, sourceSize: model.previewImageSize)
+            if let preset = model.compositionPreset { CompositionPresetOverlay(preset: preset, opacity: max(0.5, model.guideOpacity)) }
             if !isVideo && model.framing != .native { FramingMaskOverlay(aspect: model.framing) }
             if model.showGrid { ThirdsGrid() }
             if let countdown = model.countdown {
@@ -136,7 +146,7 @@ struct CameraView: View {
     private var personFeedback: String? {
         guard liveGuide, model.guideAIEnabled, let snapshot = model.composition,
               snapshot.isFresh(at: ProcessInfo.processInfo.systemUptime), let body = snapshot.bodies.first else { return nil }
-        return model.personGuide.feedback(body: body)
+        return model.compositionPreset?.feedback(body: body) ?? model.personGuide.feedback(body: body)
     }
     private func feedbackChip(_ text: String) -> some View {
         Label(text, systemImage: "figure.stand").font(.caption.weight(.semibold))
@@ -195,7 +205,8 @@ struct CameraView: View {
             formatChip
             CameraIconButton(symbol: "waveform.path", label: "노출 보조", selected: tool == .monitor, size: 40) { toggle(.monitor) }
                 .accessibilityIdentifier("camera.monitor")
-            CameraIconButton(symbol: "person.crop.rectangle", label: "구도·인물 가이드", selected: tool == .guide || model.personGuide.framing != .off, size: 40) { toggle(.guide) }
+            CameraIconButton(symbol: "person.crop.rectangle", label: "구도·인물 가이드",
+                             selected: drawer == .composition || tool == .guide || model.personGuide.framing != .off || model.compositionPresetID != nil, size: 40) { toggleDrawer(.composition) }
                 .accessibilityIdentifier("camera.guide")
         }
     }
@@ -320,11 +331,11 @@ struct CameraView: View {
         }
     }
     private var looksButton: some View {
-        Button { toggle(.looks) } label: {
+        Button { toggleDrawer(.looks) } label: {
             VStack(spacing: 4) {
                 Image(systemName: CameraTool.looks.symbol).font(.system(size: 17))
                 Text(model.liveUsesLUT ? "ON" : "룩").font(.system(size: 9, weight: .bold, design: .rounded))
-            }.foregroundStyle(tool == .looks || model.liveUsesLUT ? accent : .white)
+            }.foregroundStyle(drawer == .looks || tool == .looks || model.liveUsesLUT ? accent : .white)
                 .frame(width: 58, height: 58).contentShape(Circle())
         }.buttonStyle(.plain).cameraGlass(radius: 29)
             .accessibilityLabel("룩").accessibilityValue(model.liveLUTTitle ?? "원본 색상")
@@ -365,6 +376,23 @@ struct CameraView: View {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
+            if let drawer, !isVideo { carousel(drawer) } else { modeRow }
+            HStack {
+                if drawer != nil && !isVideo {
+                    CameraIconButton(symbol: "chevron.down", label: "카드 선택 닫기", size: 52) { toggleDrawer(drawer ?? .composition) }
+                        .accessibilityIdentifier("camera.drawer.close")
+                } else { thumbnailButton }
+                Spacer()
+                if isVideo { recordButton } else { shutterButton }
+                Spacer()
+                CameraIconButton(symbol: "arrow.triangle.2.circlepath.camera", label: "전후면 카메라 전환") {
+                    if let lens = model.snapshot.lenses.first(where: { $0.isFront != selectedFront }) { model.selectLens(lens.id) }
+                }.disabled(locked || isVideo || model.livePreview != nil || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
+            }.padding(.horizontal, 20)
+            status
+        }
+    }
+    private var modeRow: some View {
             HStack(spacing: 24) {
                 modeButton("AUTO", selected: !isVideo && !model.proMode && tool != .longExposure) {
                     if isVideo { Task { await model.setVideoMode(false) } }
@@ -387,17 +415,58 @@ struct CameraView: View {
                     toggle(.video)
                 }.accessibilityIdentifier("camera.mode.video")
             }.disabled(locked || model.countdown != nil)
-            HStack {
-                thumbnailButton
-                Spacer()
-                if isVideo { recordButton } else { shutterButton }
-                Spacer()
-                CameraIconButton(symbol: "arrow.triangle.2.circlepath.camera", label: "전후면 카메라 전환") {
-                    if let lens = model.snapshot.lenses.first(where: { $0.isFront != selectedFront }) { model.selectLens(lens.id) }
-                }.disabled(locked || isVideo || model.livePreview != nil || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
-            }.padding(.horizontal, 20)
-            status
+            .frame(minHeight: 88)
+    }
+
+    // MARK: Card drawers
+
+    @ViewBuilder private func carousel(_ drawer: CameraDrawer) -> some View {
+        switch drawer {
+        case .composition: CameraCarousel(title: "구도 가이드 선택", items: compositionItems, identifier: "camera.drawer.composition")
+        case .looks: CameraCarousel(title: "룩 선택", items: lookItems, identifier: "camera.drawer.looks")
         }
+    }
+    private var compositionItems: [CameraCarouselItem] {
+        let none = model.compositionPresetID == nil && model.personGuide.framing == .off
+        var items = [CameraCarouselItem(id: "off", title: "가이드 끔", selected: none, thumbnail: AnyView(GuideThumbnail(preset: nil))) {
+            model.selectCompositionPreset(nil); model.personGuide.framing = .off
+        }]
+        items.append(CameraCarouselItem(id: "person", title: "인물 실루엣", selected: model.personGuide.framing != .off,
+                                        thumbnail: AnyView(SymbolThumbnail(symbol: "figure.stand"))) {
+            model.selectCompositionPreset(nil)
+            if model.personGuide.framing == .off { model.personGuide.framing = .full; model.guideScene = .portrait }
+            toggle(.guide)
+        })
+        items.append(CameraCarouselItem(id: "settings", title: "세부 설정", thumbnail: AnyView(SymbolThumbnail(symbol: "slider.horizontal.3"))) { toggle(.guide) })
+        items += CompositionPreset.all.map { preset in
+            CameraCarouselItem(id: preset.id, title: preset.title, selected: model.compositionPresetID == preset.id,
+                               thumbnail: AnyView(GuideThumbnail(preset: preset))) {
+                model.selectCompositionPreset(model.compositionPresetID == preset.id ? nil : preset.id)
+            }
+        }
+        return items
+    }
+    // Same carousel as guides: original, PhotoP colour styles, spatial looks, then adjust/browse.
+    private var lookItems: [CameraCarouselItem] {
+        let sample = [3, 4, 1, 6, 9, 7, 0, 8, 11].map { FilmStyle.chart[$0] }
+        var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(LookThumbnail(colors: sample))) {
+            Task { await model.selectOriginalLook() }
+        }]
+        items.append(CameraCarouselItem(id: "adjust", title: "강도·마감", thumbnail: AnyView(SymbolThumbnail(symbol: "slider.horizontal.3"))) { toggle(CameraTool.looks) })
+        items.append(CameraCarouselItem(id: "browse", title: "전체·가져오기", thumbnail: AnyView(SymbolThumbnail(symbol: "square.grid.2x2"))) { showStyles = true })
+        items += FilmStyle.all.map { style in
+            CameraCarouselItem(id: style.id, title: style.name, selected: model.liveLookID == style.id,
+                               thumbnail: AnyView(LookThumbnail(colors: sample.map(style.color)))) {
+                Task { await model.selectLook(id: style.id) { try style.imported() } }
+            }
+        }
+        items += ProceduralLook.all.map { look in
+            CameraCarouselItem(id: look.id, title: look.name, selected: model.liveLookID == look.id,
+                               thumbnail: AnyView(SymbolThumbnail(symbol: "sparkles"))) {
+                Task { await model.selectLook(id: look.id) { try look.imported() } }
+            }
+        }
+        return items
     }
     private var thumbnailButton: some View {
         Button { open(.review) } label: {
