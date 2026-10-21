@@ -42,6 +42,7 @@ struct LiveLUTControls: View {
                     Text("미리보기 전용입니다. 촬영 사진에는 LUT를 굽지 않습니다.").font(.caption)
                 }
                 Section {
+                    Text("발열·저전력 상태에 따라 처리 해상도와 분석 빈도를 자동으로 낮춥니다. 센서 프레임레이트와 사진 해상도는 이 설정으로 변경하지 않습니다.").font(.caption)
                     Text("현재 입력은 8비트 YUV·BT.709 색역의 SDR만 지원합니다. LUT를 끈 뒤 렌즈 전환·터치 AF/AE·다른 LUT 가져오기를 사용할 수 있습니다.")
                         .font(.caption)
                     if model.busy { ProgressView() }

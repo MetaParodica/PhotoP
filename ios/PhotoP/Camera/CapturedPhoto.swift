@@ -19,6 +19,14 @@ struct CapturedPhoto: Sendable {
     let data: Data
     let format: PhotoFileFormat
 
+    var pixelDimensions: PhotoResolution? {
+        guard format != .dng, let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int32,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int32, width > 0, height > 0 else { return nil }
+        return .init(width: width, height: height)
+    }
+
     init(data: Data, expectedFormat: PhotoFileFormat) throws {
         if expectedFormat == .dng {
             try DNGContainer.validate(data)

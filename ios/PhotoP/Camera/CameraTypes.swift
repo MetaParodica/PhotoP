@@ -20,6 +20,7 @@ struct CameraCapabilities: Equatable, Sendable {
     var photoFormats: [PhotoFileFormat] = [.jpeg]
     var rawModes: [RawCaptureMode] = [.processed]
     var maximumBracketCount = 0
+    var photoResolutions: [PhotoResolution] = []
 }
 
 struct ExposureSettings: Equatable, Sendable {

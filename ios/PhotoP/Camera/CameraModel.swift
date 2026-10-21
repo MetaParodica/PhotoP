@@ -39,6 +39,8 @@ final class CameraModel: ObservableObject {
     @Published var liveFinish = FilmFinishSettings()
     @Published var liveGrain = 0.0
     @Published var liveGrainSeed: UInt32 = 1
+    @Published var photoResolution: PhotoResolution?
+    @Published private(set) var latestPhotoResolution: PhotoResolution?
     @Published var liveCompareOriginal = false
     private var longJobID: UUID?
     private var longReprocessTask: Task<URL, Error>?
@@ -85,6 +87,10 @@ final class CameraModel: ObservableObject {
             message = "현재 렌즈에서 지원하지 않는 포맷이므로 \(first.title)로 전환했습니다."
         }
         if let modes = value.capabilities?.rawModes, !modes.contains(rawMode) { rawMode = .processed }
+        if let requested = photoResolution, value.capabilities?.photoResolutions.contains(requested) != true {
+            photoResolution = nil
+            message = "해상도 요청이 현재 구성에서 지원되지 않아 최대 상한으로 복귀했습니다."
+        }
         snapshot = value
         if let text = value.message { message = text }
     }
@@ -294,7 +300,9 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil)
+            let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil,
+                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil)
+            latestPhotoResolution = series.photos.first?.pixelDimensions
             let urls = try await CaptureSeriesStore.preserve(series)
             latestOriginals = urls
             latestOriginal = urls[urls.count / 2]

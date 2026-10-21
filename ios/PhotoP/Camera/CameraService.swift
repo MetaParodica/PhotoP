@@ -159,7 +159,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
               let largest = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
                   Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
               }) else { return }
-        output.maxPhotoDimensions = largest
+        if output.maxPhotoDimensions.width != largest.width || output.maxPhotoDimensions.height != largest.height {
+            output.maxPhotoDimensions = largest
+        }
     }
 
     private func configureRAW() {
@@ -192,7 +194,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             exposureLock: d.isExposureModeSupported(.locked),
             focusLock: d.isFocusModeSupported(.locked),
             whiteBalanceLock: d.isWhiteBalanceModeSupported(.locked),
-            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes(), maximumBracketCount: output.maxBracketedCapturePhotoCount
+            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes(), maximumBracketCount: output.maxBracketedCapturePhotoCount,
+            photoResolutions: PhotoResolutionPolicy.options(supported: format.supportedMaxPhotoDimensions.map { .init(width: $0.width, height: $0.height) },
+                ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height))
         )
     }
 
@@ -504,7 +508,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         return photo
     }
 
-    func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil) async throws -> CapturedSeries {
+    func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil, resolution: PhotoResolution? = nil) async throws -> CapturedSeries {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
@@ -545,7 +549,13 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     settings = AVCapturePhotoSettings(rawPixelFormatType: raw, rawFileType: .dng, processedFormat: nil, processedFileType: nil)
                     expectedFormat = .dng
                 }
-                settings.maxPhotoDimensions = output.maxPhotoDimensions
+                do {
+                    let chosen = try PhotoResolutionPolicy.resolve(resolution,
+                        supported: input?.device.activeFormat.supportedMaxPhotoDimensions.map { .init(width: $0.width, height: $0.height) } ?? [],
+                        ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height),
+                        raw: rawMode, bracket: bracketStep != nil)
+                    settings.maxPhotoDimensions = CMVideoDimensions(width: chosen.width, height: chosen.height)
+                } catch { completion.resume(throwing: error); return }
                 settings.photoQualityPrioritization = biases != nil ? .speed : (rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode))
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
                 if let connection = output.connection(with: .video) {

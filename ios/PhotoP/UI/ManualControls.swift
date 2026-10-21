@@ -11,6 +11,15 @@ struct ManualControls: View {
                     if let readout = model.snapshot.readout {
                         Section("카메라 현재값") { CameraReadoutView(readout: readout) }
                     }
+                    Section("사진 해상도 상한") {
+                        Picker("요청 크기", selection: $model.photoResolution) {
+                            Text("현재 포맷 최대").tag(Optional<PhotoResolution>.none)
+                            ForEach(caps.photoResolutions) { item in Text(item.title).tag(Optional(item)) }
+                        }.disabled(model.busy || model.rawMode != .processed || model.bracketEnabled)
+                        Text("현재 활성 포맷이 제공하는 값만 표시합니다. 요청 상한이며 실제 파일은 더 작을 수 있습니다. RAW·브래킷은 기존 최대 상한 정책을 유지합니다.").font(.caption)
+                        if let actual = model.latestPhotoResolution { Text("최근 저장 파일: \(actual.title)").font(.caption) }
+                        Text("편집본은 12.6MP 이하입니다. 고해상도 촬영 원본은 보존됩니다.").font(.caption)
+                    }
                     Section("노출 · 요청값") {
                         Toggle("수동 ISO · 셔터", isOn: $model.settings.exposure.manual)
                             .disabled(!caps.manualExposure)
