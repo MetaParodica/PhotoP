@@ -120,7 +120,7 @@ final class VideoCaptureTests: XCTestCase {
                   CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer) == kCVReturnSuccess,
                   let buffer else { throw CameraError.configuration }
             CVPixelBufferLockBaseAddress(buffer, [])
-            if let base = CVPixelBufferGetBaseAddress(buffer) { memset(base, 64 + index * 16, CVPixelBufferGetDataSize(buffer)) }
+            if let base = CVPixelBufferGetBaseAddress(buffer) { memset(base, Int32(64 + index * 16), CVPixelBufferGetDataSize(buffer)) }
             CVPixelBufferUnlockBaseAddress(buffer, [])
             guard adaptor.append(buffer, withPresentationTime: CMTime(value: Int64(index), timescale: 30)) else {
                 throw writer.error ?? CameraError.invalidPhotoData

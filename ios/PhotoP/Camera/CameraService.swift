@@ -831,7 +831,7 @@ extension CameraService {
             self.wantsRunning = false; self.state = .stopped; self.stopReadouts()
             if self.session.isRunning { self.session.stopRunning() }
             // A stuck delegate must not keep the UI/task alive forever. Pending bytes stay on disk.
-            self.completeMovie(url, result: .failure(CameraError.captureTimedOut))
+            self.completeMovie(url, result: .failure(CameraError.videoTimedOut))
         }
         movieTimeout = timeout
         queue.asyncAfter(deadline: .now() + seconds, execute: timeout)
