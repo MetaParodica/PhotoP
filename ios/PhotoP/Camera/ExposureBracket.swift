@@ -25,6 +25,7 @@ struct PhotoSeriesDelivery {
     let biases: [Double]?
     private var received: [Int: CapturedPhoto] = [:]
     private var invalid = false
+    init(format: PhotoFileFormat, biases: [Double]?) { self.format = format; self.biases = biases }
     var expectedCount: Int { biases?.count ?? 1 }
     mutating func receive(_ data: Data?, isRaw: Bool, sequence: Int, bracketBias: Double?) throws {
         do {
