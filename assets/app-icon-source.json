@@ -1,0 +1,10 @@
+{
+  "source": "User supplied image 96ADB360-3DD9-4D20-97EA-0AD2F5E3B3B0.jpeg",
+  "sourceSHA256": "74302ea9f8fe1b42ce454ab79d6b814dfa3009f2c08ac1e3db9fab63d4640827",
+  "sourceDimensions": [
+    1254,
+    1254
+  ],
+  "conversion": "RGB PNG; square Lanczos resize only; white background preserved",
+  "icon1024SHA256": "87fc0f02f3a02ea0a9267921a8dbf2f2c142c78917bbcb35676235d91b02bf67"
+}

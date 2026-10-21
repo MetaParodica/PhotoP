@@ -1,3 +1,5 @@
+> **촬영 UI 개편(검증 대기):** 제공된 앱 아이콘, 촬영 화면 안의 ISO/셔터/EV/WB/초점·구도·모니터·포맷 조절 패널을 반영했습니다. 로컬 Python 13개 성공. macOS CI가 실행 단계 전에 종료되어 이번 변경의 iOS 빌드/UI 테스트/화면 캡처는 아직 완료하지 못했습니다. [변경 내용과 검증 현황](docs/14-CAMERA-UI.ko.md)
+
 # PhotoP
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
