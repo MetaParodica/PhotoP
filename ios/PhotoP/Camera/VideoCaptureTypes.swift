@@ -4,6 +4,8 @@ enum VideoResolution: String, CaseIterable, Codable, Identifiable, Sendable {
     case hd720, hd1080, uhd4K
     var id: String { rawValue }
     var title: String { switch self { case .hd720: return "720p"; case .hd1080: return "1080p"; case .uhd4K: return "4K" } }
+    var longEdge: Int { switch self { case .hd720: return 1280; case .hd1080: return 1920; case .uhd4K: return 3840 } }
+    var shortEdge: Int { switch self { case .hd720: return 720; case .hd1080: return 1080; case .uhd4K: return 2160 } }
 }
 
 enum VideoCodec: String, CaseIterable, Codable, Identifiable, Sendable {

@@ -56,6 +56,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         readoutTimer?.cancel()
         settingsTimeout?.cancel()
         photoTimeout?.cancel()
+        movieTimeout?.cancel()
         observers.forEach(NotificationCenter.default.removeObserver)
     }
 

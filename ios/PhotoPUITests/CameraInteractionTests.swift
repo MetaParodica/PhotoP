@@ -45,4 +45,19 @@ final class CameraInteractionTests: XCTestCase {
         capture.name = "PhotoP-video-panel"; capture.lifetime = .keepAlways; add(capture)
     }
 
+    @MainActor func testVideoLibraryOpensFromCameraAndReturns() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        let gallery = app.buttons["사진과 편집 기록"]
+        XCTAssertTrue(gallery.waitForExistence(timeout: 10))
+        gallery.tap()
+        app.buttons["영상 보관함"].tap()
+        XCTAssertTrue(app.navigationBars["영상 보관함"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["보관한 영상이 없습니다."].waitForExistence(timeout: 5))
+        app.buttons["닫기"].tap()
+        XCTAssertTrue(app.buttons["camera.shutter"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+    }
+
 }

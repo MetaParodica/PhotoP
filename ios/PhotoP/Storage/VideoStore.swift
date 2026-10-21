@@ -31,6 +31,7 @@ struct VideoManifest: Codable, Sendable {
     let originalFile: String
     var lutBaked = false
     var audioRequested = false
+    var recoveredFromPending: Bool?
 }
 
 enum VideoStore {
@@ -80,9 +81,9 @@ enum VideoStore {
                              yCbCrMatrix: tag(kCMFormatDescriptionExtension_YCbCrMatrix))
     }
 
-    static func finalize(_ pending: URL, configuration: VideoConfiguration, in folder: URL? = nil) async throws -> VideoOriginal {
+    static func finalize(_ pending: URL, configuration: VideoConfiguration, in folder: URL? = nil, recovered: Bool = false) async throws -> VideoOriginal {
         let info = try await inspect(pending)
-        guard info.codec == configuration.codec, info.audioTrackCount == 0 else { throw CameraError.invalidPhotoData }
+        guard matches(info, configuration: configuration) else { throw CameraError.invalidPhotoData }
         let destination = try folder ?? root()
         return try await Task.detached(priority: .utility) {
             let fm = FileManager.default
@@ -92,14 +93,9 @@ enum VideoStore {
             let manifestURL = job.appendingPathComponent("manifest.json")
             do {
                 // Stream hashing instead of loading a potentially 2GiB movie into RAM.
-                let file = try FileHandle(forReadingFrom: pending)
-                defer { try? file.close() }
-                var hash = SHA256(); var bytes: Int64 = 0
-                while let block = try file.read(upToCount: 1024 * 1024), !block.isEmpty {
-                    hash.update(data: block); bytes += Int64(block.count)
-                }
-                let digest = hash.finalize().map { String(format: "%02x", $0) }.joined()
-                let manifest = VideoManifest(configuration: configuration, actual: info, sha256: digest, bytes: bytes, originalFile: "Original.mov")
+                let (digest, bytes) = try hashFile(pending)
+                let manifest = VideoManifest(configuration: configuration, actual: info, sha256: digest, bytes: bytes, originalFile: "Original.mov",
+                                             recoveredFromPending: recovered ? true : nil)
                 let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                 try encoder.encode(manifest).write(to: manifestURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
                 // Same-volume move preserves exact encoded bytes and never re-encodes the movie.
@@ -110,6 +106,29 @@ enum VideoStore {
                 throw error
             }
         }.value
+    }
+
+    static func matches(_ info: VideoFileInfo, configuration: VideoConfiguration) -> Bool {
+        info.durationSeconds.isFinite && info.durationSeconds > 0 && info.displayWidth > 0 && info.displayHeight > 0
+            && info.codec == configuration.codec && info.audioTrackCount == 0
+            && max(info.encodedWidth, info.encodedHeight) == configuration.resolution.longEdge
+            && min(info.encodedWidth, info.encodedHeight) == configuration.resolution.shortEdge
+            && abs(Double(info.nominalFrameRate) - Double(configuration.framesPerSecond)) < 1
+    }
+
+    static func hasKnownSDRTransfer(_ info: VideoFileInfo) -> Bool {
+        info.transferFunction == (kCMFormatDescriptionTransferFunction_ITU_R_709_2 as String)
+            || info.transferFunction == (kCVImageBufferTransferFunction_sRGB as String)
+    }
+
+    static func hashFile(_ url: URL) throws -> (sha256: String, bytes: Int64) {
+        let file = try FileHandle(forReadingFrom: url)
+        defer { try? file.close() }
+        var hash = SHA256(); var bytes: Int64 = 0
+        while let block = try file.read(upToCount: 1024 * 1024), !block.isEmpty {
+            hash.update(data: block); bytes += Int64(block.count)
+        }
+        return (hash.finalize().map { String(format: "%02x", $0) }.joined(), bytes)
     }
 
     static func addToPhotos(_ url: URL) async throws {

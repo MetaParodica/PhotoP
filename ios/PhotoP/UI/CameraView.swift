@@ -6,6 +6,7 @@ struct CameraView: View {
     @State private var tool: CameraTool?
     @State private var showEditor = false
     @State private var showHistory = false
+    @State private var showVideos = false
     @State private var showLiveControls = false
     @State private var showStyles = false
     @State private var showLongExposure = false
@@ -41,6 +42,7 @@ struct CameraView: View {
             if let original = model.latestOriginal { LUTEditorView(original: original) }
         }
         .fullScreenCover(isPresented: $showHistory, onDismiss: resume) { SavedEditsView() }
+        .fullScreenCover(isPresented: $showVideos, onDismiss: resume) { VideoLibraryView() }
         .onAppear {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
@@ -52,7 +54,7 @@ struct CameraView: View {
         .onDisappear { if !reviewing { model.setActive(false) } }
         .preferredColorScheme(.dark)
     }
-    private func resume() { if !reviewing { model.setActive(scenePhase == .active && !showEditor && !showHistory) } }
+    private func resume() { if !reviewing { model.setActive(scenePhase == .active && !showEditor && !showHistory && !showVideos) } }
     private func toggle(_ selected: CameraTool) {
         withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { tool = tool == selected ? nil : selected }
     }
@@ -215,6 +217,7 @@ struct CameraView: View {
             }.disabled(locked)
             HStack {
                 Menu {
+                    Button("영상 보관함", systemImage: "video") { if !reviewing { model.setActive(false) }; showVideos = true }
                     if let video = model.latestVideo {
                         ShareLink(item: video.url) { Label("영상 원본 공유", systemImage: "video") }
                         if !model.videoSavedToPhotos { Button("영상 사진 앱에 저장") { Task { await model.saveVideoToPhotos() } } }

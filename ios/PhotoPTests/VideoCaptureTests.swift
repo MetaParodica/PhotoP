@@ -95,6 +95,105 @@ final class VideoCaptureTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), ["pending.mov"])
     }
 
+    func testArchiveReloadAndHashVerificationRejectsSameSizeTampering() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = root.appendingPathComponent("pending.mov")
+        try await makeMovie(pending)
+        let original = try await VideoStore.finalize(pending, configuration: .init(resolution: .hd720), in: root)
+        let loaded = try VideoStore.library(in: root)
+        XCTAssertEqual(loaded.videos.count, 1); XCTAssertTrue(loaded.pending.isEmpty)
+        XCTAssertEqual(loaded.rejectedCount, 0)
+        let item = try XCTUnwrap(loaded.videos.first)
+        XCTAssertNil(item.manifest.recoveredFromPending)
+        let verified = try await VideoStore.verify(item)
+        XCTAssertEqual(verified.url, original.url)
+        var bytes = try Data(contentsOf: original.url)
+        bytes[bytes.count / 2] ^= 1
+        try bytes.write(to: original.url)
+        // List only reads bounded metadata. Full hash is checked before playback/export.
+        XCTAssertEqual(try VideoStore.library(in: root).videos.count, 1)
+        do { _ = try await VideoStore.verify(item); XCTFail("tampered movie accepted") }
+        catch { XCTAssertEqual(try Data(contentsOf: original.url), bytes) }
+    }
+
+    func testPendingRecoveryUsesActualMetadataAndRecordsRecoveredProvenance() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let pendingFolder = root.appendingPathComponent("Pending")
+        try FileManager.default.createDirectory(at: pendingFolder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = pendingFolder.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        try await makeMovie(pending)
+        let originalBytes = try Data(contentsOf: pending)
+        let before = try VideoStore.library(in: root)
+        XCTAssertEqual(before.pending.count, 1); XCTAssertTrue(before.videos.isEmpty)
+        let recovered = try await VideoStore.recover(pending, in: root)
+        XCTAssertEqual(try Data(contentsOf: recovered.url), originalBytes)
+        let after = try VideoStore.library(in: root)
+        XCTAssertTrue(after.pending.isEmpty); XCTAssertEqual(after.videos.count, 1)
+        let item = try XCTUnwrap(after.videos.first)
+        XCTAssertEqual(item.manifest.recoveredFromPending, true)
+        XCTAssertEqual(item.manifest.configuration, .init(resolution: .hd720, framesPerSecond: 30, codec: .h264))
+        _ = try await VideoStore.verify(item)
+    }
+
+    func testArchiveRejectsEscapingManifestAndSymlinkWithoutDeletingFiles() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = root.appendingPathComponent("pending.mov")
+        try await makeMovie(pending)
+        let original = try await VideoStore.finalize(pending, configuration: .init(resolution: .hd720), in: root)
+        let manifestURL = original.url.deletingLastPathComponent().appendingPathComponent("manifest.json")
+        let goodManifest = try Data(contentsOf: manifestURL)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: goodManifest) as? [String: Any])
+        object["originalFile"] = "../../escaped.mov"
+        try JSONSerialization.data(withJSONObject: object).write(to: manifestURL)
+        XCTAssertEqual(try VideoStore.library(in: root).rejectedCount, 1)
+        XCTAssertTrue(try VideoStore.library(in: root).videos.isEmpty)
+        try goodManifest.write(to: manifestURL)
+        let bytes = try Data(contentsOf: original.url)
+        let external = root.appendingPathComponent("external.mov")
+        try bytes.write(to: external)
+        try FileManager.default.removeItem(at: original.url)
+        try FileManager.default.createSymbolicLink(at: original.url, withDestinationURL: external)
+        XCTAssertTrue(try VideoStore.library(in: root).videos.isEmpty)
+        XCTAssertEqual(try Data(contentsOf: external), bytes)
+    }
+
+    func testInvalidPendingAndExternalPathsAreNotMoved() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let pendingFolder = root.appendingPathComponent("Pending")
+        try FileManager.default.createDirectory(at: pendingFolder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = pendingFolder.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        let bytes = Data("interrupted movie bytes".utf8)
+        try bytes.write(to: pending)
+        do { _ = try await VideoStore.recover(pending, in: root); XCTFail("invalid pending accepted") }
+        catch { XCTAssertEqual(try Data(contentsOf: pending), bytes) }
+        let outside = root.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        try bytes.write(to: outside)
+        do { _ = try await VideoStore.recover(outside, in: root); XCTFail("outside path accepted") }
+        catch { XCTAssertEqual(try Data(contentsOf: outside), bytes) }
+        let link = pendingFolder.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        do { _ = try await VideoStore.recover(link, in: root); XCTFail("symlink accepted") }
+        catch { XCTAssertEqual(try Data(contentsOf: outside), bytes) }
+    }
+
+    func testFinalizationRejectsWrongResolutionAndFrameRate() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = root.appendingPathComponent("pending.mov")
+        try await makeMovie(pending)
+        do { _ = try await VideoStore.finalize(pending, configuration: .init(resolution: .uhd4K), in: root); XCTFail("wrong size accepted") }
+        catch { XCTAssertTrue(FileManager.default.fileExists(atPath: pending.path)) }
+        do { _ = try await VideoStore.finalize(pending, configuration: .init(resolution: .hd720, framesPerSecond: 60), in: root); XCTFail("wrong nominal FPS accepted") }
+        catch { XCTAssertTrue(FileManager.default.fileExists(atPath: pending.path)) }
+    }
+
     private func makeMovie(_ url: URL) async throws {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [AVVideoCodecKey: AVVideoCodecType.h264,
