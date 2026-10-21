@@ -4,6 +4,7 @@ import SwiftUI
 struct CameraView: View {
     @StateObject private var model = CameraModel()
     @State private var showEditor = false
+    @State private var showHistory = false
     @State private var showLiveControls = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -85,6 +86,10 @@ struct CameraView: View {
                     Text(message).font(.caption).multilineTextAlignment(.center).padding(.horizontal)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
+                Button("편집 기록") {
+                    model.setActive(false)
+                    showHistory = true
+                }.disabled(model.busy || model.snapshot.isApplyingSettings)
                 if model.latestOriginal != nil {
                     Button("LUT 사진 편집") {
                         model.setActive(false)
@@ -103,8 +108,11 @@ struct CameraView: View {
         .fullScreenCover(isPresented: $showEditor, onDismiss: { model.setActive(scenePhase == .active) }) {
             if let original = model.latestOriginal { LUTEditorView(original: original) }
         }
-        .onAppear { model.setActive(scenePhase == .active && !showEditor) }
-        .onChange(of: scenePhase) { _, phase in model.setActive(phase == .active && !showEditor) }
+        .fullScreenCover(isPresented: $showHistory, onDismiss: { model.setActive(scenePhase == .active) }) {
+            SavedEditsView()
+        }
+        .onAppear { model.setActive(scenePhase == .active && !showEditor && !showHistory) }
+        .onChange(of: scenePhase) { _, phase in model.setActive(phase == .active && !showEditor && !showHistory) }
         .onDisappear { model.setActive(false) }
         .preferredColorScheme(.dark)
     }

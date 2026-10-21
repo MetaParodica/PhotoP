@@ -22,7 +22,15 @@ struct LUTEditorView: View {
     @State private var message: String?
     @State private var exported: URL?
 
-    init(original: URL) { _editor = State(initialValue: LUTPhotoEditor(original: original)) }
+    private let saved: SavedEdit?
+    init(original: URL) {
+        saved = nil
+        _editor = State(initialValue: LUTPhotoEditor(original: original))
+    }
+    init(saved: SavedEdit) {
+        self.saved = saved
+        _editor = State(initialValue: LUTPhotoEditor(original: saved.original))
+    }
 
     var body: some View {
         NavigationStack {
@@ -120,6 +128,15 @@ struct LUTEditorView: View {
                 do {
                     let image = try await editor.loadOriginal()
                     originalImage = UIImage(cgImage: try image.cgImage())
+                    if let saved {
+                        title = try await editor.useLUT(saved.imported)
+                        intensity = saved.recipe.intensity
+                        grainAmount = saved.recipe.grain?.amount ?? 0
+                        grainSeed = saved.recipe.grain?.seed ?? 1
+                        profileConfirmed = true
+                        revision += 1
+                        message = "저장된 설정을 복원했습니다. 원본과 이전 편집본은 보존됩니다."
+                    }
                 } catch { message = error.localizedDescription }
             }
             .task(id: "\(revision):\(intensity):\(grainAmount):\(grainSeed)") {

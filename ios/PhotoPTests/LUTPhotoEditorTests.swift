@@ -122,4 +122,106 @@ final class LUTPhotoEditorTests: XCTestCase {
         }
     }
 
+    private func savedFixture() async throws -> (URL, URL, URL) {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal GPU unavailable") }
+        let root = try folder(), originals = root.appendingPathComponent("Originals")
+        try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: true)
+        let original = try imageFile(in: originals)
+        let cube = root.appendingPathComponent("fixture.cube")
+        try identityCube().write(to: cube)
+        let editor = LUTPhotoEditor(original: original)
+        _ = try await editor.loadOriginal()
+        _ = try await editor.importCube(cube)
+        let output = try await editor.export(intensity: 0.4, grain: GrainSettings(amount: 0.6, seed: 37))
+        return (root, original, output)
+    }
+    private func changeRecipe(_ output: URL, _ change: (inout [String: Any]) -> Void) throws {
+        let path = output.deletingLastPathComponent().appendingPathComponent("recipe.json")
+        var json = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: path)) as? [String: Any])
+        change(&json)
+        try JSONSerialization.data(withJSONObject: json).write(to: path)
+    }
+    func testReopenAfterRestartAndReexportMatchesPreviewWithoutChangingOriginal() async throws {
+        let (root, original, output) = try await savedFixture()
+        let before = try Data(contentsOf: original)
+        let store = SavedEditStore(documents: root)
+        let entries = try await store.list()
+        XCTAssertEqual(entries.count, 1)
+        let loaded = try await SavedEditStore(documents: root).open(entries[0].id)
+        XCTAssertEqual(loaded.original, original.resolvingSymlinksInPath())
+        XCTAssertEqual(loaded.recipe.grain, GrainSettings(amount: 0.6, seed: 37))
+        let editor = LUTPhotoEditor(original: loaded.original)
+        _ = try await editor.loadOriginal()
+        _ = try await editor.useLUT(loaded.imported)
+        let preview = try await editor.renderPreview(intensity: loaded.recipe.intensity, grain: loaded.recipe.grain!)
+        XCTAssertEqual(try preview.jpeg(), try Data(contentsOf: output))
+        let newOutput = try await editor.export(intensity: loaded.recipe.intensity, grain: loaded.recipe.grain!)
+        XCTAssertNotEqual(output, newOutput)
+        XCTAssertEqual(try Data(contentsOf: output), try Data(contentsOf: newOutput))
+        XCTAssertEqual(try Data(contentsOf: original), before)
+        let newEntries = try await store.list()
+        XCTAssertEqual(newEntries.count, 2)
+    }
+    func testLegacyRecipeReopensWithZeroGrain() async throws {
+        let (root, _, output) = try await savedFixture()
+        try changeRecipe(output) { $0["version"] = 1; $0.removeValue(forKey: "grain") }
+        let loaded = try await SavedEditStore(documents: root).open(output.deletingLastPathComponent().lastPathComponent)
+        XCTAssertNil(loaded.recipe.grain)
+        XCTAssertEqual(loaded.recipe.intensity, 0.4)
+    }
+    func testReopenRejectsUnsupportedRecipeValuesAndTraversal() async throws {
+        let (root, _, output) = try await savedFixture()
+        let path = output.deletingLastPathComponent().appendingPathComponent("recipe.json")
+        let valid = try Data(contentsOf: path)
+        let store = SavedEditStore(documents: root)
+        let id = output.deletingLastPathComponent().lastPathComponent
+        let changes: [(inout [String: Any]) -> Void] = [
+            { $0["version"] = 3 }, { $0["intensity"] = -1 },
+            { $0["lutInputColorSpace"] = "Log" }, { $0["workingColorSpace"] = "linear" },
+            { $0["originalFilename"] = "../original.png" }, { $0["originalFilename"] = ".." },
+            { $0["grain"] = ["amount": 2, "seed": 1] }, { $0.removeValue(forKey: "grain") }
+        ]
+        for change in changes {
+            try valid.write(to: path)
+            try changeRecipe(output, change)
+            do { _ = try await store.open(id); XCTFail("Expected invalid recipe rejection") } catch {}
+        }
+        do { _ = try await store.open("../Originals"); XCTFail("Expected ID rejection") } catch {}
+        try Data(repeating: 32, count: 64 * 1024 + 1).write(to: path)
+        do { _ = try await store.open(id); XCTFail("Expected size rejection") } catch {}
+    }
+    func testReopenRejectsChangedOriginalAndLUT() async throws {
+        let (root, original, output) = try await savedFixture()
+        let store = SavedEditStore(documents: root), id = output.deletingLastPathComponent().lastPathComponent
+        let source = try Data(contentsOf: original)
+        try Data("changed".utf8).write(to: original)
+        do { _ = try await store.open(id); XCTFail("Expected original hash rejection") } catch {}
+        try source.write(to: original)
+        try (identityCube() + Data("\n# changed".utf8)).write(to: output.deletingLastPathComponent().appendingPathComponent("look.cube"))
+        do { _ = try await store.open(id); XCTFail("Expected LUT hash rejection") } catch {}
+    }
+    func testReopenRejectsMissingOriginalAndSymlinks() async throws {
+        let (root, original, output) = try await savedFixture()
+        let store = SavedEditStore(documents: root), id = output.deletingLastPathComponent().lastPathComponent
+        let source = try Data(contentsOf: original)
+        try FileManager.default.removeItem(at: original)
+        do { _ = try await store.open(id); XCTFail("Expected missing original rejection") } catch {}
+        let elsewhere = root.appendingPathComponent("elsewhere.png")
+        try source.write(to: elsewhere)
+        try FileManager.default.createSymbolicLink(at: original, withDestinationURL: elsewhere)
+        do { _ = try await store.open(id); XCTFail("Expected symlink rejection") } catch {}
+    }
+    func testHistoryIgnoresPendingAndNonIDFolders() async throws {
+        let root = try folder()
+        let store = SavedEditStore(documents: root)
+        let empty = try await store.list()
+        XCTAssertTrue(empty.isEmpty)
+        let edits = root.appendingPathComponent("Edits")
+        for name in [".pending-" + UUID().uuidString, "not-a-bundle"] {
+            try FileManager.default.createDirectory(at: edits.appendingPathComponent(name), withIntermediateDirectories: true)
+        }
+        let entries = try await store.list()
+        XCTAssertTrue(entries.isEmpty)
+    }
+
 }
