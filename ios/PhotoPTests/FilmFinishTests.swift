@@ -39,7 +39,8 @@ final class FilmFinishTests: XCTestCase {
         let lut = try identity(), renderer = try MetalLUTRenderer(lut: lut)
         let textureRenderer = try MetalLUTTextureRenderer(lut: lut, device: device)
         let width = 7, height = 5
-        let bytes: [UInt8] = (0..<35).flatMap { i in [UInt8(i * 7), UInt8(i * 3), UInt8(255 - i * 6), 255] }
+        var bytes: [UInt8] = []
+        for i in 0..<35 { bytes.append(contentsOf: [UInt8(i * 7), UInt8(i * 3), UInt8(255 - i * 6), 255]) }
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: width, height: height, mipmapped: false)
         d.usage = [.shaderRead, .shaderWrite]; d.storageMode = .shared
         let source = try XCTUnwrap(device.makeTexture(descriptor: d)), output = try XCTUnwrap(device.makeTexture(descriptor: d))
