@@ -132,7 +132,8 @@ struct CameraView: View {
             if tool == nil {
                 VStack(spacing: 8) {
                     zoomControl
-                    HStack(spacing: 8) { controlsRail; looksButton }
+                    // While cards are open the rail steps aside so the whole guide stays visible.
+                    if drawer == nil { HStack(spacing: 8) { controlsRail; looksButton } }
                 }.padding(.horizontal, 10).padding(.bottom, 10)
                     .background(alignment: .bottom) { scrim(top: false).allowsHitTesting(false) }
                     .transition(.opacity)
@@ -448,7 +449,7 @@ struct CameraView: View {
     }
     // Same carousel as guides: original, PhotoP colour styles, spatial looks, then adjust/browse.
     private var lookItems: [CameraCarouselItem] {
-        let sample = [3, 4, 1, 6, 9, 7, 0, 8, 11].map { FilmStyle.chart[$0] }
+        let sample = LookThumbnail.scene
         var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(LookThumbnail(colors: sample))) {
             Task { await model.selectOriginalLook() }
         }]

@@ -140,7 +140,7 @@ struct CameraQuickControls: View {
             HStack { Text("포즈 골격"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
             Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled).disabled(model.snapshot.video.isVideoMode)
-            Text("흰 점선 실루엣·노란 선은 목표 구도, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
+            Text("흰 선·점선은 목표 구도·실루엣, 노란 골격은 목표 포즈, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.guideGrid) { _, grid in model.showGrid = false; if grid != .off { model.compositionPresetID = nil } }
             .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
             // Body joints are analysed only for the portrait scene. One guide family is drawn at a time.

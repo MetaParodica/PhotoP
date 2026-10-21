@@ -15,7 +15,7 @@ struct CompositionControls: View {
                 Button("AI 프리뷰 시작 · 적용") { Task { await model.enableMonitoring() } }
                     .disabled(!model.guideAIEnabled || model.busy || model.snapshot.state != .running)
                 Button("LUT·분석 프리뷰 끄기") { model.disableLiveLUT() }.disabled(model.busy || model.livePreview == nil)
-                Text("노란 도식은 목표 구도·포즈, 청록 표시는 실제 Vision 검출 결과입니다. AI는 제안이며 정답이나 점수가 아닙니다. 이미지 서버 전송은 하지 않습니다.").font(.caption)
+                Text("흰 선은 목표 구도, 노란 도식은 목표 포즈, 청록 표시는 실제 Vision 검출 결과입니다. AI는 제안이며 정답이나 점수가 아닙니다. 이미지 서버 전송은 하지 않습니다.").font(.caption)
                 Text("AI는 최대 2Hz·1작업으로 처리하며 오래된 결과를 숨깁니다. 현재 세로 화면만 지원하고 AI 프리뷰 중 렌즈·터치 AF/AE·RAW를 제한합니다.").font(.caption)
                 if let snapshot = model.composition { Text(snapshot.advice).font(.caption) }
                 if let message = model.message { Text(message).font(.caption) }
@@ -44,7 +44,7 @@ struct CompositionOverlay: View {
                 let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size)
                 Canvas { context, _ in
                     func map(_ point: CGPoint, vision: Bool = false) -> CGPoint { GuideGeometry.point(point, in: rect, vision: vision) }
-                    func line(_ a: CGPoint, _ b: CGPoint, color: Color = .yellow) {
+                    func line(_ a: CGPoint, _ b: CGPoint, color: Color = .white) {
                         var p = Path(); p.move(to: map(a)); p.addLine(to: map(b)); context.stroke(p, with: .color(color.opacity(opacity)), lineWidth: 1)
                     }
                     switch grid {
@@ -71,7 +71,7 @@ struct CompositionOverlay: View {
                             let point = map(.init(x: 0.618 + r * cos(angle), y: 0.618 + r * sin(angle)))
                             if i == 0 { p.move(to: point) } else { p.addLine(to: point) }
                         }
-                        context.stroke(p, with: .color(.yellow.opacity(opacity)), lineWidth: 1)
+                        context.stroke(p, with: .color(.white.opacity(opacity)), lineWidth: 1)
                     }
                     func skeleton(_ body: [String: CGPoint], vision: Bool, color: Color) {
                         for (a, b) in PoseTemplate.bones {
@@ -92,6 +92,6 @@ struct CompositionOverlay: View {
                 }
                 if live, let fresh { Text(fresh.advice).font(.caption2).padding(5).background(.black.opacity(0.65)).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom) }
             }
-        }.allowsHitTesting(false).accessibilityLabel("노란 목표 구도·포즈와 청록 AI 검출 가이드")
+        }.allowsHitTesting(false).accessibilityLabel("흰 목표 구도선, 노란 목표 포즈와 청록 AI 검출 가이드")
     }
 }

@@ -149,19 +149,24 @@ struct SymbolThumbnail: View {
 }
 
 struct LookThumbnail: View {
+    // Generated sample scene (not a photo): sky, distant hills, foliage, ground, shadow, with a skin tone disc.
+    static let scene: [SIMD3<Double>] = [.init(0.55, 0.72, 0.92), .init(0.78, 0.84, 0.92), .init(0.42, 0.52, 0.45),
+                                         .init(0.3, 0.52, 0.24), .init(0.62, 0.5, 0.36), .init(0.12, 0.12, 0.13), .init(0.86, 0.64, 0.52)]
     let colors: [SIMD3<Double>]
+    private func color(_ i: Int) -> Color {
+        let v = colors.indices.contains(i) ? colors[i] : .zero
+        return Color(.sRGB, red: v.x, green: v.y, blue: v.z, opacity: 1)
+    }
     var body: some View {
-        // A 3x3 sample of the generated chart: shadows, skin, foliage and sky after the look.
-        let columns = 3
-        VStack(spacing: 0) {
-            ForEach(0..<columns, id: \.self) { row in
-                HStack(spacing: 0) {
-                    ForEach(0..<columns, id: \.self) { column in
-                        let i = row * columns + column
-                        let value = colors.indices.contains(i) ? colors[i] : .zero
-                        Rectangle().fill(Color(.sRGB, red: value.x, green: value.y, blue: value.z, opacity: 1))
-                    }
+        GeometryReader { g in
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 0) {
+                    LinearGradient(colors: [color(0), color(1)], startPoint: .top, endPoint: .bottom).frame(height: g.size.height * 0.45)
+                    color(2).frame(height: g.size.height * 0.12)
+                    color(3).frame(height: g.size.height * 0.18)
+                    LinearGradient(colors: [color(4), color(5)], startPoint: .top, endPoint: .bottom)
                 }
+                Circle().fill(color(6)).frame(width: g.size.width * 0.3).offset(x: g.size.width * 0.58, y: g.size.height * 0.28)
             }
         }
     }
