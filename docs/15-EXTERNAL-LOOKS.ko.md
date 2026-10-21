@@ -2,7 +2,7 @@
 
 ## 구현 기능
 
-이번 조사에서 실제 바이트를 확보한 신규 LUT **25개 전부**를 `assets/company-luts`에 원본 그대로 포함한다. 기존 외부 slay 5개와 합쳐 외부 파일은 30개다. 새로운 25개는 크리에이티브 룩 22개·기술 변환 3개로 분류한다. PhotoP 자체 24개와 기존 slay 5개를 합치면 현재 크리에이티브 룩은 **51개**, 별도 기술 변환은 3개다. 단순 링크만 확인한 공식 다운로드 팩을 확보 수량으로 계산하지 않는다.
+이번 조사에서 실제 바이트를 확보한 신규 LUT **25개 전부**를 `assets/company-luts`에 원본 그대로 포함한다. 기존 외부 slay 5개와 합쳐 외부 파일은 30개다. 새로운 25개는 크리에이티브 룩 22개·기술 변환 3개로 분류한다. PhotoP 자체 24개와 기존 slay 5개를 합치면 컬러 LUT 룩은 **51개**, 별도 기술 변환은 3개다. 단순 링크만 확인한 공식 다운로드 팩을 확보 수량으로 계산하지 않는다.
 
 Fujifilm 계열 ACROS/ASTIA/Classic Chrome/Classic Negative/ETERNA/ETERNA BB/PRO Neg Std/PROVIA/REALA ACE/Velvia, Leica 계열 Classic/Natural, ARRI Classic709, RED 계열과 Nikon N-Log용 RED 변형, Cineon/Fuji 3513DI/Kodak 2383 파생, RocketStock Django 25와 Presetpro Cinematic을 포함한다. 공식 제조사 배포본과 동일하다고 주장하지 않는다.
 
@@ -43,6 +43,6 @@ Fujifilm 계열 ACROS/ASTIA/Classic Chrome/Classic Negative/ETERNA/ETERNA BB/PRO
 
 ## 테스트와 다음 단계
 
-로컬 Python 검사 17개와 실제 원본 25개 무결성 검사가 성공했다. Swift 테스트에는 V-Log 코드값, 전체 LUT/색상표, 파생 cube 오차, 65³ 캐시 재시작·손상 복구, Metal 일치, WDR 적용 제한 및 미확인 출처의 프리셋 복원을 추가했다. macOS 실행 결과는 CI 확인 후 기록한다. 실기기 성능·컬러 차트 촬영 검증은 미완료다.
+로컬 Python 검사 17개와 실제 원본 25개 무결성 검사가 성공했다. Swift 테스트에는 V-Log 코드값, 전체 LUT/색상표, 파생 cube 오차, 65³ 캐시 재시작·손상 복구, Metal 일치, WDR 적용 제한 및 미확인 출처의 프리셋 복원을 추가했다. [실행39579967039](https://github.com/MetaParodica/PhotoP/actions/runs/39579967039)에서 SDK·Swift149·UI1·Python17·소스/실제 앱 LUT30개 검사·화면 캡처가 모두 성공했다. 공간 효과를 통합한 최종 실행39581407493도 SDK·Swift155·UI1·Python17·자산/캡처 성공이다. 실기기 성능·컬러 차트 촬영 검증은 미완료다.
 
 다음 단계는 LUT로 표현할 수 없는 공간 기반 소프트 포커스·색수차·가로 빛 번짐을 공통 Metal 마감 패스에 추가하는 것이다.

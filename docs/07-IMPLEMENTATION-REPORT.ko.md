@@ -1,54 +1,55 @@
 # 현재 개발 단계 보고
 
-기준: 2026-10-21 KST. MetaParodica/PhotoP, `codex/ios-camera-foundation`, [Draft PR#1](https://github.com/MetaParodica/PhotoP/pull/1). 초기 Phase1–6 이후 성능·사진 해상도 요청·룩 지원 확장을 구현하고 단위별 자동 gate를 통과했다. 실제 iPhone 품질 승인은 미완료다.
+기준: 2026-10-21 KST. `MetaParodica/PhotoP`, `codex/camera-ui-refresh`, [Draft PR #2](https://github.com/MetaParodica/PhotoP/pull/2). 이전 PR #1은 main에 병합되었으며 이번 변경은 별도 PR에 보관한다. 초기 Phase1–6의 사진 기능을 바탕으로 UI·외부 룩·공간 효과를 확장했다. 실제 iPhone 품질 승인은 별도 대기다.
 
 ## 1. 구현 기능
 
-기존 native 카메라/수동 제어·RAW/ProRAW·노출 분석/브래킷·SDR Metal LUT/비파괴 편집·장노출·구도 가이드를 유지한다. 이번 변경은 다음과 같다.
-
-- 중립 preview의 불필요한 LUT compute/graded texture 제거, immutable Metal PSO 재사용, thermal/저전력 처리량·분석 빈도 조절.
-- 활성 포맷의 실제 지원 목록에서 사진별 해상도 상한 선택, 일반 저장 파일의 실제 픽셀 크기 표시.
-- 단독1D cube의 채널별 직접 보간, 기존3D cube/Hald와 편집·실시간 미리보기·preset/favorites 연결.
-- 자체24종·외부 slay5종 총29 룩, 검색/분류/색상표, 최대32개 LUT 순차 가져오기와 부분 성공/실패 보고.
-- 외부 LUT/license 원본·SHA256·creator/credit/source/profile assumption 보존, favorite/preset/recipe/JPEG caption attribution 유지, 실제 app bundle 검증.
+- 제공된 보라색 카메라 이미지를 iPhone/App Store 아이콘에 적용.
+- 촬영 화면의 아이콘을 누르면 ISO·셔터·EV·WB/Tint·초점의 선택 버튼/슬라이더가 펼쳐진다. 제스처 종료 시 기존 AVFoundation 서비스로 적용하며 실제 장치 지원 범위를 사용한다.
+- 파일 포맷·지원 RAW/ProRAW·해상도 상한·브래킷·구도·노출 보조·룩 강도를 촬영 화면에서 조절한다. 파일 가져오기/전체 스타일 탐색·장노출 작업·사진 편집/기록은 별도 화면을 유지한다.
+- 기존 외부 slay 5개에 이번 확보 25개 전부를 추가: 외부 원본 **30개**, 창작 외부 룩 **27개**·기술 변환 **3개**. 출력 미확인 WDR 1개는 포함하되 원본만 제공한다.
+- 자체 컬러 LUT 24개+외부 창작 룩 27개=컬러 룩 51개. LUT와 별개인 Metal 공간 프리셋 8개를 더해 **59개 룩+기술 LUT 3개**를 제공한다.
+- 소프트 포커스·색수차·가로 빛 번짐을 개별 조절하고 사진/라이브 공통 Metal 마감에 연결했다. 기존 그레인·fade/vignette/bloom/halation과 전체 프리셋·비파괴 레시피 복원을 유지한다.
 
 ## 2. 참고 소스와 라이선스
 
-[13 문서](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)에 실제 읽은 파일·고정 revision·판단을 기록했다. MetalPetal MTIContext의 cache 구조(MIT), OpenColorIO IridasCube parser(BSD-3-Clause)를 참고해 독립 구현했다. slaycamera/luts의 LUT 자체 CC BY4.0·README·LICENSE 전문·생성기·5개 원본 cube/RGB행을 확인했다. 해당 LUT5개와 license만 포함하고 타사 UI/사진/생성기 코드는 복사하지 않았다.
+Apple HIG·공식 Design Resources·SwiftUI/SF Symbols를 검토했다. iOS26+ 지원 SDK에서는 native Liquid Glass, 이전 환경에서는 시스템 material을 사용한다. Figma/Sketch 목업 파일을 편집했다고 주장하지 않는다.
 
-기존 Starlapse/PoseGuide/hald-clut 검토는 [11](11-PHASE4-6-IMPLEMENTATION.ko.md), 공식 브랜드 LUT 제공 사실과 미확정 재배포권은 [12](12-FILM-SOURCES-AND-QUALITY.ko.md)에 유지한다. slay5개 허가를 다른 자료에 확대하지 않는다. 자체 profile-data 허가는 Film/STYLE-PERMISSION.txt 범위다.
+신규 LUT는 Lumix-film-simulation 고정 버전 23개와 postprocessing 데모의 RocketStock/Presetpro 2개다. 비공식 파생/미러 원본이며 제조사 공식 제공본으로 표시하지 않는다. 사용자 지시에 따라 미확인 권리를 포함 제한으로 사용하지 않되 license·상업 사용·재배포 허가는 unknown으로 기록한다. 기존 slay 5개의 CC BY4.0 허가를 신규 자료에 확대하지 않는다.
+
+colour-science의 Panasonic V-Log/V-Gamut 변환 수학(BSD-3-Clause), GPUImage3 GaussianBlur(BSD-3-Clause), KinoStreak(MIT) 실제 소스를 비교한 뒤 독립 구현했다. 외부 UI/사진/Unity 프레임워크 코드는 복사하지 않았다. 구체적인 source/blob/판단은 [14](14-CAMERA-UI.ko.md)·[15](15-EXTERNAL-LOOKS.ko.md)·[16](16-SPATIAL-STYLES.ko.md)에 기록한다.
 
 ## 3. 기술적 접근
 
-고빈도 mutable 프레임은 한 작업씩 처리하고 immutable PSO만 공유한다. 중립 출력은 색변환된 source를 직접 사용한다. 열 상태의 처리 budget은 센서/촬영 설정을 바꾸지 않는다. 사진 해상도는 activeFormat/output의 실제 값 중 per-request로 선택하고 실제 결과 metadata와 구분한다. 1D는 낮은3D 표로 굽지 않고 채널별 curve를 직접 보간한다. LUT batch는 한 파일씩 저장해 전체 파일을 동시에 RAM에 유지하지 않는다.
+촬영 세션·GPU 처리·UI의 기존 책임을 유지한다. 설정 패널은 같은 CameraModel/서비스를 사용한다. 지원하지 않는 렌즈/RAW/포맷 조합이나 플래시·가짜 줌을 추가하지 않는다. 기본 격자와 선택된 구도 상태를 통일해 숨기기를 바로 사용할 수 있다.
 
-외부 룩은 입력 profile이 미기재이므로 PhotoP의 sRGB SDR 가정 확인 후 적용한다. 원본 LUT byte/hash·license와 metadata/JPEG attribution을 함께 유지한다. 기존 uncredited favorite에 동일 LUT의 검증된 출처를 다시 저장하면 metadata만 보강한다.
+V-Log 입력 LUT는 sRGB 값에 직접 적용하지 않는다. sRGB 디코딩→V-Gamut/V-Log→원본 LUT→Rec.709 gamma2.4 가정→sRGB의 **SDR 근사**를 65³ cube로 생성·검증·캐시한다. 원본과 렌더 LUT 해시를 구분한다. 장면 HDR이나 센서 특성을 복원하지 않는다.
+
+공간 효과는 주변 픽셀과 위치를 사용하고 색상 LUT와 분리된다. 기존 한 마감 패스와 재사용 자원을 이용한다. 공간 프리셋의 identity cube는 레시피 컨테이너용 운반 데이터이며 실제 효과는 파라미터에 있다. 구형 레시피의 새 효과는 0으로 복원한다.
 
 ## 4. 생성·수정 파일
 
-- 신규: MetalPipelineCache.swift, PreviewBudget.swift, PhotoResolution.swift, BundledFilmLibrary.swift, LUTBatchImporter.swift, PreviewBudgetTests/PhotoResolutionTests/OneDLUTTests/BundledFilmLibraryTests/LUTBatchImporterTests.
-- 수정: CameraService/CameraModel/CameraTypes/CapturedPhoto/ManualControls; CubeLUT/MetalLUTResources/LUT.metal; FilmStyleLibrary/STYLE-PERMISSION/FilmFinish; live/still renderers·preview processor/analyzer; LUTLibrary/LUTPhotoEditor/SDRImage·스타일/편집/미리보기/즐겨찾기 UI; 기존 관련 tests.
-- 자산·CI: LUT5개·license·manifest, lut-catalog, project.yml, ios.yml, 자산 검사 script/tests. 문서04/05/06/07/08/11/12/13·README 갱신.
+- UI: CameraView/CameraChrome/CameraQuickControls, FilmStylesView/FilmFinishControls, CameraInteractionTests, CameraChromeTests.
+- 컬러·효과: CompanyFilmLibrary, SDRVendorAdapter, ProceduralLook, FilmFinish.swift/.metal, CompanyFilmLibraryTests/SpatialLookTests/FilmFinishTests.
+- 자산: Assets.xcassets/AppIcon, app-icon-source.json, company-luts 원본 25개·manifest·notice, LUT 카탈로그, 화면 캡처.
+- CI: iPhone SDK·Swift/UI tests·아이콘/양쪽 LUT 컬렉션 무결성·실제 앱 복사본 검사, simctl 캡처 전 부팅 확인, 결과 artifact.
 
 ## 5. 실행·테스트 결과
 
-| 단위 | revision | CI | 결과 |
-|---|---|---|---|
-| preview 최적화 |6d7d2eae672735dff4122bc5e4372010672066b1|[39544188467](https://github.com/MetaParodica/PhotoP/actions/runs/39544188467)|SDK·Swift124·Python7 성공|
-| 해상도 요청 |6977d87b5a7275211ff76ebf1a11c70429d97d37|[39544511878](https://github.com/MetaParodica/PhotoP/actions/runs/39544511878)|SDK·Swift128·Python7 성공|
-| 1D cube |f274a26e2936951299d5ef89380982fc046d6569|[39544857433](https://github.com/MetaParodica/PhotoP/actions/runs/39544857433)|SDK·Swift132·Python7 성공|
-|29종/권리/batch/credit·정밀도 수정|3abee4006a3298a49eb63dde8dae710a37c747c9|[39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621)|SDK·Swift139·Python11·source/app bundle5개 hash 성공, skip0|
+| 단위 | 코드 커밋/CI | 결과 |
+| --- | --- | --- |
+| 촬영 UI | `ea12093`, [39575774557 재시도](https://github.com/MetaParodica/PhotoP/actions/runs/39575774557) | SDK·Swift142·UI1·Python13 성공. 별도 캡처는 Shutdown 상태로 실패하여 수정. UI 테스트의 실제 화면은 회수. |
+| 신규 LUT25·캡처 복구 | `7a15e0d`, [39579967039](https://github.com/MetaParodica/PhotoP/actions/runs/39579967039) | SDK·Swift149·UI1·Python17·source/app 자산30개 검사·기본/구도 화면 캡처 성공. |
+| 공간 효과8·구도 상태 통일 | `6c569e0`, [39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493) | SDK·Swift155·UI1·Python17·source/app 자산30개 검사·기본/구도 화면 캡처 성공. |
 
-첫 룩 통합에서 Neon Rose의17³ 보간이 기존0.015 오차 gate를 넘었다. 입력(0.9,0.8,0.1)의 청색 오차0.01604를 재현했고 허용 오차를 유지한 채 해당 스타일만33³로 높여 회귀 테스트를 추가했다. 나머지 스타일과 기존12종 기본 표는 유지한다. 수정 후 전체가 통과했다. unsigned SDK/XCTest는 GitHub macOS에서, 로컬 Python11은 Linux에서 실행했다. 실제 기기에서 실행했다고 주장하지 않는다. AppIntents/portrait의 기존 경고는 유지된다.
+실행·검증은 GitHub macOS 및 Linux Python에서 수행했다. 캡처는 Debug 시뮬레이터에서 **실제 SwiftUI 앱을 실행한 화면**이며 합성 검토 배경임을 화면에 표시한다. 생성형 디자인 목업으로 테스트를 대체하지 않았다. 실제 카메라/실기기 촬영을 검증했다고 주장하지 않는다.
 
 ## 6. 확인된 제약
 
-실측 FPS/지연/배터리/발열/RAM 개선량은 없다. 처리 budget 감소를 실제 speed-up으로 표시하지 않는다. 해상도 요청은 최대 상한이며 실제 결과는 더 작을 수 있고, RAW/브래킷의 임의 크기 선택은 제공하지 않는다. SDR 편집은12.6MP·sRGB JPEG로 제한하고 원본은 보존한다.
+실측 iPhone FPS·지연·배터리·발열·RAM 개선량과 실제 피부/야경/고채도·banding/halo 평가는 미완료다. 캡처 환경은 Xcode16.4의 Simulator이며 iOS26 native Liquid Glass 분기는 이 환경에서 실행하지 않았다.
 
-29종은 브랜드 필름/유제 측정 재현이 아니다. 외부5개는 sRGB 해석을 가정하며 Log/HDR에 직접 적용하지 않는다. 실제 피부/야경/고채도·banding/halo 미학 평가는 미완료다. 100종·mixed shaper·고급OCIO config·RAW 현상/HDR grading·고해상도 편집·가로 UI·영상/Android는 후속이다.
-
-기존 장노출은1280px·최대2fps 처리 SDR 샘플·128MiB frame archive·±8px 정수 translation이다. 회전/원근·일반 handheld 보장·median/motion-aware·재시작 archive browser·crash orphan recovery는 미구현이다. 구도 Vision 정확도/실제 지연·semantic building/소실점·자동 perspective correction과 실제 촬영/EXIF/Photos·장시간 품질 승인은 별도 대기다.
+기존 SDR 편집 12.6MP·원본 보존, 샘플 장노출1280px/최대2fps·128MiB archive·±8px translation, 세로 구도/규칙·Vision의 기존 한계를 유지한다. 센서 연속 장노출·median/motion-aware/회전·원근 정렬·semantic building/소실점·RAW 현상/HDR grading·영상·Android는 구현 완료가 아니다. 100종 이상은 품질 확장 목표다.
 
 ## 7. 다음 단계
 
-실기기에서 처리량·색/화질·고해상도 delivery를 측정하고 실제 이득이 확인되는 항목을 우선 개선한다. 제품 로드맵의 다음 기능 단계는 Phase7 영상이며 이번 요청에서 영상/Android를 구현했다고 표시하지 않는다. 최신 전체 테스트·소스/권리·제약은13 문서와 PR checks를 따른다.
+실제 지원 iPhone에서 카메라 제어·촬영 결과/EXIF·Photos·프리뷰/고해상도 출력의 색과 공간 효과·300초 안정성을 검증한다. 사용자의 지시에 따라 이 실기기 검증은 자동 테스트 통과 후의 다음 개발 단계를 막지 않는다. 영상은 다음 제품 단계이며 현재 구현으로 보고하지 않는다. 이전 성능/해상도/1D/29종 확장 이력은 [13](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)과 [단계 로그](08-STEP-VALIDATION.ko.md)에 보존한다.

@@ -1,3 +1,5 @@
+> 현재 정책 보충: 이후 사용자가 권리 확인과 무관하게 확보 LUT를 모두 포함하도록 지시했다. 따라서 아래의 초기 제외 정책은 기존 승인 컬렉션에 대한 기록으로 남기고, 신규 `company-luts` 25개는 미확인 상태를 명시하여 Debug/Release 모두 포함한다. 허가를 확인한 것으로 바꾸지 않는다. [실제 신규 원본·프로파일·해시](15-EXTERNAL-LOOKS.ko.md), [공간 효과 8종](16-SPATIAL-STYLES.ko.md)을 함께 참조한다.
+
 # LUT·필름 라이브러리 조사와 포함 정책
 
 기준: 2026-10-21 KST. 아래는 **출처를 찾은 카탈로그**이며 LUT 바이너리를 확보·검수·번들 완료했다는 뜻이 아니다. 기계 판독용 출처 목록은 `assets/lut-catalog.json`에 보존한다. 현재 외부 LUT 바이너리 번들은 **CC BY4.0 slay5개**이고, 런타임에 생성하는 자체 sRGB 스타일은24종이다. 100개 이상의 스타일은 후속 품질 목표다.
@@ -69,3 +71,7 @@ Phase 6 공식 제공 사실·재배포 미확정 구분은 [12](12-FILM-SOURCES
 [고정 원본](https://github.com/slaycamera/luts/tree/a1709044efe115640dde1dee17d4185fc059af0d)의 README·LICENSE 전문·생성기·5개 cube header/RGB행을 확인했다. CC BY4.0 LUT 자체 배포·credit 범위에서 원본을 변경 없이 포함한다. 원본 blob SHA/개별 SHA256·license hash·creator/credit/source는 assets/luts/manifest.json에 있다. 타사 UI/사진/생성기 코드는 포함하지 않는다. 공식 Log/필름 기술 변환으로 이름 붙이지 않는다.
 
 Upstream transfer/gamut은 미기재이므로 sRGB는 PhotoP 가정이다. `profileBasis=assumed-sRGB`·`requiresSRGBConfirmation=true`, UI 확인·recipe에 표시한다. 실제 app bundle 검사·metadata/JPEG caption credit·favorites/preset 보존은 [13](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)을 따른다. 나머지 외부 후보의 권리가 승인된 것으로 확대하지 않는다.
+
+## 신규 확보 25개 전체 포함
+
+개별 source/revision/SHA256/원본 경로는 `assets/company-luts/manifest.json` 및 `assets/lut-catalog.json`에 기록한다. Lumix 파생 23개·postprocessing 데모 미러 2개다. 공식 다운로드 링크만 확인한 브랜드 팩을 포함했다고 계산하지 않는다. 전체 외부 원본 30개 중 창작 룩 27개와 기술 변환 3개이며, WDR 1개는 출력 미확인으로 원본만 제공한다.

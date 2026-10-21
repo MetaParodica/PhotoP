@@ -26,12 +26,16 @@ SwiftUI 촬영 화면을 뷰파인더·도구 레일·촬영 도크로 재구성
 - 기존 실제 카메라 권한·수동 설정·RAW·장노출·LUT의 하드웨어 검증은 iPhone에서 별도로 수행해야 한다.
 - CI 결과는 실행 후 기록한다. 디자인 목업이나 렌더링만으로 실제 앱 테스트를 대체하지 않는다.
 
-## 이번 실행 결과
+## 실행 결과와 화면
 
-- Linux 로컬: Python 검사 **13개 성공**(기존 LUT 11개 + 새 아이콘 무결성 2개). 아이콘 9개 슬롯의 실제 PNG 크기·알파 채널 부재·원본 변환 해시를 확인했다.
-- GitHub [실행 39574960735](https://github.com/MetaParodica/PhotoP/actions/runs/39574960735): 최초 실행과 실패 작업 재시도 모두 runner 미배정(`runner_name` 빈 값), `steps: []` 상태로 종료했다. 작업 로그도 생성되지 않았다. 연결 도구는 주석 상세 조회를 지원하지 않아 근본 원인은 미확인이다.
-- **현재 변경의 SDK 빌드·Swift 3개 신규 단위 테스트·UI 테스트·네이티브 실행 캡처는 미실행이다.** 기존 커밋에서 성공했던 Swift 139개 결과를 이번 UI 변경의 성공으로 계산하지 않는다.
-- macOS 작업을 실행할 수 있게 되면 기존 워크플로가 빌드·테스트·두 화면 캡처·artifact 업로드를 수행하도록 구성했다. 실제 실행 사진은 아직 생성되지 않았다.
-- 앞서 요청한 외부 LUT 추가·비 LUT 효과 확장은 수집/로컬 초안 상태를 유지한다. 이번 UI 단계의 자동 검증이 막혀 있으므로 다음 단계 완료로 처리하지 않는다.
+최초 macOS runner 미배정 실패는 재시도 후 해소되었다. `ea12093`의 실행39575774557에서 iPhone SDK·Swift142·UI1·Python13은 성공했고, 별도 캡처 단계가 Shutdown 상태를 만나 실패했다. UI 테스트의 xcresult에서 실제 화면을 회수했으며 캡처 전 boot/bootstatus 처리를 추가했다.
 
-이번 UI 작업은 이미 병합된 PR #1과 분리하여 [Draft PR #2](https://github.com/MetaParodica/PhotoP/pull/2), `codex/camera-ui-refresh`에 보관한다. 새 브랜치의 [실행 39575585775](https://github.com/MetaParodica/PhotoP/actions/runs/39575585775)도 실행 시작 전 실패 상태다. 네이티브 캡처가 생성된 것으로 보고하지 않는다.
+`7a15e0d`의 실행39579967039에서 SDK·Swift149·UI1·Python17, 원본/복사 앱의 LUT30개 검사, 기본/구도 화면 캡처가 모두 성공했다. 기본 격자와 구도 선택 상태를 통일한 최종 코드 `6c569e0`의 [실행39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493)도 **SDK·Swift155·UI1·Python17·자산 검사·캡처 전체 성공**이다. UI 테스트는 삼분할→숨기기→삼분할과 패널 닫기/다른 도구 열기를 실제로 조작했다.
+
+캡처는 iPhone16 Pro/iOS18.5 Simulator, Xcode16.4에서 `simctl`로 얻은 실제 SwiftUI 앱 화면이다. PNG 원본과 보기용 JPEG를 보관하고 코드/CI/해시를 `screenshots/provenance.json`에 기록했다. 이 환경에서는 iOS17~25용 system material fallback을 실행했으며 iOS26 native Liquid Glass 분기는 미검증이다. 실제 iPhone 촬영 영상이나 실기기 품질 승인이 아니다. 검토용 합성 배경은 화면에 명시한다.
+
+| 기본 촬영 화면 | 구도 패널 |
+| --- | --- |
+| ![기본 화면](screenshots/camera.jpg) | ![구도 패널](screenshots/guide.jpg) |
+
+이번 변경은 [Draft PR #2](https://github.com/MetaParodica/PhotoP/pull/2), `codex/camera-ui-refresh`에 보관한다. 이후 실제 iPhone의 지원 범위/파일·메타데이터/Photos·패널 터치/접근성·촬영 중단을 검증한다.

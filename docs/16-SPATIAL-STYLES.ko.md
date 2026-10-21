@@ -36,4 +36,4 @@ Soft Lens, Night Streak, Vintage Optics, Dream Glass, Mist Light, Glow Portrait,
 - `SpatialLookTests`: 구형 레시피 호환, 각 효과의 공간 방향·채널·알파, 강도 0의 정확한 원본, 프리셋 재시작 및 편집 원본 보존·효과 복원.
 - 촬영 화면의 기존 기본 격자를 구도 선택값 삼분할과 통일했다. UI 테스트가 삼분할→숨기기→삼분할을 실제 메뉴로 조작한다.
 
-macOS CI 결과는 실행 후 기록한다. 다음 단계는 실제 iPhone의 프리뷰/편집 고해상도 비교, 장시간 성능 및 광원 장면별 품질 검증이다. 이번 변경으로 미지원 Log/HDR 촬영이나 실제 광학 기능을 제공한다고 표시하지 않는다.
+[최종 실행39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493), 코드 `6c569e0ec22f0521899bfd6cb0a9aca7d296024e`: iPhone SDK·Swift155·UI1·Python17·소스/복사 앱 LUT30개 무결성·기본/구도 캡처가 모두 성공했다. Swift 테스트 skip0이며 사진/텍스처 경로는 모든 마감 효과를 켠 257px 이미지에서 1 code value 허용 오차를 통과했다. 다음 단계는 실제 iPhone의 프리뷰/편집 고해상도 비교, 장시간 성능 및 광원 장면별 품질 검증이다. 이번 변경으로 미지원 Log/HDR 촬영이나 실제 광학 기능을 제공한다고 표시하지 않는다.

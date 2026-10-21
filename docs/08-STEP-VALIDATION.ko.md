@@ -223,3 +223,15 @@
 - 첫 `c355558cb807c4da7f40a24c9c5188a5a7c397e8`, [CI39550127056](https://github.com/MetaParodica/PhotoP/actions/runs/39550127056): SDK 성공, Swift138 중1실패. Neon Rose에서17³ 보간 오차0.01604가 기존0.015 초과. 허용 오차를 유지하고 해당 표를33³로 높여 near-clipped blue 회귀 추가.
 - 수정 `3abee4006a3298a49eb63dde8dae710a37c747c9`, [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621): unsigned SDK·Swift139·Python11 성공, skip0. source와 실제 app bundle 자산5개 hash·credit/license/profile 확인·chart/GPU·변조거부·attribution 재시작/recipe/JPEG·batch 부분 성공/선택 제한 검증.
 - 자체24+외부5 총29이며100종 검수/브랜드 재현 완료가 아니다. 실제 사진 미학/색차·FPS/메모리/발열/기기 촬영은 미검증. 자세한 소스·파일·기술 계약은13 문서.
+
+## 28. 촬영 화면 내 조절과 제공 아이콘
+
+CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패널·44pt 조작/접근성 레이블·재질 fallback을 구현했다. 장치 범위를 사용하며 셔터 위치를 유지한다. 제공 이미지를 아이콘9개 슬롯으로 변환하고 해시/PNG 형식을 검사한다. `ea12093`, 실행39575774557 재시도: SDK·Swift142·UI1·Python13 성공. 캡처는 종료된 Simulator로 실패했으며 xcresult 화면 회수·명시적 부팅으로 복구했다. 상세는14 문서.
+
+## 29. 확보 외부 LUT25 전부·SDR 프로파일 변환
+
+원본25개+해시/출처/권리 미확인 상태, V-Log→SDR 근사65³ 캐시, 프로파일 미확인 WDR 원본만 제공, preset/provenance 복원 및 실제 앱 리소스 검사. `7a15e0d`, [실행39579967039](https://github.com/MetaParodica/PhotoP/actions/runs/39579967039): SDK·Swift149·UI1·Python17·자산30개 양쪽 컬렉션 검사·자동 캡처 전체 성공. 자동 검증 후30으로 진행했다. 브랜드 공식 배포·센서 재현·권리 승인을 주장하지 않는다.
+
+## 30. 비 LUT 공간 효과3·프리셋8·격자 상태 통일
+
+같은 Metal 패스에 소프트 포커스/방사 색수차/가로 광원 확산을 추가하고 구형 레시피 복원·알파·중립·방향·채널·preset/편집 재시작을 검사했다. 기본 격자와 메뉴를 통일했고 UI 테스트가 메뉴로 삼분할→숨기기→삼분할을 수행한다. `6c569e0ec22f0521899bfd6cb0a9aca7d296024e`, [실행39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493): SDK·Swift155(skip0)·UI1·Python17·자산30개·두 화면 캡처 전체 성공. buffer/texture의 전체 마감은1code 이내.59룩+기술3, 외부 원본30개. 실기기 품질/성능은 별도 대기.
