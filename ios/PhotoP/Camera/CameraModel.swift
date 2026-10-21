@@ -39,6 +39,7 @@ final class CameraModel: ObservableObject {
     @Published var liveFinish = FilmFinishSettings()
     @Published var liveGrain = 0.0
     @Published var liveGrainSeed: UInt32 = 1
+    @Published private(set) var liveCredit: String?
     @Published var photoResolution: PhotoResolution?
     @Published private(set) var latestPhotoResolution: PhotoResolution?
     @Published var liveCompareOriginal = false
@@ -145,6 +146,7 @@ final class CameraModel: ObservableObject {
         }
         importedLiveLUT = imported
         liveLUTTitle = imported.displayName
+        liveCredit = imported.provenance?.requiredCredit
         liveUsesLUT = true
         liveHasFrame = false
         livePreview = preview

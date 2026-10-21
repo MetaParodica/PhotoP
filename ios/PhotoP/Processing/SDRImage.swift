@@ -87,12 +87,13 @@ struct SDRImage: Sendable {
         return try Self.rasterize(image)
     }
 
-    func jpeg() throws -> Data {
+    func jpeg(credit: String? = nil) throws -> Data {
         let result = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(result, UTType.jpeg.identifier as CFString, 1, nil)
         else { throw ImageEditingError.invalid("JPEG 인코더를 만들 수 없습니다.") }
-        CGImageDestinationAddImage(destination, try cgImage(), [kCGImageDestinationLossyCompressionQuality: 0.95,
-                                                              kCGImagePropertyOrientation: 1] as CFDictionary)
+        var properties: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.95, kCGImagePropertyOrientation: 1]
+        if let credit, !credit.isEmpty { properties[kCGImagePropertyIPTCDictionary] = [kCGImagePropertyIPTCCaptionAbstract: credit] }
+        CGImageDestinationAddImage(destination, try cgImage(), properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { throw ImageEditingError.invalid("JPEG 인코딩이 실패했습니다.") }
         return result as Data
     }

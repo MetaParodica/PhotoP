@@ -17,6 +17,7 @@ struct LiveLUTControls: View {
             Form {
                 Section("실시간 LUT") {
                     Text(model.liveLUTTitle ?? "사용자 .cube를 가져오세요")
+                    if let credit = model.liveCredit { Text(credit).font(.caption2).textSelection(.enabled) }
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                     Button(".cube / Hald PNG 가져오기") { importing = true }
                         .disabled(!profileConfirmed || model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)

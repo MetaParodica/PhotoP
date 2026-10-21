@@ -15,7 +15,11 @@ targets:
   PhotoP:
     type: application
     platform: iOS
-    sources: [PhotoP]
+    sources:
+      - path: PhotoP
+      - path: ../assets/luts
+        type: folder
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: PhotoP/Info.plist

@@ -38,3 +38,5 @@ jobs:
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v
           python3 scripts/check_lut_bundle.py
+          cmp assets/luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts/manifest.json
+          python3 scripts/check_lut_bundle.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts

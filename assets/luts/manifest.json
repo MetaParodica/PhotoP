@@ -1,4 +1,425 @@
 {
   "schemaVersion": 1,
-  "assets": []
+  "assets": [
+    {
+      "id": "slay-01-amber",
+      "file": "slay/slay-01-amber.cube",
+      "name": "slay Amber",
+      "category": "여행",
+      "detail": "따뜻한 명부·황금빛",
+      "creator": "slay",
+      "source": "https://github.com/slaycamera/luts/blob/a1709044efe115640dde1dee17d4185fc059af0d/luts/slay-01-amber.cube",
+      "sourceRevision": "a1709044efe115640dde1dee17d4185fc059af0d",
+      "officialStatus": "creator-published",
+      "license": "CC-BY-4.0",
+      "licenseFile": "slay/LICENSE.txt",
+      "licenseSHA256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "requiredCredit": "LUTs: slay — https://www.slaycamera.com / CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ ; original LUT unmodified",
+      "inputProfile": "sRGB",
+      "outputProfile": "sRGB",
+      "profileBasis": "assumed-sRGB",
+      "requiresSRGBConfirmation": true,
+      "sha256": "5912a5761bb9663901ae1a311add997055390e94972f77fe32407d88dca20b08",
+      "previewColors": [
+        [
+          0.13224684,
+          0.12201256,
+          0.10007743999999999
+        ],
+        [
+          0.42718716,
+          0.3935014,
+          0.34870807200000004
+        ],
+        [
+          0.916183704,
+          0.853641136,
+          0.779355248
+        ],
+        [
+          0.8805528335999999,
+          0.534163752704,
+          0.31801104
+        ],
+        [
+          0.5358628080000001,
+          0.26404472384,
+          0.13141639200000005
+        ],
+        [
+          1.0,
+          0.06469003999999999,
+          0.04036000000000001
+        ],
+        [
+          0.06658524,
+          0.86763932,
+          0.099747728
+        ],
+        [
+          0.079414816,
+          0.16884456,
+          0.94214
+        ],
+        [
+          0.998335,
+          0.855866696,
+          0.0017589040000000008
+        ],
+        [
+          0.067419808,
+          0.7567139199999999,
+          0.803186056
+        ],
+        [
+          0.8199941999999999,
+          0.063913888,
+          0.83519564
+        ],
+        [
+          0.9999999999999999,
+          0.9859916799999999,
+          0.910483104
+        ]
+      ]
+    },
+    {
+      "id": "slay-02-fade",
+      "file": "slay/slay-02-fade.cube",
+      "name": "slay Fade",
+      "category": "빈티지",
+      "detail": "매트한 검정·절제된 색",
+      "creator": "slay",
+      "source": "https://github.com/slaycamera/luts/blob/a1709044efe115640dde1dee17d4185fc059af0d/luts/slay-02-fade.cube",
+      "sourceRevision": "a1709044efe115640dde1dee17d4185fc059af0d",
+      "officialStatus": "creator-published",
+      "license": "CC-BY-4.0",
+      "licenseFile": "slay/LICENSE.txt",
+      "licenseSHA256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "requiredCredit": "LUTs: slay — https://www.slaycamera.com / CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ ; original LUT unmodified",
+      "inputProfile": "sRGB",
+      "outputProfile": "sRGB",
+      "profileBasis": "assumed-sRGB",
+      "requiresSRGBConfirmation": true,
+      "sha256": "0fc029d88a11c13abad35729c4a665ccd4bccfe8fb841d89874ab6c74651dc96",
+      "previewColors": [
+        [
+          0.222682,
+          0.20578419999999997,
+          0.2188866
+        ],
+        [
+          0.430581,
+          0.41686536800000007,
+          0.43314980000000003
+        ],
+        [
+          0.76628816,
+          0.75771096,
+          0.779133784
+        ],
+        [
+          0.7061598672,
+          0.5260753728,
+          0.45252132
+        ],
+        [
+          0.47673544448,
+          0.328202496,
+          0.28108267168
+        ],
+        [
+          0.761933768,
+          0.18995856,
+          0.204606
+        ],
+        [
+          0.25138000000000005,
+          0.7290564719999999,
+          0.32741568000000004
+        ],
+        [
+          0.199566,
+          0.251777616,
+          0.7544066
+        ],
+        [
+          0.830133776,
+          0.753261984,
+          0.28559367999999996
+        ],
+        [
+          0.247636808,
+          0.65567888,
+          0.743578032
+        ],
+        [
+          0.6259305279999999,
+          0.1912638,
+          0.6947332080000002
+        ],
+        [
+          0.8872359599999999,
+          0.88051,
+          0.9037839599999999
+        ]
+      ]
+    },
+    {
+      "id": "slay-03-neon",
+      "file": "slay/slay-03-neon.cube",
+      "name": "slay Neon",
+      "category": "야경",
+      "detail": "청록 음영·마젠타",
+      "creator": "slay",
+      "source": "https://github.com/slaycamera/luts/blob/a1709044efe115640dde1dee17d4185fc059af0d/luts/slay-03-neon.cube",
+      "sourceRevision": "a1709044efe115640dde1dee17d4185fc059af0d",
+      "officialStatus": "creator-published",
+      "license": "CC-BY-4.0",
+      "licenseFile": "slay/LICENSE.txt",
+      "licenseSHA256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "requiredCredit": "LUTs: slay — https://www.slaycamera.com / CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ ; original LUT unmodified",
+      "inputProfile": "sRGB",
+      "outputProfile": "sRGB",
+      "profileBasis": "assumed-sRGB",
+      "requiresSRGBConfirmation": true,
+      "sha256": "07ac89f666c74e638d79fb28f4de5a5e18ae47bfc9ba04bb5c50e005555e7141",
+      "previewColors": [
+        [
+          0.0639392,
+          0.112818512,
+          0.1567268
+        ],
+        [
+          0.375660472,
+          0.37841,
+          0.433501072
+        ],
+        [
+          0.9185336000000001,
+          0.8409478,
+          0.9155138
+        ],
+        [
+          0.905395733504,
+          0.5106780752,
+          0.3644936672
+        ],
+        [
+          0.5166557039999999,
+          0.23793585248,
+          0.16728840384
+        ],
+        [
+          1.0,
+          0.015970168000000003,
+          0.065821032
+        ],
+        [
+          0.0,
+          0.908067128,
+          0.07526039999999999
+        ],
+        [
+          0.004856160000000004,
+          0.146397968,
+          0.9999999999999999
+        ],
+        [
+          1.0,
+          0.8528894400000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.7809488719999998,
+          0.9802252000000001
+        ],
+        [
+          0.865,
+          0.010899888000000005,
+          1.0
+        ],
+        [
+          0.9999999999999999,
+          0.9558117039999999,
+          0.9999999999999999
+        ]
+      ]
+    },
+    {
+      "id": "slay-04-film",
+      "file": "slay/slay-04-film.cube",
+      "name": "slay Film",
+      "category": "시네마",
+      "detail": "깊은 대비·청록 음영",
+      "creator": "slay",
+      "source": "https://github.com/slaycamera/luts/blob/a1709044efe115640dde1dee17d4185fc059af0d/luts/slay-04-film.cube",
+      "sourceRevision": "a1709044efe115640dde1dee17d4185fc059af0d",
+      "officialStatus": "creator-published",
+      "license": "CC-BY-4.0",
+      "licenseFile": "slay/LICENSE.txt",
+      "licenseSHA256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "requiredCredit": "LUTs: slay — https://www.slaycamera.com / CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ ; original LUT unmodified",
+      "inputProfile": "sRGB",
+      "outputProfile": "sRGB",
+      "profileBasis": "assumed-sRGB",
+      "requiresSRGBConfirmation": true,
+      "sha256": "d846f24a0ce3affbeaa5f3969b0dde5b54018a9aedf7e46614bf963fffbf4738",
+      "previewColors": [
+        [
+          0.1120884,
+          0.129646792,
+          0.1603446
+        ],
+        [
+          0.38935047200000006,
+          0.39128824000000006,
+          0.4024607600000001
+        ],
+        [
+          0.8632398480000001,
+          0.8384798000000001,
+          0.816279944
+        ],
+        [
+          0.811085579904,
+          0.5301952064000001,
+          0.3742351664
+        ],
+        [
+          0.47982980383999996,
+          0.26813844352,
+          0.19195832000000002
+        ],
+        [
+          0.928780272,
+          0.083999,
+          0.10455123999999999
+        ],
+        [
+          0.09091224,
+          0.8415790000000001,
+          0.16303340000000002
+        ],
+        [
+          0.07214386399999999,
+          0.1759952,
+          0.96360068
+        ],
+        [
+          0.9528561360000001,
+          0.8390048,
+          0.056399319999999996
+        ],
+        [
+          0.08975394399999999,
+          0.7374370799999999,
+          0.8371898
+        ],
+        [
+          0.73365608,
+          0.08380108,
+          0.8663926800000001
+        ],
+        [
+          0.9940308399999999,
+          0.96681916,
+          0.9350415839999999
+        ]
+      ]
+    },
+    {
+      "id": "slay-05-portrait",
+      "file": "slay/slay-05-portrait.cube",
+      "name": "slay Portrait",
+      "category": "인물",
+      "detail": "부드러운 대비·따뜻한 색",
+      "creator": "slay",
+      "source": "https://github.com/slaycamera/luts/blob/a1709044efe115640dde1dee17d4185fc059af0d/luts/slay-05-portrait.cube",
+      "sourceRevision": "a1709044efe115640dde1dee17d4185fc059af0d",
+      "officialStatus": "creator-published",
+      "license": "CC-BY-4.0",
+      "licenseFile": "slay/LICENSE.txt",
+      "licenseSHA256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "requiredCredit": "LUTs: slay — https://www.slaycamera.com / CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/ ; original LUT unmodified",
+      "inputProfile": "sRGB",
+      "outputProfile": "sRGB",
+      "profileBasis": "assumed-sRGB",
+      "requiresSRGBConfirmation": true,
+      "sha256": "432898146d41e061db1d36d37f89130d1394fb9f4eb13e80630e18e10d2cc895",
+      "previewColors": [
+        [
+          0.177965304,
+          0.1557048,
+          0.1585088
+        ],
+        [
+          0.4253576,
+          0.39486104,
+          0.3823926
+        ],
+        [
+          0.8284685599999999,
+          0.787023,
+          0.7514341999999999
+        ],
+        [
+          0.7883625200000001,
+          0.5144852336,
+          0.36957560000000006
+        ],
+        [
+          0.506112184,
+          0.28772394432,
+          0.19919916
+        ],
+        [
+          0.916769872,
+          0.11257019999999998,
+          0.112896568
+        ],
+        [
+          0.13534120000000002,
+          0.7849590000000001,
+          0.19344128800000002
+        ],
+        [
+          0.132405616,
+          0.20215983999999998,
+          0.852062
+        ],
+        [
+          0.9205970400000001,
+          0.78672316,
+          0.10285044
+        ],
+        [
+          0.135125248,
+          0.6902037679999999,
+          0.755941
+        ],
+        [
+          0.7276333279999998,
+          0.1126432,
+          0.7619130000000002
+        ],
+        [
+          0.9658783039999999,
+          0.9225532,
+          0.880435904
+        ]
+      ]
+    }
+  ]
 }

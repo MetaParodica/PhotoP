@@ -1,6 +1,6 @@
 PhotoP-Style-Permission-1
 
-The twelve original procedural profile data sets defined by FilmStyleLibrary.swift
+The original procedural profile data sets defined by FilmStyleLibrary.swift
 are independently created for PhotoP. The generated profile data may be used,
 modified and redistributed, including commercially, with the credit "PhotoP Project".
 This permission covers only PhotoP's original generated profile data. It grants no

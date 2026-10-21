@@ -13,8 +13,10 @@ class LUTBundleTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.data = b'TITLE "test"\n'
         (self.root / 'test.cube').write_bytes(self.data)
+        (self.root / 'LICENSE.txt').write_bytes(b'fixture license')
         self.asset = dict(file='test.cube', redistributionAllowed=True, commercialUseAllowed=True,
-                          license='test-only', source='fixture', inputProfile='sRGB', outputProfile='sRGB',
+                          license='test-only', source='fixture', creator='fixture', requiredCredit='fixture',
+                          licenseFile='LICENSE.txt', licenseSHA256=hashlib.sha256(b'fixture license').hexdigest(), profileBasis='declared',  inputProfile='sRGB', outputProfile='sRGB',
                           sha256=hashlib.sha256(self.data).hexdigest())
 
     def write(self, assets):
@@ -52,6 +54,31 @@ class LUTBundleTests(unittest.TestCase):
         self.asset['inputProfile'] = ''
         self.write([self.asset])
         with self.assertRaises(ValueError): validate(self.root)
+
+    def test_missing_credit(self):
+        self.asset['requiredCredit'] = ''
+        self.write([self.asset])
+        with self.assertRaises(ValueError): validate(self.root)
+
+    def test_missing_or_changed_license(self):
+        self.write([self.asset])
+        (self.root / 'LICENSE.txt').write_bytes(b'changed')
+        with self.assertRaises(ValueError): validate(self.root)
+        (self.root / 'LICENSE.txt').unlink()
+        with self.assertRaises(ValueError): validate(self.root)
+
+    def test_license_path_escape(self):
+        self.asset['licenseFile'] = '../outside.txt'
+        self.write([self.asset])
+        with self.assertRaises(ValueError): validate(self.root)
+
+    def test_assumed_profile_requires_confirmation(self):
+        self.asset['profileBasis'] = 'assumed-sRGB'
+        self.write([self.asset])
+        with self.assertRaises(ValueError): validate(self.root)
+        self.asset['requiresSRGBConfirmation'] = True
+        self.write([self.asset])
+        self.assertEqual(validate(self.root), 1)
 
 
 if __name__ == '__main__': unittest.main()

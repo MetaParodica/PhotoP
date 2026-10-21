@@ -52,7 +52,7 @@ actor LUTPhotoEditor {
 
     func favoriteCurrent() async throws {
         guard let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
-        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT")
+        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT", provenance: provenance)
         try await LUTLibrary.shared.save(imported)
     }
 
@@ -77,12 +77,13 @@ actor LUTPhotoEditor {
                                             originalSHA256: try Self.hashFile(original), lutSHA256: Self.hash(cubeData),
                                             lutTitle: lut.title, intensity: intensity, workingColorSpace: "encoded sRGB SDR",
                                             lutInputColorSpace: "sRGB", lutOutputColorSpace: "sRGB", outputColorSpace: "sRGB",
-                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → channel-linear 1D / trilinear 3D LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted")
+                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → channel-linear 1D / trilinear 3D LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted; LUT attribution caption when available")
         recipe.grain = grain
         recipe.finish = effects
         recipe.provenance = provenance
         let folder = original.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Edits", isDirectory: true)
-        return try Self.writeBundle(jpeg: image.jpeg(), cube: cubeData, recipe: recipe, in: folder)
+        let credit = provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
+        return try Self.writeBundle(jpeg: image.jpeg(credit: credit), cube: cubeData, recipe: recipe, in: folder)
     }
 
     static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }

@@ -6,6 +6,7 @@ struct LUTFavorite: Codable, Identifiable, Sendable {
     let version: Int
     let inputColorSpace: String
     let outputColorSpace: String
+    var provenance: LUTProvenance? = nil
 }
 
 // User-imported files only. This directory is never an app bundle asset source.
@@ -26,12 +27,20 @@ actor LUTLibrary {
     @discardableResult
     func save(_ imported: ImportedLUT) throws -> LUTFavorite {
         let id = LUTPhotoEditor.hash(imported.data)
+        if let p = imported.provenance {
+            guard p.renderLUTSHA256 == id, p.inputColorSpace == "sRGB", p.outputColorSpace == "sRGB" else { throw CameraError.invalidPhotoData }
+        }
         let destination = try directory(id)
         if FileManager.default.fileExists(atPath: destination.path) {
             _ = try load(id)
-            return try metadata(id)
+            var entry = try metadata(id)
+            if entry.provenance == nil, let provenance = imported.provenance {
+                entry.provenance = provenance
+                try JSONEncoder().encode(entry).write(to: destination.appendingPathComponent("profile.json"), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            }
+            return entry
         }
-        let entry = LUTFavorite(id: id, name: imported.displayName, version: 1, inputColorSpace: "sRGB", outputColorSpace: "sRGB")
+        let entry = LUTFavorite(id: id, name: imported.displayName, version: 1, inputColorSpace: "sRGB", outputColorSpace: "sRGB", provenance: imported.provenance)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let temporary = folder.appendingPathComponent(".pending-" + UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: false)
@@ -51,7 +60,10 @@ actor LUTLibrary {
         let entry = try metadata(id)
         let imported = try ImportedLUT.read(directory(id).appendingPathComponent("look.cube"))
         guard LUTPhotoEditor.hash(imported.data) == id else { throw ImageEditingError.invalid("저장된 LUT 파일이 변경됐습니다.") }
-        return ImportedLUT(data: imported.data, lut: imported.lut, displayName: entry.name)
+        if let p = entry.provenance {
+            guard p.renderLUTSHA256 == id, p.inputColorSpace == "sRGB", p.outputColorSpace == "sRGB" else { throw CameraError.invalidPhotoData }
+        }
+        return ImportedLUT(data: imported.data, lut: imported.lut, displayName: entry.name, provenance: entry.provenance)
     }
 
     func remove(_ id: String) throws { try FileManager.default.removeItem(at: directory(id)) }

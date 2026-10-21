@@ -24,7 +24,10 @@ struct LUTFavoritesView: View {
                             } catch { message = error.localizedDescription }
                         }
                     } label: {
-                        VStack(alignment: .leading) { Text(entry.name); Text("sRGB → sRGB").font(.caption).foregroundStyle(.secondary) }
+                        VStack(alignment: .leading) {
+                            Text(entry.name); Text("sRGB → sRGB").font(.caption).foregroundStyle(.secondary)
+                            if let p = entry.provenance { Text("\(p.creator) · \(p.license)").font(.caption2) }
+                        }
                     }
                     .disabled(busy)
                     .swipeActions {

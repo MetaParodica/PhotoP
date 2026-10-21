@@ -32,6 +32,8 @@ struct FilmStyle: Identifiable, Sendable {
     let tint: SIMD3<Double>
     var monochrome = false
     var recommended = ProcessingLookSettings()
+    var shadows = SIMD3<Double>.zero
+    var highlights = SIMD3<Double>.zero
     func color(_ input: SIMD3<Double>) -> SIMD3<Double> {
         let luminance = input.x * 0.2126 + input.y * 0.7152 + input.z * 0.0722
         let base = monochrome ? SIMD3<Double>(repeating: luminance) : SIMD3<Double>(repeating: luminance) + (input - SIMD3<Double>(repeating: luminance)) * saturation
@@ -39,7 +41,8 @@ struct FilmStyle: Identifiable, Sendable {
         for c in 0..<3 {
             let value = min(max(base[c], 0), 1)
             let curved = (pow(value, gamma) - 0.5) * contrast + 0.5
-            let tinted = lift + (1 - lift) * curved + (monochrome ? 0 : tint[c] * (0.25 + luminance * (1 - luminance)))
+            let tonalColor = shadows[c] * pow(1 - luminance, 2) + highlights[c] * luminance * luminance
+            let tinted = lift + (1 - lift) * curved + (monochrome ? 0 : tint[c] * (0.25 + luminance * (1 - luminance))) + tonalColor
             output[c] = min(max(tinted, 0), 1)
         }
         return output
@@ -71,7 +74,19 @@ struct FilmStyle: Identifiable, Sendable {
         .init(id: "golden-travel", name: "Golden Travel", category: "여행", detail: "황금빛·생생한 중간톤", saturation: 1.04, contrast: 1.02, gamma: 0.97, lift: 0.006, tint: .init(0.035, 0.018, -0.028)),
         .init(id: "cool-architecture", name: "Cool Architecture", category: "건축", detail: "차가운 중립·선명한 구조", saturation: 0.87, contrast: 1.06, gamma: 1, lift: 0.004, tint: .init(-0.014, 0.002, 0.027)),
         .init(id: "dream-warm", name: "Dream Warm", category: "빈티지", detail: "따뜻한 페일 톤", saturation: 0.81, contrast: 0.91, gamma: 0.95, lift: 0.04, tint: .init(0.032, 0.004, -0.016)),
-        .init(id: "deep-cinema", name: "Deep Cinema", category: "시네마", detail: "깊은 대비·절제된 색", saturation: 0.82, contrast: 1.12, gamma: 1.06, lift: 0.009, tint: .init(-0.006, 0.009, 0.019))
+        .init(id: "deep-cinema", name: "Deep Cinema", category: "시네마", detail: "깊은 대비·절제된 색", saturation: 0.82, contrast: 1.12, gamma: 1.06, lift: 0.009, tint: .init(-0.006, 0.009, 0.019)),
+        .init(id: "cyanotype", name: "Cyanotype", category: "토닝", detail: "청색 단색·밝은 종이톤 창작", saturation: 0, contrast: 1.02, gamma: 0.96, lift: 0.02, tint: .zero, shadows: .init(-0.05, 0.005, 0.10), highlights: .init(0.02, 0.03, 0.04)),
+        .init(id: "sepia-paper", name: "Sepia Paper", category: "토닝", detail: "갈색 단색·따뜻한 페이퍼", saturation: 0, contrast: 0.98, gamma: 0.95, lift: 0.02, tint: .zero, shadows: .init(0.055, 0.025, -0.025), highlights: .init(0.04, 0.025, -0.035)),
+        .init(id: "selenium-dusk", name: "Selenium Dusk", category: "토닝", detail: "보라빛 음영·차분한 단색", saturation: 0, contrast: 1.04, gamma: 0.98, lift: 0.012, tint: .zero, shadows: .init(0.045, -0.015, 0.065), highlights: .init(0.015, 0.005, 0.025)),
+        .init(id: "platinum-soft", name: "Platinum Soft", category: "토닝", detail: "부드러운 회갈색 계조", saturation: 0.08, contrast: 0.88, gamma: 0.97, lift: 0.04, tint: .zero, shadows: .init(0.025, 0.016, -0.005), highlights: .init(0.015, 0.012, 0.004)),
+        .init(id: "teal-amber", name: "Teal & Amber", category: "시네마", detail: "청록 음영·호박빛 하이라이트", saturation: 0.9, contrast: 1.07, gamma: 1, lift: 0.005, tint: .zero, shadows: .init(-0.06, 0.022, 0.045), highlights: .init(0.07, 0.028, -0.04)),
+        .init(id: "neon-rose", name: "Neon Rose", category: "야경", detail: "청색 음영·로즈 빛 하이라이트", saturation: 1.12, contrast: 1.08, gamma: 0.99, lift: 0, tint: .zero, shadows: .init(-0.025, -0.005, 0.065), highlights: .init(0.07, -0.03, 0.035)),
+        .init(id: "desert-copper", name: "Desert Copper", category: "여행", detail: "사막빛·구릿빛 색 분리", saturation: 0.79, contrast: 1.05, gamma: 0.98, lift: 0.012, tint: .zero, shadows: .init(0.025, -0.015, -0.025), highlights: .init(0.055, 0.03, -0.035)),
+        .init(id: "sakura-air", name: "Sakura Air", category: "파스텔", detail: "공기감 있는 분홍·밝은 중간톤", saturation: 0.68, contrast: 0.86, gamma: 0.9, lift: 0.025, tint: .zero, shadows: .init(0.025, -0.005, 0.03), highlights: .init(0.04, 0.012, 0.02)),
+        .init(id: "emerald-dusk", name: "Emerald Dusk", category: "풍경", detail: "에메랄드 음영·푸른 석양", saturation: 0.95, contrast: 1.06, gamma: 0.99, lift: 0.005, tint: .zero, shadows: .init(-0.035, 0.04, 0.005), highlights: .init(-0.015, 0.012, 0.045)),
+        .init(id: "bleach-silver", name: "Bleach Silver", category: "시네마", detail: "낮은 채도·강한 은빛 대비", saturation: 0.38, contrast: 1.2, gamma: 1, lift: 0, tint: .zero, shadows: .init(-0.015, 0, 0.02), highlights: .init(0.012, 0.012, 0.02)),
+        .init(id: "ocean-mist", name: "Ocean Mist", category: "풍경", detail: "부드러운 청록·옅은 바다 안개", saturation: 0.78, contrast: 0.9, gamma: 0.94, lift: 0.035, tint: .zero, shadows: .init(-0.025, 0.035, 0.04), highlights: .init(0.015, 0.025, 0.03)),
+        .init(id: "autumn-rust", name: "Autumn Rust", category: "빈티지", detail: "가을 녹갈색·따뜻한 명부", saturation: 0.9, contrast: 1.04, gamma: 0.98, lift: 0.016, tint: .zero, shadows: .init(0.02, 0.012, -0.03), highlights: .init(0.065, 0.02, -0.045))
     ]
     static func search(_ query: String, category: String) -> [FilmStyle] {
         all.filter { (category == "전체" || $0.category == category) && (query.isEmpty || "\($0.name) \($0.category) \($0.detail)".localizedCaseInsensitiveContains(query)) }

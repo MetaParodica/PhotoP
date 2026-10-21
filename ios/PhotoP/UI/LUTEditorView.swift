@@ -9,6 +9,7 @@ struct LUTEditorView: View {
     @State private var originalImage: UIImage?
     @State private var renderedImage: UIImage?
     @State private var title: String?
+    @State private var credit: String?
     @State private var intensity = 1.0
     @State private var finish = FilmFinishSettings()
     @State private var grainAmount = 0.0
@@ -45,6 +46,7 @@ struct LUTEditorView: View {
                             .accessibilityLabel(showOriginal ? "원본 SDR 미리보기" : "LUT 미리보기")
                     } else { ProgressView().frame(height: 240) }
                     Text(title ?? "사용자 LUT 편집").font(.headline)
+                    if let credit { Text(credit).font(.caption2).textSelection(.enabled) }
                     Text("SDR · sRGB / 1024px 미리보기 · 최대 12.6MP 저장\nHDR gain map과 원본 EXIF는 편집본에 포함하지 않습니다.")
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
@@ -112,6 +114,7 @@ struct LUTEditorView: View {
                         defer { busy = false }
                         do {
                             title = try await editor.importCube(url)
+                            credit = nil
                             exported = nil
                             renderedImage = nil
                             revision += 1
@@ -138,6 +141,7 @@ struct LUTEditorView: View {
             .sheet(isPresented: $showStyles) {
                 FilmStylesView { imported in
                     title = try await editor.useLUT(imported)
+                    credit = imported.provenance?.requiredCredit
                     if let settings = imported.preset {
                         intensity = settings.intensity; grainAmount = settings.grain.amount
                         grainSeed = settings.grain.seed; finish = settings.finish
@@ -150,6 +154,7 @@ struct LUTEditorView: View {
                     busy = true
                     defer { busy = false }
                     title = try await editor.useLUT(imported)
+                    credit = imported.provenance?.requiredCredit
                     profileConfirmed = true
                     exported = nil
                     renderedImage = nil
@@ -163,6 +168,7 @@ struct LUTEditorView: View {
                     originalImage = UIImage(cgImage: try image.cgImage())
                     if let saved {
                         title = try await editor.useLUT(saved.imported)
+                        credit = saved.imported.provenance?.requiredCredit
                         intensity = saved.recipe.intensity
                         grainAmount = saved.recipe.grain?.amount ?? 0
                         grainSeed = saved.recipe.grain?.seed ?? 1

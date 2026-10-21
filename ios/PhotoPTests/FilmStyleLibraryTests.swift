@@ -4,8 +4,8 @@ import UniformTypeIdentifiers
 @testable import PhotoP
 
 final class FilmStyleLibraryTests: XCTestCase {
-    func testTwelveUniqueOriginalProfilesWithReproducibleRightsAndHashes() throws {
-        XCTAssertEqual(FilmStyle.all.count, 12)
+    func testUniqueOriginalProfilesWithReproducibleRightsAndHashes() throws {
+        XCTAssertEqual(FilmStyle.all.count, 24)
         var hashes = Set<String>()
         for style in FilmStyle.all {
             let imported = try style.imported(), p = try XCTUnwrap(imported.provenance)
@@ -18,7 +18,7 @@ final class FilmStyleLibraryTests: XCTestCase {
             XCTAssertEqual(p.inputColorSpace, "sRGB"); XCTAssertEqual(p.outputColorSpace, "sRGB")
             hashes.insert(p.renderLUTSHA256)
         }
-        XCTAssertEqual(hashes.count, 12)
+        XCTAssertEqual(hashes.count, 24)
     }
     func testChartInterpolationBoundsAndGrayMonotonicity() throws {
         for style in FilmStyle.all {
