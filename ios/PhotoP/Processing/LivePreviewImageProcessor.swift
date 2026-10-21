@@ -1,0 +1,85 @@
+import Foundation
+import CoreImage
+import CoreVideo
+import Metal
+
+// Frame queue owns this object. Two reusable 1024px textures; no CPU pixel copy.
+final class LivePreviewImageProcessor {
+    private let context: CIContext
+    private let renderer: MetalLUTTextureRenderer
+    private var source: MTLTexture?
+    private var processed: MTLTexture?
+    private var monitor: MetalPreviewMonitor?
+    private let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
+
+    init(lut: CubeLUT, device: MTLDevice) throws {
+        context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false])
+        renderer = try MetalLUTTextureRenderer(lut: lut, device: device)
+    }
+
+    func histogram() -> PreviewHistogram? { monitor?.histogram() }
+
+    static func inputColorSpace(_ buffer: CVPixelBuffer) throws -> CGColorSpace {
+        let format = CVPixelBufferGetPixelFormatType(buffer)
+        guard [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange].contains(format)
+        else { throw ImageEditingError.invalid("실시간 LUT는 8비트 YUV SDR 입력만 지원합니다.") }
+        let metadata = CVBufferCopyAttachments(buffer, .shouldPropagate) as? [String: Any] ?? [:]
+        guard metadata[kCVImageBufferColorPrimariesKey as String] as? String == kCVImageBufferColorPrimaries_ITU_R_709_2 as String,
+              let matrix = metadata[kCVImageBufferYCbCrMatrixKey as String] as? String,
+              [kCVImageBufferYCbCrMatrix_ITU_R_709_2 as String, kCVImageBufferYCbCrMatrix_ITU_R_601_4 as String].contains(matrix),
+              let transfer = metadata[kCVImageBufferTransferFunctionKey as String] as? String
+        else { throw ImageEditingError.invalid("프리뷰 색 프로파일을 확인할 수 없습니다.") }
+        guard [kCVImageBufferTransferFunction_ITU_R_709_2 as String, kCVImageBufferTransferFunction_sRGB as String].contains(transfer)
+        else { throw ImageEditingError.invalid("HDR/Log 프리뷰는 아직 지원하지 않습니다.") }
+        // Ask Core Video for its video matching profile, including on iOS 17.
+        // Do not substitute the display-referred ITU-709 profile or an attached ICC override.
+        let profile: [String: Any] = [kCVImageBufferColorPrimariesKey as String: kCVImageBufferColorPrimaries_ITU_R_709_2,
+                                      kCVImageBufferTransferFunctionKey as String: transfer,
+                                      kCVImageBufferYCbCrMatrixKey as String: matrix]
+        guard let space = CVImageBufferCreateColorSpaceFromAttachments(profile as CFDictionary)?.takeRetainedValue()
+        else { throw ImageEditingError.invalid("입력 색공간을 만들 수 없습니다.") }
+        return space
+    }
+
+    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), monitoring: MonitoringSettings = MonitoringSettings(), maximumDimension: Int = 1024, command: MTLCommandBuffer) throws -> MTLTexture {
+        guard [480, 720, 1024].contains(maximumDimension), intensity.isFinite, (0...1).contains(intensity) else { throw CameraError.invalidSettings }
+        try grain.validate(); try effects.validate()
+        let needsGrade = intensity != 0 || grain.amount != 0 || effects.enabled
+        let space = try Self.inputColorSpace(buffer)
+        let image = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
+        let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
+        guard w > 0, h > 0 else { throw ImageEditingError.invalid("프리뷰 크기가 유효하지 않습니다.") }
+        let scale = min(1, Double(maximumDimension) / Double(max(w, h)))
+        let width = max(1, Int((Double(w) * scale).rounded()))
+        let height = max(1, Int((Double(h) * scale).rounded()))
+        if source?.width != width || source?.height != height {
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: width, height: height, mipmapped: false)
+            descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
+            descriptor.storageMode = .private
+            source = renderer.device.makeTexture(descriptor: descriptor)
+            processed = nil
+        }
+        if needsGrade && processed == nil, let source {
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: source.width, height: source.height, mipmapped: false)
+            descriptor.usage = [.shaderRead, .shaderWrite]; descriptor.storageMode = .private
+            processed = renderer.device.makeTexture(descriptor: descriptor)
+        }
+        if !needsGrade { processed = nil }
+        guard let source, !needsGrade || processed != nil else { throw MetalLUTError.failed("프리뷰 texture 메모리를 확보할 수 없습니다.") }
+        let scaled = image.transformed(by: CGAffineTransform(scaleX: Double(width) / Double(w), y: Double(height) / Double(h)))
+        // CI uses bottom-left coordinates; the presentation texture uses top-left rows.
+        let upright = scaled.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
+        context.render(upright, to: source, commandBuffer: command,
+                       bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
+        let graded: MTLTexture
+        if needsGrade, let processed {
+            try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, effects: effects, command: command)
+            graded = processed
+        } else { graded = source }
+        if monitoring.enabled {
+            if monitor == nil { monitor = try MetalPreviewMonitor(device: renderer.device) }
+            return try monitor!.encode(source: source, graded: graded, settings: monitoring, command: command)
+        }
+        return graded
+    }
+}

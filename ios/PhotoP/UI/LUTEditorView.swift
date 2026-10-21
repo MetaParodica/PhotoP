@@ -1,0 +1,203 @@
+import SwiftUI
+import UniformTypeIdentifiers
+import UIKit
+
+@MainActor
+struct LUTEditorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var editor: LUTPhotoEditor
+    @State private var originalImage: UIImage?
+    @State private var renderedImage: UIImage?
+    @State private var title: String?
+    @State private var credit: String?
+    @State private var intensity = 1.0
+    @State private var finish = FilmFinishSettings()
+    @State private var grainAmount = 0.0
+    @State private var grainSeed: UInt32 = 1
+    @State private var revision = 0
+    @State private var profileConfirmed = false
+    @State private var showOriginal = false
+    @State private var importing = false
+    @State private var showFavorites = false
+    @State private var showStyles = false
+    @State private var savePreset = false
+    @State private var presetName = ""
+    @State private var busy = false
+    @State private var rendering = false
+    @State private var message: String?
+    @State private var exported: URL?
+
+    private let saved: SavedEdit?
+    init(original: URL) {
+        saved = nil
+        _editor = State(initialValue: LUTPhotoEditor(original: original))
+    }
+    init(saved: SavedEdit) {
+        self.saved = saved
+        _editor = State(initialValue: LUTPhotoEditor(original: saved.original))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 18) {
+                    if let image = showOriginal ? originalImage : (renderedImage ?? originalImage) {
+                        Image(uiImage: image).resizable().scaledToFit().frame(maxHeight: 440)
+                            .accessibilityLabel(showOriginal ? "원본 SDR 미리보기" : "LUT 미리보기")
+                    } else { ProgressView().frame(height: 240) }
+                    Text(title ?? "사용자 LUT 편집").font(.headline)
+                    if let credit { Text(credit).font(.caption2).textSelection(.enabled) }
+                    Text("SDR · sRGB / 1024px 미리보기 · 최대 12.6MP 저장\nHDR gain map과 원본 EXIF는 편집본에 포함하지 않습니다.")
+                        .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
+                        .disabled(busy || title != nil)
+                    Button(".cube / Hald PNG 가져오기") { importing = true }
+                        .disabled(!profileConfirmed || busy || originalImage == nil)
+                    HStack {
+                        Button("즐겨찾기 불러오기") { showFavorites = true }.disabled(busy || originalImage == nil)
+                        Button("즐겨찾기에 저장") {
+                            busy = true
+                            Task {
+                                defer { busy = false }
+                                do { try await editor.favoriteCurrent(); message = "LUT 즐겨찾기에 저장했습니다." }
+                                catch { message = error.localizedDescription }
+                            }
+                        }.disabled(busy || title == nil)
+                    }
+                    HStack {
+                        Button("스타일·사용자 프리셋") { showStyles = true }.disabled(busy || originalImage == nil)
+                        Button("전체 룩 저장") { savePreset = true }.disabled(busy || title == nil)
+                    }
+                    Text("Log/HDR LUT는 아직 지원하지 않습니다.").font(.caption).foregroundStyle(.secondary)
+                    HStack {
+                        Text("강도")
+                        Slider(value: $intensity, in: 0...1)
+                            .accessibilityLabel("LUT 강도")
+                        Text(intensity, format: .percent.precision(.fractionLength(0))).monospacedDigit()
+                    }.disabled(title == nil || busy)
+                    HStack {
+                        Text("그레인")
+                        Slider(value: $grainAmount, in: 0...1)
+                        Text("\(Int(grainAmount * 100))%")
+                    }.disabled(title == nil || busy)
+                    Text("기본 단색 입자 · LUT 강도와 별도 조절").font(.caption)
+                    FilmFinishControls(settings: $finish).disabled(title == nil || busy)
+                    Toggle("원본과 비교", isOn: $showOriginal).disabled(originalImage == nil)
+                    if busy || rendering { ProgressView() }
+                    if let message { Text(message).font(.caption).multilineTextAlignment(.center) }
+                    Button("편집본 저장") {
+                        busy = true
+                        exported = nil
+                        Task {
+                            defer { busy = false }
+                            do {
+                                exported = try await editor.export(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed), effects: finish)
+                                message = "원본을 보존하고 JPEG·LUT·레시피를 별도 저장했습니다."
+                            } catch { message = error.localizedDescription }
+                        }
+                    }.buttonStyle(.borderedProminent).disabled(title == nil || busy || rendering)
+                    if let exported {
+                        ShareLink(item: exported) { Label("편집 JPEG 공유", systemImage: "square.and.arrow.up") }
+                    }
+                }.padding()
+            }
+            .navigationTitle("LUT 사진 편집")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() }.disabled(busy) }
+            }
+            .interactiveDismissDisabled(busy)
+            .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
+                switch result {
+                case .success(let url):
+                    busy = true
+                    Task {
+                        defer { busy = false }
+                        do {
+                            title = try await editor.importCube(url)
+                            credit = nil
+                            exported = nil
+                            renderedImage = nil
+                            revision += 1
+                            message = nil
+                        } catch { message = error.localizedDescription }
+                    }
+                case .failure(let error): message = error.localizedDescription
+                }
+            }
+            .alert("전체 룩 저장", isPresented: $savePreset) {
+                TextField("프리셋 이름", text: $presetName)
+                Button("저장") {
+                    busy = true
+                    Task {
+                        defer { busy = false }
+                        do {
+                            try await editor.savePreset(name: presetName, settings: .init(intensity: intensity, grain: .init(amount: grainAmount, seed: grainSeed), finish: finish))
+                            message = "LUT·강도·입자·마감값을 저장했습니다."
+                        } catch { message = error.localizedDescription }
+                    }
+                }
+                Button("취소", role: .cancel) { }
+            }
+            .sheet(isPresented: $showStyles) {
+                FilmStylesView { imported in
+                    title = try await editor.useLUT(imported)
+                    credit = imported.provenance?.requiredCredit
+                    if let settings = imported.preset {
+                        intensity = settings.intensity; grainAmount = settings.grain.amount
+                        grainSeed = settings.grain.seed; finish = settings.finish
+                    }
+                    profileConfirmed = true; renderedImage = nil; exported = nil; revision += 1; message = nil
+                }
+            }
+            .sheet(isPresented: $showFavorites) {
+                LUTFavoritesView { imported in
+                    busy = true
+                    defer { busy = false }
+                    title = try await editor.useLUT(imported)
+                    credit = imported.provenance?.requiredCredit
+                    profileConfirmed = true
+                    exported = nil
+                    renderedImage = nil
+                    revision += 1
+                    message = nil
+                }
+            }
+            .task {
+                do {
+                    let image = try await editor.loadOriginal()
+                    originalImage = UIImage(cgImage: try image.cgImage())
+                    if let saved {
+                        title = try await editor.useLUT(saved.imported)
+                        credit = saved.imported.provenance?.requiredCredit
+                        intensity = saved.recipe.intensity
+                        grainAmount = saved.recipe.grain?.amount ?? 0
+                        grainSeed = saved.recipe.grain?.seed ?? 1
+                        finish = saved.recipe.finish ?? FilmFinishSettings()
+                        profileConfirmed = true
+                        revision += 1
+                        message = "저장된 설정을 복원했습니다. 원본과 이전 편집본은 보존됩니다."
+                    }
+                } catch { message = error.localizedDescription }
+            }
+            .task(id: "\(revision):\(intensity):\(grainAmount):\(grainSeed):\(finish)") {
+                guard title != nil else { return }
+                rendering = true
+                do {
+                    try await Task.sleep(for: .milliseconds(150))
+                    try Task.checkCancellation()
+                    let image = try await editor.renderPreview(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed), effects: finish)
+                    try Task.checkCancellation()
+                    renderedImage = UIImage(cgImage: try image.cgImage())
+                    rendering = false
+                } catch is CancellationError {
+                    // The replacement preview task owns the loading state.
+                } catch {
+                    if !Task.isCancelled { message = error.localizedDescription; rendering = false }
+                }
+            }
+            .onChange(of: finish) { _, _ in exported = nil }
+            .onChange(of: grainAmount) { _, _ in exported = nil }
+            .onChange(of: intensity) { _, _ in exported = nil }
+        }.preferredColorScheme(.dark)
+    }
+}

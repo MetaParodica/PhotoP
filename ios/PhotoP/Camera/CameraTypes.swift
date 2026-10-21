@@ -14,10 +14,18 @@ struct CameraCapabilities: Equatable, Sendable {
     let manualExposure: Bool
     let manualFocus: Bool
     let manualWhiteBalance: Bool
+    var exposureLock = false
+    var focusLock = false
+    var whiteBalanceLock = false
+    var photoFormats: [PhotoFileFormat] = [.jpeg]
+    var rawModes: [RawCaptureMode] = [.processed]
+    var maximumBracketCount = 0
+    var photoResolutions: [PhotoResolution] = []
 }
 
 struct ExposureSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     var iso: Double = 100
     var shutterSeconds: Double = 1.0 / 125
     var ev: Double = 0
@@ -25,12 +33,14 @@ struct ExposureSettings: Equatable, Sendable {
 
 struct FocusSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     // Normalized lens position, not a distance in metres.
     var lensPosition: Double = 0.5
 }
 
 struct WhiteBalanceSettings: Equatable, Sendable {
     var manual = false
+    var locked = false
     var kelvin: Double = 5000
     var tint: Double = 0
 }
@@ -45,16 +55,32 @@ enum CaptureSessionState: Equatable, Sendable {
     case stopped, running, interrupted
 }
 
+struct CameraReadout: Sendable {
+    let iso: Double
+    let shutterSeconds: Double
+    let exposureBias: Double
+    let lensPosition: Double
+    let kelvin: Double?
+    let tint: Double?
+    let isAdjusting: Bool
+    let exposureLocked: Bool
+    let focusLocked: Bool
+    let whiteBalanceLocked: Bool
+}
+
 struct CameraSnapshot: Sendable {
     let lenses: [CameraLens]
     let selectedLens: String?
     let capabilities: CameraCapabilities?
     let state: CaptureSessionState
     let message: String?
+    let revision: UInt64
+    let readout: CameraReadout?
+    let isApplyingSettings: Bool
 }
 
 enum CameraError: LocalizedError {
-    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto
+    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto, settingsTimedOut, invalidPhotoData, captureTimedOut
     var errorDescription: String? {
         switch self {
         case .permission: return "설정에서 카메라 접근을 허용해 주세요."
@@ -64,6 +90,9 @@ enum CameraError: LocalizedError {
         case .interrupted: return "카메라 사용이 중단되었습니다. 촬영 화면에서 다시 시작해 주세요."
         case .invalidSettings: return "현재 렌즈에서 지원하지 않는 설정입니다."
         case .missingPhoto: return "촬영한 사진 데이터를 받지 못했습니다."
+        case .invalidPhotoData: return "받은 사진의 파일 포맷이 요청한 포맷과 다릅니다."
+        case .captureTimedOut: return "사진 촬영이 지연되어 카메라를 중단했습니다. 다시 시작해 주세요."
+        case .settingsTimedOut: return "카메라 설정 변경이 지연되어 중단했습니다. 다시 시작해 주세요."
         }
     }
 }
@@ -76,10 +105,14 @@ enum CameraSettingsValidator {
         let w = settings.whiteBalance
         guard [e.iso, e.shutterSeconds, e.ev, f.lensPosition, w.kelvin, w.tint].allSatisfy(\.isFinite)
         else { throw CameraError.invalidSettings }
+        guard !(e.manual && e.locked), !(f.manual && f.locked), !(w.manual && w.locked),
+              !e.locked || capabilities.exposureLock,
+              !f.locked || capabilities.focusLock,
+              !w.locked || capabilities.whiteBalanceLock else { throw CameraError.invalidSettings }
         if e.manual {
             guard capabilities.manualExposure, capabilities.iso.contains(e.iso),
                   capabilities.shutterSeconds.contains(e.shutterSeconds) else { throw CameraError.invalidSettings }
-        } else if !capabilities.exposureBias.contains(e.ev) { throw CameraError.invalidSettings }
+        } else if !e.locked && !capabilities.exposureBias.contains(e.ev) { throw CameraError.invalidSettings }
         if f.manual && (!capabilities.manualFocus || !(0...1).contains(f.lensPosition)) {
             throw CameraError.invalidSettings
         }
