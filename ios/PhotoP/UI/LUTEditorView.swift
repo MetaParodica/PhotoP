@@ -10,6 +10,8 @@ struct LUTEditorView: View {
     @State private var renderedImage: UIImage?
     @State private var title: String?
     @State private var intensity = 1.0
+    @State private var grainAmount = 0.0
+    @State private var grainSeed: UInt32 = 1
     @State private var revision = 0
     @State private var profileConfirmed = false
     @State private var showOriginal = false
@@ -55,6 +57,12 @@ struct LUTEditorView: View {
                             .accessibilityLabel("LUT 강도")
                         Text(intensity, format: .percent.precision(.fractionLength(0))).monospacedDigit()
                     }.disabled(title == nil || busy)
+                    HStack {
+                        Text("그레인")
+                        Slider(value: $grainAmount, in: 0...1)
+                        Text("\(Int(grainAmount * 100))%")
+                    }.disabled(title == nil || busy)
+                    Text("기본 단색 입자 · LUT 강도와 별도 조절").font(.caption)
                     Toggle("원본과 비교", isOn: $showOriginal).disabled(originalImage == nil)
                     if busy || rendering { ProgressView() }
                     if let message { Text(message).font(.caption).multilineTextAlignment(.center) }
@@ -64,7 +72,7 @@ struct LUTEditorView: View {
                         Task {
                             defer { busy = false }
                             do {
-                                exported = try await editor.export(intensity: intensity)
+                                exported = try await editor.export(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed))
                                 message = "원본을 보존하고 JPEG·LUT·레시피를 별도 저장했습니다."
                             } catch { message = error.localizedDescription }
                         }
@@ -114,13 +122,13 @@ struct LUTEditorView: View {
                     originalImage = UIImage(cgImage: try image.cgImage())
                 } catch { message = error.localizedDescription }
             }
-            .task(id: "\(revision):\(intensity)") {
+            .task(id: "\(revision):\(intensity):\(grainAmount):\(grainSeed)") {
                 guard title != nil else { return }
                 rendering = true
                 do {
                     try await Task.sleep(for: .milliseconds(150))
                     try Task.checkCancellation()
-                    let image = try await editor.renderPreview(intensity: intensity)
+                    let image = try await editor.renderPreview(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed))
                     try Task.checkCancellation()
                     renderedImage = UIImage(cgImage: try image.cgImage())
                     rendering = false
@@ -130,6 +138,7 @@ struct LUTEditorView: View {
                     if !Task.isCancelled { message = error.localizedDescription; rendering = false }
                 }
             }
+            .onChange(of: grainAmount) { _, _ in exported = nil }
             .onChange(of: intensity) { _, _ in exported = nil }
         }.preferredColorScheme(.dark)
     }

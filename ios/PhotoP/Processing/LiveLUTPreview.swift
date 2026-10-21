@@ -20,6 +20,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var state = PreviewFrameState()
     private weak var layer: CAMetalLayer?
     private var intensity = 1.0
+    private var grain = GrainSettings()
     private var announcedGeneration: UInt64?
     private var eventRevision: UInt64 = 0
     private let onEvent: @Sendable (UUID, Event) -> Void
@@ -63,9 +64,10 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         eventRevision &+= 1
         return Event(revision: eventRevision, kind: kind)
     }
-    func setIntensity(_ value: Double) {
+    func setIntensity(_ value: Double, grain settings: GrainSettings = GrainSettings()) {
         guard value.isFinite, (0...1).contains(value) else { return }
-        lock.withLock { intensity = value }
+        guard (try? settings.validate()) != nil else { return }
+        lock.withLock { intensity = value; grain = settings }
     }
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -75,18 +77,18 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
 
     // The capture delegate calls this only on frameQueue.
     private func render(_ buffer: CVPixelBuffer) {
-        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double)? = lock.withLock {
+        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings)? = lock.withLock {
             guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }
-            return (layer, ticket, intensity)
+            return (layer, ticket, intensity, grain)
         }
-        guard let (surface, ticket, strength) = request else { return }
+        guard let (surface, ticket, strength, grainSettings) = request else { return }
         var submitted = false
         defer { if !submitted { _ = lock.withLock { state.complete(ticket) } } }
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
-                let image = try processor.encode(buffer, intensity: strength, command: command)
+                let image = try processor.encode(buffer, intensity: strength, grain: grainSettings, command: command)
                 try display.encode(image: image, destination: drawable.texture, command: command)
                 command.present(drawable)
                 command.addCompletedHandler { [self, buffer] completed in

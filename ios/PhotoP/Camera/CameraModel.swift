@@ -18,6 +18,7 @@ final class CameraModel: ObservableObject {
     @Published private(set) var liveLUTTitle: String?
     @Published private(set) var liveHasFrame = false
     @Published var liveIntensity = 1.0
+    @Published var liveGrain = 0.0
     @Published var liveCompareOriginal = false
     private var importedLiveLUT: ImportedLUT?
 
@@ -128,7 +129,7 @@ final class CameraModel: ObservableObject {
     }
 
     func updateLiveIntensity() {
-        livePreview?.setIntensity(liveCompareOriginal ? 0 : liveIntensity)
+        livePreview?.setIntensity(liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: liveCompareOriginal ? 0 : liveGrain))
     }
 
     private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {

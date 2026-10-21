@@ -38,7 +38,7 @@ final class LivePreviewImageProcessor {
         return space
     }
 
-    func encode(_ buffer: CVPixelBuffer, intensity: Double, command: MTLCommandBuffer) throws -> MTLTexture {
+    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), command: MTLCommandBuffer) throws -> MTLTexture {
         let space = try Self.inputColorSpace(buffer)
         let image = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
@@ -59,7 +59,7 @@ final class LivePreviewImageProcessor {
         let upright = scaled.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
         context.render(upright, to: source, commandBuffer: command,
                        bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
-        try renderer.encode(source: source, destination: processed, intensity: intensity, command: command)
+        try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, command: command)
         return processed
     }
 }

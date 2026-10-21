@@ -24,7 +24,8 @@ actor MetalLUTRenderer {
         self.resources = try MetalLUTResources(lut: lut, device: device)
     }
 
-    func render(_ rgba: Data, width: Int, height: Int, intensity: Double) throws -> Data {
+    func render(_ rgba: Data, width: Int, height: Int, intensity: Double, grain: GrainSettings = GrainSettings()) throws -> Data {
+        try grain.validate()
         guard width > 0, height > 0, width <= Self.maximumPixels,
               height <= Self.maximumPixels / width, intensity.isFinite, (0...1).contains(intensity)
         else { throw MetalLUTError.failed("SDR 처리는 최대 12.6MP이며 크기와 강도가 유효해야 합니다.") }
@@ -32,7 +33,7 @@ actor MetalLUTRenderer {
         let byteCount = count * 4
         guard rgba.count == byteCount else { throw MetalLUTError.failed("RGBA 데이터 크기가 이미지와 다릅니다.") }
         // Preserve exact source bytes at strength zero, including transparent pixels.
-        if intensity == 0 { return rgba }
+        if intensity == 0 && grain.amount == 0 { return rgba }
         if sourceBuffer?.length != byteCount || destinationBuffer?.length != byteCount {
             sourceBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
             destinationBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
@@ -41,7 +42,7 @@ actor MetalLUTRenderer {
               let command = queue.makeCommandBuffer(), let encoder = command.makeComputeCommandEncoder()
         else { throw MetalLUTError.failed("GPU 작업 메모리를 확보할 수 없습니다.") }
         rgba.withUnsafeBytes { sourceBuffer.contents().copyMemory(from: $0.baseAddress!, byteCount: byteCount) }
-        var parameters = try resources.parameters(intensity: intensity, pixelCount: count)
+        var parameters = try resources.parameters(intensity: intensity, pixelCount: count, width: width, height: height, grain: grain)
         encoder.setComputePipelineState(pipeline)
         encoder.setBuffer(sourceBuffer, offset: 0, index: 0)
         encoder.setBuffer(destinationBuffer, offset: 0, index: 1)

@@ -15,7 +15,7 @@ final class MetalLUTTextureRenderer {
         pipeline = try device.makeComputePipelineState(function: function)
     }
 
-    func encode(source: MTLTexture, destination: MTLTexture, intensity: Double, command: MTLCommandBuffer) throws {
+    func encode(source: MTLTexture, destination: MTLTexture, intensity: Double, grain: GrainSettings = GrainSettings(), command: MTLCommandBuffer) throws {
         let supported: Set<MTLPixelFormat> = [.rgba8Unorm, .bgra8Unorm]
         guard source !== destination, source.textureType == .type2D, destination.textureType == .type2D,
               source.sampleCount == 1, destination.sampleCount == 1,
@@ -26,7 +26,7 @@ final class MetalLUTTextureRenderer {
               source.device.registryID == device.registryID, destination.device.registryID == device.registryID,
               command.commandQueue.device.registryID == device.registryID, command.status == .notEnqueued
         else { throw MetalLUTError.failed("LUT texture 형식·크기·GPU 작업이 유효하지 않습니다.") }
-        var parameters = try resources.parameters(intensity: intensity, pixelCount: source.width * source.height)
+        var parameters = try resources.parameters(intensity: intensity, pixelCount: source.width * source.height, width: source.width, height: source.height, grain: grain)
         guard let encoder = command.makeComputeCommandEncoder() else { throw MetalLUTError.failed("LUT encoder를 만들 수 없습니다.") }
         encoder.setComputePipelineState(pipeline)
         encoder.setTexture(source, index: 0)
