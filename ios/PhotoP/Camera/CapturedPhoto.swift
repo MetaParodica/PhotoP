@@ -20,6 +20,12 @@ struct CapturedPhoto: Sendable {
     let format: PhotoFileFormat
 
     init(data: Data, expectedFormat: PhotoFileFormat) throws {
+        if expectedFormat == .dng {
+            try DNGContainer.validate(data)
+            self.data = data
+            self.format = .dng
+            return
+        }
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               CGImageSourceGetCount(source) > 0,
               let identifier = CGImageSourceGetType(source),
