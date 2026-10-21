@@ -36,6 +36,13 @@ final class FilmStyleLibraryTests: XCTestCase {
             }
         }
     }
+    func testNeonRoseUsesDenserGridToPreserveNearClippedBlue() throws {
+        let style = try XCTUnwrap(FilmStyle.all.first { $0.id == "neon-rose" })
+        let lut = try style.imported().lut
+        XCTAssertEqual(lut.dimension, 33)
+        let sample = try lut.sample(.init(0.9, 0.8, 0.1))
+        XCTAssertEqual(sample.z, 0.006128201503311937, accuracy: 0.006)
+    }
     func testSearchAndCategory() {
         XCTAssertEqual(FilmStyle.search("portrait", category: "전체").map(\.id), ["amber-portrait"])
         XCTAssertEqual(FilmStyle.search("", category: "흑백").count, 2)
