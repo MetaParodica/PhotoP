@@ -200,3 +200,26 @@
 - 참고: hald-clut README/tree·혼합 asset source와 GPL metadata, 공식 ARRI/Sony/Fuji/Panasonic 웹페이지. 외부 source/asset 복사 없음. 자체 profile data에 한정된 PhotoP-Style-Permission-1.
 - revision `ca05d5cdc9b50108f7f5095d5ebdbaadbd4b1a25`, [CI 39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343): unsigned iPhone SDK·Swift120·Python7 성공, skip0. hash재현/12unique·finite/gray ramp·trilinear chart·mono·검색·preset 재시작/변조/설정/version/경로·Hald red-fastest/swapped channels/invalid bounds/rotation/alpha 검사.
 - Phase6 제한 개발 범위 자동 gate 통과. 외부 bundle0·자체12, 100+ 품질 승인·외부 재배포권·실제 사진 미학은 미완료. 다음 제품 단계는7. 상세 제한은11/12 문서에 기록한다.
+
+## 24. preview GPU pass 생략·PSO 재사용·thermal budget
+
+- MetalPetal의 실제 MTIContext cache 코드와 MIT LICENSE 검토 후 독립 구현. immutable compute PSO만 device/function별 공유, mutable frame 자원은 renderer 소유 유지.
+- 중립 preview에서 LUT compute/graded texture 생략, off scratch 해제. nominal1024/60Hz·저전력720/30Hz·serious720/20Hz·critical480/10Hz 처리 admission과 Vision/histogram 감속. 센서/촬영 설정 변경 없음.
+- `6d7d2eae672735dff4122bc5e4372010672066b1`, [CI39544188467](https://github.com/MetaParodica/PhotoP/actions/runs/39544188467): SDK·Swift124·Python7 성공. neutral/identity pixels·source texture 재사용/분리·PSO identity·budget/시간 guard 검증 후25 진행. 실측FPS/발열/배터리 향상량은 미검증.
+
+## 25. 사진별 실제 지원 해상도 상한 선택
+
+- activeFormat.supportedMaxPhotoDimensions와 output 상한의 양축 내 실제 값만 표시·요청. 같은 output max 반복 설정을 피하고 사진별 settings만 변경. RAW/bracket 정책 유지, unsupported 선택 시 명시 거부·구성 변경 UI 복귀. 파일 실제 픽셀 크기는 ImageIO metadata.
+- Apple maxPhotoDimensions 공식 계약 확인. `6977d87b5a7275211ff76ebf1a11c70429d97d37`, [CI39544511878](https://github.com/MetaParodica/PhotoP/actions/runs/39544511878): SDK·Swift128·Python7 성공. 중복/양축/없는 크기/RAW/bracket/실제 파일 metadata 검증 후26 진행. 실제24/48MP delivery·latency·EXIF는 대기.
+
+## 26. standalone1D cube 직접 보간
+
+- OCIO IridasCube 소스·BSD3 원문 검토 후 자체 parser/CPU/Metal 확장.1D2~65536 RGB행 직접 보간,3D2~65 유지, mixed shaper+3D 거부. 낮은 크기의3D로 굽지 않음.
+- `f274a26e2936951299d5ef89380982fc046d6569`, [CI39544857433](https://github.com/MetaParodica/PhotoP/actions/runs/39544857433): SDK·Swift132·Python7 성공. domain/채널/클램프/강도/잘못된 표·65536행·CPU/사진GPU/textureGPU 일치 검증 후27 진행.
+
+## 27. 자체24+외부5·batch·출처/공유 보존
+
+- slay5개 원본과 Git blob/SHA256 일치·모든33³ RGB행·README/LICENSE 전문·생성기를 확인. 원본 LUT/license만 포함, 입력 profile 미기재는 sRGB 가정으로 기록·사용자 확인. 자체12종 추가,29종 검색/분류/생성chart,32개 순차 가져오기와 부분 성공, favorite/preset/recipe/JPEG caption credit 보존. 배포 app에 실제 복사된 manifest/LUT/license도 검사.
+- 첫 `c355558cb807c4da7f40a24c9c5188a5a7c397e8`, [CI39550127056](https://github.com/MetaParodica/PhotoP/actions/runs/39550127056): SDK 성공, Swift138 중1실패. Neon Rose에서17³ 보간 오차0.01604가 기존0.015 초과. 허용 오차를 유지하고 해당 표를33³로 높여 near-clipped blue 회귀 추가.
+- 수정 `3abee4006a3298a49eb63dde8dae710a37c747c9`, [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621): unsigned SDK·Swift139·Python11 성공, skip0. source와 실제 app bundle 자산5개 hash·credit/license/profile 확인·chart/GPU·변조거부·attribution 재시작/recipe/JPEG·batch 부분 성공/선택 제한 검증.
+- 자체24+외부5 총29이며100종 검수/브랜드 재현 완료가 아니다. 실제 사진 미학/색차·FPS/메모리/발열/기기 촬영은 미검증. 자세한 소스·파일·기술 계약은13 문서.

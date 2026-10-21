@@ -1,6 +1,6 @@
 # LUT·필름 라이브러리 조사와 포함 정책
 
-기준: 2026-10-21 KST. 아래는 **출처를 찾은 카탈로그**이며 LUT 바이너리를 확보·검수·번들 완료했다는 뜻이 아니다. 기계 판독용 출처 목록은 `assets/lut-catalog.json`에 보존한다. 외부 LUT 바이너리 번들은 **0개**다. Phase 6에서 앱 코드가 런타임에 생성하는 자체 sRGB 스타일 12종을 추가했다. 100개 이상의 스타일은 후속 품질 목표다.
+기준: 2026-10-21 KST. 아래는 **출처를 찾은 카탈로그**이며 LUT 바이너리를 확보·검수·번들 완료했다는 뜻이 아니다. 기계 판독용 출처 목록은 `assets/lut-catalog.json`에 보존한다. 현재 외부 LUT 바이너리 번들은 **CC BY4.0 slay5개**이고, 런타임에 생성하는 자체 sRGB 스타일은24종이다. 100개 이상의 스타일은 후속 품질 목표다.
 
 ## 공식 공급사 우선 조사
 
@@ -42,7 +42,7 @@ Log curve 변환만으로 타사 센서의 분광 감도·노이즈·하이라�
 
 연구용 포함과 상용 포함을 분리한다. 연구용으로 사용·보관 가능한 원본은 개발자의 별도 private workspace에 둘 수 있고 앱 import 대상으로 사용할 수 있다. 재배포가 허용된 자료는 연구 패키지에 포함할 수 있다. 상용 앱에는 commercialUseAllowed와 redistributionAllowed가 모두 true이며 근거가 있는 자산만 복사한다. 두 권한은 각각 yes/no/unknown으로 기록한다.
 
-현재 구현한 `assets/luts/manifest.json`과 검사 스크립트는 **상용 번들 허용 목록의 검증**이다. 연구 라이브러리 자동 다운로드·빌드별 자산 복사는 미구현이다. 사용자 cube/Hald import·favorites·전체 룩 preset·자체 스타일 UI는 구현했다. iOS target에 외부 LUT 리소스를 넣지 않았다. 자체 profile code와 좁은 데이터 사용 허가는 Film 폴더에서 관리한다. 추후 archive 안의 실제 파일과 허용 목록을 대조하는 최종 검사를 추가해야 한다.
+현재 구현한 `assets/luts/manifest.json`과 검사 스크립트는 **상용 번들 허용 목록의 검증**이다. 연구 라이브러리 자동 다운로드·빌드별 자산 복사는 미구현이다. 사용자 cube/Hald import·favorites·전체 룩 preset·자체 스타일 UI는 구현했다. iOS target에는 검증한 slay5개 및 manifest/license 리소스를 포함한다. 자체 profile code와 좁은 데이터 사용 허가는 Film 폴더에서 관리한다. 현재 CI는 unsigned SDK app에 실제 복사된 manifest 및 LUT/license hash를 원본 허용 목록과 대조한다. 서명한 배포 archive의 최종 검사는 별도다.
 
 ## LUTProfile 메타데이터
 
@@ -62,3 +62,10 @@ Log curve 변환만으로 타사 센서의 분광 감도·노이즈·하이라�
 
 
 Phase 6 공식 제공 사실·재배포 미확정 구분은 [12](12-FILM-SOURCES-AND-QUALITY.ko.md), 실제 source review와 구현은 [11](11-PHASE4-6-IMPLEMENTATION.ko.md)을 따른다. 사용자 import/preset은 앱 로컬 문서이며 자동 bundle 자산으로 승격하지 않는다.
+
+
+## slay5개 실제 채택
+
+[고정 원본](https://github.com/slaycamera/luts/tree/a1709044efe115640dde1dee17d4185fc059af0d)의 README·LICENSE 전문·생성기·5개 cube header/RGB행을 확인했다. CC BY4.0 LUT 자체 배포·credit 범위에서 원본을 변경 없이 포함한다. 원본 blob SHA/개별 SHA256·license hash·creator/credit/source는 assets/luts/manifest.json에 있다. 타사 UI/사진/생성기 코드는 포함하지 않는다. 공식 Log/필름 기술 변환으로 이름 붙이지 않는다.
+
+Upstream transfer/gamut은 미기재이므로 sRGB는 PhotoP 가정이다. `profileBasis=assumed-sRGB`·`requiresSRGBConfirmation=true`, UI 확인·recipe에 표시한다. 실제 app bundle 검사·metadata/JPEG caption credit·favorites/preset 보존은 [13](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)을 따른다. 나머지 외부 후보의 권리가 승인된 것으로 확대하지 않는다.

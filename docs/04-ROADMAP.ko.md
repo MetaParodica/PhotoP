@@ -10,7 +10,7 @@
 | 3 RAW·고급 촬영 | Bayer DNG, 지원 ProRAW, histogram·Zebra·peaking·브래킷 | capability negotiation·PhotoOutput 계약 | RAW/수동/해상도 조합 제한·원본 파괴 | 원본 hash, API 지지 조합별 촬영, 메타데이터·외부 RAW 현상 검증 | 미지원 조합 명시 거부, 원본 불변, 각 도구 fixture·실기기 통과 |
 | 4 장노출 | mean/lighten, 정렬·NR, intermediate preview, cancel·결과/작업 저장 | 선형 색관리·bounded buffers·기기 budget | RAM/발열·떨림·rolling shutter·누락 프레임 | synthetic noise/translation/hotpixel, tripod+handheld, 1~300초 soak, disk/cancel | streaming 메모리 상한 유지; 정렬 잔차·합성 수치 기준 충족; 취소 후 원본/작업 일관성. 별 궤적·HDR·median은 추가 gate |
 | 5 촬영 가이드 | 고급 격자, 인물/포즈·건물·풍경, 규칙→필요 시 AI | 좌표 계약·온디바이스 분석 | 좌우/회전 오차·낮은 조도·불안정 권고 | 비대칭 좌표 fixture, 4방향·전후면·crop·다중 인물, 사람 평가 | 정규화 좌표를 지정 오차(초기 2 display px) 내 매핑; stale 안내 숨김; AI off 시 캡처 독립 동작 |
-| 6 필름 확장 | 공식 허가 LUT·open assets·자체 profiles, grain/halation 등 | Phase 2, 권리·품질 평가 샘플 | 유사 룩 중복·브랜드 오인·자산 재배포 | 피부/차트/야경/풍경/고채도/회색 ramp, LUT 전후 비교, 권리 manifest | 독립 스타일 100+를 장기 목표로 검수; 각 항목 출처·hash·profile·rights·credit 증거 필요. 현재 자체 스타일 12종, 외부 번들 LUT 0개; 100종 검수는 미완료 |
+| 6 필름 확장 | 공식 허가 LUT·open assets·자체 profiles, grain/halation 등 | Phase 2, 권리·품질 평가 샘플 | 유사 룩 중복·브랜드 오인·자산 재배포 | 피부/차트/야경/풍경/고채도/회색 ramp, LUT 전후 비교, 권리 manifest | 독립 스타일 100+를 장기 목표로 검수; 각 항목 출처·hash·profile·rights·credit 증거 필요. 현재 자체 스타일24종·외부 CC BY4.0 LUT5종; 100종 검수는 미완료 |
 | 7 전문 영상 | 지원 resolution/FPS/codec, manual·monitor LUT, Log, scopes/audio·stabilization | 사진/색관리 안정·동영상 스트림 협상 | writer backpressure·오디오 동기·발열·HDR 태그 | 긴 녹화·오디오 sync·실제 codec/profile metadata·프레임 카운트·외부 NLE | 지원 조합만 표시, 원본 비굽기 모드 보존; 안정화/FPS/셔터 제약 표시. 기본 카메라 cinematic depth mode와 혼동 금지 |
 | 8 Android | Kotlin/Compose Camera2 adapter, 필요 시 CameraX, schema/fixture 공유 | iOS 계약 안정·대표 Android 기기 | hardware level·RAW/manual·stream combination 파편화 | capabilities/request/result 교차, Pixel/Galaxy 등 실제 확보 기기, 동일 LUT fixtures | 구현별 지원/거부 근거 기록, 사진 원본·색 계약 일치, unsupported UI 숨김/설명 |
 | 9 품질·배포 | GPU·메모리·발열·배터리·접근성·개인정보·배포 설정 | 각 기능 gate 통과 | 장시간 불안정·회귀·번들 권리 누락 | Instruments, battery/thermal soak, VoiceOver·Dynamic Type·권한·디스크, release archive 검사 | crash/원본 유실 gate 통과, 기기별 성능 보고·미지원 목록·권리 고지·서명 archive 검증 |
@@ -35,7 +35,7 @@
 | 요구 기능 | 구현·자동 검증 | 제한·별도 검증 |
 |---|---|---|
 | Metal 이미지 처리·3D LUT | 사진 buffer/live texture 공통 함수, CPU/GPU 수치 비교 | SDR encoded sRGB, HDR/Log/RAW 미지원 |
-| .cube import·강도 | 2~65 dimension, domain, UTF-8·32MiB 제한, 강도 0~100% | 1D/shaper는 별도 범위; Hald는 Phase 6에서 제한 지원 |
+| .cube import·강도 | 2~65 dimension, domain, UTF-8·32MiB 제한, 강도 0~100% | 단독1D·Hald 제한 지원; mixed shaper는 별도 범위 |
 | 필터 preview | 사용자 LUT, 원본 비교, 실시간 GPU 표시 | 최대 긴 변 1024px, BT.709 SDR 입력, portrait·렌즈/터치 제한 |
 | LUT favorites | 재시작 후 load, 중복·변조·프로파일 검사 | 사용자 LUT만 저장, 번들 LUT 0개 |
 | 이미지 출력 | JPEG·recipe·cube 원자적 별도 저장, 원본 불변 | 최대 12.6MP, 파생 JPEG에 원본 EXIF/HDR gain map 없음 |
@@ -58,6 +58,11 @@ ProRAW 수동 노출/AE Lock, RAW+live, RAW bracket, RAW 현상은 현재 제공
 |---|---|---|
 | 4 | 선형 평균·RGB Lighten, ±8px 정수 translation, SDR 1280px/2fps 샘플, 진행·취소·128MiB PNG archive·Photos·새 bundle 재처리 | 실제 300초 발열/RAM·저조도·삼각대·RAW/고해상도·일반 handheld·회전/원근·median/motion-aware·재시작 기록·crash recovery |
 | 5 | 고급 격자·9종 목표 포즈, Vision saliency/body/rectangle/horizon, 2Hz·confidence·stale·aspect-fit | 실제 정확도·다양한 사람/건물·latency, 가로 UI, 소실점·의미 분류·원근 자동 보정 |
-| 6 | 자체 12종, 검색/분류/색상표, full-look preset, 제한 Hald PNG, 독립 fade/vignette/bloom/halation, 출처·license/hash | 100+ 품질 승인 스타일, 외부 파일별 배포권, 실제 사진 미학/색차·halo/banding 평가, 색번짐·물리 필름 모델 |
+| 6 | 초기 자체12종(후속24+외부5), 검색/분류/색상표, full-look preset, 제한 Hald PNG, 독립 fade/vignette/bloom/halation, 출처·license/hash | 100+ 품질 승인 스타일, 외부 파일별 배포권, 실제 사진 미학/색차·halo/banding 평가, 색번짐·물리 필름 모델 |
 
 각 자동 테스트 gate를 통과한 뒤 다음 단위로 진행했다. 미완료 gate를 완료로 바꾸지 않는다. 상세 revision·실행 로그는 [11](11-PHASE4-6-IMPLEMENTATION.ko.md)과 [08](08-STEP-VALIDATION.ko.md), 다음 제품 개발 단계는 Phase 7 영상이다.
+
+
+## 성능·촬영 요청·룩 후속 확장
+
+중립 GPU pass 생략·immutable PSO cache·thermal/저전력 admission을 추가했다. 실제 포맷의 사진별 해상도 요청과 실제 파일 metadata 표시, 단독1D cube, 자체24+외부5 총29 룩·batch import·attribution 보존을 구현했다. 외부5개는 CC BY4.0 원문·원본 hash·credit을 보존하며 sRGB 해석은 가정으로 표시한다. 상세 검증·제약은 [13 문서](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)를 따른다. 100종 미학 승인·실측 성능·실기기 품질 승인은 계속 미완료다.

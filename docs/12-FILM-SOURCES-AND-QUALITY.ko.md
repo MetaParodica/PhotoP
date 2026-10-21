@@ -14,3 +14,6 @@
 새 자체 프로파일은 측정한 필름/유제 모델이 아니라 PhotoP의 독립적인 창작 스타일이다. 저작자·source ID·revision·canonical cube SHA256·sRGB input/output·강도·credit·배포 구분을 기록한다. 미리보기는 합성 색상 chart이며 타사 사진을 쓰지 않는다.
 
 자동 평가: cube parse·finite/range·gray ramp·각 프로파일 구별·단색 채널 일치·피부색 chart 수치·CPU/Metal 및 내보내기 재현. 시각 평가: 실제 피부·야경·풍경·high-chroma 사진의 색·톤·banding·halo를 실기기에서 검수한다. 수치 통과가 최종 미학적 품질 승인이나 Kodak/Fujifilm 등의 실측 재현을 뜻하지 않는다.
+
+
+추가 채택: [slaycamera/luts 고정 revision](https://github.com/slaycamera/luts/tree/a1709044efe115640dde1dee17d4185fc059af0d)의 원본5개는 LUT 자체 CC BY4.0·credit/share 조건과 모든 RGB행/해시를 검토해 포함했다. 입력/출력 프로파일은 upstream 미기재이므로 PhotoP sRGB 가정을 명시하고 적용 확인을 요구한다. 이 승인 범위를 위의 다른 브랜드 자료로 확대하지 않는다. 자체 스타일은24종으로 확대했고 외부5개와 구분한다. 자산/권리/색상·JPEG attribution 검증은 [13](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)을 따른다.

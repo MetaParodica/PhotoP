@@ -1,53 +1,54 @@
 # 현재 개발 단계 보고
 
-기준: 2026-10-21 KST. MetaParodica/PhotoP, `codex/ios-camera-foundation`, [Draft PR #1](https://github.com/MetaParodica/PhotoP/pull/1). 사용자 지시대로 실제 iPhone 검증은 별도 대기하고, 자동 테스트 성공 후 Phase 4→5→6으로 진행했다. 아래 제한된 개발 범위의 자동 검증을 완료했다. 상용 품질 승인·모든 PRD 기능 완료를 뜻하지 않는다.
+기준: 2026-10-21 KST. MetaParodica/PhotoP, `codex/ios-camera-foundation`, [Draft PR#1](https://github.com/MetaParodica/PhotoP/pull/1). 초기 Phase1–6 이후 성능·사진 해상도 요청·룩 지원 확장을 구현하고 단위별 자동 gate를 통과했다. 실제 iPhone 품질 승인은 미완료다.
 
 ## 1. 구현 기능
 
-- 기존 Phase 1–3: native preview/수동 제어/원본 보존, SDR Metal LUT·grain·레시피, 동적 Bayer/ProRAW, histogram·Zebra·peaking, native 3장 bracket 유지.
-- Phase 4: 1~300초 계산 장노출, 선형광 온라인 평균·RGB Lighten, 선택 translation 정렬, 중간 결과·취소·열 상태 대응, bounded lossless PNG archive와 새 bundle 재처리, JPEG·Photos·공유.
-- Phase 5: 고급 격자·9종 자체 도식 포즈, optional on-device Vision saliency/body-pose/rectangle/horizon, confidence·stale·generation·aspect-fit 좌표 처리와 제안.
-- Phase 6: 자체 sRGB 스타일 12종, 검색/분류/색상표, 전체 룩 preset의 영속 저장·복원·삭제, 제한된 Hald PNG import, 독립 fade/vignette/bloom/red halation, v1/v2/v3 recipe 호환·출처/hash 보존.
+기존 native 카메라/수동 제어·RAW/ProRAW·노출 분석/브래킷·SDR Metal LUT/비파괴 편집·장노출·구도 가이드를 유지한다. 이번 변경은 다음과 같다.
+
+- 중립 preview의 불필요한 LUT compute/graded texture 제거, immutable Metal PSO 재사용, thermal/저전력 처리량·분석 빈도 조절.
+- 활성 포맷의 실제 지원 목록에서 사진별 해상도 상한 선택, 일반 저장 파일의 실제 픽셀 크기 표시.
+- 단독1D cube의 채널별 직접 보간, 기존3D cube/Hald와 편집·실시간 미리보기·preset/favorites 연결.
+- 자체24종·외부 slay5종 총29 룩, 검색/분류/색상표, 최대32개 LUT 순차 가져오기와 부분 성공/실패 보고.
+- 외부 LUT/license 원본·SHA256·creator/credit/source/profile assumption 보존, favorite/preset/recipe/JPEG caption attribution 유지, 실제 app bundle 검증.
 
 ## 2. 참고 소스와 라이선스
 
-[11 문서](11-PHASE4-6-IMPLEMENTATION.ko.md)에 Starlapse의 실제 mean/valid-edge/transfer 코드(MIT), PoseGuide의 synthetic normalized scaffolds(repo MIT metadata), hald-clut의 혼합 출처와 GPL metadata를 고정 revision으로 기록했다. 구현은 독립 작성했으며 소스·포즈 자산·외부 LUT 바이너리를 복사하지 않았다. Apple AVFoundation·Metal·Vision·ImageIO 공식 API를 사용한다.
+[13 문서](13-PERFORMANCE-CAPTURE-LOOKS.ko.md)에 실제 읽은 파일·고정 revision·판단을 기록했다. MetalPetal MTIContext의 cache 구조(MIT), OpenColorIO IridasCube parser(BSD-3-Clause)를 참고해 독립 구현했다. slaycamera/luts의 LUT 자체 CC BY4.0·README·LICENSE 전문·생성기·5개 원본 cube/RGB행을 확인했다. 해당 LUT5개와 license만 포함하고 타사 UI/사진/생성기 코드는 복사하지 않았다.
 
-[12 문서](12-FILM-SOURCES-AND-QUALITY.ko.md)는 ARRI/Sony/Fujifilm/Panasonic의 공식 제공 사실과 app redistribution 미확정을 구분한다. 외부 LUT 번들은 0개다. 자체 12종의 profile data 사용 허가는 `ios/PhotoP/Film/STYLE-PERMISSION.txt` 범위로 한정한다.
+기존 Starlapse/PoseGuide/hald-clut 검토는 [11](11-PHASE4-6-IMPLEMENTATION.ko.md), 공식 브랜드 LUT 제공 사실과 미확정 재배포권은 [12](12-FILM-SOURCES-AND-QUALITY.ko.md)에 유지한다. slay5개 허가를 다른 자료에 확대하지 않는다. 자체 profile-data 허가는 Film/STYLE-PERMISSION.txt 범위다.
 
 ## 3. 기술적 접근
 
-캡처 직렬 queue와 GPU/분석/file 작업을 분리한다. 장노출은 고해상도 N프레임을 RAM에 보관하지 않고 온라인 누적하며 제한적 alignment의 실패를 명시한다. lossless sampled frames를 디스크에서 순차 재처리한다. Vision은 이미 회전/미러링된 입력을 한 작업씩 분석하고 오래된 결과를 버린다. 색감은 기존 Metal 공통 함수를 재사용하고 마감 pass를 추가한다. full-look preset과 LUT-only favorites를 별도 저장한다. 사용자 파일과 배포 자산의 권리를 혼동하지 않는다.
+고빈도 mutable 프레임은 한 작업씩 처리하고 immutable PSO만 공유한다. 중립 출력은 색변환된 source를 직접 사용한다. 열 상태의 처리 budget은 센서/촬영 설정을 바꾸지 않는다. 사진 해상도는 activeFormat/output의 실제 값 중 per-request로 선택하고 실제 결과 metadata와 구분한다. 1D는 낮은3D 표로 굽지 않고 채널별 curve를 직접 보간한다. LUT batch는 한 파일씩 저장해 전체 파일을 동시에 RAM에 유지하지 않는다.
+
+외부 룩은 입력 profile이 미기재이므로 PhotoP의 sRGB SDR 가정 확인 후 적용한다. 원본 LUT byte/hash·license와 metadata/JPEG attribution을 함께 유지한다. 기존 uncredited favorite에 동일 LUT의 검증된 출처를 다시 저장하면 metadata만 보강한다.
 
 ## 4. 생성·수정 파일
 
-- 신규: `LongExposure/{LongExposureStack,LongExposureCapture,LongExposureArchive}.swift`, `Composition/{CompositionGuide,CompositionAnalyzer}.swift`, `Film/{FilmFinish.swift,FilmFinish.metal,FilmStyleLibrary.swift,STYLE-PERMISSION.txt}`, `Processing/HaldLUT.swift`, `Storage/FilterPresetLibrary.swift`.
-- 신규 UI: `LongExposureView.swift`, `CompositionControls.swift`, `FilmFinishControls.swift`, `FilmStylesView.swift`.
-- 수정: CameraService/CameraModel/CameraView, SDRImage, MetalLUTRenderer/MetalLUTTextureRenderer, LiveLUTPreview/LivePreviewImageProcessor, LUTPhotoEditor/ImportedLUT, SavedEditStore, LUTEditorView/LiveLUTControls.
-- 테스트: LongExposureStackTests, LongExposureArchiveTests, CompositionGuideTests, FilmFinishTests, FilmStyleLibraryTests와 기존 LUTPhotoEditorTests 호환 검증. 문서 04/05/06/07/08/11/12와 README 갱신.
+- 신규: MetalPipelineCache.swift, PreviewBudget.swift, PhotoResolution.swift, BundledFilmLibrary.swift, LUTBatchImporter.swift, PreviewBudgetTests/PhotoResolutionTests/OneDLUTTests/BundledFilmLibraryTests/LUTBatchImporterTests.
+- 수정: CameraService/CameraModel/CameraTypes/CapturedPhoto/ManualControls; CubeLUT/MetalLUTResources/LUT.metal; FilmStyleLibrary/STYLE-PERMISSION/FilmFinish; live/still renderers·preview processor/analyzer; LUTLibrary/LUTPhotoEditor/SDRImage·스타일/편집/미리보기/즐겨찾기 UI; 기존 관련 tests.
+- 자산·CI: LUT5개·license·manifest, lut-catalog, project.yml, ios.yml, 자산 검사 script/tests. 문서04/05/06/07/08/11/12/13·README 갱신.
 
 ## 5. 실행·테스트 결과
 
 | 단위 | revision | CI | 결과 |
 |---|---|---|---|
-| 장노출 core | b03dc5b1110f49709ba84ea1e871f506f73de7dd | [39539398038](https://github.com/MetaParodica/PhotoP/actions/runs/39539398038) | SDK·Swift96·Python7 성공 |
-| 캡처/archive/재처리 | 29ce647a03492e69b454fb9544fecb8812504463 | [39539994340](https://github.com/MetaParodica/PhotoP/actions/runs/39539994340) | SDK·Swift101·Python7 성공 |
-| 구도·Vision | 995dac8e854f80ad55722bd38c583529ceeda730 | [39540831878](https://github.com/MetaParodica/PhotoP/actions/runs/39540831878) | SDK·Swift106·Python7 성공 |
-| 마감·레시피 | 589961ae989e83861bb0e7e397663f02003bb832 | [39541479961](https://github.com/MetaParodica/PhotoP/actions/runs/39541479961) | SDK·Swift112·Python7 성공 |
-| 스타일·preset·Hald | ca05d5cdc9b50108f7f5095d5ebdbaadbd4b1a25 | [39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343) | SDK·Swift120·Python7 성공, skip 없음 |
+| preview 최적화 |6d7d2eae672735dff4122bc5e4372010672066b1|[39544188467](https://github.com/MetaParodica/PhotoP/actions/runs/39544188467)|SDK·Swift124·Python7 성공|
+| 해상도 요청 |6977d87b5a7275211ff76ebf1a11c70429d97d37|[39544511878](https://github.com/MetaParodica/PhotoP/actions/runs/39544511878)|SDK·Swift128·Python7 성공|
+| 1D cube |f274a26e2936951299d5ef89380982fc046d6569|[39544857433](https://github.com/MetaParodica/PhotoP/actions/runs/39544857433)|SDK·Swift132·Python7 성공|
+|29종/권리/batch/credit·정밀도 수정|3abee4006a3298a49eb63dde8dae710a37c747c9|[39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621)|SDK·Swift139·Python11·source/app bundle5개 hash 성공, skip0|
 
-Linux에서 소스 편집·Python7을 실행했다. unsigned iPhone SDK build와 XCTest는 GitHub macOS-15 runner에서 수행했다. 실제 iPhone 촬영은 수행하지 않았다. 구도 단계의 CVPixelBuffer concurrency 경고와 마감 테스트 fixture의 compiler time limit을 수정하고 다시 통과했다. 기존 AppIntents·portrait orientation 경고 외 새 경고는 없다.
+첫 룩 통합에서 Neon Rose의17³ 보간이 기존0.015 오차 gate를 넘었다. 입력(0.9,0.8,0.1)의 청색 오차0.01604를 재현했고 허용 오차를 유지한 채 해당 스타일만33³로 높여 회귀 테스트를 추가했다. 나머지 스타일과 기존12종 기본 표는 유지한다. 수정 후 전체가 통과했다. unsigned SDK/XCTest는 GitHub macOS에서, 로컬 Python11은 Linux에서 실행했다. 실제 기기에서 실행했다고 주장하지 않는다. AppIntents/portrait의 기존 경고는 유지된다.
 
-## 6. 확인된 제약·미완료
+## 6. 확인된 제약
 
-장노출은 **1280px·최대2fps 처리 SDR 샘플**이며 센서 연속 적분/고해상도 RAW 합성이 아니다. 프레임 간 라이트 트레일 누락 가능, alignment는 ±8px 정수 translation만 지원한다. disk archive 128MiB에 도달하면 일찍 종료하며 실제 시간/이유를 기록한다. 회전/원근·일반 handheld 보장·median/motion-aware·앱 재시작 archive browser·crash orphan recovery는 미구현이다.
+실측 FPS/지연/배터리/발열/RAM 개선량은 없다. 처리 budget 감소를 실제 speed-up으로 표시하지 않는다. 해상도 요청은 최대 상한이며 실제 결과는 더 작을 수 있고, RAW/브래킷의 임의 크기 선택은 제공하지 않는다. SDR 편집은12.6MP·sRGB JPEG로 제한하고 원본은 보존한다.
 
-구도는 portrait-only, 목표 도식과 검출을 구분하며 rectangle을 건축물로 단정하지 않는다. 실제 검출 정확도·latency·다양한 인물/장면 품질은 미검증이다. 소실점·semantic scene segmentation·자동 perspective correction은 미구현이다.
+29종은 브랜드 필름/유제 측정 재현이 아니다. 외부5개는 sRGB 해석을 가정하며 Log/HDR에 직접 적용하지 않는다. 실제 피부/야경/고채도·banding/halo 미학 평가는 미완료다. 100종·mixed shaper·고급OCIO config·RAW 현상/HDR grading·고해상도 편집·가로 UI·영상/Android는 후속이다.
 
-자체 스타일 **12종**은 브랜드 실측 재현이 아니다. 100+ 검수 스타일과 외부 LUT 재배포 승인, 실제 사진의 미학·banding/halo 검수는 미완료다. 컬러 블리딩·물리 film-base 모델·전체 고급 grading 항목도 후속이다. 사진 편집은 SDR sRGB·12.6MP JPEG 한도, 미리보기는1024px다. Hald는 level2~8의 불투명 8bit RGB sRGB PNG로 제한한다.
-
-RAW 현상·RAW bracket·HDR fusion·전체 갤러리·영상·Android는 미구현이다. 기존 ProRAW AUTO·RAW/live off 등의 실행 제한을 유지한다. 실제 EXIF·Photos·색상·FPS·메모리·배터리·발열·300초 안정성·접근성은 별도 기기 승인 대기다.
+기존 장노출은1280px·최대2fps 처리 SDR 샘플·128MiB frame archive·±8px 정수 translation이다. 회전/원근·일반 handheld 보장·median/motion-aware·재시작 archive browser·crash orphan recovery는 미구현이다. 구도 Vision 정확도/실제 지연·semantic building/소실점·자동 perspective correction과 실제 촬영/EXIF/Photos·장시간 품질 승인은 별도 대기다.
 
 ## 7. 다음 단계
 
-다음 제품 개발은 Phase 7 전문 영상이다. 착수 시 supported resolution/FPS/codec 및 audio 권한·writer backpressure·원본 비굽기 color metadata 계약을 먼저 정의한다. 이번 요청 범위는 Phase 6까지이며 실기기 검증 항목은 05 문서에 유지한다.
+실기기에서 처리량·색/화질·고해상도 delivery를 측정하고 실제 이득이 확인되는 항목을 우선 개선한다. 제품 로드맵의 다음 기능 단계는 Phase7 영상이며 이번 요청에서 영상/Android를 구현했다고 표시하지 않는다. 최신 전체 테스트·소스/권리·제약은13 문서와 PR checks를 따른다.

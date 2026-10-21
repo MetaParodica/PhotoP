@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. Phase 3 adds dynamically gated Bayer RAW/Apple ProRAW DNG capture, SDR RGB/luma histograms, zebra, focus peaking, and native three-frame exposure brackets. Phases 4–6 add sampled SDR long exposure, on-device composition suggestions and an original film-style library. Video and Android remain future work.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict standalone 1D/3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. Phase 3 adds dynamically gated Bayer RAW/Apple ProRAW DNG capture, SDR RGB/luma histograms, zebra, focus peaking, and native three-frame exposure brackets. Phases 4–6 add sampled SDR long exposure, on-device composition suggestions and an original film-style library. Video and Android remain future work.
 
 ## Start here
 
@@ -43,14 +43,14 @@ Original HEIF/JPEG bytes are retained in the app's Documents/Originals directory
 
 All 14 requested modes remain the product roadmap; the app currently exposes still photos and sampled computational long exposure. Frame duration, RAW/ProRAW, Log and maximum resolution depend on the device and active capture configuration.
 
-Third-party project and LUT rights are tracked separately. No third-party source code, LUT binaries, model weights or commercial UI assets are bundled in this initial implementation.
+Third-party project and LUT rights are tracked separately. No third-party source code, model weights or commercial UI assets are bundled. Five unmodified slay LUTs are included with CC BY 4.0 license, attribution and hashes. Their upstream color profile is unspecified; applying them requires confirming PhotoP’s sRGB SDR interpretation.
 
 
 ## SDR LUT photo editor
 
 After capture, choose **LUT 사진 편집**. Confirm that your LUT expects and outputs sRGB, import a UTF-8 3D `.cube`, adjust strength and compare with the SDR original. The camera session pauses while this editor is open. Preview is limited to 1024px; full-resolution derivative export currently supports up to 12.6MP and explicitly rejects larger photos.
 
-The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB trilinear LUT → strength mix → basic monochrome grain → creative fade/vignette/bloom/halation → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
+The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB channel-linear 1D / trilinear 3D LUT → strength mix → basic monochrome grain → creative fade/vignette/bloom/halation → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative; available LUT attribution is written to the JPEG IPTC caption. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
 
 Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Choose **편집 기록** from the camera screen to reopen an earlier edit after restarting the app. The app checks recipe version/profile, original/LUT hashes, bounded files and local paths before restoring the LUT, strength, grain seed and film finish. Version 1 recipes load with grain disabled; version 2 has neutral film finish; version 3 stores finish and optional provenance; unsupported or changed inputs are rejected. Re-export creates a new bundle. Full gallery browsing remains future work.
 
@@ -80,7 +80,7 @@ Open **보조** for RGB/luma histograms, zebra and focus peaking. Enable one or 
 
 Under **PRO → 노출 브라케팅**, enable three-frame bracketing and select ±0.5/1/2 EV. Supported AUTO/processed/livestream-off configurations capture three separate originals around the device's current EV, within actual device limits. A manifest stores filenames, SHA-256 hashes and requested EV values; frame EXIF remains in each original. All originals can be shared or added to Photos together. RAW brackets and HDR fusion remain future work.
 
-Automated validation: unsigned iPhone SDK build, 120 Swift tests and 7 Python tests passed. Real capture, EXIF agreement, RAW-developer compatibility, display color, FPS, memory and thermal acceptance remain unverified. The repository contains no bundled third-party LUTs or models.
+Automated validation through the previous Phase 6 slice: unsigned iPhone SDK build, 120 Swift tests and 7 Python tests passed. Current expansion evidence is recorded in the report below. Real capture, EXIF agreement, RAW-developer compatibility, display color, FPS, memory and thermal acceptance remain unverified. The repository bundles five attributed CC BY 4.0 LUTs and no third-party models.
 
 
 ## Sampled long exposure (Phase 4)
@@ -93,8 +93,21 @@ Open **구도** for advanced geometric grids and nine independently drawn pose t
 
 ## Original film styles and full-look presets (Phase 6)
 
-The style browser offers **12 original sRGB styles**, categories, search and generated color-patch previews. They are independent creative profiles, not official Kodak/Fujifilm emulations or measured film stocks. Each generated LUT includes author, source ID, license, input/output, credit and SHA-256 provenance. See `ios/PhotoP/Film/STYLE-PERMISSION.txt` for the narrow permission covering our original procedural profiles. Third-party bundled LUT binaries remain **0**; 100+ approved styles is still a future quality goal.
+The style browser offers **24 original sRGB styles and five external slay looks**, categories, search and generated color-patch previews. They are independent creative profiles, not official Kodak/Fujifilm emulations or measured film stocks. Each generated LUT includes author, source ID, license, input/output, credit and SHA-256 provenance. See `ios/PhotoP/Film/STYLE-PERMISSION.txt` for the narrow permission covering our original procedural profiles. Five original slay LUT files are bundled under CC BY 4.0 with creator/source/license/hash verification and explicit sRGB-assumption confirmation. They are separate from our original profiles. 100+ approved styles is still a future quality goal.
 
 Full-look user presets preserve LUT bytes, strength, grain amount/seed and independent fade, vignette, bloom and red halation. Both editor and live preview can restore them across app restarts. LUT favorites remain LUT-only. Imported Hald tables support square level 2–8, opaque 8-bit RGB sRGB PNG; rotated, other-profile, non-table and oversized inputs are rejected. The importer requires an explicit sRGB declaration. Creative finishing is an SDR approximation; its spatial taps may differ across resolutions and need photographic evaluation.
 
 Implementation details, source/license comparisons and per-unit CI evidence: [Phases 4–6](docs/11-PHASE4-6-IMPLEMENTATION.ko.md), [official film/LUT sources and quality](docs/12-FILM-SOURCES-AND-QUALITY.ko.md). Real iPhone image quality, capture delivery, Vision accuracy, FPS, memory, battery and thermal validation remain pending.
+
+
+## Performance, capture requests and look import expansion
+
+Neutral live preview now skips the LUT compute pass and graded texture. Immutable Metal compute pipelines are cached by GPU/function; frame buffers remain isolated. Thermal/Low Power Mode budgets reduce processed dimensions and analysis cadence without changing sensor FPS or original photo resolution. These are workload controls; device speed, battery and thermal improvements have not been measured.
+
+Under **PRO → 사진 해상도 상한**, select an actual size advertised by the active format, or keep its maximum. The selected value is a request ceiling; the output can be smaller. The last processed file’s actual pixel dimensions are displayed separately. RAW/bracket keep their prior maximum policy. This does not add resolutions absent from the active format or lift the 12.6MP derivative-editing limit.
+
+Standalone 1D `.cube` tables retain up to 65,536 exact RGB rows and interpolate each channel directly on CPU/Metal. Mixed 1D+3D shapers remain unsupported. **스타일·프리셋 → 여러 LUT 가져오기** imports up to 32 cube/Hald files sequentially after sRGB confirmation, reporting partial success per file. Twenty-four original profiles include split-tone/toned monochrome families; five external slay LUTs retain original names and attribution. Favorites, full presets, recipes and exported JPEG captions retain available provenance.
+
+[Source review, implementation contracts and test evidence](docs/13-PERFORMANCE-CAPTURE-LOOKS.ko.md). All real iPhone validation remains pending.
+
+Latest expansion validation: [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621) passed unsigned iPhone SDK build, **139 Swift tests**, **11 Python tests** and hash/license checks for all **five source and copied-app LUTs**, with no skipped Swift tests.
