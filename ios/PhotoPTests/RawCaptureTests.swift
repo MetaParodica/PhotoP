@@ -1,0 +1,49 @@
+import XCTest
+import AVFoundation
+@testable import PhotoP
+
+final class RawCaptureTests: XCTestCase {
+    // Synthetic CFA TIFF/DNG; validates the container contract, not sensor output.
+    private func dng() throws -> Data {
+        try XCTUnwrap(Data(base64Encoded: "SUkqAAgAAAARAAABBAABAAAACAAAAAEBBAABAAAACAAAAAIBAwABAAAAEAAAAAMBAwABAAAAAQAAAAYBAwABAAAAI4AAABEBBAABAAAASgEAABUBAwABAAAAAQAAABYBBAABAAAACAAAABcBBAABAAAAgAAAAI2CAwACAAAAAgACAI6CAQAEAAAAAAEBAhLGAQAEAAAAAQQAABPGAQAEAAAAAQEAABTGAgAPAAAA2gAAACHGCgAJAAAA6gAAACjGBQADAAAAMgEAAFrGAwABAAAAFQAAAAAAAABQaG90b1AgRml4dHVyZQAAAQAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAEAAAABAAAAAQAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAIE4UUAhS/FPwVeRX2FnMW8BdtF+oYZxjkGWEZ3hpbGtgbVRvSHE8czB1JHcYeQx7AH30fuiA3ILQhMSGuIisiqCMlI6IkHyScJRklliYTJpAnDSeKKAcohCkBKb4p+yp4KvUrcivvLGws6S1mLeMuYC7dL1ov1zBUMNExTjHLMk="))
+    }
+    func testOnlyAdvertisedRAWClassesAreSelectable() {
+        let classify: (UInt32) -> RawCaptureMode? = { $0 == 10 ? .bayer : ($0 == 20 ? .appleProRAW : nil) }
+        XCTAssertEqual(RawCapturePolicy.modes(formats: [], classify: classify), [.processed])
+        XCTAssertEqual(RawCapturePolicy.modes(formats: [99, 20], classify: classify), [.processed, .appleProRAW])
+        XCTAssertEqual(RawCapturePolicy.modes(formats: [20, 10, 10], classify: classify), [.processed, .bayer, .appleProRAW])
+        XCTAssertNil(PhotoFileFormat.dng.codec)
+        XCTAssertFalse(PhotoFileFormat.supported(by: [.jpeg, .hevc]).contains(.dng))
+    }
+    func testRAWExecutionPolicySeparatesSupportFromCurrentAvailability() {
+        let all = RawCaptureMode.allCases
+        XCTAssertNotNil(RawCapturePolicy.unavailableReason(mode: .bayer, available: [.processed], live: false, exposureMode: .continuousAutoExposure))
+        XCTAssertNotNil(RawCapturePolicy.unavailableReason(mode: .appleProRAW, available: all, live: false, exposureMode: .custom))
+        XCTAssertNotNil(RawCapturePolicy.unavailableReason(mode: .appleProRAW, available: all, live: false, exposureMode: .locked))
+        XCTAssertNotNil(RawCapturePolicy.unavailableReason(mode: .bayer, available: all, live: true, exposureMode: .custom))
+        XCTAssertNil(RawCapturePolicy.unavailableReason(mode: .bayer, available: all, live: false, exposureMode: .custom))
+        XCTAssertNil(RawCapturePolicy.unavailableReason(mode: .appleProRAW, available: all, live: false, exposureMode: .continuousAutoExposure))
+    }
+    func testDNGContainerAndOriginalBytesArePreserved() throws {
+        let data = try dng()
+        let photo = try CapturedPhoto(data: data, expectedFormat: .dng)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let url = try PhotoStore.writeOriginal(photo, in: folder)
+        XCTAssertEqual(url.pathExtension, "dng")
+        XCTAssertEqual(try Data(contentsOf: url), data)
+        XCTAssertThrowsError(try CapturedPhoto(data: data, expectedFormat: .jpeg))
+        XCTAssertThrowsError(try SDRImage.decode(url))
+    }
+    func testRAWDeliveryCannotBeReplacedByProcessedDuplicateOrMissingData() throws {
+        var delivery = SinglePhotoDelivery(format: .dng)
+        XCTAssertThrowsError(try delivery.result())
+        XCTAssertThrowsError(try delivery.receive(nil, isRaw: true))
+        XCTAssertThrowsError(try delivery.receive(dng(), isRaw: false))
+        try delivery.receive(dng(), isRaw: true)
+        XCTAssertEqual(try delivery.result().data, try dng())
+        XCTAssertThrowsError(try delivery.receive(dng(), isRaw: true))
+        var processed = SinglePhotoDelivery(format: .jpeg)
+        XCTAssertThrowsError(try processed.receive(dng(), isRaw: true))
+    }
+}

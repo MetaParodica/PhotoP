@@ -18,6 +18,7 @@ struct CameraCapabilities: Equatable, Sendable {
     var focusLock = false
     var whiteBalanceLock = false
     var photoFormats: [PhotoFileFormat] = [.jpeg]
+    var rawModes: [RawCaptureMode] = [.processed]
 }
 
 struct ExposureSettings: Equatable, Sendable {

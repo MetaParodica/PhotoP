@@ -31,6 +31,9 @@ struct SDRImage: Sendable {
               let height = properties[kCGImagePropertyPixelHeight] as? Int,
               width > 0, height > 0, width <= 100_000, height <= 100_000
         else { throw ImageEditingError.invalid("원본 이미지를 읽을 수 없습니다.") }
+        guard CGImageSourceGetType(source) as String? != "com.adobe.raw-image" else {
+            throw ImageEditingError.invalid("RAW 현상은 아직 제공하지 않습니다. DNG 원본을 외부 RAW 편집기로 내보내세요.")
+        }
         let maxDimension: Int
         if let previewMaxDimension {
             guard (1...2048).contains(previewMaxDimension) else { throw ImageEditingError.invalid("미리보기 크기가 유효하지 않습니다.") }

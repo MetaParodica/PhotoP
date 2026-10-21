@@ -20,7 +20,7 @@ struct CameraView: View {
                             Text(format.title).tag(format)
                         }
                     }
-                    .disabled(!model.canCapture)
+                    .disabled(model.busy || model.snapshot.isApplyingSettings || model.rawMode != .processed)
                     Button { model.showGrid.toggle() } label: { Image(systemName: "grid") }
                         .accessibilityLabel("삼분할 격자 전환")
                 }
@@ -43,6 +43,11 @@ struct CameraView: View {
                                 .buttonStyle(.borderedProminent).padding()
                         }
                     }
+                Picker("촬영 데이터", selection: $model.rawMode) {
+                    ForEach(model.snapshot.capabilities?.rawModes ?? [.processed]) { mode in Text(mode.title).tag(mode) }
+                }.pickerStyle(.segmented).padding(.horizontal)
+                    .disabled(model.busy || model.snapshot.isApplyingSettings)
+                if let reason = model.rawUnavailableReason { Text(reason).font(.caption).padding(.horizontal) }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
                         ForEach(model.snapshot.lenses) { lens in
@@ -90,7 +95,7 @@ struct CameraView: View {
                     model.setActive(false)
                     showHistory = true
                 }.disabled(model.busy || model.snapshot.isApplyingSettings)
-                if model.latestOriginal != nil {
+                if let original = model.latestOriginal, original.pathExtension != "dng" {
                     Button("LUT 사진 편집") {
                         model.setActive(false)
                         showEditor = true

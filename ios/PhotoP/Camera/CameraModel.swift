@@ -7,6 +7,7 @@ final class CameraModel: ObservableObject {
                                                        state: .stopped, message: nil, revision: 0,
                                                        readout: nil, isApplyingSettings: false)
     @Published var settings = CameraSettings()
+    @Published var rawMode: RawCaptureMode = .processed
     @Published var photoFormat: PhotoFileFormat = .jpeg
     @Published private(set) var busy = false
     @Published private(set) var latestOriginal: URL?
@@ -26,7 +27,12 @@ final class CameraModel: ObservableObject {
         Task { @MainActor [weak self] in self?.receive(value) }
     }
     var previewSession: AVCaptureSession { service.session }
-    var canCapture: Bool { snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+    var rawUnavailableReason: String? {
+        RawCapturePolicy.unavailableReason(mode: rawMode, available: snapshot.capabilities?.rawModes ?? [.processed],
+                                          live: livePreview != nil,
+                                          exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))
+    }
+    var canCapture: Bool { rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
         if !active { liveHasFrame = false }
@@ -48,6 +54,7 @@ final class CameraModel: ObservableObject {
             photoFormat = first
             message = "현재 렌즈에서 지원하지 않는 포맷이므로 \(first.title)로 전환했습니다."
         }
+        if let modes = value.capabilities?.rawModes, !modes.contains(rawMode) { rawMode = .processed }
         snapshot = value
         if let text = value.message { message = text }
     }
@@ -153,7 +160,7 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            let photo = try await service.capturePhoto(format: photoFormat)
+            let photo = try await service.capturePhoto(format: photoFormat, rawMode: rawMode)
             let url = try await PhotoStore.preserveOriginal(photo)
             latestOriginal = url
             savedToPhotos = false

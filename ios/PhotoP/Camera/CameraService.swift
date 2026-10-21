@@ -22,8 +22,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var settingsCompletion: CheckedContinuation<CameraReadout, Error>?
     private var settingsTimeout: DispatchWorkItem?
     private var photoID: Int64?
-    private var photoData: Data?
-    private var photoFormat: PhotoFileFormat?
+    private var photoDelivery: SinglePhotoDelivery?
     private var continuation: CheckedContinuation<CapturedPhoto, Error>?
     private let onSnapshot: @Sendable (CameraSnapshot) -> Void
 
@@ -117,6 +116,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         session.addOutput(output)
         input = candidate
         output.maxPhotoQualityPrioritization = .quality
+        configureRAW()
         configureDimensions()
     }
 
@@ -138,6 +138,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     session.commitConfiguration()
                     throw CameraError.configuration
                 }
+                configureRAW()
                 configureDimensions()
                 session.commitConfiguration()
                 // Switching a lens explicitly returns controls to AUTO.
@@ -155,6 +156,23 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         output.maxPhotoDimensions = largest
     }
 
+    private func configureRAW() {
+        // Configure before startRunning and again after changing the input.
+        output.isAppleProRAWEnabled = output.isAppleProRAWSupported
+    }
+
+    private func rawPixelFormats() -> [OSType] {
+        guard output.availableRawPhotoFileTypes.contains(.dng) else { return [] }
+        return output.supportedRawPhotoPixelFormatTypes(for: .dng)
+    }
+    private func rawModes() -> [RawCaptureMode] {
+        RawCapturePolicy.modes(formats: rawPixelFormats()) { format in
+            if AVCapturePhotoOutput.isAppleProRAWPixelFormat(format) { return .appleProRAW }
+            if AVCapturePhotoOutput.isBayerRAWPixelFormat(format) { return .bayer }
+            return nil
+        }
+    }
+
     private func capabilities() -> CameraCapabilities? {
         guard let d = input?.device else { return nil }
         let format = d.activeFormat
@@ -168,7 +186,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             exposureLock: d.isExposureModeSupported(.locked),
             focusLock: d.isFocusModeSupported(.locked),
             whiteBalanceLock: d.isWhiteBalanceModeSupported(.locked),
-            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes)
+            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes()
         )
     }
 
@@ -422,19 +440,35 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
     }
 
-    func capturePhoto(format: PhotoFileFormat) async throws -> CapturedPhoto {
+    func capturePhoto(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed) async throws -> CapturedPhoto {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
                     completion.resume(throwing: CameraError.interrupted); return
                 }
                 guard continuation == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
-                guard output.availablePhotoCodecTypes.contains(format.codec) else {
+                let settings: AVCapturePhotoSettings
+                let expectedFormat: PhotoFileFormat
+                guard RawCapturePolicy.unavailableReason(mode: rawMode, available: rawModes(), live: livePreview != nil,
+                                                        exposureMode: input?.device.exposureMode) == nil else {
                     completion.resume(throwing: CameraError.invalidSettings); return
                 }
-                let settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: format.codec])
+                if rawMode == .processed {
+                    guard let codec = format.codec, output.availablePhotoCodecTypes.contains(codec) else {
+                        completion.resume(throwing: CameraError.invalidSettings); return
+                    }
+                    settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: codec])
+                    expectedFormat = format
+                } else {
+                    guard let raw = rawPixelFormats().first(where: {
+                        rawMode == .bayer ? AVCapturePhotoOutput.isBayerRAWPixelFormat($0) : AVCapturePhotoOutput.isAppleProRAWPixelFormat($0)
+                    }) else { completion.resume(throwing: CameraError.invalidSettings); return }
+                    // RAW only: no processed callback can replace the requested DNG.
+                    settings = AVCapturePhotoSettings(rawPixelFormatType: raw, rawFileType: .dng, processedFormat: nil, processedFileType: nil)
+                    expectedFormat = .dng
+                }
                 settings.maxPhotoDimensions = output.maxPhotoDimensions
-                settings.photoQualityPrioritization = PhotoCapturePolicy.quality(for: input?.device.exposureMode)
+                settings.photoQualityPrioritization = rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode)
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
                 if let connection = output.connection(with: .video) {
                     if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
@@ -444,9 +478,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     }
                 }
                 continuation = completion
-                photoFormat = format
+                photoDelivery = SinglePhotoDelivery(format: expectedFormat)
                 photoID = settings.uniqueID
-                photoData = nil
                 output.capturePhoto(with: settings, delegate: self)
             }
         }
@@ -455,10 +488,16 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         let id = photo.resolvedSettings.uniqueID
         let data = photo.fileDataRepresentation()
+        let isRaw = photo.isRawPhoto
         queue.async { [self] in
             guard photoID == id else { return }
             if let error { finishPhoto(.failure(error)) }
-            else { photoData = data }
+            else {
+                do {
+                    guard photoDelivery != nil else { throw CameraError.missingPhoto }
+                    try photoDelivery?.receive(data, isRaw: isRaw)
+                } catch { finishPhoto(.failure(error)) }
+            }
         }
     }
 
@@ -467,17 +506,18 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             guard photoID == id else { return }
             if let error { finishPhoto(.failure(error)) }
-            else if let photoData, let photoFormat {
-                do { finishPhoto(.success(try CapturedPhoto(data: photoData, expectedFormat: photoFormat))) }
-                catch { finishPhoto(.failure(error)) }
+            else {
+                do {
+                    guard let photoDelivery else { throw CameraError.missingPhoto }
+                    finishPhoto(.success(try photoDelivery.result()))
+                } catch { finishPhoto(.failure(error)) }
             }
-            else { finishPhoto(.failure(CameraError.missingPhoto)) }
         }
     }
 
     private func finishPhoto(_ result: Result<CapturedPhoto, Error>) {
         let pending = continuation
-        continuation = nil; photoID = nil; photoData = nil; photoFormat = nil
+        continuation = nil; photoID = nil; photoDelivery = nil
         pending?.resume(with: result)
         removeLivePreviewIfRequested()
     }
