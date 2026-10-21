@@ -53,6 +53,7 @@ struct CameraView: View {
                     ForEach(model.snapshot.capabilities?.rawModes ?? [.processed]) { mode in Text(mode.title).tag(mode) }
                 }.pickerStyle(.segmented).padding(.horizontal)
                     .disabled(model.busy || model.snapshot.isApplyingSettings)
+                if let reason = model.bracketUnavailableReason { Text(reason).font(.caption).padding(.horizontal) }
                 if let reason = model.rawUnavailableReason { Text(reason).font(.caption).padding(.horizontal) }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
@@ -79,7 +80,7 @@ struct CameraView: View {
                     }
                     .disabled(!model.canCapture)
                     .opacity(model.canCapture ? 1 : 0.4)
-                    .accessibilityLabel("사진 촬영")
+                    .accessibilityLabel(model.bracketEnabled ? "노출 브래킷 3장 촬영" : "사진 촬영")
                     Spacer()
                     if let original = model.latestOriginal {
                         ShareLink(item: original) { Image(systemName: "square.and.arrow.up") }
@@ -108,6 +109,13 @@ struct CameraView: View {
                         model.setActive(false)
                         showEditor = true
                     }.disabled(model.busy || model.snapshot.isApplyingSettings)
+                }
+                if model.latestOriginals.count > 1 {
+                    Menu("브래킷 원본 3장 공유") {
+                        ForEach(Array(model.latestOriginals.enumerated()), id: \.element) { index, url in
+                            ShareLink(item: url) { Text("브래킷 \(index + 1) 원본") }
+                        }
+                    }
                 }
                 if model.latestOriginal != nil && !model.savedToPhotos {
                     Button("사진 앱에 저장") { Task { await model.saveLatestToPhotos() } }.disabled(model.busy || model.snapshot.isApplyingSettings)

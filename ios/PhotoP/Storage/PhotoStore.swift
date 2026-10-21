@@ -19,17 +19,22 @@ enum PhotoStore {
         return url
     }
 
-    static func addToPhotos(_ url: URL) async throws {
+    static func addToPhotos(_ url: URL) async throws { try await addToPhotos([url]) }
+
+    static func addToPhotos(_ urls: [URL]) async throws {
+        guard !urls.isEmpty else { throw CameraError.missingPhoto }
         let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
         guard status == .authorized else {
             throw NSError(domain: "PhotoP", code: 1, userInfo: [NSLocalizedDescriptionKey:
                 "원본은 앱에 보관했습니다. 사진 접근을 허용하거나 파일 공유를 이용해 주세요."])
         }
         try await PHPhotoLibrary.shared().performChanges {
-            let request = PHAssetCreationRequest.forAsset()
-            let options = PHAssetResourceCreationOptions()
-            options.originalFilename = url.lastPathComponent
-            request.addResource(with: .photo, fileURL: url, options: options)
+            for url in urls {
+                let request = PHAssetCreationRequest.forAsset()
+                let options = PHAssetResourceCreationOptions()
+                options.originalFilename = url.lastPathComponent
+                request.addResource(with: .photo, fileURL: url, options: options)
+            }
         }
     }
 }

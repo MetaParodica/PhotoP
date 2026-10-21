@@ -11,6 +11,9 @@ final class CameraModel: ObservableObject {
     @Published var photoFormat: PhotoFileFormat = .jpeg
     @Published private(set) var busy = false
     @Published private(set) var latestOriginal: URL?
+    @Published private(set) var latestOriginals: [URL] = []
+    @Published var bracketEnabled = false
+    @Published var bracketStep = 1.0
     @Published private(set) var savedToPhotos = false
     @Published var message: String?
     @Published var showGrid = true
@@ -35,7 +38,16 @@ final class CameraModel: ObservableObject {
                                           live: livePreview != nil,
                                           exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))
     }
-    var canCapture: Bool { rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+    var bracketUnavailableReason: String? {
+        guard bracketEnabled else { return nil }
+        guard let caps = snapshot.capabilities,
+              (try? ExposureBracketPlan.make(center: snapshot.readout?.exposureBias ?? settings.exposure.ev, step: bracketStep,
+                    limits: caps.exposureBias, maximumCount: caps.maximumBracketCount, rawMode: rawMode, live: livePreview != nil,
+                    exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))) != nil
+        else { return "브래킷은 지원 렌즈의 일반 사진·AUTO 노출·모니터 끔에서 제공합니다. EV 중심값과 간격도 장치 범위 안이어야 합니다." }
+        return nil
+    }
+    var canCapture: Bool { bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
         if !active { liveHasFrame = false; histogram = nil }
@@ -197,13 +209,14 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            let photo = try await service.capturePhoto(format: photoFormat, rawMode: rawMode)
-            let url = try await PhotoStore.preserveOriginal(photo)
-            latestOriginal = url
+            let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil)
+            let urls = try await CaptureSeriesStore.preserve(series)
+            latestOriginals = urls
+            latestOriginal = urls[urls.count / 2]
             savedToPhotos = false
-            try await PhotoStore.addToPhotos(url)
+            try await PhotoStore.addToPhotos(urls)
             savedToPhotos = true
-            message = "원본과 사진 보관함에 저장했습니다."
+            message = "원본 \(urls.count)장과 사진 보관함에 저장했습니다."
         } catch { message = error.localizedDescription }
     }
 
@@ -212,7 +225,7 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            try await PhotoStore.addToPhotos(latestOriginal)
+            try await PhotoStore.addToPhotos(latestOriginals.isEmpty ? [latestOriginal] : latestOriginals)
             savedToPhotos = true
             message = "사진 보관함에 저장했습니다."
         } catch { message = error.localizedDescription }

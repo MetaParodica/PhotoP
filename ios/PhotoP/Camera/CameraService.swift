@@ -21,9 +21,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var controls = CameraControlApplication()
     private var settingsCompletion: CheckedContinuation<CameraReadout, Error>?
     private var settingsTimeout: DispatchWorkItem?
+    private var photoTimeout: DispatchWorkItem?
+    private var photoError: Error?
     private var photoID: Int64?
-    private var photoDelivery: SinglePhotoDelivery?
-    private var continuation: CheckedContinuation<CapturedPhoto, Error>?
+    private var photoDelivery: PhotoSeriesDelivery?
+    private var continuation: CheckedContinuation<CapturedSeries, Error>?
     private let onSnapshot: @Sendable (CameraSnapshot) -> Void
 
     init(onSnapshot: @escaping @Sendable (CameraSnapshot) -> Void) {
@@ -43,6 +45,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     deinit {
         readoutTimer?.cancel()
         settingsTimeout?.cancel()
+        photoTimeout?.cancel()
         observers.forEach(NotificationCenter.default.removeObserver)
     }
 
@@ -186,7 +189,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             exposureLock: d.isExposureModeSupported(.locked),
             focusLock: d.isFocusModeSupported(.locked),
             whiteBalanceLock: d.isWhiteBalanceModeSupported(.locked),
-            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes()
+            photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes(), maximumBracketCount: output.maxBracketedCapturePhotoCount
         )
     }
 
@@ -441,6 +444,12 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     }
 
     func capturePhoto(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed) async throws -> CapturedPhoto {
+        let series = try await captureSeries(format: format, rawMode: rawMode)
+        guard series.photos.count == 1, let photo = series.photos.first else { throw CameraError.missingPhoto }
+        return photo
+    }
+
+    func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil) async throws -> CapturedSeries {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
@@ -449,6 +458,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 guard continuation == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
                 let settings: AVCapturePhotoSettings
                 let expectedFormat: PhotoFileFormat
+                var biases: [Double]?
                 guard RawCapturePolicy.unavailableReason(mode: rawMode, available: rawModes(), live: livePreview != nil,
                                                         exposureMode: input?.device.exposureMode) == nil else {
                     completion.resume(throwing: CameraError.invalidSettings); return
@@ -457,9 +467,22 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     guard let codec = format.codec, output.availablePhotoCodecTypes.contains(codec) else {
                         completion.resume(throwing: CameraError.invalidSettings); return
                     }
-                    settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: codec])
+                    if let bracketStep, let device = input?.device {
+                        do {
+                            let plan = try ExposureBracketPlan.make(center: Double(device.exposureTargetBias), step: bracketStep,
+                                limits: Double(device.minExposureTargetBias)...Double(device.maxExposureTargetBias),
+                                maximumCount: output.maxBracketedCapturePhotoCount, rawMode: rawMode, live: livePreview != nil,
+                                exposureMode: device.exposureMode)
+                            let variations = plan.biases.map { AVCaptureAutoExposureBracketedStillImageSettings.autoExposureSettings(exposureTargetBias: Float($0)) }
+                            let bracket = AVCapturePhotoBracketSettings(rawPixelFormatType: 0, processedFormat: [AVVideoCodecKey: codec], bracketedSettings: variations)
+                            bracket.isLensStabilizationEnabled = output.isLensStabilizationDuringBracketedCaptureSupported
+                            settings = bracket
+                            biases = plan.biases
+                        } catch { completion.resume(throwing: error); return }
+                    } else { settings = AVCapturePhotoSettings(format: [AVVideoCodecKey: codec]) }
                     expectedFormat = format
                 } else {
+                    guard bracketStep == nil else { completion.resume(throwing: CameraError.invalidSettings); return }
                     guard let raw = rawPixelFormats().first(where: {
                         rawMode == .bayer ? AVCapturePhotoOutput.isBayerRAWPixelFormat($0) : AVCapturePhotoOutput.isAppleProRAWPixelFormat($0)
                     }) else { completion.resume(throwing: CameraError.invalidSettings); return }
@@ -468,7 +491,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     expectedFormat = .dng
                 }
                 settings.maxPhotoDimensions = output.maxPhotoDimensions
-                settings.photoQualityPrioritization = rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode)
+                settings.photoQualityPrioritization = biases != nil ? .speed : (rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode))
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
                 if let connection = output.connection(with: .video) {
                     if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
@@ -478,8 +501,23 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     }
                 }
                 continuation = completion
-                photoDelivery = SinglePhotoDelivery(format: expectedFormat)
+                photoDelivery = PhotoSeriesDelivery(format: expectedFormat, biases: biases)
                 photoID = settings.uniqueID
+                photoError = nil
+                let id = settings.uniqueID
+                let timeout = DispatchWorkItem { [weak self] in
+                    guard let self, self.photoID == id else { return }
+                    self.wantsRunning = false
+                    self.state = .stopped
+                    self.livePreview?.setRunning(false)
+                    self.stopReadouts()
+                    if self.session.isRunning { self.session.stopRunning() }
+                    self.finishPhoto(.failure(CameraError.captureTimedOut))
+                    self.publish(CameraError.captureTimedOut.localizedDescription)
+                }
+                photoTimeout = timeout
+                let exposure = input?.device.exposureDuration.seconds ?? 0
+                queue.asyncAfter(deadline: .now() + max(30, (exposure.isFinite ? max(0, exposure) : 0) * Double(biases?.count ?? 1) + 15), execute: timeout)
                 output.capturePhoto(with: settings, delegate: self)
             }
         }
@@ -489,35 +527,39 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         let id = photo.resolvedSettings.uniqueID
         let data = photo.fileDataRepresentation()
         let isRaw = photo.isRawPhoto
+        let bracketBias = (photo.bracketSettings as? AVCaptureAutoExposureBracketedStillImageSettings).map { Double($0.exposureTargetBias) }
+        let sequence = photo.bracketSettings == nil ? 1 : photo.sequenceCount
         queue.async { [self] in
             guard photoID == id else { return }
-            if let error { finishPhoto(.failure(error)) }
+            if let error { photoError = error }
             else {
                 do {
                     guard photoDelivery != nil else { throw CameraError.missingPhoto }
-                    try photoDelivery?.receive(data, isRaw: isRaw)
-                } catch { finishPhoto(.failure(error)) }
+                    try photoDelivery?.receive(data, isRaw: isRaw, sequence: sequence, bracketBias: bracketBias)
+                } catch { photoError = error }
             }
         }
     }
 
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishCaptureFor resolvedSettings: AVCaptureResolvedPhotoSettings, error: Error?) {
         let id = resolvedSettings.uniqueID
+        let expectedCount = Int(resolvedSettings.expectedPhotoCount)
         queue.async { [self] in
             guard photoID == id else { return }
-            if let error { finishPhoto(.failure(error)) }
+            if let error = error ?? photoError { finishPhoto(.failure(error)) }
             else {
                 do {
-                    guard let photoDelivery else { throw CameraError.missingPhoto }
+                    guard let photoDelivery, photoDelivery.expectedCount == expectedCount else { throw CameraError.missingPhoto }
                     finishPhoto(.success(try photoDelivery.result()))
                 } catch { finishPhoto(.failure(error)) }
             }
         }
     }
 
-    private func finishPhoto(_ result: Result<CapturedPhoto, Error>) {
+    private func finishPhoto(_ result: Result<CapturedSeries, Error>) {
         let pending = continuation
-        continuation = nil; photoID = nil; photoDelivery = nil
+        photoTimeout?.cancel(); photoTimeout = nil
+        continuation = nil; photoID = nil; photoDelivery = nil; photoError = nil
         pending?.resume(with: result)
         removeLivePreviewIfRequested()
     }

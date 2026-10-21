@@ -28,6 +28,17 @@ struct ManualControls: View {
                         Text("수동 노출에서는 ISO와 셔터를 함께 고정합니다. EV는 자동 노출에서 적용합니다.")
                             .font(.caption)
                     }
+                    Section("노출 브라케팅") {
+                        Toggle("3장 노출 브래킷", isOn: $model.bracketEnabled)
+                            .disabled(caps.maximumBracketCount < 3 || model.busy)
+                        Picker("EV 간격", selection: $model.bracketStep) {
+                            Text("±0.5 EV").tag(0.5)
+                            Text("±1 EV").tag(1.0)
+                            Text("±2 EV").tag(2.0)
+                        }.disabled(model.busy)
+                        Text("현재 EV를 중심으로 3장 원본을 별도 저장합니다. HDR 합성은 후속 단계입니다.").font(.caption)
+                        if let reason = model.bracketUnavailableReason { Text(reason).font(.caption) }
+                    }
                     Section("초점") {
                         Toggle("수동 초점", isOn: $model.settings.focus.manual)
                             .disabled(!caps.manualFocus)

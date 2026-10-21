@@ -38,15 +38,19 @@ final class RawCaptureTests: XCTestCase {
         XCTAssertThrowsError(try SDRImage.decode(url))
     }
     func testRAWDeliveryCannotBeReplacedByProcessedDuplicateOrMissingData() throws {
-        var delivery = SinglePhotoDelivery(format: .dng)
+        var delivery = PhotoSeriesDelivery(format: .dng, biases: nil)
         XCTAssertThrowsError(try delivery.result())
-        XCTAssertThrowsError(try delivery.receive(nil, isRaw: true))
-        XCTAssertThrowsError(try delivery.receive(dng(), isRaw: false))
-        try delivery.receive(dng(), isRaw: true)
-        XCTAssertEqual(try delivery.result().data, try dng())
-        XCTAssertThrowsError(try delivery.receive(dng(), isRaw: true))
-        var processed = SinglePhotoDelivery(format: .jpeg)
-        XCTAssertThrowsError(try processed.receive(dng(), isRaw: true))
+        try delivery.receive(dng(), isRaw: true, sequence: 1, bracketBias: nil)
+        XCTAssertEqual(try delivery.result().photos[0].data, try dng())
+        XCTAssertThrowsError(try delivery.receive(dng(), isRaw: true, sequence: 1, bracketBias: nil))
+        XCTAssertThrowsError(try delivery.result())
+        for raw in [true, false] {
+            var missing = PhotoSeriesDelivery(format: .dng, biases: nil)
+            XCTAssertThrowsError(try missing.receive(raw ? nil : dng(), isRaw: raw, sequence: 1, bracketBias: nil))
+            XCTAssertThrowsError(try missing.result())
+        }
+        var processed = PhotoSeriesDelivery(format: .jpeg, biases: nil)
+        XCTAssertThrowsError(try processed.receive(dng(), isRaw: true, sequence: 1, bracketBias: nil))
     }
     func testDNGContainerRejectsTruncationNonDNGAndCorruptDirectory() throws {
         let valid = try dng()

@@ -66,15 +66,3 @@ enum RawCapturePolicy {
     }
 }
 
-struct SinglePhotoDelivery {
-    let format: PhotoFileFormat
-    private(set) var photo: CapturedPhoto?
-    mutating func receive(_ data: Data?, isRaw: Bool) throws {
-        guard photo == nil, isRaw == (format == .dng), let data else { throw CameraError.invalidPhotoData }
-        photo = try CapturedPhoto(data: data, expectedFormat: format)
-    }
-    func result() throws -> CapturedPhoto {
-        guard let photo else { throw CameraError.missingPhoto }
-        return photo
-    }
-}
