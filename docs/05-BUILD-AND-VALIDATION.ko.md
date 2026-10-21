@@ -31,7 +31,7 @@ python3 scripts/check_lut_bundle.py
 
 Python 7개 테스트는 정상 asset, 미등록 파일, 불명 재배포권, research-only 상용 포함, hash 변조, 경로 이탈, 입력 프로파일 누락을 검사한다. 빈 LUT manifest가 통과해도 LUT 엔진을 구현했다는 뜻은 아니다.
 
-Swift XCTest 90개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
+Phase 3 기준 Swift XCTest 90개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
 
 `.github/workflows/ios.yml`은 XcodeGen 생성 → unsigned iPhone SDK build → iPhone Simulator XCTest → Python 자산 검사 순서로 실행한다. Simulator의 성공은 실제 카메라 촬영 성공 기준으로 쓰지 않는다.
 
@@ -113,3 +113,20 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 - ±0.5/1/2 EV bracket의 파일 수·요청값·실제 EXIF 노출/ISO, OIS 지원, 단일 촬영 복귀, Photos 거부 후 3장 재시도를 확인한다.
 - 브래킷 중 background/인터럽션·처리 오류·timeout을 확인한다. 앱 강제 종료/전원 단절 중 다중 파일 쓰기 복구는 아직 미구현이며 별도 gate다.
 - LUT+monitor 10분 사용의 실제 FPS·drop·GPU/CPU·메모리·발열을 기록한다. 현재 결과에는 실측 성능 수치가 없다.
+
+
+## Phase 4–6 추가 기기 확인 (모두 대기)
+
+| ID | 확인 | 성공 기준/증거 |
+|---|---|---|
+| LONG-01 | tripod·물/차량·1/30/300초, mean/lighten/정렬 | 실제 샘플 간격·elapsed·원본 방향·평균/빛 보존; 샘플 틈 명시 |
+| LONG-02 | cancel/background/serious/critical/disk budget | 단일 종료·pending 정리·발열 throttle·종료 이유·기존 결과 보존 |
+| LONG-03 | Instruments 300초·재처리 | peak RAM bounded, disk<=128MiB frames, 원본 PNG 재현·Photos/공유·취소 |
+| GUIDE-01 | 전후면·letterbox·다수 사람·가이드 off·장면 변경 | 원점/mirror 일치·stale 숨김·guide 비굽기·원본 촬영 독립 |
+| GUIDE-02 | 실제 자세/피부/의상·건물·수평선·저조도 | 검출 정확도·confidence·latency·배터리; rectangle=building 오인 금지 |
+| FILM-01 | 12종 실제 피부/풍경/야경·고채도·회색 ramp | 톤·색차·banding·halo·미리보기/내보내기 차이; 수치 통과와 미학 승인 구별 |
+| FILM-02 | 전체 룩 저장·앱 재시작·live/사진 복원·Hald | 강도/seed/finish 유지·sRGB 확인·원본 불변·불명 profile 거부 |
+
+자동 gate: 선형광/Lighten·translation·archive·cancel/hash, 좌표/포즈/규칙/lifecycle, 공유 Metal finish·v1/v2/v3 recipe, 12종 cube/hash/gray ramp/검색·전체 preset 재시작/변조·Hald channel order를 검사한다. 실행별 수와 CI는 08·11 문서에 기록한다. Simulator GPU 계산 검증은 실제 사진·디스플레이·카메라 성능 승인으로 대체하지 않는다.
+
+최신 코드 `ca05d5c`: [CI 39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343), unsigned iPhone SDK build·Swift120·Python7 성공, skip0.

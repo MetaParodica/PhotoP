@@ -1,6 +1,6 @@
 # LUT·필름 라이브러리 조사와 포함 정책
 
-기준: 2026-10-21 KST. 아래는 **출처를 찾은 카탈로그**이며 LUT 바이너리를 확보·검수·번들 완료했다는 뜻이 아니다. 기계 판독용 출처 목록은 `assets/lut-catalog.json`에 보존한다. 최초 구현의 앱 포함 LUT는 **0개**다. 100개 이상의 스타일은 후속 품질 목표다.
+기준: 2026-10-21 KST. 아래는 **출처를 찾은 카탈로그**이며 LUT 바이너리를 확보·검수·번들 완료했다는 뜻이 아니다. 기계 판독용 출처 목록은 `assets/lut-catalog.json`에 보존한다. 외부 LUT 바이너리 번들은 **0개**다. Phase 6에서 앱 코드가 런타임에 생성하는 자체 sRGB 스타일 12종을 추가했다. 100개 이상의 스타일은 후속 품질 목표다.
 
 ## 공식 공급사 우선 조사
 
@@ -42,7 +42,7 @@ Log curve 변환만으로 타사 센서의 분광 감도·노이즈·하이라�
 
 연구용 포함과 상용 포함을 분리한다. 연구용으로 사용·보관 가능한 원본은 개발자의 별도 private workspace에 둘 수 있고 앱 import 대상으로 사용할 수 있다. 재배포가 허용된 자료는 연구 패키지에 포함할 수 있다. 상용 앱에는 commercialUseAllowed와 redistributionAllowed가 모두 true이며 근거가 있는 자산만 복사한다. 두 권한은 각각 yes/no/unknown으로 기록한다.
 
-현재 구현한 `assets/luts/manifest.json`과 검사 스크립트는 **상용 번들 허용 목록의 검증**이다. 연구 라이브러리 다운로드/자동 수집, 빌드별 자산 복사, LUT UI 및 import는 아직 미구현이다. iOS target에도 LUT 리소스를 넣지 않았다. 추후 archive 안의 실제 파일과 허용 목록을 대조하는 최종 검사를 추가해야 한다.
+현재 구현한 `assets/luts/manifest.json`과 검사 스크립트는 **상용 번들 허용 목록의 검증**이다. 연구 라이브러리 자동 다운로드·빌드별 자산 복사는 미구현이다. 사용자 cube/Hald import·favorites·전체 룩 preset·자체 스타일 UI는 구현했다. iOS target에 외부 LUT 리소스를 넣지 않았다. 자체 profile code와 좁은 데이터 사용 허가는 Film 폴더에서 관리한다. 추후 archive 안의 실제 파일과 허용 목록을 대조하는 최종 검사를 추가해야 한다.
 
 ## LUTProfile 메타데이터
 
@@ -59,3 +59,6 @@ Log curve 변환만으로 타사 센서의 분광 감도·노이즈·하이라�
 5. Grain·halation·bloom·vignette·fade·CA는 LUT와 별도 노드로 제공한다. 처리 domain·seed·해상도 의존성을 recipe에 고정한다.
 
 목표 카테고리는 Cinematic, Vintage, Negative, Slide, B&W, Portrait, Landscape, Travel, Street, Architecture, Urban Night, Retro, Analog, Moody, Pastel, Minimal, Warm, Cool, Dreamy, High Contrast, Matte, Documentary다. 특정 카테고리에 자산이 없으면 비어 있다고 표시한다.
+
+
+Phase 6 공식 제공 사실·재배포 미확정 구분은 [12](12-FILM-SOURCES-AND-QUALITY.ko.md), 실제 source review와 구현은 [11](11-PHASE4-6-IMPLEMENTATION.ko.md)을 따른다. 사용자 import/preset은 앱 로컬 문서이며 자동 bundle 자산으로 승격하지 않는다.

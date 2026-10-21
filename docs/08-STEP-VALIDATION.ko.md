@@ -164,3 +164,39 @@
 - revision `27794519bbdb39043f3972f6a5c96eab9da24bad`, [CI 39538033899](https://github.com/MetaParodica/PhotoP/actions/runs/39538033899): SDK build·Swift 90·Python 7 성공. 범위·미지원 조합·역순 callback·누락/중복/틀린 bias·RAW 대체·원본 bytes·manifest·부분 저장 정리·정지 세션 거부 검증.
 - 제약: RAW bracket·HDR 합성 미구현. native callback·실제 노출/EXIF·Photos 3장·중단/timeout·강제 종료 복구는 기기 대기/미구현. 일반 파일 오류 정리가 crash-atomic 저장을 의미하지 않는다.
 - 판정: Phase 3 개발 범위·자동 검증 완료, 명시한 실행 제한과 실기기 품질 승인은 별도 유지. 다음 제품 단계는 Phase 4.
+
+## 19. 장노출 선형 누적·제한 정렬
+
+- 구현: 선형광 streaming mean·whole RGB luminance Lighten, 픽셀별 유효 weight, ±8px integer translation과 texture/error/ambiguity 거부. bounded source1280·frames1200. Starlapse MIT 실제 source를 비교하고 독립 작성.
+- 파일: LongExposureStack.swift, LongExposureStackTests.swift.
+- revision `b03dc5b1110f49709ba84ea1e871f506f73de7dd`, [CI 39539398038](https://github.com/MetaParodica/PhotoP/actions/runs/39539398038): SDK·Swift96·Python7 성공. 평균188·RGB 선택·known shift/valid edge·ambiguous reject 검사. 자동 성공 후20 진행.
+- 실기기/고해상도/일반 handheld 정렬·median/motion-aware는 미완료.
+
+## 20. 샘플 장노출 촬영·archive·재처리
+
+- 구현: 별도 NV12 output, SDR1280·2fps·1~300초, progress/cancel/thermal, lossless PNG128MiB disk budget·actual elapsed/early end, atomic result bundle·hash 검증·sequential reprocess·Photos/공유. 오리지널 센서 연속 노출로 표시하지 않는다.
+- 파일: LongExposureCapture/LongExposureArchive, CameraService/Model/View, SDRImage, LongExposureView, LongExposureArchiveTests.
+- revision `29ce647a03492e69b454fb9544fecb8812504463`, [CI 39539994340](https://github.com/MetaParodica/PhotoP/actions/runs/39539994340): SDK·Swift101·Python7 성공. PNG 재처리·hash 변조·cancel pending 정리·중복 완료·정지camera 검사. 자동 성공 후21 진행.
+- 실제 샘플 간격/품질/FPS/RAM/300초·crash orphan recovery·재시작 browser는 미검증/미완료.
+
+## 21. 독립 구도·포즈와 온디바이스 Vision
+
+- 구현: 9종 목표 포즈·고급 격자, saliency/body/rectangle/horizon optional2Hz·단일 작업, confidence/stale/generation·aspect-fit mapping. Apple Vision API, PoseGuide README의 synthetic-scaffold 성격 확인 후 자체 도식 작성.
+- 파일: CompositionGuide/CompositionAnalyzer, CompositionControls, LiveLUTPreview, CameraModel/View, CompositionGuideTests.
+- 초기 `e6a13e788e0668fcd98f21fb18fcf35c7bef2b58`의 Swift106은 통과했으나 buffer Sendable 경고 확인. read-only retained holder로 소유권을 명시한 `995dac8e854f80ad55722bd38c583529ceeda730`, [CI 39540831878](https://github.com/MetaParodica/PhotoP/actions/runs/39540831878): SDK·Swift106·Python7 성공, 새 concurrency 경고 없음. 자동 성공 후22 진행.
+- 실제 Vision 정확도/latency·가로 UI·건축 semantic/소실점·자동 원근 보정은 미검증/미구현.
+
+## 22. 독립 필름 마감과 레시피 v3
+
+- 구현: fade/vignette/bloom/red halation 각 강도, buffer/texture 공통 Metal 함수·zero bypass·alpha, live/editor controls·recipev3·v1/v2 호환.
+- 파일: FilmFinish.swift/.metal, FilmFinishControls, MetalLUTRenderer/TextureRenderer, LivePreviewImageProcessor/LiveLUTPreview, CameraModel, LUTPhotoEditor/EditorView, SavedEditStore, FilmFinishTests/LUTPhotoEditorTests.
+- 초기 `5ee41f9718495dc18a9701e26f1d75fc599eec55`은 SDK 성공·복잡한 test 배열 표현식 compiler timeout. fixture를 명시 loop로 수정한 `589961ae989e83861bb0e7e397663f02003bb832`, [CI 39541479961](https://github.com/MetaParodica/PhotoP/actions/runs/39541479961): SDK·Swift112·Python7 성공. expected endpoints/neighbors·same-input texture/still1/255·alpha·recipe 검사. 자동 성공 후23 진행.
+- 실제 광학/유제 모델이 아닌 SDR 창작 효과; 해상도별 halo/미학 평가는 대기.
+
+## 23. 자체 스타일12·전체 룩 preset·Hald
+
+- 구현: 17³ cube 생성 자체12종, 검색/분류/합성chart, author/source/license/credit/hash, UUID full-look preset·restart restore·삭제·동일cube 다른설정, Hald PNG level2~8→cube, editor/live 연결·recipe provenance 보존.
+- 파일: FilmStyleLibrary/STYLE-PERMISSION, FilterPresetLibrary, HaldLUT/ImportedLUT, FilmStylesView, LUTEditorView/LiveLUTControls, CameraModel, LUTPhotoEditor/SavedEditStore, FilmStyleLibraryTests.
+- 참고: hald-clut README/tree·혼합 asset source와 GPL metadata, 공식 ARRI/Sony/Fuji/Panasonic 웹페이지. 외부 source/asset 복사 없음. 자체 profile data에 한정된 PhotoP-Style-Permission-1.
+- revision `ca05d5cdc9b50108f7f5095d5ebdbaadbd4b1a25`, [CI 39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343): unsigned iPhone SDK·Swift120·Python7 성공, skip0. hash재현/12unique·finite/gray ramp·trilinear chart·mono·검색·preset 재시작/변조/설정/version/경로·Hald red-fastest/swapped channels/invalid bounds/rotation/alpha 검사.
+- Phase6 제한 개발 범위 자동 gate 통과. 외부 bundle0·자체12, 100+ 품질 승인·외부 재배포권·실제 사진 미학은 미완료. 다음 제품 단계는7. 상세 제한은11/12 문서에 기록한다.
