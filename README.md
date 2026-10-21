@@ -1,4 +1,4 @@
-> **최신 검증:** 촬영 UI·아이콘·외부 LUT25개·공간 스타일8개를 반영했습니다. [CI39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493): iPhone SDK·Swift155·UI1·Python17·소스/앱 자산 검사·실행 화면 캡처 성공. 실제 iPhone 품질 검증은 대기입니다. [현재 보고](docs/07-IMPLEMENTATION-REPORT.ko.md) · [기본 화면](docs/screenshots/camera.png) · [구도 패널](docs/screenshots/guide.png)
+> **최신 검증:** 사진 중심 촬영 화면(전폭 뷰파인더·인물/주석형 구도 가이드·하단 카드 선택·줌/플래시/타이머·최근 촬영 확인)과 영상 오디오·손떨림 보정을 반영했습니다. [CI 39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835): iPhone SDK·Swift186·UI5·Python17·자산 검사·화면 캡처 성공. 실제 iPhone 품질 검증은 대기입니다. [현재 보고](docs/07-IMPLEMENTATION-REPORT.ko.md) · [기본 화면](docs/screenshots/camera.jpg) · [구도 카드](docs/screenshots/guide.jpg) · [룩 카드](docs/screenshots/looks.jpg) · [인물 실루엣](docs/screenshots/person.jpg)
 
 # PhotoP
 

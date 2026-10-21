@@ -255,4 +255,5 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 참고 이미지 방식의 주석형 구도 프리셋 12종(3분할·점선 영역/원/연결선·손글씨 메모·화살표), 인물 영역 Vision 피드백, 구도/룩 공용 하단 카드 선택 UI를 구현했다. 상세는 [14 문서 3차](14-CAMERA-UI.ko.md).
 - 테스트: `CompositionPresetTests`(ID 고유·프레임 내부 좌표, 인물 프리셋만 주제 영역, 관절 범위 피드백, 화살표 경로), UI 테스트(카드로 프리셋 선택·서랍 닫기 후 유지·룩 카드), CI 캡처 `guide`(2/3 프리셋)·`looks` 화면.
 - 이전 2차 개편 코드는 [실행39602679861](https://github.com/MetaParodica/PhotoP/actions/runs/39602679861)에서 SDK·전체 테스트·캡처 성공.
+- 결과: `7384cfa`, [실행39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835) SDK·Swift186·UI5·Python17·캡처 성공. 중간 실패(실행39604154344·39606862163·39608523260: UI 테스트 카드 탭/중복 ID, 39610737746: 20분 제한 취소)는 원인 수정 후 재검증했다.
 

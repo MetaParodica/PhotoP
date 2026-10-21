@@ -1,40 +1,38 @@
 {
-  "codeCommit": "6c569e0ec22f0521899bfd6cb0a9aca7d296024e",
-  "workflowRun": 39581407493,
-  "job": 119159632696,
-  "artifact": 12338780505,
+  "codeCommit": "7384cfa03701673eaaac2ce676d7c5aab0154e31",
+  "workflowRun": 39614392835,
+  "job": 119271428049,
   "device": "iPhone 16 Pro Simulator",
   "os": "iOS 18.5",
   "xcode": "16.4",
-  "source": "simctl screenshot of running native SwiftUI application",
-  "mode": "Debug Simulator --ui-review; synthetic background, camera not started",
-  "png": "original screenshot bytes",
-  "jpeg": "sips view copies, long edge1280 quality72",
+  "source": "simctl screenshot of running native SwiftUI application, JPEG view copies decoded from the CI job log",
+  "mode": "Debug Simulator --ui-review (camera), --review-guide (2/3 portrait preset with cards), --review-person (full-body silhouette, 1:1 framing), --review-looks (look cards); synthetic background, camera not started",
+  "jpeg": "sips view copies, long edge1280 quality72; PNG originals remain in the run artifact",
   "tests": {
-    "swift": 155,
-    "ui": 1,
+    "swift": 186,
+    "ui": 5,
     "python": 17
   },
   "files": {
-    "camera.png": {
-      "sha256": "ce9d223e15f8e3d391a271580503d90a5a5d7308bd1e9274a8655ee7cc84652d",
-      "gitBlobSHA": "7496b9188328098f2849df39520fe5752244b077",
-      "bytes": 1720807
-    },
-    "guide.png": {
-      "sha256": "93cc87ec30379830ac26879bfda15c28003b782af80b2c058b81d38e72c0b227",
-      "gitBlobSHA": "597ea1cfae158f34e127da4d875d5f85d1074c18",
-      "bytes": 1596612
-    },
     "camera.jpg": {
-      "sha256": "58990620c74b331227f554c8437e33380deb11da86c3293eebbaf1af5052cc73",
-      "gitBlobSHA": "98af19d25332db3f5eaac8b05bbda7778e23d83c",
-      "bytes": 58638
+      "sha256": "2b8e43b485a83753e9ec7eed1314224d329606c0540292132941731178d98316",
+      "gitBlobSHA": "bc3e2392ba19f9d83908589a50c66b7dbfb43901",
+      "bytes": 57557
     },
     "guide.jpg": {
-      "sha256": "02d77c0c43dba7fa8439bc94d707108d2d75f8abce910cf3e43c7ba309d74040",
-      "gitBlobSHA": "fc2e1ebd7dd53ebc528c4f9020c4659c399f54f1",
-      "bytes": 63814
+      "sha256": "5bd88fec8292aebd0a4f4e9895fdd1a9017497aa80add651c277eac8b7283fb2",
+      "gitBlobSHA": "f7a7ca72205e9fa1727b10f5299622d1773d55ce",
+      "bytes": 71552
+    },
+    "person.jpg": {
+      "sha256": "98f5f36852898540ac1c3af8b7cda938fd892a043de86963195f11f0cc517766",
+      "gitBlobSHA": "3f4dca5837581e3818cc300bfba793ff2d0f9ff2",
+      "bytes": 69698
+    },
+    "looks.jpg": {
+      "sha256": "84f6aa6beafb59f1baa2066315c8c39b6e8f0f8f93d73e6fe7c988f75dcbe92a",
+      "gitBlobSHA": "9f5f01bcfb1322c255ef53b8d208b950715e83f2",
+      "bytes": 64609
     }
   }
 }
