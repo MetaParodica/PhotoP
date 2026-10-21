@@ -240,7 +240,7 @@ struct CameraView: View {
     private var status: some View {
         HStack(spacing: 6) {
             if locked { ProgressView().controlSize(.mini) }
-            Text(reviewing ? "시뮬레이터 · 실제 촬영 검증 전" : model.message ?? "원본을 보존하는 카메라")
+            Text(reviewing ? "시뮬레이터 · 실제 촬영 검증 전" : model.rawUnavailableReason ?? model.bracketUnavailableReason ?? model.message ?? "원본을 보존하는 카메라")
                 .font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                 .accessibilityAddTraits(.updatesFrequently)
         }.frame(maxWidth: .infinity, minHeight: 24)

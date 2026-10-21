@@ -33,3 +33,5 @@ SwiftUI 촬영 화면을 뷰파인더·도구 레일·촬영 도크로 재구성
 - **현재 변경의 SDK 빌드·Swift 3개 신규 단위 테스트·UI 테스트·네이티브 실행 캡처는 미실행이다.** 기존 커밋에서 성공했던 Swift 139개 결과를 이번 UI 변경의 성공으로 계산하지 않는다.
 - macOS 작업을 실행할 수 있게 되면 기존 워크플로가 빌드·테스트·두 화면 캡처·artifact 업로드를 수행하도록 구성했다. 실제 실행 사진은 아직 생성되지 않았다.
 - 앞서 요청한 외부 LUT 추가·비 LUT 효과 확장은 수집/로컬 초안 상태를 유지한다. 이번 UI 단계의 자동 검증이 막혀 있으므로 다음 단계 완료로 처리하지 않는다.
+
+이번 UI 작업은 이미 병합된 PR #1과 분리하여 [Draft PR #2](https://github.com/MetaParodica/PhotoP/pull/2), `codex/camera-ui-refresh`에 보관한다. 새 브랜치의 [실행 39575585775](https://github.com/MetaParodica/PhotoP/actions/runs/39575585775)도 실행 시작 전 실패 상태다. 네이티브 캡처가 생성된 것으로 보고하지 않는다.
