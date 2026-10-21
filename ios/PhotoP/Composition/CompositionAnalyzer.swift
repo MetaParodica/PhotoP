@@ -3,6 +3,10 @@
 import ImageIO
 import Foundation
 
+// AVFoundation's frame is retained for the request. Both Vision and Metal only
+// read it; no application code mutates its planes or attachments after delivery.
+private struct ImmutableVisionFrame: @unchecked Sendable { let buffer: CVPixelBuffer }
+
 // One on-device Vision request in flight, at most 2 Hz. Independent from GPU
 // readiness events, so an AI update cannot hide a valid preview frame.
 final class CompositionAnalyzer: @unchecked Sendable {
@@ -30,8 +34,9 @@ final class CompositionAnalyzer: @unchecked Sendable {
             return (scene, generation, now)
         }
         guard let (scene, generation, time) = request else { return }
-        queue.async { [self, buffer] in
-            let snapshot = Self.analyze(buffer, scene: scene, time: time)
+        let frame = ImmutableVisionFrame(buffer: buffer)
+        queue.async { [self, frame] in
+            let snapshot = Self.analyze(frame.buffer, scene: scene, time: time)
             let accepted = lock.withLock { () -> Bool in
                 busy = false
                 guard self.generation == generation, enabled, running else { return false }
