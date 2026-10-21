@@ -10,8 +10,8 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(shutter.waitForExistence(timeout: 10))
         XCTAssertFalse(shutter.isEnabled, "Simulator review must never advertise a working camera")
         app.buttons["camera.guide"].tap()
-        XCTAssertTrue(app.buttons["세부 설정"].waitForExistence(timeout: 3))
-        app.buttons["세부 설정"].tap()
+        XCTAssertTrue(app.buttons["camera.card.settings"].waitForExistence(timeout: 3))
+        app.buttons["camera.card.settings"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["camera.panel.close"].isHittable)
         XCTAssertTrue(app.staticTexts["구도선"].exists)
@@ -86,8 +86,8 @@ final class CameraInteractionTests: XCTestCase {
         app.launchArguments = ["--ui-review"]
         app.launch()
         app.buttons["camera.guide"].tap()
-        XCTAssertTrue(app.buttons["세부 설정"].waitForExistence(timeout: 3))
-        app.buttons["세부 설정"].tap()
+        XCTAssertTrue(app.buttons["camera.card.settings"].waitForExistence(timeout: 3))
+        app.buttons["camera.card.settings"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         let person = app.buttons["camera.guide.person"]
         XCTAssertTrue(person.waitForExistence(timeout: 3))
@@ -108,9 +108,11 @@ final class CameraInteractionTests: XCTestCase {
         app.launchArguments = ["--ui-review"]
         app.launch()
         app.buttons["camera.guide"].tap()
-        let triangle = app.buttons["삼각 구도"]
+        let triangle = app.buttons["camera.card.still-triangle"]
         XCTAssertTrue(triangle.waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["가이드 끔"].isSelected)
+        let cards = app.descendants(matching: .any)["camera.drawer.composition"]
+        for _ in 0..<6 where !triangle.isHittable { cards.swipeLeft() }
+        XCTAssertTrue(app.buttons["camera.card.off"].isSelected)
         XCTAssertFalse(app.buttons["AUTO"].exists, "Cards replace the mode row while the drawer is open")
         triangle.tap()
         XCTAssertTrue(triangle.isSelected)
@@ -123,9 +125,9 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.buttons["AUTO"].waitForExistence(timeout: 3))
         XCTAssertTrue(overlay.exists, "Closing the drawer keeps the chosen guide")
         app.buttons["camera.tool.looks"].tap()
-        XCTAssertTrue(app.buttons["원본"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["원본"].isSelected)
-        XCTAssertTrue(app.buttons["Amber Portrait"].exists)
+        XCTAssertTrue(app.buttons["camera.card.original"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["camera.card.original"].isSelected)
+        XCTAssertTrue(app.buttons["camera.card.amber-portrait"].exists)
         let looks = XCTAttachment(screenshot: app.screenshot())
         looks.name = "PhotoP-look-cards"; looks.lifetime = .keepAlways; add(looks)
     }

@@ -98,6 +98,7 @@ struct CameraCarousel: View {
                         Button(action: item.action) {
                             VStack(spacing: 4) {
                                 item.thumbnail
+                                    .accessibilityHidden(true)
                                     .frame(width: 64, height: 64)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .overlay {
@@ -113,6 +114,7 @@ struct CameraCarousel: View {
                                     .foregroundStyle(item.selected ? accent : .white.opacity(0.85)).frame(width: 68)
                             }
                         }.buttonStyle(.plain).id(item.id)
+                            .accessibilityIdentifier("camera.card.\(item.id)")
                             .accessibilityLabel(item.title).accessibilityAddTraits(item.selected ? .isSelected : [])
                     }
                 }.padding(.horizontal, 16)
