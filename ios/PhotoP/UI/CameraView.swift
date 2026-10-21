@@ -6,6 +6,7 @@ struct CameraView: View {
     @State private var showEditor = false
     @State private var showHistory = false
     @State private var showLiveControls = false
+    @State private var showMonitoring = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -36,6 +37,11 @@ struct CameraView: View {
                                 .allowsHitTesting(false)
                         }
                     }
+                    .overlay(alignment: .topLeading) {
+                        if model.liveHasFrame, model.snapshot.state == .running, let histogram = model.histogram {
+                            PreviewHistogramView(histogram: histogram)
+                        }
+                    }
                     .overlay { if model.showGrid { ThirdsGrid() } }
                     .overlay(alignment: .bottom) {
                         if model.snapshot.state != .running {
@@ -62,6 +68,8 @@ struct CameraView: View {
                 HStack {
                     Button("LUT") { showLiveControls = true }
                         .disabled(model.busy || model.snapshot.isApplyingSettings)
+                    Button("보조") { showMonitoring = true }
+                        .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Button("PRO") { model.showControls = true }
                         .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Spacer()
@@ -79,7 +87,7 @@ struct CameraView: View {
                     } else { Color.clear.frame(width: 30, height: 30) }
                 }.padding(.horizontal, 28)
                 if model.livePreview != nil {
-                    Text(model.liveHasFrame ? "LUT 프리뷰 · 원본 촬영" : "LUT 프레임 대기 중")
+                    Text(model.liveHasFrame ? (model.liveUsesLUT ? "LUT·보조 프리뷰 · 원본 촬영" : "보조 프리뷰 · 원본 촬영") : "프리뷰 프레임 대기 중")
                         .font(.caption).foregroundStyle(.yellow)
                 }
                 if model.busy || model.snapshot.isApplyingSettings { ProgressView() }
@@ -109,6 +117,7 @@ struct CameraView: View {
         }
         .background(.black).foregroundStyle(.white)
         .sheet(isPresented: $model.showControls) { ManualControls(model: model) }
+        .sheet(isPresented: $showMonitoring) { MonitoringControls(model: model) }
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
         .fullScreenCover(isPresented: $showEditor, onDismiss: { model.setActive(scenePhase == .active) }) {
             if let original = model.latestOriginal { LUTEditorView(original: original) }

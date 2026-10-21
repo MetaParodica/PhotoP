@@ -18,6 +18,9 @@ final class CameraModel: ObservableObject {
     @Published private(set) var livePreview: LiveLUTPreview?
     @Published private(set) var liveLUTTitle: String?
     @Published private(set) var liveHasFrame = false
+    @Published var monitoring = MonitoringSettings()
+    @Published private(set) var histogram: PreviewHistogram?
+    @Published private(set) var liveUsesLUT = false
     @Published var liveIntensity = 1.0
     @Published var liveGrain = 0.0
     @Published var liveCompareOriginal = false
@@ -35,7 +38,7 @@ final class CameraModel: ObservableObject {
     var canCapture: Bool { rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
-        if !active { liveHasFrame = false }
+        if !active { liveHasFrame = false; histogram = nil }
         service.setActive(active)
     }
     func selectLens(_ id: String) {
@@ -103,9 +106,11 @@ final class CameraModel: ObservableObject {
         try await service.setLivePreview(preview)
         importedLiveLUT = imported
         liveLUTTitle = imported.displayName
+        liveUsesLUT = true
         liveHasFrame = false
         livePreview = preview
         updateLiveIntensity()
+        updateMonitoring()
         message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
     }
 
@@ -124,7 +129,9 @@ final class CameraModel: ObservableObject {
             try await service.setLivePreview(preview)
             liveHasFrame = false
             livePreview = preview
+            liveUsesLUT = true
             updateLiveIntensity()
+            updateMonitoring()
         } catch { message = error.localizedDescription }
     }
 
@@ -132,11 +139,39 @@ final class CameraModel: ObservableObject {
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false
+        liveUsesLUT = false
+        histogram = nil
+        monitoring = MonitoringSettings()
         service.removeLivePreview()
     }
 
     func updateLiveIntensity() {
-        livePreview?.setIntensity(liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: liveCompareOriginal ? 0 : liveGrain))
+        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain))
+    }
+
+    func updateMonitoring() {
+        if !monitoring.histogram { histogram = nil }
+        livePreview?.setMonitoring(monitoring)
+    }
+
+    func enableMonitoring() async {
+        guard !busy, !snapshot.isApplyingSettings, monitoring.enabled else { return }
+        if livePreview != nil { updateMonitoring(); return }
+        busy = true
+        defer { busy = false }
+        do {
+            var lines = ["LUT_3D_SIZE 2"]
+            for b in 0...1 { for g in 0...1 { for r in 0...1 { lines.append("\(r) \(g) \(b)") } } }
+            let identity = try CubeLUT.parse(lines.joined(separator: "\n"))
+            let preview = try await makeLivePreview(identity)
+            preview.setIntensity(0)
+            preview.setMonitoring(monitoring)
+            try await service.setLivePreview(preview)
+            livePreview = preview
+            liveHasFrame = false
+            liveUsesLUT = false
+            message = "SDR 프리뷰 기준 보조 도구입니다. 원본에 표시를 굽지 않습니다."
+        } catch { message = error.localizedDescription }
     }
 
     private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {
@@ -144,8 +179,10 @@ final class CameraModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, let preview = self.livePreview, preview.id == id, preview.isCurrentEvent(event) else { return }
                 switch event.kind {
-                case .waiting: self.liveHasFrame = false
-                case .ready: self.liveHasFrame = true
+                case .waiting: self.liveHasFrame = false; self.histogram = nil
+                case .ready(let histogram):
+                    self.liveHasFrame = true
+                    if self.monitoring.histogram, let histogram { self.histogram = histogram }
                 case .failed(let reason):
                     self.disableLiveLUT()
                     self.message = "LUT 프리뷰를 해제했습니다: \(reason)"

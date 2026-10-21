@@ -9,12 +9,15 @@ final class LivePreviewImageProcessor {
     private let renderer: MetalLUTTextureRenderer
     private var source: MTLTexture?
     private var processed: MTLTexture?
+    private var monitor: MetalPreviewMonitor?
     private let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
 
     init(lut: CubeLUT, device: MTLDevice) throws {
         context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false])
         renderer = try MetalLUTTextureRenderer(lut: lut, device: device)
     }
+
+    func histogram() -> PreviewHistogram? { monitor?.histogram() }
 
     static func inputColorSpace(_ buffer: CVPixelBuffer) throws -> CGColorSpace {
         let format = CVPixelBufferGetPixelFormatType(buffer)
@@ -38,7 +41,7 @@ final class LivePreviewImageProcessor {
         return space
     }
 
-    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), command: MTLCommandBuffer) throws -> MTLTexture {
+    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), monitoring: MonitoringSettings = MonitoringSettings(), command: MTLCommandBuffer) throws -> MTLTexture {
         let space = try Self.inputColorSpace(buffer)
         let image = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
@@ -60,6 +63,10 @@ final class LivePreviewImageProcessor {
         context.render(upright, to: source, commandBuffer: command,
                        bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
         try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, command: command)
+        if monitoring.enabled {
+            if monitor == nil { monitor = try MetalPreviewMonitor(device: renderer.device) }
+            return try monitor!.encode(source: source, graded: processed, settings: monitoring, command: command)
+        }
         return processed
     }
 }

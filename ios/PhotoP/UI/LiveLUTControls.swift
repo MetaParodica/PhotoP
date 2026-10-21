@@ -21,11 +21,11 @@ struct LiveLUTControls: View {
                         .disabled(model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
                     Button("현재 LUT 즐겨찾기에 저장") { Task { await model.favoriteLiveLUT() } }
                         .disabled(model.liveLUTTitle == nil || model.busy)
-                    Toggle("미리보기 적용", isOn: Binding(get: { model.livePreview != nil }, set: { value in
+                    Toggle("미리보기 적용", isOn: Binding(get: { model.livePreview != nil && model.liveUsesLUT }, set: { value in
                         if value { Task { await model.enableLiveLUT() } }
                         else { model.disableLiveLUT() }
                     }))
-                    .disabled(model.busy || model.snapshot.isApplyingSettings || model.liveLUTTitle == nil || model.snapshot.state != .running)
+                    .disabled(model.busy || model.snapshot.isApplyingSettings || model.liveLUTTitle == nil || model.snapshot.state != .running || (model.livePreview != nil && !model.liveUsesLUT))
                     Slider(value: $model.liveIntensity, in: 0...1) { Text("LUT 강도") }
                         .disabled(model.livePreview == nil)
                     Text(model.liveIntensity, format: .percent.precision(.fractionLength(0)))
