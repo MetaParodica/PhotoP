@@ -2,14 +2,14 @@ import SwiftUI
 
 // A single contextual panel keeps the viewfinder and shutter in the same place.
 enum CameraTool: String, CaseIterable, Identifiable {
-    case iso, shutter, ev, whiteBalance, focus, looks, guide, monitor, format, longExposure
+    case iso, shutter, ev, whiteBalance, focus, looks, guide, monitor, format, longExposure, video
     var id: String { rawValue }
     var title: String {
         switch self {
         case .iso: return "ISO"; case .shutter: return "셔터"; case .ev: return "노출 보정"
         case .whiteBalance: return "화이트밸런스"; case .focus: return "초점"; case .looks: return "룩"
         case .guide: return "구도"; case .monitor: return "노출 보조"; case .format: return "촬영 포맷"
-        case .longExposure: return "장노출 합성"
+        case .longExposure: return "장노출 합성"; case .video: return "영상 촬영"
         }
     }
     var symbol: String {
@@ -17,7 +17,7 @@ enum CameraTool: String, CaseIterable, Identifiable {
         case .iso: return "camera.aperture"; case .shutter: return "timer"; case .ev: return "plusminus"
         case .whiteBalance: return "thermometer.medium"; case .focus: return "viewfinder"; case .looks: return "camera.filters"
         case .guide: return "square.split.2x2"; case .monitor: return "waveform.path"; case .format: return "photo"
-        case .longExposure: return "moon.stars"
+        case .longExposure: return "moon.stars"; case .video: return "video"
         }
     }
 }

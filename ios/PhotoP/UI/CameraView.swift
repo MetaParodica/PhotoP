@@ -45,6 +45,7 @@ struct CameraView: View {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
                 if ProcessInfo.processInfo.arguments.contains("--review-guide") { tool = .guide; model.guideGrid = .thirds; model.showGrid = false }
+                if ProcessInfo.processInfo.arguments.contains("--review-video") { tool = .video }
             } else { resume() }
         }
         .onChange(of: scenePhase) { _, _ in if !reviewing { resume() } }
@@ -62,9 +63,9 @@ struct CameraView: View {
                 Text("PhotoP").font(.system(.title3, design: .rounded, weight: .semibold))
             }.accessibilityElement(children: .combine)
             Spacer(minLength: 0)
-            Button { toggle(.format) } label: {
+            Button { toggle(model.snapshot.video.isVideoMode ? .video : .format) } label: {
                 HStack(spacing: 5) {
-                    Text(model.rawMode == .processed ? model.photoFormat.title : model.rawMode.title)
+                    Text(model.snapshot.video.configuration.map { "\($0.resolution.title) · \($0.framesPerSecond)" } ?? (model.rawMode == .processed ? model.photoFormat.title : model.rawMode.title))
                     Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
                 }.font(.system(.caption, design: .rounded, weight: .semibold)).padding(.horizontal, 14).frame(minHeight: 44)
             }.buttonStyle(.plain).cameraGlass(radius: 22).accessibilityLabel("촬영 포맷")
@@ -78,7 +79,8 @@ struct CameraView: View {
     private var viewfinder: some View {
         GeometryReader { g in
             // Preserve sensor aspect ratio. Controls overlay the viewfinder, never crop the saved image.
-            let w = min(g.size.width, g.size.height * 3 / 4)
+            let ratio: CGFloat = model.snapshot.video.isVideoMode ? 9 / 16 : 3 / 4
+            let w = min(g.size.width, g.size.height * ratio)
             ZStack(alignment: .bottom) {
                 ZStack {
                     if reviewing { reviewBackdrop }
@@ -95,7 +97,7 @@ struct CameraView: View {
                     CompositionOverlay(grid: model.guideGrid, pose: model.poseTemplate, opacity: model.guideOpacity,
                                        snapshot: model.composition, live: model.liveHasFrame && model.snapshot.state == .running, sourceSize: model.previewImageSize)
                     if model.showGrid { ThirdsGrid() }
-                }.frame(width: w, height: w * 4 / 3).clipped()
+                }.frame(width: w, height: w / ratio).clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 22))
                     .overlay(alignment: .topLeading) { previewBadge.padding(12) }
                     .overlay(alignment: .topTrailing) {
@@ -107,7 +109,7 @@ struct CameraView: View {
         }
     }
     private var previewBadge: some View {
-        Text(reviewing ? "SIMULATOR · UI 검토" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
+        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · 무음", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60) : reviewing ? "SIMULATOR · UI 검토" : model.snapshot.video.isVideoMode ? "SDR · ORIGINAL · 무음" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }
@@ -139,7 +141,7 @@ struct CameraView: View {
                 }
             }.padding(.horizontal, 6)
         }.fixedSize(horizontal: false, vertical: true).cameraGlass(radius: 24)
-            .padding(.horizontal, 36).disabled(locked || model.livePreview != nil)
+            .padding(.horizontal, 36).disabled(locked || model.livePreview != nil || model.snapshot.video.isVideoMode)
             .opacity(model.snapshot.lenses.isEmpty ? 0 : 1)
     }
     private func panel(_ selected: CameraTool, availableHeight: CGFloat) -> some View {
@@ -192,18 +194,31 @@ struct CameraView: View {
     private var bottomBar: some View {
         VStack(spacing: 10) {
             HStack(spacing: 24) {
-                modeButton("AUTO", selected: !model.settings.exposure.manual && tool != .longExposure) {
-                    if model.snapshot.capabilities != nil {
+                modeButton("AUTO", selected: !model.snapshot.video.isVideoMode && !model.settings.exposure.manual && tool != .longExposure) {
+                    if model.snapshot.video.isVideoMode { Task { await model.setVideoMode(false) } }
+                    else if model.snapshot.capabilities != nil {
                         model.settings.exposure.manual = false; model.settings.exposure.locked = false
                         Task { await model.applySettings() }
                     }
                     tool = nil
                 }
-                modeButton("PRO", selected: model.settings.exposure.manual && tool != .longExposure) { toggle(.iso) }
-                modeButton("LONG", selected: tool == .longExposure) { toggle(.longExposure) }
+                modeButton("PRO", selected: !model.snapshot.video.isVideoMode && model.settings.exposure.manual && tool != .longExposure) {
+                    if model.snapshot.video.isVideoMode { Task { await model.setVideoMode(false) } }; toggle(.iso)
+                }
+                modeButton("LONG", selected: tool == .longExposure) {
+                    if model.snapshot.video.isVideoMode { Task { await model.setVideoMode(false) } }; toggle(.longExposure)
+                }
+                modeButton("VIDEO", selected: model.snapshot.video.isVideoMode || tool == .video) {
+                    if !reviewing && !model.snapshot.video.isVideoMode { Task { await model.setVideoMode(true) } }
+                    toggle(.video)
+                }.accessibilityIdentifier("camera.mode.video")
             }.disabled(locked)
             HStack {
                 Menu {
+                    if let video = model.latestVideo {
+                        ShareLink(item: video.url) { Label("영상 원본 공유", systemImage: "video") }
+                        if !model.videoSavedToPhotos { Button("영상 사진 앱에 저장") { Task { await model.saveVideoToPhotos() } } }
+                    }
                     Button("편집 기록", systemImage: "photo.stack") { model.setActive(false); showHistory = true }
                     if let original = model.latestOriginal {
                         ShareLink(item: original) { Label("촬영 원본 공유", systemImage: "square.and.arrow.up") }
@@ -217,16 +232,32 @@ struct CameraView: View {
                     Image(systemName: "photo.on.rectangle.angled").font(.system(size: 20)).frame(width: 52, height: 52).cameraGlass(radius: 18)
                 }.accessibilityLabel("사진과 편집 기록").disabled(locked)
                 Spacer()
-                Button { Task { await model.capture() } } label: {
-                    Circle().fill(.white).padding(6).overlay(Circle().stroke(.white.opacity(0.85), lineWidth: 2.5))
-                        .frame(width: 78, height: 78).opacity(model.canCapture ? 1 : 0.4)
-                }.buttonStyle(.plain).disabled(!model.canCapture)
-                    .accessibilityLabel(model.bracketEnabled ? "노출 브래킷 3장 촬영" : "사진 촬영")
-                    .accessibilityIdentifier("camera.shutter")
+                if model.snapshot.video.isVideoMode {
+                    Button {
+                        if model.snapshot.video.phase.isActive { model.stopVideo() }
+                        else { Task { await model.recordVideo() } }
+                    } label: {
+                        ZStack {
+                            Circle().stroke(.white.opacity(0.85), lineWidth: 2.5)
+                            if model.snapshot.video.phase.isActive { RoundedRectangle(cornerRadius: 5).fill(.red).frame(width: 30, height: 30) }
+                            else { Circle().fill(.red).padding(7) }
+                        }.frame(width: 78, height: 78)
+                    }.buttonStyle(.plain)
+                        .disabled(model.snapshot.video.phase == .stopping || (!model.snapshot.video.phase.isActive && !model.canRecordVideo))
+                        .accessibilityLabel(model.snapshot.video.phase.isActive ? "영상 녹화 종료" : "무음 영상 녹화")
+                        .accessibilityIdentifier("camera.record")
+                } else {
+                    Button { Task { await model.capture() } } label: {
+                        Circle().fill(.white).padding(6).overlay(Circle().stroke(.white.opacity(0.85), lineWidth: 2.5))
+                            .frame(width: 78, height: 78).opacity(model.canCapture ? 1 : 0.4)
+                    }.buttonStyle(.plain).disabled(!model.canCapture)
+                        .accessibilityLabel(model.bracketEnabled ? "노출 브래킷 3장 촬영" : "사진 촬영")
+                        .accessibilityIdentifier("camera.shutter")
+                }
                 Spacer()
                 CameraIconButton(symbol: "arrow.triangle.2.circlepath.camera", label: "전후면 카메라 전환") {
                     if let lens = model.snapshot.lenses.first(where: { $0.isFront != selectedFront }) { model.selectLens(lens.id) }
-                }.disabled(locked || model.livePreview != nil || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
+                }.disabled(locked || model.snapshot.video.isVideoMode || model.livePreview != nil || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
             }.padding(.horizontal, 16)
             status
         }
@@ -241,7 +272,7 @@ struct CameraView: View {
     private var status: some View {
         HStack(spacing: 6) {
             if locked { ProgressView().controlSize(.mini) }
-            Text(reviewing ? "시뮬레이터 · 실제 촬영 검증 전" : model.rawUnavailableReason ?? model.bracketUnavailableReason ?? model.message ?? "원본을 보존하는 카메라")
+            Text(reviewing ? "시뮬레이터 · 실제 촬영 검증 전" : (model.snapshot.video.isVideoMode ? nil : model.rawUnavailableReason ?? model.bracketUnavailableReason) ?? model.message ?? "원본을 보존하는 카메라")
                 .font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                 .accessibilityAddTraits(.updatesFrequently)
         }.frame(maxWidth: .infinity, minHeight: 24)

@@ -77,6 +77,7 @@ struct CameraSnapshot: Sendable {
     let revision: UInt64
     let readout: CameraReadout?
     let isApplyingSettings: Bool
+    var video = VideoSnapshot()
 }
 
 enum CameraError: LocalizedError {

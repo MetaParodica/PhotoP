@@ -6,6 +6,8 @@ final class CameraModel: ObservableObject {
     @Published private(set) var snapshot = CameraSnapshot(lenses: [], selectedLens: nil, capabilities: nil,
                                                        state: .stopped, message: nil, revision: 0,
                                                        readout: nil, isApplyingSettings: false)
+    @Published private(set) var latestVideo: VideoOriginal?
+    @Published private(set) var videoSavedToPhotos = false
     @Published var settings = CameraSettings()
     @Published var rawMode: RawCaptureMode = .processed
     @Published var photoFormat: PhotoFileFormat = .jpeg
@@ -65,20 +67,20 @@ final class CameraModel: ObservableObject {
         else { return "브래킷은 지원 렌즈의 일반 사진·AUTO 노출·모니터 끔에서 제공합니다. EV 중심값과 간격도 장치 범위 안이어야 합니다." }
         return nil
     }
-    var canCapture: Bool { bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+    var canCapture: Bool { !snapshot.video.isVideoMode && bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
         if !active { liveHasFrame = false; histogram = nil; composition = nil }
         service.setActive(active)
     }
     func selectLens(_ id: String) {
-        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
         service.selectLens(id)
     }
 
     private func receive(_ value: CameraSnapshot) {
         guard value.revision > snapshot.revision else { return }
-        if value.selectedLens != snapshot.selectedLens, let caps = value.capabilities {
+        if value.selectedLens != snapshot.selectedLens || value.video.configuration != snapshot.video.configuration, let caps = value.capabilities {
             settings = CameraSettings()
             settings.exposure.iso = min(max(100, caps.iso.lowerBound), caps.iso.upperBound)
             settings.exposure.shutterSeconds = min(max(1.0 / 125, caps.shutterSeconds.lowerBound), caps.shutterSeconds.upperBound)
@@ -119,7 +121,7 @@ final class CameraModel: ObservableObject {
     }
 
     func importLiveLUT(_ url: URL) async {
-        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
         busy = true
         defer { busy = false }
         do {
@@ -129,7 +131,7 @@ final class CameraModel: ObservableObject {
     }
 
     func useLiveLUT(_ imported: ImportedLUT) async throws {
-        guard !busy, !snapshot.isApplyingSettings, livePreview == nil else { throw CameraError.busy }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil else { throw CameraError.busy }
         busy = true
         defer { busy = false }
         try await activateLiveLUT(imported)
@@ -172,7 +174,7 @@ final class CameraModel: ObservableObject {
     }
 
     func enableLiveLUT() async {
-        guard !busy, !snapshot.isApplyingSettings, livePreview == nil, let importedLiveLUT else { return }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil, let importedLiveLUT else { return }
         busy = true
         defer { busy = false }
         do {
@@ -210,7 +212,7 @@ final class CameraModel: ObservableObject {
     }
 
     func enableMonitoring() async {
-        guard !busy, !snapshot.isApplyingSettings, (monitoring.enabled || guideAIEnabled) else { return }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, (monitoring.enabled || guideAIEnabled) else { return }
         if livePreview != nil { updateMonitoring(); updateComposition(); return }
         busy = true
         defer { busy = false }
@@ -294,6 +296,42 @@ final class CameraModel: ObservableObject {
         guard !busy, let result = latestComposite, !compositeSavedToPhotos else { return }
         busy = true; defer { busy = false }
         do { try await PhotoStore.addToPhotos(result); compositeSavedToPhotos = true }
+        catch { message = error.localizedDescription }
+    }
+
+    var canRecordVideo: Bool {
+        snapshot.video.isVideoMode && snapshot.state == .running && !busy && !snapshot.isApplyingSettings
+            && snapshot.video.phase == .idle
+    }
+
+    func setVideoMode(_ enabled: Bool, configuration: VideoConfiguration? = nil) async {
+        guard !busy, !snapshot.isApplyingSettings else { return }
+        guard livePreview == nil else { message = "룩·분석 프리뷰를 해제한 뒤 영상 모드를 선택해 주세요."; return }
+        busy = true; defer { busy = false }
+        do { try await service.setVideoMode(enabled, configuration: configuration) }
+        catch { message = error.localizedDescription }
+    }
+
+    func recordVideo() async {
+        guard canRecordVideo, let configuration = snapshot.video.configuration else { return }
+        busy = true; defer { busy = false }
+        do {
+            let pending = try await service.recordVideo()
+            let original = try await VideoStore.finalize(pending, configuration: configuration)
+            latestVideo = original; videoSavedToPhotos = false
+            message = "무음 SDR 영상 원본을 앱에 보관했습니다."
+            try await VideoStore.addToPhotos(original.url)
+            videoSavedToPhotos = true
+            message = "무음 SDR 영상 원본과 사진 보관함에 저장했습니다."
+        } catch { message = error.localizedDescription }
+    }
+
+    func stopVideo() { service.stopVideo() }
+
+    func saveVideoToPhotos() async {
+        guard !busy, !videoSavedToPhotos, let latestVideo else { return }
+        busy = true; defer { busy = false }
+        do { try await VideoStore.addToPhotos(latestVideo.url); videoSavedToPhotos = true }
         catch { message = error.localizedDescription }
     }
 

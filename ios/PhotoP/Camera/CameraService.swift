@@ -4,10 +4,18 @@ import CoreVideo
 
 // All session/device mutations and delegate state live on queue. Only the preview
 // layer binds to the immutable session reference on the main thread.
-final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureDelegate {
+final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureDelegate, AVCaptureFileOutputRecordingDelegate {
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "com.photop.capture", qos: .userInitiated)
     private let output = AVCapturePhotoOutput()
+    private let movieOutput = AVCaptureMovieFileOutput()
+    private var videoConfiguration: VideoConfiguration?
+    private var videoCapabilities: VideoCapabilities?
+    private var recording = VideoRecordingLifecycle()
+    private var movieCompletion: CheckedContinuation<URL, Error>?
+    private var movieTimeout: DispatchWorkItem?
+    private var photoWideColor = true
+    private var photoAutoHDR = true
     private let longOutput = AVCaptureVideoDataOutput()
     private var longExposure: LongExposureCapture?
     private let videoOutput = AVCaptureVideoDataOutput()
@@ -61,6 +69,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             wantsRunning = active
             if !active {
+                stopVideoOnQueue()
                 longExposure?.cancel()
                 state = .stopped
                 livePreview?.setRunning(false)
@@ -128,7 +137,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     func selectLens(_ id: String) {
         queue.async { [self] in
-            guard continuation == nil, longExposure == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
+            guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
             guard livePreview == nil else { publish("LUT를 끈 뒤 렌즈를 전환해 주세요."); return }
             guard let old = input, let device = devices.first(where: { $0.uniqueID == id }),
                   device.uniqueID != old.device.uniqueID else { return }
@@ -186,7 +195,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         let format = d.activeFormat
         return CameraCapabilities(
             lensID: d.uniqueID, iso: Double(format.minISO)...Double(format.maxISO),
-            shutterSeconds: format.minExposureDuration.seconds...format.maxExposureDuration.seconds,
+            shutterSeconds: (videoConfiguration.flatMap { try? VideoCapturePolicy.shutterLimit(sensor: format.minExposureDuration.seconds...format.maxExposureDuration.seconds, fps: $0.framesPerSecond) }) ?? (format.minExposureDuration.seconds...format.maxExposureDuration.seconds),
             exposureBias: Double(d.minExposureTargetBias)...Double(d.maxExposureTargetBias),
             manualExposure: d.isExposureModeSupported(.custom),
             manualFocus: d.isLockingFocusWithCustomLensPositionSupported,
@@ -205,7 +214,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             queue.async { [self] in
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted, input != nil else { throw CameraError.interrupted }
-                    guard continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                    guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
                     session.beginConfiguration()
                     do {
                         guard session.canAddOutput(videoOutput) else { throw CameraError.configuration }
@@ -270,7 +279,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     guard state == .running, session.isRunning, !session.isInterrupted else {
                         throw CameraError.interrupted
                     }
-                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
+                    guard !recording.phase.isActive, continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     try applyOnQueue(settings, completion: completion)
                 } catch { completion.resume(throwing: error) }
             }
@@ -425,7 +434,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted,
                           let d = input?.device, d.uniqueID == lensID else { throw CameraError.interrupted }
-                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
+                    guard !recording.phase.isActive, continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     let actions = PointMeteringPolicy.actions(
                         focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(.continuousAutoFocus),
                         exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
@@ -457,7 +466,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 var archive: LongExposureArchive?
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted else { throw CameraError.interrupted }
-                    guard continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil,
+                    guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil,
                           !session.outputs.contains(videoOutput) else { throw CameraError.busy }
                     try configuration.validate()
                     let documents = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -514,7 +523,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 guard state == .running, session.isRunning, !session.isInterrupted else {
                     completion.resume(throwing: CameraError.interrupted); return
                 }
-                guard continuation == nil, longExposure == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
+                guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
                 let settings: AVCapturePhotoSettings
                 let expectedFormat: PhotoFileFormat
                 var biases: [Double]?
@@ -630,6 +639,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     }
 
     private func handleNotification(_ name: Notification.Name, reset: Bool) {
+        stopVideoOnQueue()
         longExposure?.cancel()
         livePreview?.setRunning(false)
         if name == AVCaptureSession.wasInterruptedNotification {
@@ -658,7 +668,196 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         onSnapshot(CameraSnapshot(lenses: devices.map { d in
             CameraLens(id: d.uniqueID, name: d.localizedName, isFront: d.position == .front)
         }, selectedLens: input?.device.uniqueID, capabilities: capabilities(), state: state, message: message,
-           revision: snapshotRevision, readout: currentReadout(), isApplyingSettings: controls.isPending))
+           revision: snapshotRevision, readout: currentReadout(), isApplyingSettings: controls.isPending,
+           video: VideoSnapshot(configuration: videoConfiguration, capabilities: videoCapabilities, phase: recording.phase,
+               elapsedSeconds: movieOutput.recordedDuration.seconds.isFinite ? max(0, movieOutput.recordedDuration.seconds) : 0)))
+    }
+}
+
+private extension VideoResolution {
+    var preset: AVCaptureSession.Preset {
+        switch self { case .hd720: return .hd1280x720; case .hd1080: return .hd1920x1080; case .uhd4K: return .hd4K3840x2160 }
+    }
+}
+
+private extension VideoCodec {
+    var avCodec: AVVideoCodecType { self == .h264 ? .h264 : .hevc }
+}
+
+extension CameraService {
+    func setVideoMode(_ enabled: Bool, configuration requested: VideoConfiguration? = nil) async throws {
+        try await withCheckedThrowingContinuation { (completion: CheckedContinuation<Void, Error>) in
+            queue.async { [self] in
+                do {
+                    guard state == .running, session.isRunning, !session.isInterrupted else { throw CameraError.interrupted }
+                    guard !recording.phase.isActive, !movieOutput.isRecording, continuation == nil,
+                          longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                    if enabled {
+                        let previous = videoConfiguration
+                        if previous == nil {
+                            photoWideColor = session.automaticallyConfiguresCaptureDeviceForWideColor
+                            photoAutoHDR = input?.device.automaticallyAdjustsVideoHDREnabled ?? true
+                        }
+                        do { try configureVideo(requested, entering: previous == nil) }
+                        catch {
+                            // Restore a known mode before exposing any controls after a failed change.
+                            do {
+                                if let previous { try configureVideo(previous, entering: false) }
+                                else { try restorePhotoMode() }
+                            } catch { state = .stopped; session.stopRunning(); stopReadouts() }
+                            throw error
+                        }
+                    } else { try restorePhotoMode() }
+                    publish("촬영 모드를 변경했습니다. 노출·초점·WB는 AUTO로 초기화됩니다.")
+                    completion.resume()
+                } catch { publish(error.localizedDescription); completion.resume(throwing: error) }
+            }
+        }
+    }
+
+    private func configureVideo(_ requested: VideoConfiguration?, entering: Bool) throws {
+        guard let device = input?.device else { throw CameraError.unavailable }
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = false
+        if session.outputs.contains(output) { session.removeOutput(output) }
+        if !session.outputs.contains(movieOutput) {
+            guard session.canAddOutput(movieOutput) else { throw CameraError.configuration }
+            session.addOutput(movieOutput)
+        }
+        let resolutions = VideoResolution.allCases.filter { session.canSetSessionPreset($0.preset) }
+        guard let resolution = requested?.resolution ?? (resolutions.contains(.hd1080) ? .hd1080 : resolutions.first),
+              resolutions.contains(resolution) else { throw CameraError.invalidSettings }
+        session.sessionPreset = resolution.preset
+        let frameRates = VideoCapturePolicy.frameRates(in: device.activeFormat.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate })
+        let codecs = VideoCodec.allCases.filter { movieOutput.availableVideoCodecTypes.contains($0.avCodec) }
+        let changedPreset = entering || videoConfiguration?.resolution != resolution
+        let fps = requested?.framesPerSecond ?? 30
+        let codec = requested?.codec ?? .h264
+        guard let actualFPS = frameRates.contains(fps) ? fps : (changedPreset ? (frameRates.contains(30) ? 30 : frameRates.first) : nil),
+              let actualCodec = codecs.contains(codec) ? codec : (changedPreset ? codecs.first : nil),
+              device.activeFormat.supportedColorSpaces.contains(.sRGB),
+              let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90)
+        else { throw CameraError.invalidSettings }
+        try device.lockForConfiguration()
+        // Select an SDR space BEFORE disabling HDR. HLG ignores isVideoHDREnabled=false.
+        device.activeColorSpace = .sRGB
+        device.automaticallyAdjustsVideoHDREnabled = false
+        if device.activeFormat.isVideoHDRSupported { device.isVideoHDREnabled = false }
+        resetAutomaticControls(device)
+        let duration = CMTime(value: 1, timescale: CMTimeScale(actualFPS))
+        device.activeVideoMinFrameDuration = duration
+        device.activeVideoMaxFrameDuration = duration
+        device.unlockForConfiguration()
+        connection.videoRotationAngle = 90
+        if connection.isVideoMirroringSupported {
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = false // Saved front video is unmirrored, like an original photo.
+        }
+        if connection.isVideoStabilizationSupported { connection.preferredVideoStabilizationMode = .off }
+        movieOutput.setOutputSettings([AVVideoCodecKey: actualCodec.avCodec], for: connection)
+        movieOutput.maxRecordedDuration = CMTime(seconds: 600, preferredTimescale: 600)
+        movieOutput.maxRecordedFileSize = 2 * 1024 * 1024 * 1024
+        movieOutput.minFreeDiskSpaceLimit = 32 * 1024 * 1024
+        videoConfiguration = VideoConfiguration(resolution: resolution, framesPerSecond: actualFPS, codec: actualCodec)
+        videoCapabilities = VideoCapabilities(resolutions: resolutions, frameRates: frameRates, codecs: codecs)
+    }
+
+    private func restorePhotoMode() throws {
+        session.beginConfiguration()
+        defer { session.commitConfiguration() }
+        if session.outputs.contains(movieOutput) { session.removeOutput(movieOutput) }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = photoWideColor
+        guard session.canSetSessionPreset(.photo) else { throw CameraError.configuration }
+        session.sessionPreset = .photo
+        if !session.outputs.contains(output) {
+            guard session.canAddOutput(output) else { throw CameraError.configuration }
+            session.addOutput(output)
+        }
+        if let device = input?.device {
+            try device.lockForConfiguration()
+            device.activeVideoMinFrameDuration = .invalid
+            device.activeVideoMaxFrameDuration = .invalid
+            device.automaticallyAdjustsVideoHDREnabled = photoAutoHDR
+            resetAutomaticControls(device)
+            device.unlockForConfiguration()
+        }
+        videoConfiguration = nil; videoCapabilities = nil
+        configureRAW(); configureDimensions()
+    }
+
+    private func resetAutomaticControls(_ device: AVCaptureDevice) {
+        if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
+        if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
+        if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) { device.whiteBalanceMode = .continuousAutoWhiteBalance }
+    }
+
+    func recordVideo() async throws -> URL {
+        try await withCheckedThrowingContinuation { completion in
+            queue.async { [self] in
+                do {
+                    guard state == .running, session.isRunning, !session.isInterrupted else { throw CameraError.interrupted }
+                    guard let configuration = videoConfiguration, let capabilities = videoCapabilities else { throw CameraError.invalidSettings }
+                    guard movieCompletion == nil, !movieOutput.isRecording, !controls.isPending,
+                          continuation == nil, longExposure == nil, livePreview == nil else { throw CameraError.busy }
+                    try VideoCapturePolicy.validate(configuration, capabilities: capabilities)
+                    guard input?.device.activeColorSpace == .sRGB, input?.device.isVideoHDREnabled == false,
+                          let connection = movieOutput.connection(with: .video), connection.isActive, connection.isEnabled else { throw CameraError.configuration }
+                    guard ProcessInfo.processInfo.thermalState != .critical else { throw CameraError.interrupted }
+                    let url = try VideoStore.newRecordingURL()
+                    try recording.begin(url)
+                    movieCompletion = completion
+                    scheduleMovieTimeout(url, seconds: 15)
+                    movieOutput.startRecording(to: url, recordingDelegate: self)
+                    publish()
+                } catch { completion.resume(throwing: error) }
+            }
+        }
+    }
+
+    func stopVideo() { queue.async { [self] in stopVideoOnQueue(); publish() } }
+
+    private func stopVideoOnQueue() {
+        guard let url = recording.url else { return }
+        if recording.requestStop() { movieOutput.stopRecording() }
+        scheduleMovieTimeout(url, seconds: 15)
+    }
+
+    private func scheduleMovieTimeout(_ url: URL, seconds: Double) {
+        movieTimeout?.cancel()
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, self.recording.url == url else { return }
+            self.movieOutput.stopRecording()
+            self.wantsRunning = false; self.state = .stopped; self.stopReadouts()
+            if self.session.isRunning { self.session.stopRunning() }
+            // A stuck delegate must not keep the UI/task alive forever. Pending bytes stay on disk.
+            self.completeMovie(url, result: .failure(CameraError.captureTimedOut))
+        }
+        movieTimeout = timeout
+        queue.asyncAfter(deadline: .now() + seconds, execute: timeout)
+    }
+
+    func fileOutput(_ output: AVCaptureFileOutput, didStartRecordingTo fileURL: URL, from connections: [AVCaptureConnection]) {
+        queue.async { [self] in
+            guard recording.url == fileURL else { return }
+            movieTimeout?.cancel(); movieTimeout = nil
+            if recording.didStart(fileURL) { movieOutput.stopRecording(); scheduleMovieTimeout(fileURL, seconds: 15) }
+            publish()
+        }
+    }
+
+    func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
+        let saved = VideoCapturePolicy.finishedSuccessfully(hasError: error != nil, successfulFinishFlag: (error as NSError?)?.userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool == true)
+        let result: Result<URL, Error> = saved ? .success(outputFileURL) : .failure(error ?? CameraError.missingPhoto)
+        queue.async { [self] in completeMovie(outputFileURL, result: result) }
+    }
+
+    private func completeMovie(_ url: URL, result: Result<URL, Error>) {
+        guard recording.finish(url) else { return }
+        movieTimeout?.cancel(); movieTimeout = nil
+        let pending = movieCompletion; movieCompletion = nil
+        publish()
+        pending?.resume(with: result)
     }
 }
 

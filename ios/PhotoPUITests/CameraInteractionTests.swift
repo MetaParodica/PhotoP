@@ -30,4 +30,19 @@ final class CameraInteractionTests: XCTestCase {
         app.buttons["camera.panel.close"].tap()
         let camera = XCTAttachment(screenshot: app.screenshot()); camera.name = "PhotoP-camera"; camera.lifetime = .keepAlways; add(camera)
     }
+    @MainActor func testVideoPanelDoesNotInventHardwareCapabilities() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        app.buttons["camera.mode.video"].tap()
+        XCTAssertTrue(app.otherElements["camera.panel.video"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["SDR · 원본 색상 · 무음"].exists)
+        XCTAssertTrue(app.staticTexts["카메라 연결 후 지원 해상도·FPS·코덱이 표시됩니다."].exists)
+        XCTAssertFalse(app.segmentedControls["camera.video.resolution"].exists)
+        XCTAssertFalse(app.buttons["camera.record"].exists)
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = "PhotoP-video-panel"; capture.lifetime = .keepAlways; add(capture)
+    }
+
 }

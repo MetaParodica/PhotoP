@@ -13,11 +13,12 @@ struct CameraQuickControls: View {
             case .iso, .shutter, .ev: exposure
             case .whiteBalance: whiteBalance
             case .focus: focus
-            case .format: format
-            case .monitor: monitoring
+            case .format: if model.snapshot.video.isVideoMode { video } else { format }
+            case .monitor: if model.snapshot.video.isVideoMode { videoPreviewNotice } else { monitoring }
             case .guide: composition
-            case .looks: looks
+            case .looks: if model.snapshot.video.isVideoMode { videoPreviewNotice } else { looks }
             case .longExposure: longExposure
+            case .video: video
             }
         }.font(.subheadline).tint(.purple)
             .disabled(model.busy || model.snapshot.isApplyingSettings)
@@ -130,7 +131,7 @@ struct CameraQuickControls: View {
             HStack { Text("장면"); Spacer(); Picker("장면", selection: $model.guideScene) { ForEach(GuideScene.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("포즈"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
-            Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled)
+            Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled).disabled(model.snapshot.video.isVideoMode)
             Text("노란 선은 목표 구도, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.guideGrid) { _, _ in model.showGrid = false }
             .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
@@ -168,6 +169,42 @@ struct CameraQuickControls: View {
             Text("최대 1280px SDR 다중 프레임 합성입니다. 총 합성 시간은 센서 셔터 시간이 아닙니다.").font(.caption).foregroundStyle(.secondary)
             Button("촬영·진행·결과", action: openLongExposure).buttonStyle(.borderedProminent)
         }
+    }
+    private var videoPreviewNotice: some View {
+        Text("영상은 원본 색상으로 녹화합니다. 영상용 LUT·노출 분석 프리뷰는 다음 구현 단위입니다.")
+            .font(.callout).foregroundStyle(.secondary)
+    }
+    private func changeVideo(_ update: (inout VideoConfiguration) -> Void) {
+        guard var configuration = model.snapshot.video.configuration else { return }
+        update(&configuration)
+        Task { await model.setVideoMode(true, configuration: configuration) }
+    }
+    @ViewBuilder private var video: some View {
+        Text("SDR · 원본 색상 · 무음").font(.headline)
+        if let configuration = model.snapshot.video.configuration, let caps = model.snapshot.video.capabilities {
+            Picker("영상 해상도", selection: Binding(get: { configuration.resolution }, set: { value in changeVideo { $0.resolution = value } })) {
+                ForEach(caps.resolutions) { Text($0.title).tag($0) }
+            }.pickerStyle(.segmented).accessibilityIdentifier("camera.video.resolution")
+            Picker("프레임레이트", selection: Binding(get: { configuration.framesPerSecond }, set: { value in changeVideo { $0.framesPerSecond = value } })) {
+                ForEach(caps.frameRates, id: \.self) { Text("\($0) fps").tag($0) }
+            }.pickerStyle(.segmented)
+            Picker("영상 코덱", selection: Binding(get: { configuration.codec }, set: { value in changeVideo { $0.codec = value } })) {
+                ForEach(caps.codecs) { Text($0.title).tag($0) }
+            }.pickerStyle(.segmented)
+            if let limits = model.snapshot.capabilities?.shutterSeconds {
+                let seconds = VideoCapturePolicy.suggestedShutter(fps: configuration.framesPerSecond, limits: limits)
+                Button("180° 셔터 제안 · \(CameraControlScale.shutter(seconds))") {
+                    model.settings.exposure.manual = true; model.settings.exposure.locked = false
+                    model.settings.exposure.iso = model.snapshot.readout?.iso ?? model.settings.exposure.iso
+                    model.settings.exposure.shutterSeconds = seconds
+                    apply()
+                }.disabled(model.snapshot.capabilities?.manualExposure != true)
+            }
+        } else {
+            Text("카메라 연결 후 지원 해상도·FPS·코덱이 표시됩니다.").foregroundStyle(.secondary)
+        }
+        Text("최대 10분·2GiB. 전면 영상은 미러링 없이 저장합니다. 해상도별 FPS·코덱은 다시 조회하며 모드·구성 변경 시 노출·초점·WB를 AUTO로 초기화합니다.")
+            .font(.caption).foregroundStyle(.secondary)
     }
     private var unavailable: some View {
         Label("카메라를 연결하면 이 렌즈가 지원하는 제어 범위가 표시됩니다.", systemImage: "camera.badge.ellipsis")
