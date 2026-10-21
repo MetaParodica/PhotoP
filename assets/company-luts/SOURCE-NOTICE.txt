@@ -1,0 +1,6 @@
+Third-party numerical LUT data. Original copyright headers remain in each file.
+Source: DeMeerleerGilles/Lumix-film-simulation and pmndrs/postprocessing, pinned revisions in manifest.json.
+These are unofficial derivatives/mirrors, not endorsed manufacturer assets.
+Underlying license and commercial redistribution rights have not been verified.
+No license grant is asserted by PhotoP. Source files are retained without edits.
+SDR adaptation is an approximation, not a camera sensor or scene HDR reconstruction.

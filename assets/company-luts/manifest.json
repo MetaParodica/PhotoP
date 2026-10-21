@@ -1,0 +1,2032 @@
+{
+  "schemaVersion": 1,
+  "adapter": "sdr-vlog-bt1886-v1",
+  "rightsPolicy": "record-only; user requested inclusion irrespective of verification",
+  "assets": [
+    {
+      "id": "company-arri-logc2video-classic709-vlog",
+      "name": "ARRI LogC2Video Classic709",
+      "brand": "ARRI",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Arri/ARRI_LogC2Video_Classic709_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Arri/ARRI_LogC2Video_Classic709_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "438ede2c2463f449355270d86ec8422da5b754fbb705e629e6cd96dec02251be",
+      "gitBlobSHA": "758dda047f02dc75eb703754d18b112d088a8b2c",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.03535761111517988,
+          0.03646151737711393,
+          0.03694533882860172
+        ],
+        [
+          0.29513712500806455,
+          0.29917637409244996,
+          0.3003979988935156
+        ],
+        [
+          0.6165572172882455,
+          0.6189386312425323,
+          0.6196872539161149
+        ],
+        [
+          0.593461893809084,
+          0.4248728464493241,
+          0.31461707722123494
+        ],
+        [
+          0.3691721494676962,
+          0.17906718909997935,
+          0.09903740798163319
+        ],
+        [
+          0.6901105397389304,
+          0.04349575672053634,
+          0.06787547730089288
+        ],
+        [
+          0.18144055544518445,
+          0.6263095204568835,
+          0.20289110641659064
+        ],
+        [
+          0.022523824070846243,
+          0.18075768397751574,
+          0.6608399915869666
+        ],
+        [
+          0.6760409638515563,
+          0.6317462599107649,
+          0.19079510595034324
+        ],
+        [
+          0.16433975063696424,
+          0.5542568407039115,
+          0.6110727155718877
+        ],
+        [
+          0.5523384101482772,
+          0.06851224341020229,
+          0.6087849566126795
+        ],
+        [
+          0.6984484729879803,
+          0.7000018149271975,
+          0.7004675115322343
+        ]
+      ]
+    },
+    {
+      "id": "company-cineon-to-fuji-3513di-d65-vlog",
+      "name": "Cineon to Fuji 3513DI D65",
+      "brand": "Film Print",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Cineon/Cineon_to_Fuji_3513DI_D65_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Cineon/Cineon_to_Fuji_3513DI_D65_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "937fc26b38ba1e22c1fd6a057f19e2c09ce2e58b1abffb93b9c6364b9372405c",
+      "gitBlobSHA": "ee474e389c4da5298fa56375e8eed47600dd013d",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.006282393515296523,
+          0.04929478265129187,
+          0.05347359586625051
+        ],
+        [
+          0.30929196780935264,
+          0.3649532604928721,
+          0.3984923571588333
+        ],
+        [
+          0.726158182365978,
+          0.7657973484286424,
+          0.7742454478855217
+        ],
+        [
+          0.6991013396204817,
+          0.5119801779112697,
+          0.4006673318024441
+        ],
+        [
+          0.4208367965710471,
+          0.22571636979487808,
+          0.10770858990492554
+        ],
+        [
+          0.5812600632716568,
+          0.016761117815588585,
+          3.983126916608828e-05
+        ],
+        [
+          0.0034674601073784355,
+          0.4726555025584401,
+          0.19427508260378232
+        ],
+        [
+          0.0009270702096691784,
+          0.01876106313335962,
+          0.564053409304831
+        ],
+        [
+          0.819836004007372,
+          0.6483255271862641,
+          0.0025055343105793403
+        ],
+        [
+          4.366776239706571e-12,
+          0.5700076911112234,
+          0.7461243783379226
+        ],
+        [
+          0.5338433547061722,
+          0.010126860901506952,
+          0.5455593238170252
+        ],
+        [
+          0.8118909407357737,
+          0.8466400201053266,
+          0.849247201864179
+        ]
+      ]
+    },
+    {
+      "id": "company-cineon-to-kodak-2383-d65-vlog",
+      "name": "Cineon to Kodak 2383 D65",
+      "brand": "Film Print",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Cineon/Cineon_to_Kodak_2383_D65_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Cineon/Cineon_to_Kodak_2383_D65_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "48095c1937c1638d53e7e535e86c2416bc9d0f63502b699d3b369a03a9657398",
+      "gitBlobSHA": "c0413ab333386db6040d4fd1be56a821faccbbb0",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.016477263446633802,
+          0.03685675653446454,
+          0.05044406012528186
+        ],
+        [
+          0.2970154894197513,
+          0.33299263521694566,
+          0.3659401445794073
+        ],
+        [
+          0.754366397318457,
+          0.7639853310930821,
+          0.7446955222850923
+        ],
+        [
+          0.7277097107417091,
+          0.5084234144300042,
+          0.3788416887233566
+        ],
+        [
+          0.40854268962033297,
+          0.19806479678723732,
+          0.10440091997856357
+        ],
+        [
+          0.5974032207452517,
+          0.007333302262958459,
+          2.1929390366047785e-05
+        ],
+        [
+          0.00244071868524623,
+          0.4471350818623622,
+          0.15328214524139339
+        ],
+        [
+          0.002489553955707135,
+          0.01015098124301501,
+          0.5087351648376156
+        ],
+        [
+          0.8746457465931827,
+          0.7054059825358027,
+          4.23649247389384e-06
+        ],
+        [
+          4.366776239706571e-12,
+          0.5129190582401874,
+          0.6816509116229331
+        ],
+        [
+          0.5438292577018787,
+          0.0060145707893534605,
+          0.5303424523889322
+        ],
+        [
+          0.8350236736377513,
+          0.8467303911486439,
+          0.8217373205735128
+        ]
+      ]
+    },
+    {
+      "id": "company-django-25",
+      "name": "Django 25",
+      "brand": "RocketStock",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Display/django-25.cube",
+      "source": "https://github.com/pmndrs/postprocessing/blob/9cf03cff26615636a564d8bfddf765edb8917441/demo/static/textures/lut/cube/django-25.cube",
+      "sourceRevision": "9cf03cff26615636a564d8bfddf765edb8917441",
+      "sha256": "415f6b00f34af3e615e283ce98de383c9d7e09a8c3f621c015dcecb7d9da014a",
+      "gitBlobSHA": "1b9dc19e09565c30701379c139924416171296c7",
+      "nativeInput": "srgb-assumed",
+      "nativeOutput": "srgb-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.09626727412499998,
+          0.07464315749999999,
+          0.06758727162499999
+        ],
+        [
+          0.31236268000000006,
+          0.33048801600000005,
+          0.29432320000000006
+        ],
+        [
+          0.692934952,
+          0.7080832560000001,
+          0.693490648
+        ],
+        [
+          0.6302991767839998,
+          0.481631259232,
+          0.31584187358400007
+        ],
+        [
+          0.39943296895999997,
+          0.21343489424000003,
+          0.11280697544000001
+        ],
+        [
+          0.758152272,
+          0.07363125999999999,
+          0.04352043099999999
+        ],
+        [
+          0.045093700000000014,
+          0.682298008,
+          0.138963668
+        ],
+        [
+          0.086749618,
+          0.12921131600000002,
+          0.7522885000000001
+        ],
+        [
+          0.7626953900000001,
+          0.698406008,
+          0.12023384000000001
+        ],
+        [
+          0.04491832000000001,
+          0.607593192,
+          0.66747199
+        ],
+        [
+          0.590100584,
+          0.07706727000000001,
+          0.661438614
+        ],
+        [
+          0.82599571975,
+          0.8266017687499999,
+          0.82330992975
+        ]
+      ]
+    },
+    {
+      "id": "company-presetpro-cinematic",
+      "name": "Cinematic",
+      "brand": "Presetpro / Tim Martin",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Display/presetpro-cinematic.cube",
+      "source": "https://github.com/pmndrs/postprocessing/blob/9cf03cff26615636a564d8bfddf765edb8917441/demo/static/textures/lut/cube/presetpro-cinematic.cube",
+      "sourceRevision": "9cf03cff26615636a564d8bfddf765edb8917441",
+      "sha256": "d68e2e7985b0ca0131b63e3ffd97128ee26417c82bcc6dfb2553c5a38baff58d",
+      "gitBlobSHA": "6871d280ef02351d19d38754b63eaace9e55b5b3",
+      "nativeInput": "srgb-assumed",
+      "nativeOutput": "srgb-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.16705023025,
+          0.149243156875,
+          0.166707585
+        ],
+        [
+          0.363781952,
+          0.370063264,
+          0.374787656
+        ],
+        [
+          0.8453908160000001,
+          0.813977464,
+          0.824619336
+        ],
+        [
+          0.7556307523039999,
+          0.4962228211360001,
+          0.32253837436800004
+        ],
+        [
+          0.40114570352,
+          0.24027877184000002,
+          0.18655000064000002
+        ],
+        [
+          0.773158677,
+          0.15161431099999997,
+          0.017935444999999963
+        ],
+        [
+          0.0038706840000000005,
+          0.769302376,
+          0.3897269
+        ],
+        [
+          0.398960168,
+          0.036752485999999945,
+          0.84934497
+        ],
+        [
+          0.8411349400000001,
+          0.779236944,
+          0.204992864
+        ],
+        [
+          0.0014218580000000028,
+          0.6516075339999998,
+          0.782460074
+        ],
+        [
+          0.7531587500000001,
+          0.0018408019999999999,
+          0.715896544
+        ],
+        [
+          0.9547219463749999,
+          0.948973131875,
+          0.9503657108749999
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-acros-vlog",
+      "name": "ACROS",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_ACROS_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_ACROS_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "0e840d9536df7151789a64bc59913f6fd5dd615897f8344e30a48005861b75f2",
+      "gitBlobSHA": "adaa6581ce4017977e057f9827daf051eefe7b1f",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.013452709065210018,
+          0.013452709065210018,
+          0.013452709065210018
+        ],
+        [
+          0.33673156735508525,
+          0.33673156735508525,
+          0.33673156735508525
+        ],
+        [
+          0.742531301714652,
+          0.742531301714652,
+          0.742531301714652
+        ],
+        [
+          0.5391012290481348,
+          0.5391012290481348,
+          0.5391012290481348
+        ],
+        [
+          0.212029861673174,
+          0.212029861673174,
+          0.212029861673174
+        ],
+        [
+          0.4157359119991829,
+          0.4157359119991829,
+          0.4157359119991829
+        ],
+        [
+          0.604712445701793,
+          0.604712445701793,
+          0.604712445701793
+        ],
+        [
+          0.35264486864528094,
+          0.35264486864528094,
+          0.35264486864528094
+        ],
+        [
+          0.6916289690178737,
+          0.6916289690178737,
+          0.6916289690178737
+        ],
+        [
+          0.6370035506908039,
+          0.6370035506908039,
+          0.6370035506908039
+        ],
+        [
+          0.43492402690124116,
+          0.43492402690124116,
+          0.43492402690124116
+        ],
+        [
+          0.809338795726147,
+          0.809338795726147,
+          0.809338795726147
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-astia-vlog",
+      "name": "ASTIA",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_ASTIA_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_ASTIA_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "589c24feb49ceacab48c5d4cefd84484a06334aa3d0363b5225fefb7feb04e92",
+      "gitBlobSHA": "8a014904fd86cebb2440c74e550df2927ef2d86f",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.01185932171445794,
+          0.015107750020797232,
+          0.015761463551817734
+        ],
+        [
+          0.33686033135440435,
+          0.3558264525648967,
+          0.37944786777454664
+        ],
+        [
+          0.7198159387763419,
+          0.7361678287266052,
+          0.7572171687204422
+        ],
+        [
+          0.7253213997765505,
+          0.5068556813814244,
+          0.35331030973030253
+        ],
+        [
+          0.4496086560521801,
+          0.16659457907771014,
+          0.03317561437196563
+        ],
+        [
+          0.9595093941512384,
+          0.11850812509875486,
+          0.18967592116524698
+        ],
+        [
+          0.3123331045519356,
+          0.775075861768849,
+          0.10254385165475108
+        ],
+        [
+          0.13269214958666217,
+          0.28649831062320646,
+          0.9879512945296515
+        ],
+        [
+          0.8035917832538739,
+          0.7409656703695768,
+          0.08406022822796583
+        ],
+        [
+          0.2542702602615776,
+          0.7041422910383054,
+          0.8581467596109122
+        ],
+        [
+          0.7399414614513231,
+          0.19183648621759886,
+          0.8143027104056184
+        ],
+        [
+          0.7768348458898631,
+          0.7928748122378763,
+          0.8115112647025758
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-classic-chrome-vlog",
+      "name": "CLASSIC-CHROME",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_CLASSIC-CHROME_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_CLASSIC-CHROME_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "f1480f401445172603924308e5ceea6549f5f5bbb4a3f85ddd09ac349d47d81d",
+      "gitBlobSHA": "45d5f8c4800a9e5a341e18f659881d1622277af3",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.004765369659079541,
+          0.006281887889204213,
+          0.006488647238565528
+        ],
+        [
+          0.3214232434136998,
+          0.3405234070166288,
+          0.3533727714121895
+        ],
+        [
+          0.7445912580852022,
+          0.7618564727011271,
+          0.7704645499410921
+        ],
+        [
+          0.7240599015029916,
+          0.5277183519237518,
+          0.419232919415736
+        ],
+        [
+          0.42094345986871934,
+          0.16573454109190253,
+          0.08063766598894131
+        ],
+        [
+          0.9075629419876894,
+          0.27951419908559544,
+          0.20617432741810132
+        ],
+        [
+          0.3161300453249866,
+          0.7264003036154841,
+          0.2635304689406336
+        ],
+        [
+          0.13343113647602856,
+          0.29888235859431556,
+          0.7806254494199097
+        ],
+        [
+          0.8067624246027842,
+          0.7315651655360499,
+          0.3156704475321802
+        ],
+        [
+          0.26979293219679806,
+          0.7047264769797774,
+          0.7724626404896289
+        ],
+        [
+          0.720596083278675,
+          0.28499099061590505,
+          0.675428672463229
+        ],
+        [
+          0.8037787352045987,
+          0.8182663196971701,
+          0.8256799718449215
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-classic-neg-vlog",
+      "name": "CLASSIC-Neg",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_CLASSIC-Neg_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_CLASSIC-Neg_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "c36c5ef1d4bbc15bbc253a4e67af0b38e80453412653e50bb90b096171099aec",
+      "gitBlobSHA": "64bcff9655bd629a266a997989c0fa6739d331de",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.012290424973646049,
+          0.02052232902102403,
+          0.014218988363945141
+        ],
+        [
+          0.30468347637041004,
+          0.33004338765983365,
+          0.3408071900444079
+        ],
+        [
+          0.8445376421917362,
+          0.8129152966417037,
+          0.8189635634336397
+        ],
+        [
+          0.7888714726275353,
+          0.5308785451071001,
+          0.37950271093763394
+        ],
+        [
+          0.35917020874047045,
+          0.16172972133872596,
+          0.05944567374158139
+        ],
+        [
+          0.9044560608201876,
+          0.2209878113698267,
+          0.05679759252066479
+        ],
+        [
+          0.17970665206778888,
+          0.7412078566873946,
+          0.4363482203597389
+        ],
+        [
+          0.4073916992866484,
+          0.3969662435183367,
+          0.801775916720098
+        ],
+        [
+          0.8479344978095907,
+          0.762614788520803,
+          0.3315944246892262
+        ],
+        [
+          0.41654037277646977,
+          0.7611607715759506,
+          0.8884731306098714
+        ],
+        [
+          0.8342804662888225,
+          0.33272927796570684,
+          0.6121315261075393
+        ],
+        [
+          0.8954394809565247,
+          0.8678789879906377,
+          0.8742188685524628
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-eterna-bb-vlog",
+      "name": "ETERNA-BB",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_ETERNA-BB_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_ETERNA-BB_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "5b4df1ad5ac1f67b92588492d6b90c718112dca0f0c21ac4de4db49f05adf1ce",
+      "gitBlobSHA": "0f492c4a63bb20983e6711efeae0343df5257034",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.024212176029669755,
+          0.026950269898759635,
+          0.026154046690615062
+        ],
+        [
+          0.30993197829027863,
+          0.3169648917895285,
+          0.32245735596426583
+        ],
+        [
+          0.8161332951254294,
+          0.8249017175578532,
+          0.8283957969919687
+        ],
+        [
+          0.6924787788138886,
+          0.5683453555251753,
+          0.4986680738568033
+        ],
+        [
+          0.2806353469090995,
+          0.14338277919792045,
+          0.11759935888432535
+        ],
+        [
+          0.6482576197102433,
+          0.26776964564962885,
+          0.23544681112989513
+        ],
+        [
+          0.4882316181203971,
+          0.7326859212037424,
+          0.4642392475688775
+        ],
+        [
+          0.3092932517548821,
+          0.3173371330022735,
+          0.5760646308402552
+        ],
+        [
+          0.8200264102243938,
+          0.7974078712193707,
+          0.5057135621414218
+        ],
+        [
+          0.5444267564363523,
+          0.7424254447852464,
+          0.7575597385565445
+        ],
+        [
+          0.6121309058056481,
+          0.33110805972445223,
+          0.5757343655103604
+        ],
+        [
+          0.8679772455412142,
+          0.8748099651823864,
+          0.8787929406325838
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-eterna-vlog",
+      "name": "ETERNA",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_ETERNA_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_ETERNA_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "e6fac499496375c0315553faac116d4092979d285487a87299d11cd8e42034e5",
+      "gitBlobSHA": "bc86806ec3f7f5f12d7d8b9c76a5deb5db4486a7",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.05703248432701375,
+          0.06430217867556146,
+          0.06557931899930522
+        ],
+        [
+          0.34034406817712787,
+          0.3520112266347719,
+          0.36303888145369206
+        ],
+        [
+          0.715416995388739,
+          0.7294813386426884,
+          0.7394317778744693
+        ],
+        [
+          0.6780237005926556,
+          0.5072411874984993,
+          0.39555822378119976
+        ],
+        [
+          0.38885359662812274,
+          0.21186965223870918,
+          0.14468275554735074
+        ],
+        [
+          0.8556838161793708,
+          0.26993301366231076,
+          0.092751827936851
+        ],
+        [
+          0.35779936015055946,
+          0.7195416726103896,
+          0.2619073782072588
+        ],
+        [
+          0.2617331379373635,
+          0.34158889062189257,
+          0.7758513763887868
+        ],
+        [
+          0.7590460313466785,
+          0.7115421494309635,
+          0.24692480863023725
+        ],
+        [
+          0.3686897183566558,
+          0.6885983210776051,
+          0.735294323349556
+        ],
+        [
+          0.6924966235877349,
+          0.29968254908383196,
+          0.7014256334465889
+        ],
+        [
+          0.7726321290723419,
+          0.7854839661881563,
+          0.795348439955513
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-flog2c-709-vlog",
+      "name": "FLog2C-709",
+      "brand": "Fujifilm",
+      "category": "기술 변환",
+      "role": "technical",
+      "file": "raw/Fujifilm/FLog2C_to_FLog2C-709_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_FLog2C-709_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "f75c9071ddd449c6d1144dcc5fefe9277245dd0fe469e14fc217567ed3569a7b",
+      "gitBlobSHA": "00bc3f540da845abaaf068d417dba95596765b09",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.15065823011034218,
+          0.15354411232482038,
+          0.16044275425422072
+        ],
+        [
+          0.32182349834228763,
+          0.3257098238974608,
+          0.3353614716362057
+        ],
+        [
+          0.4847203994056533,
+          0.4885996043020336,
+          0.49885013949351614
+        ],
+        [
+          0.4849461198662565,
+          0.3872702734898545,
+          0.3367207175161395
+        ],
+        [
+          0.37798376745155626,
+          0.26254255512605595,
+          0.20965729245096776
+        ],
+        [
+          0.5874251793610296,
+          0.23189057260946155,
+          0.16289893936902275
+        ],
+        [
+          0.29522559101498275,
+          0.5000309044676876,
+          0.2716300692968525
+        ],
+        [
+          0.2448835517893037,
+          0.2793141750235779,
+          0.5387462591537302
+        ],
+        [
+          0.5180130972239876,
+          0.49679011630730924,
+          0.2618234192218762
+        ],
+        [
+          0.2979414543303964,
+          0.45867781508344146,
+          0.4998252386851621
+        ],
+        [
+          0.4906659210690753,
+          0.2507928491887536,
+          0.5067480587534056
+        ],
+        [
+          0.5274998675545056,
+          0.5316365930167432,
+          0.5417183345266019
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-pro-neg-std-vlog",
+      "name": "PRO-Neg Std",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_PRO-Neg_Std_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_PRO-Neg_Std_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "e7eaa817c7775ef0d1280a7d0a4c43d0abafe7446ec93491a703fb66f543f8ef",
+      "gitBlobSHA": "182d30d0734a0ddcd6105d1e71b3c1022a864ab9",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.024467175068602336,
+          0.0286968924145902,
+          0.028770664981079743
+        ],
+        [
+          0.3393391649791319,
+          0.3532633115086158,
+          0.36520908942665514
+        ],
+        [
+          0.7291353382177952,
+          0.7451561672501663,
+          0.7607318120691585
+        ],
+        [
+          0.6974233654895236,
+          0.5025322713837005,
+          0.39558835042947715
+        ],
+        [
+          0.3875710305923792,
+          0.19731705862082638,
+          0.12749523679407515
+        ],
+        [
+          0.8783603754812102,
+          0.22256507851502222,
+          0.2374794844583875
+        ],
+        [
+          0.3120030296231934,
+          0.7506933941906345,
+          0.1725572503373678
+        ],
+        [
+          0.2657391151558216,
+          0.32697825041610434,
+          0.8535148838554757
+        ],
+        [
+          0.7802738291681016,
+          0.7323133232427026,
+          0.17941184935195087
+        ],
+        [
+          0.33890789352185513,
+          0.7063049456972003,
+          0.7759952026662682
+        ],
+        [
+          0.7114471889501432,
+          0.2700137497450159,
+          0.7720259742858772
+        ],
+        [
+          0.7908543089448639,
+          0.804701245830831,
+          0.8200827585750691
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-provia-vlog",
+      "name": "PROVIA",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_PROVIA_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_PROVIA_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "e4889a34c2218ad05eb1a87c45c59f9891bf7785dad792ce487d615e4807de0b",
+      "gitBlobSHA": "4f7f3deb4113b611c71cc69a5d9f4b5059e73b78",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.017189824978664732,
+          0.021804674210452055,
+          0.022909875611865874
+        ],
+        [
+          0.3302628469223396,
+          0.34990498954949845,
+          0.36752801287853476
+        ],
+        [
+          0.7218655960693677,
+          0.7460005840231946,
+          0.763953651839241
+        ],
+        [
+          0.7461174142297935,
+          0.49789451166314785,
+          0.3529738468573598
+        ],
+        [
+          0.44694904273627395,
+          0.18493981923686592,
+          0.07548147590356749
+        ],
+        [
+          0.9773155156797829,
+          0.20721025415742528,
+          0.18127739588719008
+        ],
+        [
+          0.07752997239410203,
+          0.781029294644984,
+          0.0869366314966363
+        ],
+        [
+          0.2856399081402004,
+          0.2943794629453826,
+          0.9640878687534115
+        ],
+        [
+          0.8095242046899055,
+          0.7367567152087456,
+          0.0770462013259188
+        ],
+        [
+          0.20305357925374562,
+          0.7174966082426166,
+          0.8333555210191232
+        ],
+        [
+          0.796354303733207,
+          0.22889700140331665,
+          0.8139042482198874
+        ],
+        [
+          0.7862889220765826,
+          0.8064006631935366,
+          0.8231295762302662
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-reala-ace-vlog",
+      "name": "REALA-ACE",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_REALA-ACE_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_REALA-ACE_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "19d47c0a8790efb60548f07edc3714740e866c98e49ffdf32220a9780108314c",
+      "gitBlobSHA": "05264515ee9b9d3bd6abbf85e49439e694703ed6",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.022079900653063436,
+          0.02803477447894402,
+          0.02977148344669491
+        ],
+        [
+          0.31414132247759996,
+          0.3327381815636576,
+          0.34903602403985434
+        ],
+        [
+          0.7689279167896522,
+          0.7866434987545851,
+          0.805367480325573
+        ],
+        [
+          0.7502020969593332,
+          0.5116110678599209,
+          0.3698771102954129
+        ],
+        [
+          0.4358642429505984,
+          0.17801044221993434,
+          0.06940603539396276
+        ],
+        [
+          0.9016861315517618,
+          0.2260044863922735,
+          0.18106174002483927
+        ],
+        [
+          0.46662288222004494,
+          0.7740659851889795,
+          0.35570716450969053
+        ],
+        [
+          0.21790947474935823,
+          0.2606841052748477,
+          0.7894520261114066
+        ],
+        [
+          0.8494218498929271,
+          0.7718677118845471,
+          0.1148466146071814
+        ],
+        [
+          0.32205742956453,
+          0.6901246417561919,
+          0.779657775025542
+        ],
+        [
+          0.707869797357548,
+          0.31682700435639827,
+          0.7437764666314378
+        ],
+        [
+          0.8253771801374071,
+          0.8414199685220808,
+          0.8585508869176122
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-velvia-vlog",
+      "name": "Velvia",
+      "brand": "Fujifilm",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Fujifilm/FLog2C_to_Velvia_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_Velvia_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "cc232be6c9b4a2bd499dba413f8227277e41530527b919ee5fa21aa00b26fa8a",
+      "gitBlobSHA": "b33b32c402033429b518be6d0d146a171b36c7bc",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.001452883373633209,
+          0.0017695028951308,
+          0.0019502663180672403
+        ],
+        [
+          0.3274624381913799,
+          0.3534057226085933,
+          0.38014517974596645
+        ],
+        [
+          0.7080918725317072,
+          0.7256230010457102,
+          0.7542640114784368
+        ],
+        [
+          0.7515058576614194,
+          0.5051944273729798,
+          0.33304881051357754
+        ],
+        [
+          0.48752641112811695,
+          0.15961840927046345,
+          0.004430957716152034
+        ],
+        [
+          0.9972563150514059,
+          0.22085227925099,
+          0.12420548988667307
+        ],
+        [
+          0.011854939046077652,
+          0.820330605188795,
+          0.016181788696862143
+        ],
+        [
+          0.31145301931285685,
+          0.21178954298170571,
+          0.9976566284731107
+        ],
+        [
+          0.8222598886434733,
+          0.7448662797124416,
+          0.008857254897879797
+        ],
+        [
+          0.16196581411028393,
+          0.7027285725123975,
+          0.8614021668901806
+        ],
+        [
+          0.8286785683254387,
+          0.16542205453017467,
+          0.902761626208816
+        ],
+        [
+          0.7770078389466981,
+          0.7953339383674194,
+          0.8264239478811845
+        ]
+      ]
+    },
+    {
+      "id": "company-flog2c-to-wdr-vlog",
+      "name": "WDR",
+      "brand": "Fujifilm",
+      "category": "기술 변환",
+      "role": "technical",
+      "file": "raw/Fujifilm/FLog2C_to_WDR_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Fujifilm/FLog2C_to_WDR_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "2826a3a918998f0edaa58b6095d09130445612742de0ded3a5f512956ea2b49d",
+      "gitBlobSHA": "bbf8c203b92dcaeaa7a5ba29fb15aafe32445482",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "wdr-unverified",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.03379918798650201,
+          0.03689639712100179,
+          0.04246686828838086
+        ],
+        [
+          0.29913342964371437,
+          0.3074816170330989,
+          0.32381154689803093
+        ],
+        [
+          0.6270221459960633,
+          0.6338949805261677,
+          0.650584004894434
+        ],
+        [
+          0.6151139829433598,
+          0.4462753494950676,
+          0.3459093388587753
+        ],
+        [
+          0.35610052423652033,
+          0.19790065977326554,
+          0.13820197242703272
+        ],
+        [
+          0.6762783420925366,
+          0.10349559816429987,
+          0.08100426624793808
+        ],
+        [
+          0.2508449849057903,
+          0.6328687210720475,
+          0.21218756039196796
+        ],
+        [
+          0.15045342469945988,
+          0.19854077308884643,
+          0.5999968350759657
+        ],
+        [
+          0.6821992317025254,
+          0.6487209213846113,
+          0.1503538937661723
+        ],
+        [
+          0.2536935546399691,
+          0.5719003015243539,
+          0.6333438948769486
+        ],
+        [
+          0.572590621933956,
+          0.1391733047569874,
+          0.597543318256205
+        ],
+        [
+          0.695609150405958,
+          0.7018259397976309,
+          0.716412593653316
+        ]
+      ]
+    },
+    {
+      "id": "company-l-log-to-classic-vlog",
+      "name": "L-Log to Classic",
+      "brand": "Leica",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Leica/L-Log_to_Classic_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Leica/L-Log_to_Classic_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "4483c0ad75e199a3cf6fbabbd3ac8627337e156fcd9e1569d095ef7be8480b26",
+      "gitBlobSHA": "5f78b436e446b7dfd25c1f834613dbdb701f9464",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.01586257028543523,
+          0.016848054455213028,
+          0.0161370983905856
+        ],
+        [
+          0.26290603327731643,
+          0.26902730759131604,
+          0.2582846818493809
+        ],
+        [
+          0.6517407491692461,
+          0.6406063448798898,
+          0.6150141683225978
+        ],
+        [
+          0.6289418783553045,
+          0.402262012824582,
+          0.2594625902867252
+        ],
+        [
+          0.36792244631154725,
+          0.15210110295459606,
+          0.05167737873950919
+        ],
+        [
+          0.7009882488780061,
+          0.0019526274454575734,
+          0.005287008005290869
+        ],
+        [
+          0.18003298064160675,
+          0.625986730187774,
+          0.1194802936109047
+        ],
+        [
+          0.0003877736303974451,
+          0.17315737213263102,
+          0.5998353800906463
+        ],
+        [
+          0.7630165345376039,
+          0.6486468047132806,
+          0.06795297527946415
+        ],
+        [
+          0.09160873110919715,
+          0.545611619670442,
+          0.5959207153834613
+        ],
+        [
+          0.53978486480554,
+          0.08938355269978418,
+          0.5773166773948852
+        ],
+        [
+          0.7455910203776188,
+          0.7301580208089588,
+          0.7022144233598677
+        ]
+      ]
+    },
+    {
+      "id": "company-l-log-to-natural-vlog",
+      "name": "L-Log to Natural",
+      "brand": "Leica",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Leica/L-Log_to_Natural_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Leica/L-Log_to_Natural_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "42a4f4ee7e03d94fdeadde5089b770be272ea31e64c24c0498cd946550f015e4",
+      "gitBlobSHA": "9c814d2f3d019b7f19da2f62ea4d05ca98201401",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.024125160521503684,
+          0.025590581863399273,
+          0.026057843063878646
+        ],
+        [
+          0.27877894392666586,
+          0.2859551876232821,
+          0.28803896492415815
+        ],
+        [
+          0.6161854520842617,
+          0.6200825406213615,
+          0.6209392081826863
+        ],
+        [
+          0.59311241192158,
+          0.416792742781885,
+          0.3031413627793748
+        ],
+        [
+          0.3592085112393251,
+          0.1628724012922306,
+          0.08347683714164003
+        ],
+        [
+          0.6955044475519716,
+          0.03336603847773878,
+          0.052681814382385374
+        ],
+        [
+          0.1660511072013672,
+          0.6284923958247094,
+          0.18812797501500655
+        ],
+        [
+          0.017970688413063023,
+          0.16391014850148863,
+          0.6646984254115199
+        ],
+        [
+          0.6795232074535029,
+          0.6336318913224007,
+          0.17633706818195682
+        ],
+        [
+          0.14678981598806165,
+          0.5529133964574456,
+          0.612124733045605
+        ],
+        [
+          0.5505697457233033,
+          0.05919103759879315,
+          0.609961101718383
+        ],
+        [
+          0.7017254259049943,
+          0.7037469799214295,
+          0.7043240667454169
+        ]
+      ]
+    },
+    {
+      "id": "company-n-log-bt2020-to-rec709-bt1886-vlog",
+      "name": "N-Log BT2020 to REC709 BT1886",
+      "brand": "Nikon / RED",
+      "category": "기술 변환",
+      "role": "technical",
+      "file": "raw/Nikon/N-Log_BT2020_to_REC709_BT1886_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Nikon/N-Log_BT2020_to_REC709_BT1886_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "a37fd8f16408ccec37a69e8c6b1b5ee9b7794f8a2a7ec5db2d14cd2c8782d049",
+      "gitBlobSHA": "86f739489f0dbf9a8643d2ba0c52f579ee6fb01c",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.05709033213681348,
+          0.06298150008203349,
+          0.06182053296771662
+        ],
+        [
+          0.33776482317039785,
+          0.34444682516141617,
+          0.3428523503529096
+        ],
+        [
+          0.7050316391043383,
+          0.7126727634739223,
+          0.7127646978152961
+        ],
+        [
+          0.6990701471742524,
+          0.4897909443901997,
+          0.36250623206762056
+        ],
+        [
+          0.4254748960897171,
+          0.2118731256194395,
+          0.1242056101995358
+        ],
+        [
+          0.7994289040816017,
+          0.14246669014092914,
+          0.13023655630260353
+        ],
+        [
+          0.24584118487769657,
+          0.7284493904689491,
+          0.27813125958667434
+        ],
+        [
+          0.09455910272139784,
+          0.21581153106739764,
+          0.7542143325344153
+        ],
+        [
+          0.7656939917703192,
+          0.7178762004005843,
+          0.32904587442188243
+        ],
+        [
+          0.24119949532687468,
+          0.650017698818156,
+          0.7078416200366124
+        ],
+        [
+          0.6368822982747923,
+          0.1697920430241876,
+          0.7031328147387492
+        ],
+        [
+          0.77572397890038,
+          0.7802839367428805,
+          0.7806687306577897
+        ]
+      ]
+    },
+    {
+      "id": "company-red-achromic-rec2020-n-log-to-rec709-vlog",
+      "name": "RED Achromic Rec2020 N-Log to Rec709",
+      "brand": "Nikon / RED",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Nikon/RED_Achromic_Rec2020_N-Log_to_Rec709_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Nikon/RED_Achromic_Rec2020_N-Log_to_Rec709_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "4ea6d773f5b86a889f80f6c938bfd83dcde436aa0faf627019dc1ac0632c8411",
+      "gitBlobSHA": "37c591163a2971f9a505da75e7ffbd1494e7cdb4",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.07670525057818225,
+          0.08250102571494475,
+          0.0819086409555454
+        ],
+        [
+          0.3873371904075342,
+          0.392805326366742,
+          0.3960291831780593
+        ],
+        [
+          0.6873068558026144,
+          0.691313343162039,
+          0.6945105187330182
+        ],
+        [
+          0.684646981962125,
+          0.51536197743301,
+          0.425964452507973
+        ],
+        [
+          0.4671942499013501,
+          0.25221181557065425,
+          0.17699824539989845
+        ],
+        [
+          0.7410539320919034,
+          0.21459013265276256,
+          0.21571434949156898
+        ],
+        [
+          0.3890344804665797,
+          0.6781288558018671,
+          0.3973837213181658
+        ],
+        [
+          0.1431626867162258,
+          0.3527321900886149,
+          0.6480736729756555
+        ],
+        [
+          0.751356067755041,
+          0.6763346538168944,
+          0.472714519024881
+        ],
+        [
+          0.3694960322135524,
+          0.6325653287665114,
+          0.6719078842055065
+        ],
+        [
+          0.5391897397849799,
+          0.3473332976373904,
+          0.6424724534258773
+        ],
+        [
+          0.7474205731914523,
+          0.7482187692695617,
+          0.7525739685411523
+        ]
+      ]
+    },
+    {
+      "id": "company-red-filmbiasbleachbypass-rec2020-n-log-to-rec709-bt1886-vlog",
+      "name": "RED FilmBiasBleachBypass Rec2020 N-Log to Rec709 BT1886",
+      "brand": "Nikon / RED",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Nikon/RED_FilmBiasBleachBypass_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Nikon/RED_FilmBiasBleachBypass_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "b984f82b367583a5210b04886b99af3b23bd0e0f8d6d1168ae5cc4e5462627e2",
+      "gitBlobSHA": "bbeaeb60cd76c25b7f3c184fea7f826e38f0cf75",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.04076754104509122,
+          0.043647385645473095,
+          0.04290034389212464
+        ],
+        [
+          0.3972892601824112,
+          0.4029189429077152,
+          0.40482000998824036
+        ],
+        [
+          0.7939897351765336,
+          0.7949630583450122,
+          0.7971955793350303
+        ],
+        [
+          0.7298681348322268,
+          0.6037912653595559,
+          0.5427239197436088
+        ],
+        [
+          0.3830715503706702,
+          0.22633450541510536,
+          0.1693670706829681
+        ],
+        [
+          0.6707466910541646,
+          0.233920472324687,
+          0.2282975236433673
+        ],
+        [
+          0.5793753614936822,
+          0.7489502606128715,
+          0.5807993840752834
+        ],
+        [
+          0.20839334710881946,
+          0.3920138477751331,
+          0.637925337762891
+        ],
+        [
+          0.8155886825231093,
+          0.7755135242103505,
+          0.6733248850651999
+        ],
+        [
+          0.5803171953576977,
+          0.7241530655538152,
+          0.7494617690295808
+        ],
+        [
+          0.5792700393354573,
+          0.42677168968669443,
+          0.664227427473567
+        ],
+        [
+          0.8427954740669595,
+          0.8425436914370192,
+          0.844681503204629
+        ]
+      ]
+    },
+    {
+      "id": "company-red-filmbiasoffset-rec2020-n-log-to-rec709-bt1886-vlog",
+      "name": "RED FilmBiasOffset Rec2020 N-Log to Rec709 BT1886",
+      "brand": "Nikon / RED",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Nikon/RED_FilmBiasOffset_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Nikon/RED_FilmBiasOffset_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "d2b43fb90cd6465142157ba10b5eb261b0162883ef819c0599858bf82c99ed48",
+      "gitBlobSHA": "14217230b858af290fda00c0c7082d42a2df0352",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.08318886439537657,
+          0.08318929169959141,
+          0.08320539593154852
+        ],
+        [
+          0.3869263079307102,
+          0.38693191943800664,
+          0.38697244897915195
+        ],
+        [
+          0.6312055552614845,
+          0.631219525089323,
+          0.6312598799280436
+        ],
+        [
+          0.5163291958173265,
+          0.5163450870504795,
+          0.5163919476124859
+        ],
+        [
+          0.32769623659472963,
+          0.327711473141527,
+          0.32774309219488945
+        ],
+        [
+          0.4286333986605351,
+          0.4286399899082904,
+          0.42868192866053517
+        ],
+        [
+          0.5466438655355116,
+          0.5466603324143133,
+          0.5466925042138915
+        ],
+        [
+          0.37673097285087503,
+          0.37674559375335837,
+          0.37677795472721276
+        ],
+        [
+          0.6219842525509071,
+          0.621992314486758,
+          0.6220332486586159
+        ],
+        [
+          0.5401033610294886,
+          0.540117594398206,
+          0.5401517314423705
+        ],
+        [
+          0.4502254178578709,
+          0.45023567383786295,
+          0.4502806526502197
+        ],
+        [
+          0.6940843157814205,
+          0.6940898302223975,
+          0.6941333033120443
+        ]
+      ]
+    },
+    {
+      "id": "company-red-filmbias-rec2020-n-log-to-rec709-bt1886-vlog",
+      "name": "RED FilmBias Rec2020 N-Log to Rec709 BT1886",
+      "brand": "Nikon / RED",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/Nikon/RED_FilmBias_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/Nikon/RED_FilmBias_Rec2020_N-Log_to_Rec709_BT1886_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "2e6db7ca2f6eaa69706399e4f84794c754dcc04fbc575d69c547f279a723cb1b",
+      "gitBlobSHA": "23d578931af2fddebfec7486dce823f25a10ed87",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.03811067764123624,
+          0.0833059923600098,
+          0.095918826010465
+        ],
+        [
+          0.39508302680354745,
+          0.39153792632575407,
+          0.3828261262969915
+        ],
+        [
+          0.7490459895885444,
+          0.6854000908954676,
+          0.6283179626885489
+        ],
+        [
+          0.7254999041936684,
+          0.5054179435035749,
+          0.3950737100050329
+        ],
+        [
+          0.4843962146707987,
+          0.24742799590335446,
+          0.1725637078850081
+        ],
+        [
+          0.7240236365605867,
+          0.2275677920332249,
+          0.2313463112484188
+        ],
+        [
+          0.42185952535947663,
+          0.6755197448855091,
+          0.3526432564200865
+        ],
+        [
+          0.1475326748918067,
+          0.36923123681343534,
+          0.6194146366239545
+        ],
+        [
+          0.7984568459504647,
+          0.6634528613834555,
+          0.4388691801095378
+        ],
+        [
+          0.3994925620757876,
+          0.6385973191026643,
+          0.6253013587139414
+        ],
+        [
+          0.5728671228608568,
+          0.3476137501250449,
+          0.6195595756558105
+        ],
+        [
+          0.8125804805754563,
+          0.7411470972657128,
+          0.6782890142110022
+        ]
+      ]
+    },
+    {
+      "id": "company-rec709-medium-contrast-soft-vlog",
+      "name": "REC709 MEDIUM CONTRAST Soft",
+      "brand": "RED",
+      "category": "브랜드 파생",
+      "role": "creative",
+      "file": "raw/RED/REC709_MEDIUM_CONTRAST_Soft_VLog.cube",
+      "source": "https://github.com/DeMeerleerGilles/Lumix-film-simulation/blob/18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5/Luts/RED/REC709_MEDIUM_CONTRAST_Soft_VLog.cube",
+      "sourceRevision": "18f4d9d606f9b4fc5cbe9d664ef0a6d3d0fdb1b5",
+      "sha256": "1ccecc75323e11901cd95bcf907c99311bc9da0896b329d8c54212de86ce596e",
+      "gitBlobSHA": "58a37055c8cd85e780a566c259eea6a52573349e",
+      "nativeInput": "vlog-vgamut",
+      "nativeOutput": "rec709-gamma24-assumed",
+      "rightsStatus": "unverified",
+      "official": false,
+      "license": null,
+      "commercialUseAllowed": null,
+      "redistributionAllowed": null,
+      "previewColors": [
+        [
+          0.047932330030354,
+          0.05951702762602772,
+          0.05670596150003312
+        ],
+        [
+          0.3302017676134287,
+          0.33954628031114553,
+          0.3375135539924193
+        ],
+        [
+          0.6445185727519893,
+          0.6518418745176972,
+          0.6512769863661255
+        ],
+        [
+          0.6409617043429087,
+          0.4667066511046703,
+          0.35773682495008674
+        ],
+        [
+          0.412524866537567,
+          0.21044361025312397,
+          0.11970986435946004
+        ],
+        [
+          0.7345768961029348,
+          0.14128986181180914,
+          0.12945412422102662
+        ],
+        [
+          0.24142233097223254,
+          0.6661672879049133,
+          0.2750838252842225
+        ],
+        [
+          0.09629292546187798,
+          0.21370142754882054,
+          0.6902059827725214
+        ],
+        [
+          0.7009299606890782,
+          0.6566414491985658,
+          0.3239944750615826
+        ],
+        [
+          0.23595649698779636,
+          0.5977338774206074,
+          0.6473710963942664
+        ],
+        [
+          0.5874843923773022,
+          0.16827784148130617,
+          0.6439524982681363
+        ],
+        [
+          0.7081579018374488,
+          0.7140862502025593,
+          0.7132622204004433
+        ]
+      ]
+    }
+  ]
+}

@@ -126,9 +126,9 @@ struct CameraQuickControls: View {
     }
     private var composition: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("구도선", selection: $model.guideGrid) { ForEach(GuideGrid.allCases) { Text($0.title).tag($0) } }
-            Picker("장면", selection: $model.guideScene) { ForEach(GuideScene.allCases) { Text($0.title).tag($0) } }
-            Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }
+            HStack { Text("구도선"); Spacer(); Picker("구도선", selection: $model.guideGrid) { ForEach(GuideGrid.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
+            HStack { Text("장면"); Spacer(); Picker("장면", selection: $model.guideScene) { ForEach(GuideScene.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
+            HStack { Text("포즈"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
             Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled)
             Text("노란 선은 목표 구도, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)

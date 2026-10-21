@@ -12,6 +12,7 @@ final class CameraInteractionTests: XCTestCase {
         app.buttons["camera.guide"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["camera.panel.close"].isHittable)
+        XCTAssertTrue(app.staticTexts["구도선"].exists)
         XCTAssertTrue(shutter.exists)
         let guide = XCTAttachment(screenshot: app.screenshot()); guide.name = "PhotoP-inline-guide"; guide.lifetime = .keepAlways; add(guide)
         app.buttons["camera.panel.close"].tap()

@@ -35,17 +35,23 @@ jobs:
           device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for k,v in d["devices"].items() if "iOS" in k for x in v if "iPhone" in x["name"]))')
           echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
           xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult CODE_SIGNING_ALLOWED=NO test
-      - name: Verify LUT bundle policy
+      - name: Verify LUT resources and provenance
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v
           python3 scripts/check_lut_bundle.py
+          python3 scripts/check_company_luts.py
           cmp assets/luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts/manifest.json
           python3 scripts/check_lut_bundle.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts
+          cmp assets/company-luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts/manifest.json
+          python3 scripts/check_company_luts.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts
       - name: Capture implemented camera UI on Simulator
         if: always() && env.PHOTOP_SIMULATOR != ''
         working-directory: ios
         run: |
           mkdir -p screenshots
+          state=$(xcrun simctl list devices -j | python3 -c 'import json,os,sys; print(next(d["state"] for v in json.load(sys.stdin)["devices"].values() for d in v if d["udid"] == os.environ["PHOTOP_SIMULATOR"]))')
+          if [ "$state" != Booted ]; then xcrun simctl boot "$PHOTOP_SIMULATOR"; fi
+          xcrun simctl bootstatus "$PHOTOP_SIMULATOR" -b
           xcrun simctl status_bar "$PHOTOP_SIMULATOR" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
           xcrun simctl install "$PHOTOP_SIMULATOR" .simulatorbuild/Build/Products/Debug-iphonesimulator/PhotoP.app
           for view in camera guide; do
