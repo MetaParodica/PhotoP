@@ -1,6 +1,6 @@
 # D. 개발 로드맵과 완료 기준
 
-일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2 개발 범위인 SDR LUT 편집·실시간 프리뷰·즐겨찾기·기본 grain·레시피 재열기를 구현하고 자동 테스트를 통과했다. 제품 품질 승인과 실기기 검증 완료는 별도다. 실제 iPhone 검증은 대기 중이다.
+일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2 개발 범위인 SDR LUT 편집·실시간 프리뷰·즐겨찾기·기본 grain·레시피 재열기를 구현하고 자동 테스트를 통과했다. 제품 품질 승인과 실기기 검증 완료는 별도다. Phase 3의 RAW·모니터·3장 브래킷 개발 범위도 자동 검증을 통과했다. 실제 iPhone 검증은 대기 중이다.
 
 | Phase | 구현 범위 | 선행 조건 | 기술 위험 | 테스트 방법 | 완료 기준 |
 | --- | --- | --- | --- | --- | --- |
@@ -43,3 +43,10 @@
 | 비파괴 재편집 | 편집 기록·레시피 복원·v1 호환·해시/경로 검사·새 export | 전체 사진 갤러리와 원본 관리 UI는 후속 |
 
 [CI 39519356635](https://github.com/MetaParodica/PhotoP/actions/runs/39519356635): iPhone SDK build, Swift 73개, Python 7개 성공. 실기기 프리뷰/사진 색상·화각·display 색차·FPS·발열·메모리 수치는 미측정이다. 미측정 항목을 통과로 바꾸지 않고 후속 개발을 진행한다.
+
+
+## Phase 3 개발 판정 (2026-10-21 KST)
+
+RAW/DNG·지원 ProRAW, RGB/휘도 histogram, Zebra, focus peaking, 장치 허용 3장 AUTO exposure bracket를 구현했다. [상세 계약·소스 조사·검증](10-PHASE3-DESIGN-AND-VALIDATION.ko.md)을 따른다. [CI 39538033899](https://github.com/MetaParodica/PhotoP/actions/runs/39538033899): iPhone SDK build·Swift 90개·Python 7개 성공.
+
+ProRAW 수동 노출/AE Lock, RAW+live, RAW bracket, RAW 현상은 현재 제공하지 않는다. 모니터는 센서 측정값이 아닌 SDR 프리뷰 분석이며 정확한 초점을 보장하지 않는다. 실제 기기 촬영·외부 RAW 현상·EXIF·노출 간격·FPS·메모리·발열과 강제 종료 시 다중 파일 복구는 미검증/미완료다. 다음 개발 범위는 Phase 4의 스트리밍 평균·Lighten 합성이다.

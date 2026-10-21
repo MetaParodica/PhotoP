@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. RAW, long exposure, composition AI and video recording remain future work.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. Phase 3 adds dynamically gated Bayer RAW/Apple ProRAW DNG capture, SDR RGB/luma histograms, zebra, focus peaking, and native three-frame exposure brackets. Long exposure, composition AI and video recording remain future work.
 
 ## Start here
 
@@ -15,6 +15,7 @@ An iPhone-first professional camera platform, with native Android planned after 
 - [Implementation report](docs/07-IMPLEMENTATION-REPORT.ko.md)
 - [Step validation log](docs/08-STEP-VALIDATION.ko.md)
 - [Phase 2 source review and implementation decisions](docs/09-PHASE2-SOURCE-REVIEW.ko.md)
+- [Phase 3 design, source review and validation](docs/10-PHASE3-DESIGN-AND-VALIDATION.ko.md)
 
 ## Camera controls
 
@@ -69,3 +70,14 @@ One frame is allowed in flight; late frames are dropped. Two intermediate textur
 Favorites are saved only when requested, under Application Support/UserLUTFavorites with SHA-256 IDs, original `.cube` bytes and sRGB profile metadata. Both the editor and live preview can load them after restarting the app. Changed file hashes or unsupported metadata are rejected. Removing a favorite does not delete the original imported source or existing photo edit bundles. Favorites are user documents and never become distributable bundle assets.
 
 Development proceeds after each automated test stage passes; outstanding iPhone validation is tracked separately and does not block the next implementation stage.
+
+
+## RAW and advanced shooting (Phase 3)
+
+Select **Bayer RAW** or **Apple ProRAW** only when offered by the current lens/output. The app configures ProRAW where supported and requests a DNG without a processed substitute. RAW flags, DNG directory metadata and original bytes are checked; RAW development is not part of the SDR editor. ProRAW currently requires AUTO exposure; Bayer RAW permits manual exposure. Turn live LUT/monitoring off before RAW capture. These are declared initial execution restrictions, with hardware combination testing still pending.
+
+Open **보조** for RGB/luma histograms, zebra and focus peaking. Enable one or more tools and choose **모니터 켜기**, or apply them to the active LUT preview. Analysis uses the encoded SDR input before the creative LUT. Histograms use 64 bins and at most a 256px sample grid, updated at up to 4 Hz. Zebra checks the brightest SDR channel; peaking marks Sobel contrast edges. They do not measure RAW sensor clipping or guarantee focus. The histogram reads back only 1 KiB of counts after GPU completion. Overlays are never saved into the capture original.
+
+Under **PRO → 노출 브라케팅**, enable three-frame bracketing and select ±0.5/1/2 EV. Supported AUTO/processed/livestream-off configurations capture three separate originals around the device's current EV, within actual device limits. A manifest stores filenames, SHA-256 hashes and requested EV values; frame EXIF remains in each original. All originals can be shared or added to Photos together. RAW brackets and HDR fusion remain future work.
+
+Automated validation: unsigned iPhone SDK build, 90 Swift tests and 7 Python tests passed. Real capture, EXIF agreement, RAW-developer compatibility, display color, FPS, memory and thermal acceptance remain unverified. The repository contains no bundled third-party LUTs or models.

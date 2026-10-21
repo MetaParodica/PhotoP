@@ -31,7 +31,7 @@ python3 scripts/check_lut_bundle.py
 
 Python 7개 테스트는 정상 asset, 미등록 파일, 불명 재배포권, research-only 상용 포함, hash 변조, 경로 이탈, 입력 프로파일 누락을 검사한다. 빈 LUT manifest가 통과해도 LUT 엔진을 구현했다는 뜻은 아니다.
 
-Swift XCTest 73개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
+Swift XCTest 90개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
 
 `.github/workflows/ios.yml`은 XcodeGen 생성 → unsigned iPhone SDK build → iPhone Simulator XCTest → Python 자산 검사 순서로 실행한다. Simulator의 성공은 실제 카메라 촬영 성공 기준으로 쓰지 않는다.
 
@@ -101,3 +101,15 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 - 앱 재시작→편집 기록→설정 복원→재저장 후 새 bundle과 원본 보존을 확인한다.
 - 누락·변조된 원본/LUT와 지원하지 않는 recipe가 명시 오류로 끝나며 카메라 복귀를 막지 않는지 확인한다.
 - 새 자동 테스트 8개: grain 검증·해상도 좌표 및 CPU/Metal·still/live·seed 재현성 2개, recipe 재열기/재저장·v1·변조·프로파일·경로·크기·누락·symlink·목록 6개.
+
+
+## Phase 3 자동 검증과 실기기 대기
+
+자동 검증은 RAW 5개, 모니터 5개, 브래킷 7개를 추가해 총 90개다. 제한적 DNG directory 식별과 bytes 보존, advertised RAW 분류·실행 정책, histogram CPU/GPU bins·표본 상한, LUT 전 입력 분석, Zebra·피킹·alpha, 브래킷 범위·불가 조합·순서·중복·누락·파일 보존·요청 EV manifest·저장 실패 정리를 검사한다.
+
+- 각 물리 렌즈에서 실제 지원 RAW/ProRAW 목록, AUTO/수동·AE Lock·live 전환과 UI 제한을 확인한다.
+- 실제 DNG 원본 SHA256·EXIF·Photos resource를 대조하고 외부 RAW 편집기에서 현상한다. 합성 fixture가 decode되지 않은 사실과 실제 기기 검증을 구분한다.
+- 프로파일·회전·전면 mirror가 적용된 preview에서 histogram·Zebra·피킹 위치를 확인한다. 센서 클리핑과 SDR 클리핑의 차이를 확인한다.
+- ±0.5/1/2 EV bracket의 파일 수·요청값·실제 EXIF 노출/ISO, OIS 지원, 단일 촬영 복귀, Photos 거부 후 3장 재시도를 확인한다.
+- 브래킷 중 background/인터럽션·처리 오류·timeout을 확인한다. 앱 강제 종료/전원 단절 중 다중 파일 쓰기 복구는 아직 미구현이며 별도 gate다.
+- LUT+monitor 10분 사용의 실제 FPS·drop·GPU/CPU·메모리·발열을 기록한다. 현재 결과에는 실측 성능 수치가 없다.

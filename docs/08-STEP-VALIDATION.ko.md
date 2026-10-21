@@ -137,3 +137,30 @@
 - [CI 39519356635](https://github.com/MetaParodica/PhotoP/actions/runs/39519356635) 성공: iPhone SDK build·Swift 73개·Python 7개. 재열기→동일 preview JPEG→새 export 일치, 원본 불변, v1, 변조·누락·잘못된 프로파일/version/grain·경로·oversize·symlink·목록 검사 통과.
 - 제약: 전체 갤러리·원본 삭제/이동 관리 UI는 미구현. 원본을 제거하면 기존 recipe를 재처리할 수 없으며 명시 오류를 낸다. 실제 앱 재실행 UI·카메라 복귀·메모리는 기기 대기.
 - 판정: Phase 2 개발 기능과 자동 검증 완료. 실기기 품질 승인은 분리해 미완료로 유지한다.
+
+
+## 16. 동적 RAW/DNG·지원 ProRAW
+
+- 구현: DNG에 대해 제공된 RAW pixel format 조회·Bayer/ProRAW 구분, 지원 시 configure 단계 ProRAW enable, 요청 RAW 전용 capture. byte order·TIFF directory·DNGVersion·치수의 제한적 container 검사, isRawPhoto 확인, 원본 bytes 저장/공유. ProRAW AUTO·RAW/live 제한 명시, SDR 편집기 DNG 차단.
+- 소스·license: Apple 공식 API·Adobe DNG 규격 참고. iphone-raw LICENSE 미확인, NextLevel MIT, AVCamManual custom Apple sample license. 구체적인 코드 검토는 [10 문서](10-PHASE3-DESIGN-AND-VALIDATION.ko.md). 소스 복사·의존성·자산 반입 없음.
+- 파일: DNGContainer.swift, CapturedPhoto.swift, CameraTypes.swift, CameraService.swift, CameraModel.swift, CameraView.swift, SDRImage.swift, RawCaptureTests.swift.
+- 발견: 합성 CFA/linear DNG를 Simulator ImageIO가 public.tiff·count 0으로 보고해 두 번 실패. RAW decoder 성공을 원본 보관 조건으로 쓰지 않고 container 식별을 분리하고 손상 directory 회귀 검증 추가.
+- revision `bb48a56d1ac8e9b977065c871b19d07069f68880`, [CI 39522296909](https://github.com/MetaParodica/PhotoP/actions/runs/39522296909): SDK build·Swift 78·Python 7 성공. 합성 파일은 sensor sample/ProRAW 실측으로 표시하지 않는다.
+- 제약: 실제 DNG 촬영·외부 현상·Photos metadata는 기기 대기. 자동 성공 후 17 진행.
+
+## 17. GPU histogram·Zebra·focus peaking
+
+- 구현: LUT 전 encoded SDR RGB/Y 64 bins, 최대 256px 표본 격자·4Hz, zero-alpha 제외. SDR max RGB threshold stripes, Sobel edge threshold peaking. UI·원본 비굽기, texture 재사용·한 프레임 in-flight, GPU 완료 전 1KiB counts 복사.
+- 파일: PreviewMonitoring.swift, Monitoring.metal, LivePreviewImageProcessor.swift, LiveLUTPreview.swift, CameraModel.swift, MonitoringControls.swift, CameraView.swift, LiveLUTControls.swift, PreviewMonitoringTests.swift.
+- revision `2978bb82e57b60434a0df1587928534bf8cb968f`, [CI 39522806940](https://github.com/MetaParodica/PhotoP/actions/runs/39522806940): SDK build·Swift 83·Python 7 성공. CPU bins·LUT 전 입력·zebra stripes/threshold·step edge·uniform·표본 상한·alpha·잘못된 설정 검증.
+- 제약: 센서 RAW clipping/정확한 초점 측정 아님. LUT/monitor on에서 RAW·렌즈·터치 제한 유지. 실제 위치·시각적 유용성·FPS·발열은 기기 대기. 자동 성공 후 18 진행.
+
+## 18. native 3장 노출 브래킷·원본 묶음 저장
+
+- 구현: 현재 output max count·actual EV 범위에서 3장 AUTO·일반 HEIF/JPEG, 간격 ±0.5/1/2 EV. 범위 밖 clamp 대체 금지. OIS는 지원 시만 enable. request ID·sequence·bias·format·RAW flag·최종 예상 개수·중복·누락 확인, 처리 오류는 최종 callback까지 유지·capture timeout.
+- 저장: Original bytes 3개와 요청 EV/hash manifest, 일반 I/O 실패 시 이번 원본만 삭제. Photos 단일 변경 작업으로 3개 asset 추가, 실패 시 앱 원본/공유 보존·전체 재시도. SDR 편집은 중앙 원본을 선택한다.
+- 파일: ExposureBracket.swift, CaptureSeriesStore.swift, CameraService.swift, CameraModel.swift, CameraTypes.swift, CapturedPhoto.swift, PhotoStore.swift, CameraView.swift, ManualControls.swift, ExposureBracketTests.swift, RawCaptureTests.swift.
+- 발견·수정: private 상태를 둔 value의 자동 initializer 접근 오류를 explicit init으로 수정. 기존 SinglePhotoDelivery는 시리즈 delivery로 대체하고 사용하지 않는 새 helper는 제거했다.
+- revision `27794519bbdb39043f3972f6a5c96eab9da24bad`, [CI 39538033899](https://github.com/MetaParodica/PhotoP/actions/runs/39538033899): SDK build·Swift 90·Python 7 성공. 범위·미지원 조합·역순 callback·누락/중복/틀린 bias·RAW 대체·원본 bytes·manifest·부분 저장 정리·정지 세션 거부 검증.
+- 제약: RAW bracket·HDR 합성 미구현. native callback·실제 노출/EXIF·Photos 3장·중단/timeout·강제 종료 복구는 기기 대기/미구현. 일반 파일 오류 정리가 crash-atomic 저장을 의미하지 않는다.
+- 판정: Phase 3 개발 범위·자동 검증 완료, 명시한 실행 제한과 실기기 품질 승인은 별도 유지. 다음 제품 단계는 Phase 4.
