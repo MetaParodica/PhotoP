@@ -2,7 +2,7 @@
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
-**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. RAW, film grain, long exposure, composition AI and video recording remain future work.
+**Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict 3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. RAW, long exposure, composition AI and video recording remain future work.
 
 ## Start here
 
@@ -14,6 +14,7 @@ An iPhone-first professional camera platform, with native Android planned after 
 - [LUT sources and asset policy](docs/06-LUT-CATALOG.ko.md)
 - [Implementation report](docs/07-IMPLEMENTATION-REPORT.ko.md)
 - [Step validation log](docs/08-STEP-VALIDATION.ko.md)
+- [Phase 2 source review and implementation decisions](docs/09-PHASE2-SOURCE-REVIEW.ko.md)
 
 ## Camera controls
 
@@ -48,14 +49,18 @@ Third-party project and LUT rights are tracked separately. No third-party source
 
 After capture, choose **LUT 사진 편집**. Confirm that your LUT expects and outputs sRGB, import a UTF-8 3D `.cube`, adjust strength and compare with the SDR original. The camera session pauses while this editor is open. Preview is limited to 1024px; full-resolution derivative export currently supports up to 12.6MP and explicitly rejects larger photos.
 
-The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB trilinear LUT → strength mix → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
+The processing order is oriented SDR base decode → embedded ICC to sRGB → encoded-sRGB trilinear LUT → strength mix → basic monochrome grain → SDR clamp → sRGB JPEG. HDR gain maps and original EXIF are omitted from the derivative. This is not a RAW/Log/HDR developer. The original retains its bytes and metadata.
 
-Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Recipe reopening and gallery browsing remain future work.
+Each export creates `Documents/Edits/<id>/photo.jpg`, `look.cube` and `recipe.json`, including source and LUT SHA-256 hashes. ShareLink shares the JPEG; the LUT and recipe stay app-local. Imported LUTs are user documents and are not added to the distributable app bundle. Choose **편집 기록** from the camera screen to reopen an earlier edit after restarting the app. The app checks recipe version/profile, original/LUT hashes, bounded files and local paths before restoring the LUT, strength and grain seed. Version 1 recipes load with grain disabled; unsupported or changed inputs are rejected. Re-export creates a new bundle. Full gallery browsing remains future work.
 
+
+## Basic grain
+
+Grain has an independent 0–100% amount and deterministic seed, stored in version 2 recipes. Set LUT strength to zero to apply grain alone after importing a LUT. Still and live paths share the same Metal function. Noise coordinates use a 512-cell long edge to preserve the field across resizing; different resolution sampling and JPEG encoding can change individual pixels. This is a basic creative effect, not a measured film-stock simulation. Same-input buffer/texture agreement is tested within 1/255 per channel.
 
 ## Live LUT preview and favorites
 
-Open **LUT** on the camera screen, confirm sRGB input/output and import a `.cube`, or load a saved favorite. The LUT applies to the preview only; capture continues saving the original HEIF/JPEG. Strength and original-color comparison are available. Turn LUT off before switching lenses, touch AF/AE or importing another LUT; manual PRO controls remain available.
+Open **LUT** on the camera screen, confirm sRGB input/output and import a `.cube`, or load a saved favorite. The LUT applies to the preview only; capture continues saving the original HEIF/JPEG. Strength, basic monochrome grain and original-color comparison are available. Turn LUT off before switching lenses, touch AF/AE or importing another LUT; manual PRO controls remain available.
 
 The native 8-bit NV12 stream accepts BT.709 primaries, 709/sRGB transfer and 601/709 matrix metadata. Core Video derives the video matching profile; Core Image converts it to encoded sRGB on the GPU before the shared Metal LUT and aspect-fit display pass. Unknown/HDR/Log profiles disable the LUT with an explanation. Camera device color/HDR settings are not forcibly changed. Front portrait rotation/mirroring is requested through the supported connection APIs.
 

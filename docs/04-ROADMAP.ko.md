@@ -1,6 +1,6 @@
 # D. 개발 로드맵과 완료 기준
 
-일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2의 SDR LUT 편집·실시간 프리뷰·즐겨찾기 기반을 구현했다. Phase 1/2 전체 완료는 아니다. 실제 iPhone 검증은 대기 중이다.
+일정은 팀 규모·실기기·라이선스 실사에 따라 결정한다. 기능 수를 기준으로 완료를 선언하지 않고 각 gate를 통과한다. 현재 Phase 0 1차 조사, Phase 1 촬영/수동 제어 코드, Phase 2 개발 범위인 SDR LUT 편집·실시간 프리뷰·즐겨찾기·기본 grain·레시피 재열기를 구현하고 자동 테스트를 통과했다. 제품 품질 승인과 실기기 검증 완료는 별도다. 실제 iPhone 검증은 대기 중이다.
 
 | Phase | 구현 범위 | 선행 조건 | 기술 위험 | 테스트 방법 | 완료 기준 |
 | --- | --- | --- | --- | --- | --- |
@@ -27,4 +27,19 @@
 | F6 작업 내구성 | interruption/runtime error/background/settings timeout | 화면 복귀 후 재시작·pending capture/settings 명시 실패 | 설정 작업 ID·취소 회귀 테스트 추가, 실기기 fault test 대기 |
 | F7 번들 권한 | manifest gate | 허가·hash·profile 누락/경로 이탈 차단 | 로컬 회귀 테스트 통과 |
 
-개발 진행 조건은 구현 단위의 자동 테스트 통과다. 사용자 지시에 따라 실제 iPhone 검증 대기는 다음 코드 작업을 막지 않는다. LUT 파서·CPU/GPU 수학·SDR 사진 편집·실시간 프리뷰·즐겨찾기를 구현했다. 기본 grain·HDR/Log·AI와 Phase 1/2의 실기기 품질 검증은 미완료다. 단계별 범위와 실행 근거는 08-STEP-VALIDATION.ko.md를 따른다.
+개발 진행 조건은 구현 단위의 자동 테스트 통과다. 사용자 지시에 따라 실제 iPhone 검증 대기는 다음 코드 작업을 막지 않는다. LUT 파서·CPU/GPU 수학·SDR 사진 편집·실시간 프리뷰·즐겨찾기·기본 grain·레시피 재열기를 구현했다. Phase 2 개발 범위는 SDR 입력·12.6MP 내보내기 등의 명시된 제한 안에서 완료했다. HDR/Log·AI와 Phase 1/2의 실기기 품질 검증은 미완료다. 단계별 범위와 실행 근거는 08-STEP-VALIDATION.ko.md를 따른다.
+
+
+## Phase 2 개발 완료 판정 (2026-10-21 UTC)
+
+| 요구 기능 | 구현·자동 검증 | 제한·별도 검증 |
+|---|---|---|
+| Metal 이미지 처리·3D LUT | 사진 buffer/live texture 공통 함수, CPU/GPU 수치 비교 | SDR encoded sRGB, HDR/Log/RAW 미지원 |
+| .cube import·강도 | 2~65 dimension, domain, UTF-8·32MiB 제한, 강도 0~100% | 1D/shaper/Hald는 별도 범위 |
+| 필터 preview | 사용자 LUT, 원본 비교, 실시간 GPU 표시 | 최대 긴 변 1024px, BT.709 SDR 입력, portrait·렌즈/터치 제한 |
+| LUT favorites | 재시작 후 load, 중복·변조·프로파일 검사 | 사용자 LUT만 저장, 번들 LUT 0개 |
+| 이미지 출력 | JPEG·recipe·cube 원자적 별도 저장, 원본 불변 | 최대 12.6MP, 파생 JPEG에 원본 EXIF/HDR gain map 없음 |
+| 기본 film grain | 강도·seed, CPU/Metal·사진/live 경로 비교 | 단색 value noise, 특정 필름 물성 재현 아님 |
+| 비파괴 재편집 | 편집 기록·레시피 복원·v1 호환·해시/경로 검사·새 export | 전체 사진 갤러리와 원본 관리 UI는 후속 |
+
+[CI 39519356635](https://github.com/MetaParodica/PhotoP/actions/runs/39519356635): iPhone SDK build, Swift 73개, Python 7개 성공. 실기기 프리뷰/사진 색상·화각·display 색차·FPS·발열·메모리 수치는 미측정이다. 미측정 항목을 통과로 바꾸지 않고 후속 개발을 진행한다.

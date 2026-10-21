@@ -189,3 +189,10 @@ AVCaptureVideoDataOutput의 광고한 NV12 8비트 full/video range → 명시�
 사용자 LUT 즐겨찾기는 별도 actor에서 hash ID·원본 cube·sRGB profile을 보존한다. 사진 편집과 live preview는 같은 bounded importer와 favorite 선택 UI를 쓴다. 앱 번들 자산·재배포 허가 manifest와는 분리한다.
 
 공식 API 근거: [Core Video profile 합성](https://developer.apple.com/documentation/corevideo/cvimagebuffercreatecolorspacefromattachments(_:)), [GPU CI/Metal command 통합](https://developer.apple.com/documentation/coreimage/cicontext/render(_:to:commandbuffer:bounds:colorspace:)), [픽셀 포맷 조회](https://developer.apple.com/documentation/avfoundation/avcapturevideodataoutput/availablevideopixelformattypes), [CAMetalLayer](https://developer.apple.com/documentation/quartzcore/cametallayer). 제3자 코드를 복사하지 않고 독립 작성했다.
+
+
+## Phase 2 현재 구현 계약 (2026-10-21)
+
+기존 범용/HDR 설계와 달리 현재 구현은 SDR encoded sRGB에 한정한다. 방향을 반영한 ImageIO SDR base decode→ICC to sRGB→trilinear cube→강도 mix→기본 grain→clamp→JPEG 순서다. live는 8비트 NV12의 검증된 BT.709 프로파일을 Core Video로 생성하고 Core Image GPU 변환 뒤 같은 Metal 함수를 사용한다. 고해상도 사진 renderer만 CPU buffer·GPU wait를 사용하며 live 경로는 사용하지 않는다.
+
+GrainSettings는 amount·seed를 recipe v2에 기록한다. noise는 긴 변 512-cell field로 정규화해 크기 변경 시 같은 정규화 위치를 유지한다. 이는 위 장기 설계의 물리적 원본 픽셀 단위 grain과 구별되는 초기 creative grain 계약이다. SavedEditStore actor가 기록 목록·bounded 읽기·경로·해시·version/profile 검사를 담당하고, LUTPhotoEditor actor는 복원된 LUT/설정으로 원본을 다시 렌더링한다. UI는 카메라 session을 정지한 상태로 편집하며 기존 원본·recipe bundle을 변경하지 않는다.

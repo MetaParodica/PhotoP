@@ -116,4 +116,24 @@
 
 ## 현재 후속 범위
 
-실기기 항목은 계속 대기 목록으로 유지한다. 개발은 자동 테스트 통과를 기준으로 이어간다. 기본 grain·레시피 재열기·RAW/고급 촬영·장노출·가이드·영상·Android는 후속 구현 대상이다. 현재 live LUT는 BT.709 SDR 입력, sRGB creative LUT, portrait, 렌즈/터치 제한을 가진 초기 구현이다. 실기기 화질/FPS를 측정한 완성 제품으로 표시하지 않는다.
+실기기 항목은 계속 대기 목록으로 유지한다. 개발은 자동 테스트 통과를 기준으로 이어간다. 기본 grain·레시피 재열기는 아래 14/15 단계에서 구현·자동 검증했다. RAW/고급 촬영·장노출·가이드·영상·Android는 후속 구현 대상이다. 현재 live LUT는 BT.709 SDR 입력, sRGB creative LUT, portrait, 렌즈/터치 제한을 가진 초기 구현이다. 실기기 화질/FPS를 측정한 완성 제품으로 표시하지 않는다.
+
+
+## 14. 기본 그레인
+
+- 기능·접근: 독립 작성한 정수 해시·bilinear value noise, 512-cell 정규화 좌표, 중간톤 envelope, LUT와 별도 강도·UInt32 seed. 사진 buffer와 live texture가 같은 함수를 사용하며 원본 비교는 양 효과를 끈다. recipe v2에 grain 설정 저장.
+- 소스·라이선스: MetalPetal MIT, GPUImage3 BSD-3-Clause, BBMetalImage MIT, darktable GPL-3.0-or-later의 실제 관련 파일을 비교. 코드 복사·runtime 통합은 없다. [상세 검토](09-PHASE2-SOURCE-REVIEW.ko.md).
+- 파일: GrainSettings.swift, MetalLUTResources.swift, MetalLUTRenderer.swift, MetalLUTTextureRenderer.swift, LUT.metal, LivePreviewImageProcessor.swift, LiveLUTPreview.swift, CameraModel.swift, LUTPhotoEditor.swift, LiveLUTControls.swift, LUTEditorView.swift, GrainTests.swift.
+- 코드 revision: `996a906c310520c8355830d6c5985742f8768f8f`.
+- [CI 39518986854](https://github.com/MetaParodica/PhotoP/actions/runs/39518986854) 성공: iPhone SDK build·Swift 67개·Python 7개. 신규 GPU 테스트도 skip 없이 실행. CPU reference 대비 및 still/texture 대비 채널당 오차 1/255 이하, seed 반복/변경·alpha·강도 검증 통과.
+- 제약: 기본 단색 입자이며 실제 특정 필름 모델은 아니다. 해상도별 샘플링·JPEG 차이는 허용하며 display/FPS/발열 기기 측정은 대기.
+- 다음: 자동 검증 성공 후 15단계 진행.
+
+## 15. 저장된 편집 재열기
+
+- 기능·접근: 앱 재시작 후 편집 기록 목록에서 선택, managed Documents 경로·64KiB recipe·32MiB cube 제한, version/profile·원본/LUT SHA256 확인, symlink·경로 이탈 거부. version 1은 grain 0, version 2는 grain 설정 복원. 새로 저장하면 새 bundle 생성, 기존 원본/편집본 보존. 카메라는 기록 화면에서도 정지한다.
+- 파일: SavedEditStore.swift, SavedEditsView.swift, CameraView.swift, LUTEditorView.swift, LUTPhotoEditorTests.swift, 소스 검토 문서.
+- 코드 revision: `6b80f1ee7ea4a9c831af0c1ce04e5f444e93dfae`.
+- [CI 39519356635](https://github.com/MetaParodica/PhotoP/actions/runs/39519356635) 성공: iPhone SDK build·Swift 73개·Python 7개. 재열기→동일 preview JPEG→새 export 일치, 원본 불변, v1, 변조·누락·잘못된 프로파일/version/grain·경로·oversize·symlink·목록 검사 통과.
+- 제약: 전체 갤러리·원본 삭제/이동 관리 UI는 미구현. 원본을 제거하면 기존 recipe를 재처리할 수 없으며 명시 오류를 낸다. 실제 앱 재실행 UI·카메라 복귀·메모리는 기기 대기.
+- 판정: Phase 2 개발 기능과 자동 검증 완료. 실기기 품질 승인은 분리해 미완료로 유지한다.

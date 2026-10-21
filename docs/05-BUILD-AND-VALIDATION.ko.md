@@ -31,7 +31,7 @@ python3 scripts/check_lut_bundle.py
 
 Python 7개 테스트는 정상 asset, 미등록 파일, 불명 재배포권, research-only 상용 포함, hash 변조, 경로 이탈, 입력 프로파일 누락을 검사한다. 빈 LUT manifest가 통과해도 LUT 엔진을 구현했다는 뜻은 아니다.
 
-Swift XCTest 65개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
+Swift XCTest 73개는 수동 설정·콜백 집계·촬영 정책, 포맷/원본 보존, 터치/잠금 정책, .cube 파서·CPU 보간, Metal CPU/GPU 비교, SDR 방향/ICC/인코딩, 비파괴 export·recipe/hash·실패 정리와 파일/해상도 경계를 검사한다. live texture/사진/CPU 비교, YUV full/video range 색변환·방향·letterbox, in-flight 세대·늦은 알림, 정지 카메라 거부와 LUT 즐겨찾기의 재시작/중복/변조/프로파일/경로/저장 실패도 포함한다. Metal 비교와 통합 export는 Simulator GPU에서 skip 없이 통과했다. 단계별 revision과 CI 근거는 [검증 기록](08-STEP-VALIDATION.ko.md)을 따른다.
 
 `.github/workflows/ios.yml`은 XcodeGen 생성 → unsigned iPhone SDK build → iPhone Simulator XCTest → Python 자산 검사 순서로 실행한다. Simulator의 성공은 실제 카메라 촬영 성공 기준으로 쓰지 않는다.
 
@@ -81,7 +81,7 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 - 12.6MP 이하 원본과 12.6MP 초과 원본을 시험한다. 초과 시 저장 거부 안내, 원본 bytes 유지가 기준이다.
 - export 결과의 orientation=1·sRGB profile·원본/사용 LUT SHA256·JPEG 공유를 확인한다. 디스크 부족 시 부분 export 폴더가 없어야 한다.
 - 편집 진입/복귀·앱 background·재활성화 때 capture session이 편집 중 재시작하지 않는지 확인한다.
-- 실시간 LUT·즐겨찾기의 자동 테스트 통과와 실제 카메라 검증을 구분한다. HDR/Log·recipe 재열기는 미구현이다.
+- 실시간 LUT·즐겨찾기의 자동 테스트 통과와 실제 카메라 검증을 구분한다. 레시피 재열기는 자동 테스트를 통과했으며 HDR/Log 처리는 미구현이다.
 
 
 ## 실시간 LUT·즐겨찾기 실기기 대기 목록
@@ -92,3 +92,12 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 - 장치가 지원하지 않는 video-output·photo-format 조합과 metadata 누락/HDR 프레임이 들어오면 LUT가 명시적으로 해제되는지 확인한다.
 - 즐겨찾기를 양쪽 화면에서 저장/불러오고 앱 재시작 후 bytes·표시 이름·sRGB 선언을 확인한다.
 - 이 목록은 개발을 막는 조건이 아니다. 각 단계의 자동 테스트가 통과하면 다음 기능을 구현하되, 실기기 검증 완료를 주장하지 않는다.
+
+
+## 그레인·편집 기록 실기기 대기 목록
+
+- LUT 강도 0/50/100%와 grain 0/50/100% 조합에서 색·입자·원본 비교를 확인한다.
+- 동일 seed의 live 프레임에서 입자 깜박임, 1024px 미리보기와 고해상도 JPEG의 지각적 입자 크기를 비교한다. 서로 다른 해상도의 byte 일치를 주장하지 않는다.
+- 앱 재시작→편집 기록→설정 복원→재저장 후 새 bundle과 원본 보존을 확인한다.
+- 누락·변조된 원본/LUT와 지원하지 않는 recipe가 명시 오류로 끝나며 카메라 복귀를 막지 않는지 확인한다.
+- 새 자동 테스트 8개: grain 검증·해상도 좌표 및 CPU/Metal·still/live·seed 재현성 2개, recipe 재열기/재저장·v1·변조·프로파일·경로·크기·누락·symlink·목록 6개.
