@@ -56,9 +56,10 @@ jobs:
           xcrun simctl bootstatus "$PHOTOP_SIMULATOR" -b
           xcrun simctl status_bar "$PHOTOP_SIMULATOR" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
           xcrun simctl install "$PHOTOP_SIMULATOR" .simulatorbuild/Build/Products/Debug-iphonesimulator/PhotoP.app
-          for view in camera guide video; do
+          for view in camera guide video person; do
             args="--ui-review"
             if [ "$view" = guide ]; then args="$args --review-guide"; fi
+            if [ "$view" = person ]; then args="$args --review-person"; fi
             if [ "$view" = video ]; then args="$args --review-video"; fi
             xcrun simctl launch --terminate-running-process "$PHOTOP_SIMULATOR" com.photop.camera $args
             sleep 3

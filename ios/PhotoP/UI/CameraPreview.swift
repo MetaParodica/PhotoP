@@ -11,6 +11,8 @@ struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     let mirrored: Bool
     let lensID: String?
+    var zoom: Double = 1
+    var onZoom: (Double) -> Void = { _ in }
     let onMeter: (CameraMeteringPoint, String) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -20,6 +22,7 @@ struct CameraPreview: UIViewRepresentable {
         view.previewLayer.videoGravity = .resizeAspect
         view.previewLayer.session = session
         view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tap(_:))))
+        view.addGestureRecognizer(UIPinchGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.pinch(_:))))
         return view
     }
 
@@ -35,7 +38,17 @@ struct CameraPreview: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject {
         var parent: CameraPreview
+        private var pinchBase: Double?
         init(_ parent: CameraPreview) { self.parent = parent }
+
+        // Pinch scales the zoom current at gesture start; the service clamps to the device range.
+        @objc func pinch(_ gesture: UIPinchGestureRecognizer) {
+            switch gesture.state {
+            case .began: pinchBase = parent.zoom
+            case .changed: if let pinchBase, gesture.scale.isFinite { parent.onZoom(pinchBase * Double(gesture.scale)) }
+            default: pinchBase = nil
+            }
+        }
 
         @objc func tap(_ gesture: UITapGestureRecognizer) {
             guard let view = gesture.view as? PreviewView, let lensID = parent.lensID,

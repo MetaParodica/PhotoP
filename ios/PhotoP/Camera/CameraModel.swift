@@ -45,6 +45,14 @@ final class CameraModel: ObservableObject {
     @Published var photoResolution: PhotoResolution?
     @Published private(set) var latestPhotoResolution: PhotoResolution?
     @Published var liveCompareOriginal = false
+    @Published var proMode = false
+    @Published var flash: FlashSetting = .off
+    @Published var selfTimer: SelfTimer = .off
+    @Published var framing: FramingAspect = .native
+    @Published var personGuide = PersonGuide()
+    @Published private(set) var countdown: Int?
+    @Published private(set) var latestThumbnail: PhotoThumbnailImage?
+    private var countdownTask: Task<Void, Never>?
     private var longJobID: UUID?
     private var longReprocessTask: Task<URL, Error>?
     private var importedLiveLUT: ImportedLUT?
@@ -57,6 +65,7 @@ final class CameraModel: ObservableObject {
         RawCapturePolicy.unavailableReason(mode: rawMode, available: snapshot.capabilities?.rawModes ?? [.processed],
                                           live: livePreview != nil,
                                           exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))
+            ?? ZoomPolicy.rawReason(zoom: snapshot.readout?.zoom ?? 1, raw: rawMode)
     }
     var bracketUnavailableReason: String? {
         guard bracketEnabled else { return nil }
@@ -340,17 +349,50 @@ final class CameraModel: ObservableObject {
         catch { message = error.localizedDescription }
     }
 
+    var effectiveFlash: FlashSetting {
+        PhotoFlashPolicy.resolve(flash, supported: snapshot.capabilities?.flashModes ?? [.off], raw: rawMode, bracket: bracketEnabled)
+    }
+    func cycleFlash() { flash = PhotoFlashPolicy.next(after: flash, supported: snapshot.capabilities?.flashModes ?? [.off]) }
+
+    func setZoom(_ factor: Double) {
+        service.setZoom(ZoomPolicy.clamp(factor, maxAvailable: snapshot.capabilities?.maxZoom ?? 1))
+    }
+
+    // Shutter entry point: runs the self-timer first. A second press during the countdown cancels it.
+    func shutterPressed() {
+        if countdownTask != nil { cancelCountdown(); return }
+        guard canCapture else { return }
+        guard selfTimer != .off else { Task { await capture() }; return }
+        countdown = selfTimer.rawValue
+        countdownTask = Task { [weak self] in
+            guard let self else { return }
+            while let remaining = self.countdown, remaining > 0 {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                guard !Task.isCancelled else { return }
+                self.countdown = remaining - 1
+            }
+            self.countdown = nil; self.countdownTask = nil
+            await self.capture()
+        }
+    }
+    func cancelCountdown() {
+        countdownTask?.cancel(); countdownTask = nil; countdown = nil
+        message = "셀프타이머를 취소했습니다."
+    }
+
     func capture() async {
         guard canCapture else { return }
         busy = true
         defer { busy = false }
         do {
             let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil,
-                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil)
+                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash)
             latestPhotoResolution = series.photos.first?.pixelDimensions
             let urls = try await CaptureSeriesStore.preserve(series)
             latestOriginals = urls
             latestOriginal = urls[urls.count / 2]
+            let center = urls[urls.count / 2]
+            latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
             try await PhotoStore.addToPhotos(urls)
             savedToPhotos = true

@@ -76,13 +76,21 @@ struct CameraIconButton: View {
     let symbol: String
     let label: String
     var selected = false
+    var size: CGFloat = 46
+    var badge: String? = nil
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .medium))
-                .foregroundStyle(selected ? Color.purple.opacity(0.9) : .white)
-                .frame(width: 46, height: 46).contentShape(Circle())
-        }.buttonStyle(.plain).cameraGlass(radius: 23)
+            Image(systemName: symbol).font(.system(size: size * 0.4, weight: .medium))
+                .foregroundStyle(selected ? Color(red: 0.78, green: 0.69, blue: 1) : .white)
+                .frame(width: size, height: size).contentShape(Circle())
+                .overlay(alignment: .bottomTrailing) {
+                    if let badge {
+                        Text(badge).font(.system(size: 8, weight: .heavy, design: .rounded)).foregroundStyle(.black)
+                            .padding(.horizontal, 3).background(Color(red: 0.78, green: 0.69, blue: 1), in: Capsule())
+                    }
+                }
+        }.buttonStyle(.plain).cameraGlass(radius: size / 2)
             .accessibilityLabel(label).accessibilityAddTraits(selected ? .isSelected : [])
     }
 }

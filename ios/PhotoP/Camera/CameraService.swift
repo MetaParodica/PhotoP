@@ -158,6 +158,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 configureRAW()
                 configureDimensions()
                 session.commitConfiguration()
+                if device.videoZoomFactor != 1, (try? device.lockForConfiguration()) != nil {
+                    device.videoZoomFactor = 1
+                    device.unlockForConfiguration()
+                }
                 // Switching a lens explicitly returns controls to AUTO.
                 try applyOnQueue(CameraSettings())
                 publish()
@@ -207,8 +211,32 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             whiteBalanceLock: d.isWhiteBalanceModeSupported(.locked),
             photoFormats: PhotoFileFormat.supported(by: output.availablePhotoCodecTypes), rawModes: rawModes(), maximumBracketCount: output.maxBracketedCapturePhotoCount,
             photoResolutions: PhotoResolutionPolicy.options(supported: format.supportedMaxPhotoDimensions.map { .init(width: $0.width, height: $0.height) },
-                ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height))
+                ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height)),
+            maxZoom: ZoomPolicy.range(maxAvailable: Double(d.maxAvailableVideoZoomFactor)).upperBound,
+            flashModes: videoConfiguration == nil ? flashModes() : [.off]
         )
+    }
+
+    private func flashModes() -> [FlashSetting] {
+        let supported = output.supportedFlashModes
+        return [.off] + [FlashSetting.auto, .on].filter { setting in
+            let mode: AVCaptureDevice.FlashMode = setting == .auto ? .auto : .on
+            return supported.contains(mode)
+        }
+    }
+
+    func setZoom(_ factor: Double) {
+        queue.async { [self] in
+            guard state == .running, let device = input?.device, !controls.isPending, continuation == nil, longExposure == nil else { return }
+            let value = ZoomPolicy.clamp(factor, maxAvailable: Double(device.maxAvailableVideoZoomFactor))
+            guard abs(Double(device.videoZoomFactor) - value) > 0.001 else { return }
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = CGFloat(value)
+                device.unlockForConfiguration()
+                publish()
+            } catch { publish(error.localizedDescription) }
+        }
     }
 
     func setLivePreview(_ preview: LiveLUTPreview) async throws {
@@ -409,7 +437,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                              lensPosition: position, kelvin: kelvin, tint: tint,
                              isAdjusting: d.isAdjustingExposure || d.isAdjustingFocus || d.isAdjustingWhiteBalance,
                              exposureLocked: d.exposureMode == .locked || d.exposureMode == .custom,
-                             focusLocked: d.focusMode == .locked, whiteBalanceLocked: d.whiteBalanceMode == .locked)
+                             focusLocked: d.focusMode == .locked, whiteBalanceLocked: d.whiteBalanceMode == .locked,
+                             zoom: Double(d.videoZoomFactor))
     }
 
     private func startReadouts() {
@@ -519,7 +548,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         return photo
     }
 
-    func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil, resolution: PhotoResolution? = nil) async throws -> CapturedSeries {
+    func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil, resolution: PhotoResolution? = nil,
+                       flash: FlashSetting = .off) async throws -> CapturedSeries {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
@@ -530,7 +560,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 let expectedFormat: PhotoFileFormat
                 var biases: [Double]?
                 guard RawCapturePolicy.unavailableReason(mode: rawMode, available: rawModes(), live: livePreview != nil,
-                                                        exposureMode: input?.device.exposureMode) == nil else {
+                                                        exposureMode: input?.device.exposureMode) == nil,
+                      ZoomPolicy.rawReason(zoom: Double(input?.device.videoZoomFactor ?? 1), raw: rawMode) == nil else {
                     completion.resume(throwing: CameraError.invalidSettings); return
                 }
                 if rawMode == .processed {
@@ -567,6 +598,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         raw: rawMode, bracket: bracketStep != nil)
                     settings.maxPhotoDimensions = CMVideoDimensions(width: chosen.width, height: chosen.height)
                 } catch { completion.resume(throwing: error); return }
+                switch PhotoFlashPolicy.resolve(flash, supported: flashModes(), raw: rawMode, bracket: biases != nil) {
+                case .off: if output.supportedFlashModes.contains(.off) { settings.flashMode = .off }
+                case .auto: settings.flashMode = .auto
+                case .on: settings.flashMode = .on
+                }
                 settings.photoQualityPrioritization = biases != nil ? .speed : (rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode))
                 // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
                 if let connection = output.connection(with: .video) {
@@ -667,8 +703,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     private func publish(_ message: String? = nil) {
         snapshotRevision += 1
+        let wide = devices.first { $0.position == .back && $0.deviceType == .builtInWideAngleCamera }
         onSnapshot(CameraSnapshot(lenses: devices.map { d in
-            CameraLens(id: d.uniqueID, name: d.localizedName, isFront: d.position == .front)
+            CameraLens(id: d.uniqueID, name: d.localizedName, isFront: d.position == .front,
+                       zoomEquivalent: d.position == .front ? 1 : wide.flatMap { ZoomPolicy.equivalent(fieldOfView: Double(d.activeFormat.videoFieldOfView), wideFieldOfView: Double($0.activeFormat.videoFieldOfView)) })
         }, selectedLens: input?.device.uniqueID, capabilities: capabilities(), state: state, message: message,
            revision: snapshotRevision, readout: currentReadout(), isApplyingSettings: controls.isPending,
            video: VideoSnapshot(configuration: videoConfiguration, capabilities: videoCapabilities, phase: recording.phase,

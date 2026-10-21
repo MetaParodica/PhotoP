@@ -129,12 +129,22 @@ struct CameraQuickControls: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack { Text("구도선"); Spacer(); Picker("구도선", selection: $model.guideGrid) { ForEach(GuideGrid.allCases) { Text($0.title).tag($0) } }.labelsHidden().accessibilityValue(model.guideGrid.title).accessibilityIdentifier("camera.guide.grid") }
             HStack { Text("장면"); Spacer(); Picker("장면", selection: $model.guideScene) { ForEach(GuideScene.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
-            HStack { Text("포즈"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
+            HStack { Text("인물 가이드"); Spacer(); Picker("인물 가이드", selection: $model.personGuide.framing) { ForEach(PersonFraming.allCases) { Text($0.title).tag($0) } }.labelsHidden().accessibilityIdentifier("camera.guide.person") }
+            if model.personGuide.framing != .off {
+                Picker("인물 위치", selection: $model.personGuide.position) { ForEach(PersonPosition.allCases) { Text($0.title).tag($0) } }
+                    .pickerStyle(.segmented).accessibilityIdentifier("camera.guide.person.position")
+                Stepper("인원 \(model.personGuide.people)명", value: $model.personGuide.people, in: 1...3)
+                Text(model.personGuide.framing.tip).font(.caption).foregroundStyle(.secondary)
+                Text("AI 제안을 켜면 실제 인물 어깨·얼굴 위치를 흰 실루엣과 비교해 이동 방향을 알려 줍니다.").font(.caption2).foregroundStyle(.secondary)
+            }
+            HStack { Text("포즈 골격"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
             Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled).disabled(model.snapshot.video.isVideoMode)
-            Text("노란 선은 목표 구도, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
+            Text("흰 점선 실루엣·노란 선은 목표 구도, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.guideGrid) { _, _ in model.showGrid = false }
             .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
+            // Body joints are analysed only for the portrait scene.
+            .onChange(of: model.personGuide.framing) { _, framing in if framing != .off { model.guideScene = .portrait } }
             .onChange(of: model.guideAIEnabled) { _, enabled in model.updateComposition(); if enabled { startMonitoring() } }
     }
     private var looks: some View {

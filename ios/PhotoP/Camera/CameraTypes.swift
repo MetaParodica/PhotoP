@@ -4,6 +4,8 @@ struct CameraLens: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     let isFront: Bool
+    // Magnification relative to the back wide lens from field of view; nil when it cannot be derived.
+    var zoomEquivalent: Double? = nil
 }
 
 struct CameraCapabilities: Equatable, Sendable {
@@ -21,6 +23,8 @@ struct CameraCapabilities: Equatable, Sendable {
     var rawModes: [RawCaptureMode] = [.processed]
     var maximumBracketCount = 0
     var photoResolutions: [PhotoResolution] = []
+    var maxZoom = 1.0
+    var flashModes: [FlashSetting] = [.off]
 }
 
 struct ExposureSettings: Equatable, Sendable {
@@ -66,6 +70,7 @@ struct CameraReadout: Sendable {
     let exposureLocked: Bool
     let focusLocked: Bool
     let whiteBalanceLocked: Bool
+    var zoom = 1.0
 }
 
 struct CameraSnapshot: Sendable {
