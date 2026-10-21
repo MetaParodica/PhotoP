@@ -40,6 +40,8 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["카메라 연결 후 지원 해상도·FPS·코덱이 표시됩니다."].exists)
         XCTAssertFalse(app.segmentedControls["camera.video.resolution"].exists)
         XCTAssertFalse(app.buttons["camera.record"].exists)
+        XCTAssertFalse(app.buttons["camera.mode.video"].isSelected, "Opening a panel cannot advertise an unconfigured video mode")
+        XCTAssertTrue(app.buttons["AUTO"].isSelected)
         XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
         let capture = XCTAttachment(screenshot: app.screenshot())
         capture.name = "PhotoP-video-panel"; capture.lifetime = .keepAlways; add(capture)

@@ -210,7 +210,7 @@ struct CameraView: View {
                 modeButton("LONG", selected: tool == .longExposure) {
                     if model.snapshot.video.isVideoMode { Task { await model.setVideoMode(false) } }; toggle(.longExposure)
                 }
-                modeButton("VIDEO", selected: model.snapshot.video.isVideoMode || tool == .video) {
+                modeButton("VIDEO", selected: model.snapshot.video.isVideoMode) {
                     if !reviewing && !model.snapshot.video.isVideoMode { Task { await model.setVideoMode(true) } }
                     toggle(.video)
                 }.accessibilityIdentifier("camera.mode.video")
