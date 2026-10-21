@@ -10,12 +10,10 @@ final class MetalLUTTextureRenderer {
     private let resources: MetalLUTResources
 
     init(lut: CubeLUT, device: MTLDevice) throws {
-        guard let function = device.makeDefaultLibrary()?.makeFunction(name: "photoPLUTTexture")
-        else { throw MetalLUTError.failed("Metal texture LUT 셰이더를 찾을 수 없습니다.") }
         self.device = device
         finish = try FilmFinishEncoder(device: device)
         resources = try MetalLUTResources(lut: lut, device: device)
-        pipeline = try device.makeComputePipelineState(function: function)
+        pipeline = try MetalPipelineCache.shared.compute("photoPLUTTexture", device: device)
     }
 
     func encode(source: MTLTexture, destination: MTLTexture, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), command: MTLCommandBuffer) throws {
@@ -38,7 +36,7 @@ final class MetalLUTTextureRenderer {
                 finishScratch = device.makeTexture(descriptor: descriptor)
             }
             guard let scratch = finishScratch else { throw MetalLUTError.unavailable }; lutOutput = scratch
-        } else { lutOutput = destination }
+        } else { finishScratch = nil; lutOutput = destination }
         var parameters = try resources.parameters(intensity: intensity, pixelCount: source.width * source.height, width: source.width, height: source.height, grain: grain)
         guard let encoder = command.makeComputeCommandEncoder() else { throw MetalLUTError.failed("LUT encoder를 만들 수 없습니다.") }
         encoder.setComputePipelineState(pipeline)

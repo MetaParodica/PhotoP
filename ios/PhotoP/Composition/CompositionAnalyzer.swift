@@ -26,10 +26,10 @@ final class CompositionAnalyzer: @unchecked Sendable {
     }
     func setRunning(_ value: Bool) { lock.withLock { running = value; generation &+= 1; currentID = nil } }
     func isCurrent(_ snapshot: CompositionSnapshot) -> Bool { lock.withLock { currentID == snapshot.id && enabled && running } }
-    func offer(_ buffer: CVPixelBuffer) {
+    func offer(_ buffer: CVPixelBuffer, minimumInterval: Double = 0.5) {
         let request: (GuideScene, UInt64, Double)? = lock.withLock {
             let now = ProcessInfo.processInfo.systemUptime
-            guard enabled, running, !busy, now - lastTime >= 0.5 else { return nil }
+            guard enabled, running, !busy, minimumInterval.isFinite, minimumInterval >= 0.5, now - lastTime >= minimumInterval else { return nil }
             busy = true; lastTime = now
             return (scene, generation, now)
         }

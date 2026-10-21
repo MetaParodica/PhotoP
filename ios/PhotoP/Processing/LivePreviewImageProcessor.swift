@@ -41,32 +41,45 @@ final class LivePreviewImageProcessor {
         return space
     }
 
-    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), monitoring: MonitoringSettings = MonitoringSettings(), command: MTLCommandBuffer) throws -> MTLTexture {
+    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), monitoring: MonitoringSettings = MonitoringSettings(), maximumDimension: Int = 1024, command: MTLCommandBuffer) throws -> MTLTexture {
+        guard [480, 720, 1024].contains(maximumDimension), intensity.isFinite, (0...1).contains(intensity) else { throw CameraError.invalidSettings }
+        try grain.validate(); try effects.validate()
+        let needsGrade = intensity != 0 || grain.amount != 0 || effects.enabled
         let space = try Self.inputColorSpace(buffer)
         let image = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
         guard w > 0, h > 0 else { throw ImageEditingError.invalid("프리뷰 크기가 유효하지 않습니다.") }
-        let scale = min(1, 1024 / Double(max(w, h)))
+        let scale = min(1, Double(maximumDimension) / Double(max(w, h)))
         let width = max(1, Int((Double(w) * scale).rounded()))
         let height = max(1, Int((Double(h) * scale).rounded()))
-        if source?.width != width || source?.height != height || processed == nil {
+        if source?.width != width || source?.height != height {
             let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: width, height: height, mipmapped: false)
             descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
             descriptor.storageMode = .private
             source = renderer.device.makeTexture(descriptor: descriptor)
+            processed = nil
+        }
+        if needsGrade && processed == nil, let source {
+            let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: source.width, height: source.height, mipmapped: false)
+            descriptor.usage = [.shaderRead, .shaderWrite]; descriptor.storageMode = .private
             processed = renderer.device.makeTexture(descriptor: descriptor)
         }
-        guard let source, let processed else { throw MetalLUTError.failed("프리뷰 texture 메모리를 확보할 수 없습니다.") }
+        if !needsGrade { processed = nil }
+        guard let source, !needsGrade || processed != nil else { throw MetalLUTError.failed("프리뷰 texture 메모리를 확보할 수 없습니다.") }
         let scaled = image.transformed(by: CGAffineTransform(scaleX: Double(width) / Double(w), y: Double(height) / Double(h)))
         // CI uses bottom-left coordinates; the presentation texture uses top-left rows.
         let upright = scaled.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
         context.render(upright, to: source, commandBuffer: command,
                        bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
-        try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, effects: effects, command: command)
+        let graded: MTLTexture
+        if needsGrade, let processed {
+            try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, effects: effects, command: command)
+            graded = processed
+        } else { graded = source }
         if monitoring.enabled {
             if monitor == nil { monitor = try MetalPreviewMonitor(device: renderer.device) }
-            return try monitor!.encode(source: source, graded: processed, settings: monitoring, command: command)
+            return try monitor!.encode(source: source, graded: graded, settings: monitoring, command: command)
         }
-        return processed
+        return graded
     }
 }

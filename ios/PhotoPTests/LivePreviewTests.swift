@@ -144,4 +144,26 @@ final class LivePreviewTests: XCTestCase {
         func append(_ event: LiveLUTPreview.Event) { lock.withLock { values.append(event) } }
     }
 
+    func testNeutralPreviewBypassesGradeTextureAndMatchesIdentityPixels() throws {
+        let (device, lut) = try fixture()
+        let processor = try LivePreviewImageProcessor(lut: lut, device: device)
+        let queue = try XCTUnwrap(device.makeCommandQueue()), input = try buffer()
+        func render(_ intensity: Double) throws -> (MTLTexture, [UInt8]) {
+            let command = try XCTUnwrap(queue.makeCommandBuffer())
+            let texture = try processor.encode(input, intensity: intensity, command: command)
+            let readback = try XCTUnwrap(device.makeBuffer(length: 256 * texture.height, options: .storageModeShared))
+            let blit = try XCTUnwrap(command.makeBlitCommandEncoder())
+            blit.copy(from: texture, sourceSlice: 0, sourceLevel: 0, sourceOrigin: .init(x: 0,y: 0,z: 0), sourceSize: .init(width: texture.width,height: texture.height,depth: 1), to: readback, destinationOffset: 0, destinationBytesPerRow: 256, destinationBytesPerImage: 256 * texture.height)
+            blit.endEncoding(); command.commit(); command.waitUntilCompleted()
+            XCTAssertEqual(command.status, .completed)
+            return (texture, Array(UnsafeBufferPointer(start: readback.contents().assumingMemoryBound(to: UInt8.self), count: readback.length)))
+        }
+        let first = try render(0), second = try render(0), graded = try render(1)
+        XCTAssertTrue(first.0 === second.0)
+        XCTAssertFalse(first.0 === graded.0)
+        for row in 0..<4 { for c in 0..<16 { XCTAssertEqual(first.1[row * 256 + c], graded.1[row * 256 + c]) } }
+        let command = try XCTUnwrap(queue.makeCommandBuffer())
+        XCTAssertThrowsError(try processor.encode(input, intensity: 0, maximumDimension: 999, command: command))
+    }
+
 }

@@ -28,10 +28,8 @@ final class FilmFinishEncoder {
     private let bufferPipeline: MTLComputePipelineState
     private let texturePipeline: MTLComputePipelineState
     init(device: MTLDevice) throws {
-        guard let library = device.makeDefaultLibrary(), let buffer = library.makeFunction(name: "photoPFilmBuffer"),
-              let texture = library.makeFunction(name: "photoPFilmTexture") else { throw MetalLUTError.unavailable }
-        bufferPipeline = try device.makeComputePipelineState(function: buffer)
-        texturePipeline = try device.makeComputePipelineState(function: texture)
+        bufferPipeline = try MetalPipelineCache.shared.compute("photoPFilmBuffer", device: device)
+        texturePipeline = try MetalPipelineCache.shared.compute("photoPFilmTexture", device: device)
     }
     private func parameters(_ settings: FilmFinishSettings, width: Int, height: Int) throws -> Parameters {
         try settings.validate()

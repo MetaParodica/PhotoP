@@ -17,11 +17,9 @@ actor MetalLUTRenderer {
     init(lut: CubeLUT) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue()
         else { throw MetalLUTError.unavailable }
-        guard let function = device.makeDefaultLibrary()?.makeFunction(name: "photoPLUT")
-        else { throw MetalLUTError.failed("Metal LUT 셰이더를 찾을 수 없습니다.") }
         self.device = device
         self.queue = queue
-        self.pipeline = try device.makeComputePipelineState(function: function)
+        self.pipeline = try MetalPipelineCache.shared.compute("photoPLUT", device: device)
         self.finish = try FilmFinishEncoder(device: device)
         self.resources = try MetalLUTResources(lut: lut, device: device)
     }
