@@ -6,6 +6,7 @@ struct CameraView: View {
     @State private var showEditor = false
     @State private var showHistory = false
     @State private var showLiveControls = false
+    @State private var showLongExposure = false
     @State private var showMonitoring = false
     @Environment(\.scenePhase) private var scenePhase
 
@@ -100,6 +101,7 @@ struct CameraView: View {
                     Text(message).font(.caption).multilineTextAlignment(.center).padding(.horizontal)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
+                Button("장노출 합성") { showLongExposure = true }.disabled(model.busy)
                 Button("편집 기록") {
                     model.setActive(false)
                     showHistory = true
@@ -125,6 +127,7 @@ struct CameraView: View {
         }
         .background(.black).foregroundStyle(.white)
         .sheet(isPresented: $model.showControls) { ManualControls(model: model) }
+        .sheet(isPresented: $showLongExposure) { LongExposureView(model: model) }
         .sheet(isPresented: $showMonitoring) { MonitoringControls(model: model) }
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
         .fullScreenCover(isPresented: $showEditor, onDismiss: { model.setActive(scenePhase == .active) }) {

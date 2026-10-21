@@ -8,6 +8,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "com.photop.capture", qos: .userInitiated)
     private let output = AVCapturePhotoOutput()
+    private let longOutput = AVCaptureVideoDataOutput()
+    private var longExposure: LongExposureCapture?
     private let videoOutput = AVCaptureVideoDataOutput()
     private var livePreview: LiveLUTPreview?
     private var removeLivePreviewRequested = false
@@ -59,6 +61,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             wantsRunning = active
             if !active {
+                longExposure?.cancel()
                 state = .stopped
                 livePreview?.setRunning(false)
                 stopReadouts()
@@ -125,7 +128,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     func selectLens(_ id: String) {
         queue.async { [self] in
-            guard continuation == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
+            guard continuation == nil, longExposure == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
             guard livePreview == nil else { publish("LUT를 끈 뒤 렌즈를 전환해 주세요."); return }
             guard let old = input, let device = devices.first(where: { $0.uniqueID == id }),
                   device.uniqueID != old.device.uniqueID else { return }
@@ -198,7 +201,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             queue.async { [self] in
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted, input != nil else { throw CameraError.interrupted }
-                    guard continuation == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
                     session.beginConfiguration()
                     do {
                         guard session.canAddOutput(videoOutput) else { throw CameraError.configuration }
@@ -263,7 +266,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     guard state == .running, session.isRunning, !session.isInterrupted else {
                         throw CameraError.interrupted
                     }
-                    guard continuation == nil, !controls.isPending else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     try applyOnQueue(settings, completion: completion)
                 } catch { completion.resume(throwing: error) }
             }
@@ -418,7 +421,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted,
                           let d = input?.device, d.uniqueID == lensID else { throw CameraError.interrupted }
-                    guard continuation == nil, !controls.isPending else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     let actions = PointMeteringPolicy.actions(
                         focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(.continuousAutoFocus),
                         exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
@@ -443,6 +446,58 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
     }
 
+    func captureLongExposure(_ configuration: LongExposureConfiguration,
+                             progress: @escaping @Sendable (LongExposureProgress) -> Void) async throws -> URL {
+        try await withCheckedThrowingContinuation { completion in
+            queue.async { [self] in
+                var archive: LongExposureArchive?
+                do {
+                    guard state == .running, session.isRunning, !session.isInterrupted else { throw CameraError.interrupted }
+                    guard continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil,
+                          !session.outputs.contains(videoOutput) else { throw CameraError.busy }
+                    try configuration.validate()
+                    let documents = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                    let free = try FileManager.default.attributesOfFileSystem(forPath: documents.path)[.systemFreeSize] as? NSNumber
+                    guard free?.int64Value ?? 0 > 32 * 1024 * 1024 else { throw ImageEditingError.invalid("합성 시작에 최소 32MiB의 저장 공간이 필요합니다.") }
+                    let nextArchive = try LongExposureArchive(root: documents.appendingPathComponent("LongExposures"))
+                    archive = nextArchive
+                    let job = try LongExposureCapture(configuration: configuration, archive: nextArchive, onProgress: progress) { [weak self] result in
+                        guard let self else { completion.resume(throwing: CameraError.interrupted); return }
+                        self.queue.async {
+                            self.longOutput.setSampleBufferDelegate(nil, queue: nil)
+                            if self.session.outputs.contains(self.longOutput) {
+                                self.session.beginConfiguration(); self.session.removeOutput(self.longOutput); self.session.commitConfiguration()
+                                self.configureDimensions()
+                            }
+                            self.longExposure = nil
+                            self.publish()
+                            completion.resume(with: result)
+                        }
+                    }
+                    session.beginConfiguration()
+                    do {
+                        guard session.canAddOutput(longOutput) else { throw CameraError.configuration }
+                        session.addOutput(longOutput)
+                        guard let format = [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
+                            .first(where: { longOutput.availableVideoPixelFormatTypes.contains($0) }),
+                              let connection = longOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90) else { throw CameraError.configuration }
+                        longOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
+                        longOutput.alwaysDiscardsLateVideoFrames = true
+                        connection.videoRotationAngle = 90
+                        if connection.isVideoMirroringSupported { connection.automaticallyAdjustsVideoMirroring = false; connection.isVideoMirrored = false }
+                        longExposure = job
+                        longOutput.setSampleBufferDelegate(job, queue: job.frameQueue)
+                        session.commitConfiguration(); configureDimensions(); job.start(); publish()
+                    } catch {
+                        if session.outputs.contains(longOutput) { session.removeOutput(longOutput) }
+                        session.commitConfiguration(); longExposure = nil; throw error
+                    }
+                } catch { archive?.cancel(); completion.resume(throwing: error) }
+            }
+        }
+    }
+    func cancelLongExposure() { queue.async { [self] in longExposure?.cancel() } }
+
     func capturePhoto(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed) async throws -> CapturedPhoto {
         let series = try await captureSeries(format: format, rawMode: rawMode)
         guard series.photos.count == 1, let photo = series.photos.first else { throw CameraError.missingPhoto }
@@ -455,7 +510,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 guard state == .running, session.isRunning, !session.isInterrupted else {
                     completion.resume(throwing: CameraError.interrupted); return
                 }
-                guard continuation == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
+                guard continuation == nil, longExposure == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
                 let settings: AVCapturePhotoSettings
                 let expectedFormat: PhotoFileFormat
                 var biases: [Double]?
@@ -565,6 +620,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     }
 
     private func handleNotification(_ name: Notification.Name, reset: Bool) {
+        longExposure?.cancel()
         livePreview?.setRunning(false)
         if name == AVCaptureSession.wasInterruptedNotification {
             state = .interrupted

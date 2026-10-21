@@ -64,6 +64,29 @@ struct SDRImage: Sendable {
         return SDRImage(rgba: pixels, width: w, height: h)
     }
 
+    static func rasterize(_ image: CGImage) throws -> SDRImage {
+        let w = image.width, h = image.height
+        guard w > 0, h > 0, w <= MetalLUTRenderer.maximumPixels, h <= MetalLUTRenderer.maximumPixels / w else { throw CameraError.invalidPhotoData }
+        var bytes = Data(count: w * h * 4)
+        try bytes.withUnsafeMutableBytes { raw in
+            guard let context = CGContext(data: raw.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: bitmapInfo) else { throw CameraError.invalidPhotoData }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        }
+        return SDRImage(rgba: bytes, width: w, height: h)
+    }
+    func resized(maximumDimension: Int) throws -> SDRImage {
+        guard maximumDimension > 0 else { throw CameraError.invalidPhotoData }
+        let scale = min(1, Double(maximumDimension) / Double(max(width, height)))
+        let w = max(1, Int(Double(width) * scale)), h = max(1, Int(Double(height) * scale))
+        guard let context = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: Self.bitmapInfo) else { throw CameraError.invalidPhotoData }
+        context.interpolationQuality = .high
+        context.draw(try cgImage(), in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let image = context.makeImage() else { throw CameraError.invalidPhotoData }
+        return try Self.rasterize(image)
+    }
+
     func jpeg() throws -> Data {
         let result = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(result, UTType.jpeg.identifier as CFString, 1, nil)

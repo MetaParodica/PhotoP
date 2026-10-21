@@ -11,6 +11,10 @@ final class CameraModel: ObservableObject {
     @Published var photoFormat: PhotoFileFormat = .jpeg
     @Published private(set) var busy = false
     @Published private(set) var latestOriginal: URL?
+    @Published var longConfiguration = LongExposureConfiguration()
+    @Published private(set) var longProgress: LongExposureProgress?
+    @Published private(set) var latestComposite: URL?
+    @Published private(set) var compositeSavedToPhotos = false
     @Published private(set) var latestOriginals: [URL] = []
     @Published var bracketEnabled = false
     @Published var bracketStep = 1.0
@@ -27,6 +31,8 @@ final class CameraModel: ObservableObject {
     @Published var liveIntensity = 1.0
     @Published var liveGrain = 0.0
     @Published var liveCompareOriginal = false
+    private var longJobID: UUID?
+    private var longReprocessTask: Task<URL, Error>?
     private var importedLiveLUT: ImportedLUT?
 
     private lazy var service = CameraService { [weak self] value in
@@ -202,6 +208,42 @@ final class CameraModel: ObservableObject {
             }
         }
         return try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onEvent: onEvent) }.value
+    }
+
+    func captureLongExposure() async {
+        guard canCapture, rawMode == .processed, !bracketEnabled, livePreview == nil else { message = "합성 전 RAW·브래킷·LUT/모니터를 꺼 주세요."; return }
+        busy = true; longProgress = nil; latestComposite = nil; compositeSavedToPhotos = false
+        let id = UUID(); longJobID = id
+        defer { busy = false; longJobID = nil }
+        do {
+            let url = try await service.captureLongExposure(longConfiguration) { [weak self] value in
+                Task { @MainActor [weak self] in
+                    guard let self, self.longJobID == id else { return }
+                    self.longProgress = LongExposureProgress(fraction: value.fraction, accepted: value.accepted, rejected: value.rejected,
+                                                            previewJPEG: value.previewJPEG ?? self.longProgress?.previewJPEG)
+                }
+            }
+            latestComposite = url
+            message = "SDR 합성 결과와 재처리 프레임을 저장했습니다."
+            try await PhotoStore.addToPhotos(url); compositeSavedToPhotos = true
+        } catch { message = error.localizedDescription }
+    }
+    func cancelLongExposure() { longReprocessTask?.cancel(); service.cancelLongExposure() }
+    func reprocessLongExposure() async {
+        guard !busy, let result = latestComposite else { return }
+        busy = true
+        let configuration = longConfiguration
+        let task = Task { try await LongExposureArchive.reprocess(result, configuration: configuration) }
+        longReprocessTask = task
+        defer { busy = false; longReprocessTask = nil }
+        do { latestComposite = try await task.value; compositeSavedToPhotos = false; message = "저장한 프레임으로 새 합성본을 만들었습니다." }
+        catch { message = error.localizedDescription }
+    }
+    func saveCompositeToPhotos() async {
+        guard !busy, let result = latestComposite, !compositeSavedToPhotos else { return }
+        busy = true; defer { busy = false }
+        do { try await PhotoStore.addToPhotos(result); compositeSavedToPhotos = true }
+        catch { message = error.localizedDescription }
     }
 
     func capture() async {
