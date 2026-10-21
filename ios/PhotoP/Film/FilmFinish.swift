@@ -6,9 +6,25 @@ struct FilmFinishSettings: Codable, Equatable, Sendable {
     var vignette: Double = 0
     var bloom: Double = 0
     var halation: Double = 0
-    var enabled: Bool { fade > 0 || vignette > 0 || bloom > 0 || halation > 0 }
+    var softFocus: Double = 0
+    var chromaticAberration: Double = 0
+    var streak: Double = 0
+    private enum CodingKeys: String, CodingKey { case fade, vignette, bloom, halation, softFocus, chromaticAberration, streak }
+    var enabled: Bool { fade > 0 || vignette > 0 || bloom > 0 || halation > 0 || softFocus > 0 || chromaticAberration > 0 || streak > 0 }
     func validate() throws {
-        guard [fade, vignette, bloom, halation].allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { throw ImageEditingError.invalid("필름 마감 강도는 0~100%여야 합니다.") }
+        guard [fade, vignette, bloom, halation, softFocus, chromaticAberration, streak].allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { throw ImageEditingError.invalid("필름 마감 강도는 0~100%여야 합니다.") }
+    }
+}
+extension FilmFinishSettings {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        fade = try c.decode(Double.self, forKey: .fade)
+        vignette = try c.decode(Double.self, forKey: .vignette)
+        bloom = try c.decode(Double.self, forKey: .bloom)
+        halation = try c.decode(Double.self, forKey: .halation)
+        softFocus = try c.decodeIfPresent(Double.self, forKey: .softFocus) ?? 0
+        chromaticAberration = try c.decodeIfPresent(Double.self, forKey: .chromaticAberration) ?? 0
+        streak = try c.decodeIfPresent(Double.self, forKey: .streak) ?? 0
     }
 }
 struct ProcessingLookSettings: Codable, Equatable, Sendable {
@@ -24,7 +40,7 @@ struct ProcessingLookSettings: Codable, Equatable, Sendable {
 // Small creative finishing pass; not a measured emulsion/optics simulation.
 // Eight highlight taps at a normalized image radius, identical for both paths.
 final class FilmFinishEncoder {
-    private struct Parameters { var values: SIMD4<Float>; var size: SIMD2<UInt32>; var padding = SIMD2<UInt32>(repeating: 0) }
+    private struct Parameters { var values: SIMD4<Float>; var size: SIMD2<UInt32>; var padding = SIMD2<UInt32>(repeating: 0); var advanced: SIMD4<Float> }
     private let bufferPipeline: MTLComputePipelineState
     private let texturePipeline: MTLComputePipelineState
     init(device: MTLDevice) throws {
@@ -34,7 +50,8 @@ final class FilmFinishEncoder {
     private func parameters(_ settings: FilmFinishSettings, width: Int, height: Int) throws -> Parameters {
         try settings.validate()
         return Parameters(values: .init(Float(settings.fade), Float(settings.vignette), Float(settings.bloom), Float(settings.halation)),
-                          size: .init(UInt32(width), UInt32(height)))
+                          size: .init(UInt32(width), UInt32(height)),
+                          advanced: .init(Float(settings.softFocus), Float(settings.chromaticAberration), Float(settings.streak), 0))
     }
     func encode(source: MTLBuffer, destination: MTLBuffer, width: Int, height: Int, settings: FilmFinishSettings, command: MTLCommandBuffer) throws {
         var p = try parameters(settings, width: width, height: height)

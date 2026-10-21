@@ -1,3 +1,5 @@
+> **최신 검증:** 촬영 UI·아이콘·외부 LUT25개·공간 스타일8개를 반영했습니다. [CI39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493): iPhone SDK·Swift155·UI1·Python17·소스/앱 자산 검사·실행 화면 캡처 성공. 실제 iPhone 품질 검증은 대기입니다. [현재 보고](docs/07-IMPLEMENTATION-REPORT.ko.md) · [기본 화면](docs/screenshots/camera.png) · [구도 패널](docs/screenshots/guide.png)
+
 # PhotoP
 
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
@@ -21,7 +23,7 @@ An iPhone-first professional camera platform, with native Android planned after 
 
 Manual ISO/shutter, manual focus and manual WB wait for the device completion callbacks. Capture and lens changes are blocked while those changes are pending. Interruption and a bounded timeout cancel pending work; late callbacks from an older operation cannot complete a newer one.
 
-The camera screen and PRO sheet show current device ISO, exposure duration, EV bias, normalized lens position and WB estimates at up to 4 Hz. These values are separate from editable requests and are not the saved photo's EXIF. Automatic AE/AF/AWB can continue adjusting after a configuration callback.
+The camera screen’s contextual panels and control rail show current device ISO, exposure duration, EV bias, normalized lens position and WB estimates at up to 4 Hz. These values are separate from editable requests and are not the saved photo's EXIF. Automatic AE/AF/AWB can continue adjusting after a configuration callback.
 
 Processed captures use Apple's speed prioritization in custom/locked exposure mode to honor manual ISO/duration. Automatic exposure retains quality prioritization. This prioritization choice does not change JPEG compression or the requested dimensions; its computational image-quality tradeoff still needs device evaluation.
 
@@ -93,7 +95,7 @@ Open **구도** for advanced geometric grids and nine independently drawn pose t
 
 ## Original film styles and full-look presets (Phase 6)
 
-The style browser offers **24 original sRGB styles and five external slay looks**, categories, search and generated color-patch previews. They are independent creative profiles, not official Kodak/Fujifilm emulations or measured film stocks. Each generated LUT includes author, source ID, license, input/output, credit and SHA-256 provenance. See `ios/PhotoP/Film/STYLE-PERMISSION.txt` for the narrow permission covering our original procedural profiles. Five original slay LUT files are bundled under CC BY 4.0 with creator/source/license/hash verification and explicit sRGB-assumption confirmation. They are separate from our original profiles. 100+ approved styles is still a future quality goal.
+The style browser offers **59 creative looks plus three technical LUT entries**: 24 original color styles, eight spatial presets and 27 external creative looks. Thirty external original files are bundled (five slay CC BY 4.0 LUTs plus all 25 newly acquired files). New files are unofficial derivatives/mirrors with rights recorded as unknown; inclusion follows the user's explicit instruction and does not assert permission. V-Log LUTs use a clearly labelled SDR approximation and a cached 65³ render cube. One unknown-output WDR entry is original-file-only. Spatial presets use separate Metal soft focus, chromatic aberration and horizontal highlight spread rather than a color LUT. Use full-look presets to retain spatial settings. Brand/sensor/film measurements and 100+ quality-reviewed styles remain future work. See [external sources](docs/15-EXTERNAL-LOOKS.ko.md), [spatial effects](docs/16-SPATIAL-STYLES.ko.md) and `ios/PhotoP/Film/STYLE-PERMISSION.txt` for the narrow permission on our own profile data.
 
 Full-look user presets preserve LUT bytes, strength, grain amount/seed and independent fade, vignette, bloom and red halation. Both editor and live preview can restore them across app restarts. LUT favorites remain LUT-only. Imported Hald tables support square level 2–8, opaque 8-bit RGB sRGB PNG; rotated, other-profile, non-table and oversized inputs are rejected. The importer requires an explicit sRGB declaration. Creative finishing is an SDR approximation; its spatial taps may differ across resolutions and need photographic evaluation.
 
@@ -110,4 +112,4 @@ Standalone 1D `.cube` tables retain up to 65,536 exact RGB rows and interpolate 
 
 [Source review, implementation contracts and test evidence](docs/13-PERFORMANCE-CAPTURE-LOOKS.ko.md). All real iPhone validation remains pending.
 
-Latest expansion validation: [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621) passed unsigned iPhone SDK build, **139 Swift tests**, **11 Python tests** and hash/license checks for all **five source and copied-app LUTs**, with no skipped Swift tests.
+Previous expansion validation: [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621) passed unsigned iPhone SDK build, **139 Swift tests**, **11 Python tests** and hash/license checks for all **five source and copied-app LUTs**, with no skipped Swift tests.

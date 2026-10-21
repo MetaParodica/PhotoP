@@ -77,10 +77,11 @@ struct CameraSnapshot: Sendable {
     let revision: UInt64
     let readout: CameraReadout?
     let isApplyingSettings: Bool
+    var video = VideoSnapshot()
 }
 
 enum CameraError: LocalizedError {
-    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto, settingsTimedOut, invalidPhotoData, captureTimedOut
+    case permission, unavailable, configuration, busy, interrupted, invalidSettings, missingPhoto, settingsTimedOut, invalidPhotoData, captureTimedOut, videoTimedOut
     var errorDescription: String? {
         switch self {
         case .permission: return "설정에서 카메라 접근을 허용해 주세요."
@@ -91,6 +92,7 @@ enum CameraError: LocalizedError {
         case .invalidSettings: return "현재 렌즈에서 지원하지 않는 설정입니다."
         case .missingPhoto: return "촬영한 사진 데이터를 받지 못했습니다."
         case .invalidPhotoData: return "받은 사진의 파일 포맷이 요청한 포맷과 다릅니다."
+        case .videoTimedOut: return "영상 기록 완료가 지연되어 카메라를 중단했습니다. Pending 파일은 보관합니다. 다시 연결해 주세요."
         case .captureTimedOut: return "사진 촬영이 지연되어 카메라를 중단했습니다. 다시 시작해 주세요."
         case .settingsTimedOut: return "카메라 설정 변경이 지연되어 중단했습니다. 다시 시작해 주세요."
         }

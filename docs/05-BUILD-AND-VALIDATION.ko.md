@@ -124,12 +124,12 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 | LONG-03 | Instruments 300초·재처리 | peak RAM bounded, disk<=128MiB frames, 원본 PNG 재현·Photos/공유·취소 |
 | GUIDE-01 | 전후면·letterbox·다수 사람·가이드 off·장면 변경 | 원점/mirror 일치·stale 숨김·guide 비굽기·원본 촬영 독립 |
 | GUIDE-02 | 실제 자세/피부/의상·건물·수평선·저조도 | 검출 정확도·confidence·latency·배터리; rectangle=building 오인 금지 |
-| FILM-01 | 최신29종 실제 피부/풍경/야경·고채도·회색 ramp | 톤·색차·banding·halo·미리보기/내보내기 차이; 수치 통과와 미학 승인 구별 |
+| FILM-01 | 최신59개 룩·기술 LUT3 실제 피부/풍경/야경·고채도·회색 ramp | 톤·색차·banding·halo·미리보기/내보내기 차이; 수치 통과와 미학 승인 구별 |
 | FILM-02 | 전체 룩 저장·앱 재시작·live/사진 복원·Hald | 강도/seed/finish 유지·sRGB 확인·원본 불변·불명 profile 거부 |
 
 자동 gate: 선형광/Lighten·translation·archive·cancel/hash, 좌표/포즈/규칙/lifecycle, 공유 Metal finish·v1/v2/v3 recipe, 12종 cube/hash/gray ramp/검색·전체 preset 재시작/변조·Hald channel order를 검사한다. 실행별 수와 CI는 08·11 문서에 기록한다. Simulator GPU 계산 검증은 실제 사진·디스플레이·카메라 성능 승인으로 대체하지 않는다.
 
-최신 코드 `ca05d5c`: [CI 39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343), unsigned iPhone SDK build·Swift120·Python7 성공, skip0.
+당시 코드 `ca05d5c`: [CI 39542442343](https://github.com/MetaParodica/PhotoP/actions/runs/39542442343), unsigned iPhone SDK build·Swift120·Python7 성공, skip0.
 
 
 ## 성능·해상도·29종 룩 확장 검증
@@ -138,4 +138,10 @@ EXIF 추출은 Mac의 ImageIO 또는 승인된 도구를 사용한다. 원본 SH
 
 실기기 추가 항목: nominal/저전력/serious/critical별 처리 FPS와 Vision 지연·GPU/CPU time·memory/battery 비교; 해당 정책이 촬영 원본 설정을 바꾸지 않는지; 실제 API 해상도별 요청/파일 픽셀/EXIF/shot-to-shot latency;29종의 피부/야경/고채도/gray ramp·banding/halo 평가; 외부 룩의 sRGB 가정·동의·공유 시 caption/recipe/크레딧 유지. 모두 기기 실행 대기다. iOS 편집본12.6MP 제한·HDR/Log 미지원은 유지한다.
 
-최신 확장 코드3abee400의 [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621): SDK·Swift139·Python11·source/app번들5개 hash 성공, skip0.
+직전 성능 확장 코드3abee400의 [CI39550566621](https://github.com/MetaParodica/PhotoP/actions/runs/39550566621): SDK·Swift139·Python11·source/app번들5개 hash 성공, skip0.
+
+## 촬영 UI·외부25·공간 효과 검증
+
+최종 코드 `6c569e0`의 [CI39581407493](https://github.com/MetaParodica/PhotoP/actions/runs/39581407493): iPhone SDK·Swift155·UI1·Python17·소스/복사 앱 LUT30개 무결성·두 화면 캡처 성공. 증거와 한계는14/15/16 문서에 있다.
+
+기기 추가 항목: 촬영 중 슬라이더/잠금·메뉴/권한·중단 복귀, 작은 화면·Dynamic Type·VoiceOver/Reduce Transparency, iOS26 네이티브 glass, 실제 ISO/셔터/WB/초점 반영과 EXIF, V-Log SDR 근사 룩의 피부/회색/야경·고채도, 공간 효과의 미리보기/고해상도 반경·알파·밴딩·GPU 시간·발열을 검증한다. 모두 실기기 대기이며 Simulator 캡처/계산 성공으로 대체하지 않는다.

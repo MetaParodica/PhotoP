@@ -38,14 +38,14 @@ final class FilmFinishTests: XCTestCase {
         guard let device = MTLCreateSystemDefaultDevice() else { throw XCTSkip("Metal GPU unavailable") }
         let lut = try identity(), renderer = try MetalLUTRenderer(lut: lut)
         let textureRenderer = try MetalLUTTextureRenderer(lut: lut, device: device)
-        let width = 7, height = 5
+        let width = 257, height = 5
         var bytes: [UInt8] = []
-        for i in 0..<35 { bytes.append(contentsOf: [UInt8(i * 7), UInt8(i * 3), UInt8(255 - i * 6), 255]) }
+        for i in 0..<(width * height) { bytes.append(contentsOf: [UInt8(i * 7 % 256), UInt8(i * 3 % 256), UInt8(255 - i * 6 % 256), 255]) }
         let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: width, height: height, mipmapped: false)
         d.usage = [.shaderRead, .shaderWrite]; d.storageMode = .shared
         let source = try XCTUnwrap(device.makeTexture(descriptor: d)), output = try XCTUnwrap(device.makeTexture(descriptor: d))
         bytes.withUnsafeBytes { source.replace(region: MTLRegionMake2D(0, 0, width, height), mipmapLevel: 0, withBytes: $0.baseAddress!, bytesPerRow: width * 4) }
-        let finish = FilmFinishSettings(fade: 0.3, vignette: 0.6, bloom: 0.7, halation: 0.8)
+        let finish = FilmFinishSettings(fade: 0.3, vignette: 0.6, bloom: 0.7, halation: 0.8, softFocus: 0.4, chromaticAberration: 0.7, streak: 0.6)
         let command = try XCTUnwrap(device.makeCommandQueue()?.makeCommandBuffer())
         try textureRenderer.encode(source: source, destination: output, intensity: 0.7, effects: finish, command: command)
         command.commit(); command.waitUntilCompleted(); XCTAssertEqual(command.status, .completed)
