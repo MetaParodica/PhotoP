@@ -57,7 +57,6 @@ final class CubeLUTTests: XCTestCase {
         }
     }
     func testRejectsUnknownAndShaperFormats() {
-        XCTAssertThrowsError(try CubeLUT.parse("LUT_1D_SIZE 2\n0 0 0\n1 1 1"))
         XCTAssertThrowsError(try CubeLUT.parse(cube(header: "LUT_3D_SIZE 2\nLUT_1D_SIZE 2")))
         XCTAssertThrowsError(try CubeLUT.parse(cube(header: "LUT_3D_SIZE 2\nUNKNOWN 1")))
     }

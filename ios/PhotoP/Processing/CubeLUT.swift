@@ -4,15 +4,17 @@ struct CubeLUT: Sendable {
     static let maximumFileBytes = 32 * 1024 * 1024
     let title: String?
     let dimension: Int
+    let isOneDimensional: Bool
     let domainMin: SIMD3<Double>
     let domainMax: SIMD3<Double>
-    // Iridas cube ordering: red varies fastest, followed by green, then blue.
+    // 1D stores channel curves by row; 3D red varies fastest, then green, blue.
     let values: [SIMD3<Double>]
 
     private init(title: String?, dimension: Int, domainMin: SIMD3<Double>,
-                 domainMax: SIMD3<Double>, values: [SIMD3<Double>]) {
+                 domainMax: SIMD3<Double>, values: [SIMD3<Double>], isOneDimensional: Bool) {
         self.title = title
         self.dimension = dimension
+        self.isOneDimensional = isOneDimensional
         self.domainMin = domainMin
         self.domainMax = domainMax
         self.values = values
@@ -22,6 +24,7 @@ struct CubeLUT: Sendable {
         guard text.utf8.count <= maximumFileBytes else { throw CubeLUTError.invalid("LUT 파일은 32MB 이하여야 합니다.") }
         var title: String?
         var size: Int?
+        var oneDimensional = false
         var minimum = SIMD3<Double>(repeating: 0)
         var maximum = SIMD3<Double>(repeating: 1)
         var seen: Set<String> = []
@@ -36,7 +39,7 @@ struct CubeLUT: Sendable {
             let tokens = line.split(whereSeparator: { $0.isWhitespace })
             let key = String(tokens[0])
             func fail(_ reason: String) -> CubeLUTError { .invalid("\(index + 1)행: \(reason)") }
-            if ["TITLE", "LUT_3D_SIZE", "DOMAIN_MIN", "DOMAIN_MAX"].contains(key) {
+            if ["TITLE", "LUT_1D_SIZE", "LUT_3D_SIZE", "DOMAIN_MIN", "DOMAIN_MAX"].contains(key) {
                 guard values.isEmpty, seen.insert(key).inserted else { throw fail("중복되거나 데이터 뒤에 놓인 헤더입니다.") }
                 switch key {
                 case "TITLE":
@@ -44,26 +47,29 @@ struct CubeLUT: Sendable {
                     guard name.count >= 2, name.first == "\"", name.last == "\"",
                           !name.dropFirst().dropLast().contains("\"") else { throw fail("TITLE은 따옴표로 감싸야 합니다.") }
                     title = String(name.dropFirst().dropLast())
-                case "LUT_3D_SIZE":
-                    guard tokens.count == 2, let dimension = Int(tokens[1]), (2...65).contains(dimension)
-                    else { throw fail("3D LUT 크기는 2~65여야 합니다.") }
+                case "LUT_1D_SIZE", "LUT_3D_SIZE":
+                    guard size == nil else { throw fail("단독 1D 또는 3D LUT만 지원합니다. mixed shaper는 지원하지 않습니다.") }
+                    oneDimensional = key == "LUT_1D_SIZE"
+                    let limit = oneDimensional ? 65536 : 65
+                    guard tokens.count == 2, let dimension = Int(tokens[1]), (2...limit).contains(dimension)
+                    else { throw fail("LUT 크기가 지원 범위를 벗어납니다.") }
                     size = dimension
-                    values.reserveCapacity(dimension * dimension * dimension)
+                    values.reserveCapacity(oneDimensional ? dimension : dimension * dimension * dimension)
                 case "DOMAIN_MIN": minimum = try vector(Array(tokens.dropFirst()), line: index + 1)
                 default: maximum = try vector(Array(tokens.dropFirst()), line: index + 1)
                 }
             } else {
-                guard let size else { throw fail("지원되는 LUT_3D_SIZE 헤더가 필요합니다. 1D/shaper LUT는 아직 지원하지 않습니다.") }
-                guard values.count < size * size * size else { throw fail("LUT 데이터가 선언한 크기보다 많습니다.") }
+                guard let size else { throw fail("지원되는 LUT_1D_SIZE 또는 LUT_3D_SIZE 헤더가 필요합니다.") }
+                guard values.count < (oneDimensional ? size : size * size * size) else { throw fail("LUT 데이터가 선언한 크기보다 많습니다.") }
                 values.append(try vector(tokens, line: index + 1))
             }
         }
-        guard let size, values.count == size * size * size else { throw CubeLUTError.invalid("LUT 데이터 행 수가 선언한 크기와 다릅니다.") }
+        guard let size, values.count == (oneDimensional ? size : size * size * size) else { throw CubeLUTError.invalid("LUT 데이터 행 수가 선언한 크기와 다릅니다.") }
         for channel in 0..<3 {
             guard maximum[channel] > minimum[channel], Float(maximum[channel]) > Float(minimum[channel])
             else { throw CubeLUTError.invalid("DOMAIN_MAX는 각 채널에서 DOMAIN_MIN보다 커야 합니다.") }
         }
-        return CubeLUT(title: title, dimension: size, domainMin: minimum, domainMax: maximum, values: values)
+        return CubeLUT(title: title, dimension: size, domainMin: minimum, domainMax: maximum, values: values, isOneDimensional: oneDimensional)
     }
 
     private static func vector(_ tokens: [Substring], line: Int) throws -> SIMD3<Double> {
@@ -100,6 +106,12 @@ struct CubeLUT: Sendable {
         let r0 = Int(floor(coordinate.x)), g0 = Int(floor(coordinate.y)), b0 = Int(floor(coordinate.z))
         let r1 = min(r0 + 1, dimension - 1), g1 = min(g0 + 1, dimension - 1), b1 = min(b0 + 1, dimension - 1)
         let fraction = coordinate - SIMD3(Double(r0), Double(g0), Double(b0))
+        if isOneDimensional {
+            let low = [r0, g0, b0], high = [r1, g1, b1]
+            var look = SIMD3<Double>()
+            for c in 0..<3 { look[c] = values[low[c]][c] * (1 - fraction[c]) + values[high[c]][c] * fraction[c] }
+            return input * (1 - intensity) + look * intensity
+        }
         func value(_ r: Int, _ g: Int, _ b: Int) -> SIMD3<Double> { values[r + g * dimension + b * dimension * dimension] }
         func mix(_ a: SIMD3<Double>, _ b: SIMD3<Double>, _ weight: Double) -> SIMD3<Double> { a * (1 - weight) + b * weight }
         let back = mix(mix(value(r0, g0, b0), value(r1, g0, b0), fraction.x),

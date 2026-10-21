@@ -9,7 +9,7 @@ struct MetalLUTResources {
         var dimension: UInt32
         var intensity: Float
         var pixelCount: UInt32
-        var padding: UInt32 = 0
+        var oneDimensional: UInt32 = 0
         var width: UInt32 = 1
         var height: UInt32 = 1
         var grainAmount: Float = 0
@@ -39,7 +39,7 @@ struct MetalLUTResources {
               pixelCount <= MetalLUTRenderer.maximumPixels else { throw MetalLUTError.failed("LUT 크기와 강도가 유효하지 않습니다.") }
         return Parameters(minimum: SIMD4(Float(lut.domainMin.x), Float(lut.domainMin.y), Float(lut.domainMin.z), 0),
                           maximum: SIMD4(Float(lut.domainMax.x), Float(lut.domainMax.y), Float(lut.domainMax.z), 0),
-                          dimension: UInt32(lut.dimension), intensity: Float(intensity), pixelCount: UInt32(pixelCount), width: UInt32(width), height: UInt32(height),
+                          dimension: UInt32(lut.dimension), intensity: Float(intensity), pixelCount: UInt32(pixelCount), oneDimensional: lut.isOneDimensional ? 1 : 0, width: UInt32(width), height: UInt32(height),
                           grainAmount: Float(grain.amount), grainSeed: grain.seed)
     }
 }

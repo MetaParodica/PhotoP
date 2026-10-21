@@ -7,7 +7,7 @@ struct LUTParameters {
     uint dimension;
     float intensity;
     uint pixelCount;
-    uint padding;
+    uint oneDimensional;
     uint width;
     uint height;
     float grainAmount;
@@ -41,11 +41,19 @@ static float4 applyLUT(float4 rgba, uint2 position, device const float4 *table, 
     uint3 low = uint3(floor(coordinate));
     uint3 high = min(low + 1, uint3(p.dimension - 1));
     float3 t = coordinate - float3(low);
+    float3 look;
+    if (p.oneDimensional != 0) {
+        look = float3(mix(table[low.x].r, table[high.x].r, t.x),
+                      mix(table[low.y].g, table[high.y].g, t.y),
+                      mix(table[low.z].b, table[high.z].b, t.z));
+    } else {
     float3 back = mix(mix(entry(table, uint3(low.x, low.y, low.z), p.dimension), entry(table, uint3(high.x, low.y, low.z), p.dimension), t.x),
                       mix(entry(table, uint3(low.x, high.y, low.z), p.dimension), entry(table, uint3(high.x, high.y, low.z), p.dimension), t.x), t.y);
     float3 front = mix(mix(entry(table, uint3(low.x, low.y, high.z), p.dimension), entry(table, uint3(high.x, low.y, high.z), p.dimension), t.x),
                        mix(entry(table, uint3(low.x, high.y, high.z), p.dimension), entry(table, uint3(high.x, high.y, high.z), p.dimension), t.x), t.y);
-    float3 color = clamp(mix(input, mix(back, front, t.z), p.intensity), 0.0f, 1.0f);
+        look = mix(back, front, t.z);
+    }
+    float3 color = clamp(mix(input, look, p.intensity), 0.0f, 1.0f);
     float luma = dot(color, float3(0.2126f, 0.7152f, 0.0722f));
     float noise = grainNoise(position, p) * p.grainAmount * 0.12f * (4.0f * luma * (1.0f - luma));
     return float4(clamp(color + noise, 0.0f, 1.0f) * rgba.a, rgba.a);

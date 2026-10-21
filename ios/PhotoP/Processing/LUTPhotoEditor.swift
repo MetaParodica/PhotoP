@@ -77,7 +77,7 @@ actor LUTPhotoEditor {
                                             originalSHA256: try Self.hashFile(original), lutSHA256: Self.hash(cubeData),
                                             lutTitle: lut.title, intensity: intensity, workingColorSpace: "encoded sRGB SDR",
                                             lutInputColorSpace: "sRGB", lutOutputColorSpace: "sRGB", outputColorSpace: "sRGB",
-                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → trilinear LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted")
+                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → channel-linear 1D / trilinear 3D LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted")
         recipe.grain = grain
         recipe.finish = effects
         recipe.provenance = provenance
