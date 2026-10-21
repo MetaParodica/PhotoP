@@ -134,7 +134,7 @@ struct CameraView: View {
                     zoomControl
                     // While cards are open the rail steps aside so the whole guide stays visible.
                     if drawer == nil { HStack(spacing: 8) { controlsRail; looksButton } }
-                }.padding(.horizontal, 10).padding(.bottom, 10)
+                }.frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.bottom, 10)
                     .background(alignment: .bottom) { scrim(top: false).allowsHitTesting(false) }
                     .transition(.opacity)
             }
