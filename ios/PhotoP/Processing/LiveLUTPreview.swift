@@ -14,11 +14,14 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     let device: MTLDevice
     let frameQueue = DispatchQueue(label: "com.photop.live-lut", qos: .userInteractive)
     private let commandQueue: MTLCommandQueue
+    private var composition: CompositionAnalyzer!
     private let processor: LivePreviewImageProcessor
     private let display: MetalPreviewDisplay
     private let lock = NSLock()
     private var state = PreviewFrameState()
     private weak var layer: CAMetalLayer?
+    private var imageSize: CGSize?
+    var sourceImageSize: CGSize? { lock.withLock { imageSize } }
     private var intensity = 1.0
     private var grain = GrainSettings()
     private var monitoring = MonitoringSettings()
@@ -27,7 +30,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var eventRevision: UInt64 = 0
     private let onEvent: @Sendable (UUID, Event) -> Void
 
-    init(lut: CubeLUT, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
+    init(lut: CubeLUT, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue()
         else { throw MetalLUTError.unavailable }
         self.device = device
@@ -36,6 +39,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         display = try MetalPreviewDisplay(device: device)
         self.onEvent = onEvent
         super.init()
+        composition = CompositionAnalyzer { [weak self] snapshot in guard let self else { return }; onGuide(self.id, snapshot) }
     }
 
     func attach(_ surface: CAMetalLayer) {
@@ -54,6 +58,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         if let event { onEvent(id, event) }
     }
     func setRunning(_ running: Bool) {
+        composition.setRunning(running)
         let event: Event? = lock.withLock {
             state.setRunning(running); announcedGeneration = nil
             return running ? nil : makeEvent(.waiting)
@@ -77,8 +82,12 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         lock.withLock { monitoring = settings }
     }
 
+    func setComposition(enabled: Bool, scene: GuideScene) { composition.configure(enabled: enabled, scene: scene) }
+    func isCurrentComposition(_ snapshot: CompositionSnapshot) -> Bool { composition.isCurrent(snapshot) }
+
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        composition.offer(buffer)
         render(buffer)
     }
 
@@ -87,6 +96,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, MonitoringSettings)? = lock.withLock {
             guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }
+            imageSize = CGSize(width: CGFloat(CVPixelBufferGetWidth(buffer)), height: CGFloat(CVPixelBufferGetHeight(buffer)))
             var sampleSettings = monitoring
             let now = ProcessInfo.processInfo.systemUptime
             if sampleSettings.histogram && now - lastHistogramTime >= 0.25 { lastHistogramTime = now }

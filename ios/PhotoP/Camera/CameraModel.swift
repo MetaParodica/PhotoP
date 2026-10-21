@@ -25,6 +25,13 @@ final class CameraModel: ObservableObject {
     @Published private(set) var livePreview: LiveLUTPreview?
     @Published private(set) var liveLUTTitle: String?
     @Published private(set) var liveHasFrame = false
+    @Published private(set) var previewImageSize: CGSize?
+    @Published var guideGrid: GuideGrid = .off
+    @Published var guideScene: GuideScene = .general
+    @Published var poseTemplate: PoseTemplate = .off
+    @Published var guideOpacity = 0.6
+    @Published var guideAIEnabled = false
+    @Published private(set) var composition: CompositionSnapshot?
     @Published var monitoring = MonitoringSettings()
     @Published private(set) var histogram: PreviewHistogram?
     @Published private(set) var liveUsesLUT = false
@@ -56,7 +63,7 @@ final class CameraModel: ObservableObject {
     var canCapture: Bool { bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
-        if !active { liveHasFrame = false; histogram = nil }
+        if !active { liveHasFrame = false; histogram = nil; composition = nil }
         service.setActive(active)
     }
     func selectLens(_ id: String) {
@@ -129,6 +136,7 @@ final class CameraModel: ObservableObject {
         livePreview = preview
         updateLiveIntensity()
         updateMonitoring()
+        updateComposition()
         message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
     }
 
@@ -150,6 +158,7 @@ final class CameraModel: ObservableObject {
             liveUsesLUT = true
             updateLiveIntensity()
             updateMonitoring()
+            updateComposition()
         } catch { message = error.localizedDescription }
     }
 
@@ -158,8 +167,11 @@ final class CameraModel: ObservableObject {
         livePreview = nil
         liveHasFrame = false
         liveUsesLUT = false
+        previewImageSize = nil
         histogram = nil
         monitoring = MonitoringSettings()
+        composition = nil
+        guideAIEnabled = false
         service.removeLivePreview()
     }
 
@@ -173,8 +185,8 @@ final class CameraModel: ObservableObject {
     }
 
     func enableMonitoring() async {
-        guard !busy, !snapshot.isApplyingSettings, monitoring.enabled else { return }
-        if livePreview != nil { updateMonitoring(); return }
+        guard !busy, !snapshot.isApplyingSettings, (monitoring.enabled || guideAIEnabled) else { return }
+        if livePreview != nil { updateMonitoring(); updateComposition(); return }
         busy = true
         defer { busy = false }
         do {
@@ -184,12 +196,18 @@ final class CameraModel: ObservableObject {
             let preview = try await makeLivePreview(identity)
             preview.setIntensity(0)
             preview.setMonitoring(monitoring)
+            preview.setComposition(enabled: guideAIEnabled, scene: guideScene)
             try await service.setLivePreview(preview)
             livePreview = preview
             liveHasFrame = false
             liveUsesLUT = false
             message = "SDR 프리뷰 기준 보조 도구입니다. 원본에 표시를 굽지 않습니다."
         } catch { message = error.localizedDescription }
+    }
+
+    func updateComposition() {
+        composition = nil
+        livePreview?.setComposition(enabled: guideAIEnabled, scene: guideScene)
     }
 
     private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {
@@ -200,6 +218,7 @@ final class CameraModel: ObservableObject {
                 case .waiting: self.liveHasFrame = false; self.histogram = nil
                 case .ready(let histogram):
                     self.liveHasFrame = true
+                    self.previewImageSize = preview.sourceImageSize
                     if self.monitoring.histogram, let histogram { self.histogram = histogram }
                 case .failed(let reason):
                     self.disableLiveLUT()
@@ -207,7 +226,14 @@ final class CameraModel: ObservableObject {
                 }
             }
         }
-        return try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onEvent: onEvent) }.value
+        let onGuide: @Sendable (UUID, CompositionSnapshot) -> Void = { [weak self] id, snapshot in
+            Task { @MainActor [weak self] in
+                guard let self, let preview = self.livePreview, preview.id == id, self.guideAIEnabled,
+                      preview.isCurrentComposition(snapshot) else { return }
+                self.composition = snapshot
+            }
+        }
+        return try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onGuide: onGuide, onEvent: onEvent) }.value
     }
 
     func captureLongExposure() async {

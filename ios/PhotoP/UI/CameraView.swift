@@ -6,6 +6,7 @@ struct CameraView: View {
     @State private var showEditor = false
     @State private var showHistory = false
     @State private var showLiveControls = false
+    @State private var showComposition = false
     @State private var showLongExposure = false
     @State private var showMonitoring = false
     @Environment(\.scenePhase) private var scenePhase
@@ -23,7 +24,7 @@ struct CameraView: View {
                         }
                     }
                     .disabled(model.busy || model.snapshot.isApplyingSettings || model.rawMode != .processed)
-                    Button { model.showGrid.toggle() } label: { Image(systemName: "grid") }
+                    Button { model.showGrid.toggle(); if model.showGrid { model.guideGrid = .off } } label: { Image(systemName: "grid") }
                         .accessibilityLabel("삼분할 격자 전환")
                 }
                 .padding(.horizontal)
@@ -42,6 +43,10 @@ struct CameraView: View {
                         if model.liveHasFrame, model.snapshot.state == .running, let histogram = model.histogram {
                             PreviewHistogramView(histogram: histogram)
                         }
+                    }
+                    .overlay {
+                        CompositionOverlay(grid: model.guideGrid, pose: model.poseTemplate, opacity: model.guideOpacity,
+                                           snapshot: model.composition, live: model.liveHasFrame && model.snapshot.state == .running, sourceSize: model.previewImageSize)
                     }
                     .overlay { if model.showGrid { ThirdsGrid() } }
                     .overlay(alignment: .bottom) {
@@ -101,6 +106,7 @@ struct CameraView: View {
                     Text(message).font(.caption).multilineTextAlignment(.center).padding(.horizontal)
                         .accessibilityAddTraits(.updatesFrequently)
                 }
+                Button("구도 가이드") { showComposition = true }.disabled(model.busy)
                 Button("장노출 합성") { showLongExposure = true }.disabled(model.busy)
                 Button("편집 기록") {
                     model.setActive(false)
@@ -127,6 +133,7 @@ struct CameraView: View {
         }
         .background(.black).foregroundStyle(.white)
         .sheet(isPresented: $model.showControls) { ManualControls(model: model) }
+        .sheet(isPresented: $showComposition) { CompositionControls(model: model) }
         .sheet(isPresented: $showLongExposure) { LongExposureView(model: model) }
         .sheet(isPresented: $showMonitoring) { MonitoringControls(model: model) }
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
