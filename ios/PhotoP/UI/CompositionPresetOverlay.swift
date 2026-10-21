@@ -14,7 +14,9 @@ struct CompositionPresetOverlay: View {
             }
         }.allowsHitTesting(false)
             .accessibilityElement().accessibilityLabel("구도 가이드: \(preset.title). \(preset.detail)")
-            .accessibilityIdentifier("camera.composition.preset")
+            .accessibilityIdentifier(showNotes ? "camera.composition.preset" : "")
+            // Card thumbnails reuse this view; only the viewfinder overlay is exposed.
+            .accessibilityHidden(!showNotes)
     }
 
     static func draw(_ preset: CompositionPreset, in rect: CGRect, context: GraphicsContext, opacity: Double, showNotes: Bool, lineScale: CGFloat) {
