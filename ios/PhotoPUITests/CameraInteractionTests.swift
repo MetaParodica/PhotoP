@@ -108,17 +108,16 @@ final class CameraInteractionTests: XCTestCase {
         app.launchArguments = ["--ui-review"]
         app.launch()
         app.buttons["camera.guide"].tap()
-        let triangle = app.buttons["camera.card.still-triangle"]
+        // The first preset follows the three utility cards and is visible without scrolling.
+        let triangle = app.buttons["camera.card.portrait-two-thirds"]
         XCTAssertTrue(triangle.waitForExistence(timeout: 3))
-        let cards = app.descendants(matching: .any)["camera.drawer.composition"]
-        for _ in 0..<6 where !triangle.isHittable { cards.swipeLeft() }
         XCTAssertTrue(app.buttons["camera.card.off"].isSelected)
         XCTAssertFalse(app.buttons["AUTO"].exists, "Cards replace the mode row while the drawer is open")
         triangle.tap()
         XCTAssertTrue(triangle.isSelected)
         let overlay = app.descendants(matching: .any)["camera.composition.preset"]
         XCTAssertTrue(overlay.waitForExistence(timeout: 3))
-        XCTAssertTrue(overlay.label.contains("삼각 구도"))
+        XCTAssertTrue(overlay.label.contains("인물 2/3"))
         let composition = XCTAttachment(screenshot: app.screenshot())
         composition.name = "PhotoP-composition-cards"; composition.lifetime = .keepAlways; add(composition)
         app.buttons["camera.drawer.close"].tap()
