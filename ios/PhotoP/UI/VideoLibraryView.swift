@@ -20,7 +20,7 @@ struct VideoLibraryView: View {
                                 Image(systemName: "video.fill").foregroundStyle(.purple).frame(width: 32)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("\(item.manifest.configuration.resolution.title) · \(item.manifest.actual.codec.title)")
-                                    Text(String(format: "%.1f초 · %.0f fps · 무음", item.manifest.actual.durationSeconds, item.manifest.actual.nominalFrameRate))
+                                    Text(String(format: "%.1f초 · %.0f fps · %@", item.manifest.actual.durationSeconds, item.manifest.actual.nominalFrameRate, VideoCapturePolicy.audioLabel(item.manifest.configuration)))
                                         .font(.caption).foregroundStyle(.secondary)
                                     Text(item.createdAt, style: .date).font(.caption2).foregroundStyle(.secondary)
                                     if item.manifest.recoveredFromPending == true { Text("파일 정보에서 복구").font(.caption2).foregroundStyle(.secondary) }
@@ -43,7 +43,7 @@ struct VideoLibraryView: View {
                             }.padding(.vertical, 4)
                         }
                     } header: { Text("완료되지 않은 파일") } footer: {
-                        Text("기록이 완료된 SDR 무음 MOV만 복구할 수 있습니다. 손상 파일은 그대로 보관합니다. 복구 구성은 원래 촬영 요청이 아닌 파일 정보에서 추정합니다.")
+                        Text("기록이 완료된 SDR MOV(오디오 트랙 0~1개)만 복구할 수 있습니다. 손상 파일은 그대로 보관합니다. 복구 구성은 원래 촬영 요청이 아닌 파일 정보에서 추정합니다.")
                     }
                 }
                 if library.rejectedCount > 0 {

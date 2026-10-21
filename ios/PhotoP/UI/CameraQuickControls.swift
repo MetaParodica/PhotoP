@@ -180,7 +180,7 @@ struct CameraQuickControls: View {
         Task { await model.setVideoMode(true, configuration: configuration) }
     }
     @ViewBuilder private var video: some View {
-        Text("SDR · 원본 색상 · 무음").font(.headline)
+        Text("SDR · 원본 색상 · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))").font(.headline)
         if let configuration = model.snapshot.video.configuration, let caps = model.snapshot.video.capabilities {
             Picker("영상 해상도", selection: Binding(get: { configuration.resolution }, set: { value in changeVideo { $0.resolution = value } })) {
                 ForEach(caps.resolutions) { Text($0.title).tag($0) }
@@ -191,6 +191,13 @@ struct CameraQuickControls: View {
             Picker("영상 코덱", selection: Binding(get: { configuration.codec }, set: { value in changeVideo { $0.codec = value } })) {
                 ForEach(caps.codecs) { Text($0.title).tag($0) }
             }.pickerStyle(.segmented)
+            if caps.stabilizationModes.count > 1 {
+                Picker("손떨림 보정", selection: Binding(get: { configuration.stabilization ?? .off }, set: { value in changeVideo { $0.stabilization = value } })) {
+                    ForEach(caps.stabilizationModes) { Text($0.title).tag($0) }
+                }.pickerStyle(.segmented).accessibilityIdentifier("camera.video.stabilization")
+            }
+            Toggle("오디오 녹음", isOn: Binding(get: { configuration.audio }, set: { value in changeVideo { $0.audio = value } }))
+                .disabled(!caps.audio && !configuration.audio).accessibilityIdentifier("camera.video.audio")
             if let limits = model.snapshot.capabilities?.shutterSeconds {
                 let seconds = VideoCapturePolicy.suggestedShutter(fps: configuration.framesPerSecond, limits: limits)
                 Button("180° 셔터 제안 · \(CameraControlScale.shutter(seconds))") {
@@ -203,7 +210,7 @@ struct CameraQuickControls: View {
         } else {
             Text("카메라 연결 후 지원 해상도·FPS·코덱이 표시됩니다.").foregroundStyle(.secondary)
         }
-        Text("최대 10분·2GiB. 전면 영상은 미러링 없이 저장합니다. 해상도별 FPS·코덱은 다시 조회하며 모드·구성 변경 시 노출·초점·WB를 AUTO로 초기화합니다.")
+        Text("최대 10분·2GiB. 전면 영상은 미러링 없이 저장합니다. 해상도별 FPS·코덱·손떨림 보정은 다시 조회하며 모드·구성 변경 시 노출·초점·WB를 AUTO로 초기화합니다. 시네마틱 보정은 화각을 줄이고 지연이 늘어납니다.")
             .font(.caption).foregroundStyle(.secondary)
     }
     private var unavailable: some View {

@@ -22,12 +22,14 @@ jobs:
         run: |
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' PhotoP/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryAddUsageDescription' PhotoP/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' PhotoP/Info.plist
       - name: Build for iPhone without signing
         working-directory: ios
         run: |
           xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -sdk iphoneos -configuration Debug -derivedDataPath .build CODE_SIGNING_ALLOWED=NO build
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryAddUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
       - name: Test model validation on Simulator
         working-directory: ios
         shell: bash

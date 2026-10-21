@@ -111,7 +111,7 @@ struct CameraView: View {
         }
     }
     private var previewBadge: some View {
-        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · 무음", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60) : reviewing ? "SIMULATOR · UI 검토" : model.snapshot.video.isVideoMode ? "SDR · ORIGINAL · 무음" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
+        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : model.snapshot.video.isVideoMode ? "SDR · ORIGINAL · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }
@@ -247,7 +247,7 @@ struct CameraView: View {
                         }.frame(width: 78, height: 78)
                     }.buttonStyle(.plain)
                         .disabled(model.snapshot.video.phase == .stopping || (!model.snapshot.video.phase.isActive && !model.canRecordVideo))
-                        .accessibilityLabel(model.snapshot.video.phase.isActive ? "영상 녹화 종료" : "무음 영상 녹화")
+                        .accessibilityLabel(model.snapshot.video.phase.isActive ? "영상 녹화 종료" : "\(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) 영상 녹화")
                         .accessibilityIdentifier("camera.record")
                 } else {
                     Button { Task { await model.capture() } } label: {

@@ -23,6 +23,71 @@ final class VideoCaptureTests: XCTestCase {
         XCTAssertThrowsError(try VideoCapturePolicy.validate(configuration, capabilities: caps))
     }
 
+    func testAudioAndStabilizationMustBeOfferedByActiveConfiguration() throws {
+        var caps = VideoCapabilities(resolutions: [.hd1080], frameRates: [30], codecs: [.h264])
+        var configuration = VideoConfiguration()
+        XCTAssertNoThrow(try VideoCapturePolicy.validate(configuration, capabilities: caps))
+        configuration.audio = true
+        XCTAssertThrowsError(try VideoCapturePolicy.validate(configuration, capabilities: caps))
+        caps.audio = true
+        XCTAssertNoThrow(try VideoCapturePolicy.validate(configuration, capabilities: caps))
+        configuration.stabilization = .cinematic
+        XCTAssertThrowsError(try VideoCapturePolicy.validate(configuration, capabilities: caps))
+        caps.stabilizationModes = VideoCapturePolicy.stabilizationModes { $0 == .standard || $0 == .cinematic }
+        XCTAssertEqual(caps.stabilizationModes, [.off, .standard, .cinematic])
+        XCTAssertNoThrow(try VideoCapturePolicy.validate(configuration, capabilities: caps))
+        XCTAssertEqual(VideoCapturePolicy.stabilizationModes { _ in false }, [.off])
+        XCTAssertEqual(VideoCapturePolicy.audioLabel(configuration), "오디오")
+        XCTAssertEqual(VideoCapturePolicy.audioLabel(nil), "무음")
+    }
+
+    func testVersionOneConfigurationDecodesAsSilentWithUnknownStabilization() throws {
+        let legacy = Data(#"{"resolution":"hd720","framesPerSecond":30,"codec":"h264"}"#.utf8)
+        let decoded = try JSONDecoder().decode(VideoConfiguration.self, from: legacy)
+        XCTAssertEqual(decoded, .init(resolution: .hd720, framesPerSecond: 30, codec: .h264, audio: false, stabilization: nil))
+        let current = VideoConfiguration(resolution: .uhd4K, framesPerSecond: 24, codec: .hevc, audio: true, stabilization: .cinematicExtended)
+        XCTAssertEqual(try JSONDecoder().decode(VideoConfiguration.self, from: JSONEncoder().encode(current)), current)
+    }
+
+    func testAudioTrackCountMustMatchRequest() {
+        let silent = VideoFileInfo(durationSeconds: 1, encodedWidth: 1920, encodedHeight: 1080, displayWidth: 1080, displayHeight: 1920,
+                                   nominalFrameRate: 30, codec: .h264, audioTrackCount: 0, colorPrimaries: nil, transferFunction: nil, yCbCrMatrix: nil)
+        let withAudio = VideoFileInfo(durationSeconds: 1, encodedWidth: 1920, encodedHeight: 1080, displayWidth: 1080, displayHeight: 1920,
+                                      nominalFrameRate: 30, codec: .h264, audioTrackCount: 1, colorPrimaries: nil, transferFunction: nil, yCbCrMatrix: nil)
+        var configuration = VideoConfiguration()
+        XCTAssertTrue(VideoStore.matches(silent, configuration: configuration))
+        XCTAssertFalse(VideoStore.matches(withAudio, configuration: configuration))
+        configuration.audio = true
+        XCTAssertTrue(VideoStore.matches(withAudio, configuration: configuration))
+        XCTAssertFalse(VideoStore.matches(silent, configuration: configuration), "A requested audio track must not silently disappear")
+    }
+
+    func testLibraryAcceptsVersionOneManifestAndRejectsInconsistentAudioRecord() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pending = root.appendingPathComponent("pending.mov")
+        try await makeMovie(pending)
+        let original = try await VideoStore.finalize(pending, configuration: .init(resolution: .hd720), in: root)
+        let manifestURL = original.url.deletingLastPathComponent().appendingPathComponent("manifest.json")
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any])
+        XCTAssertEqual(object["version"] as? Int, 2)
+        var configuration = try XCTUnwrap(object["configuration"] as? [String: Any])
+        configuration.removeValue(forKey: "audio"); configuration.removeValue(forKey: "stabilization")
+        object["configuration"] = configuration; object["version"] = 1
+        try JSONSerialization.data(withJSONObject: object).write(to: manifestURL)
+        let legacy = try XCTUnwrap(VideoStore.library(in: root).videos.first)
+        XCTAssertEqual(legacy.manifest.version, 1); XCTAssertNil(legacy.manifest.configuration.stabilization)
+        _ = try await VideoStore.verify(legacy)
+        object["version"] = 2; object["audioRequested"] = true
+        try JSONSerialization.data(withJSONObject: object).write(to: manifestURL)
+        XCTAssertEqual(try VideoStore.library(in: root).rejectedCount, 1)
+        object["version"] = 3; object["audioRequested"] = false
+        try JSONSerialization.data(withJSONObject: object).write(to: manifestURL)
+        XCTAssertTrue(try VideoStore.library(in: root).videos.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: original.url.path))
+    }
+
     func testVideoShutterCannotExceedFrameIntervalAnd180DegreeSuggestionIsClamped() throws {
         let limits = try VideoCapturePolicy.shutterLimit(sensor: (1.0 / 8000)...1, fps: 60)
         XCTAssertEqual(limits.upperBound, 1.0 / 60)
@@ -134,7 +199,8 @@ final class VideoCaptureTests: XCTestCase {
         XCTAssertTrue(after.pending.isEmpty); XCTAssertEqual(after.videos.count, 1)
         let item = try XCTUnwrap(after.videos.first)
         XCTAssertEqual(item.manifest.recoveredFromPending, true)
-        XCTAssertEqual(item.manifest.configuration, .init(resolution: .hd720, framesPerSecond: 30, codec: .h264))
+        XCTAssertEqual(item.manifest.configuration, .init(resolution: .hd720, framesPerSecond: 30, codec: .h264, audio: false, stabilization: nil))
+        XCTAssertEqual(item.manifest.version, VideoManifest.currentVersion)
         _ = try await VideoStore.verify(item)
     }
 

@@ -14,17 +14,42 @@ enum VideoCodec: String, CaseIterable, Codable, Identifiable, Sendable {
     var title: String { self == .h264 ? "H.264" : "HEVC" }
 }
 
+enum VideoStabilization: String, CaseIterable, Codable, Identifiable, Sendable {
+    case off, standard, cinematic, cinematicExtended
+    var id: String { rawValue }
+    var title: String {
+        switch self { case .off: return "끔"; case .standard: return "표준"; case .cinematic: return "시네마틱"; case .cinematicExtended: return "확장" }
+    }
+}
+
 struct VideoConfiguration: Equatable, Codable, Sendable {
     var resolution: VideoResolution = .hd1080
     var framesPerSecond = 30
     var codec: VideoCodec = .h264
+    var audio = false
+    // nil means the request is unknown (version 1 manifests, recovered pending files).
+    var stabilization: VideoStabilization? = .off
+}
+
+extension VideoConfiguration {
+    // Version 1 manifests predate audio/stabilization. Synthesized decoding would reject them.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        resolution = try c.decode(VideoResolution.self, forKey: .resolution)
+        framesPerSecond = try c.decode(Int.self, forKey: .framesPerSecond)
+        codec = try c.decode(VideoCodec.self, forKey: .codec)
+        audio = try c.decodeIfPresent(Bool.self, forKey: .audio) ?? false
+        stabilization = try c.decodeIfPresent(VideoStabilization.self, forKey: .stabilization)
+    }
 }
 
 struct VideoCapabilities: Equatable, Sendable {
-    // Resolution presets are probed separately. FPS/codecs describe ONLY the active preset.
+    // Resolution presets are probed separately. FPS/codecs/stabilization describe ONLY the active preset.
     let resolutions: [VideoResolution]
     let frameRates: [Int]
     let codecs: [VideoCodec]
+    var stabilizationModes: [VideoStabilization] = [.off]
+    var audio = false
 }
 
 enum VideoRecordingPhase: String, Sendable {
@@ -48,8 +73,15 @@ enum VideoCapturePolicy {
     static func validate(_ configuration: VideoConfiguration, capabilities: VideoCapabilities) throws {
         guard capabilities.resolutions.contains(configuration.resolution),
               capabilities.frameRates.contains(configuration.framesPerSecond),
-              capabilities.codecs.contains(configuration.codec) else { throw CameraError.invalidSettings }
+              capabilities.codecs.contains(configuration.codec),
+              capabilities.stabilizationModes.contains(configuration.stabilization ?? .off),
+              !configuration.audio || capabilities.audio else { throw CameraError.invalidSettings }
     }
+    // Cinematic modes add latency and crop; only modes the active format reports are offered.
+    static func stabilizationModes(supported: (VideoStabilization) -> Bool) -> [VideoStabilization] {
+        [.off] + VideoStabilization.allCases.filter { $0 != .off && supported($0) }
+    }
+    static func audioLabel(_ configuration: VideoConfiguration?) -> String { configuration?.audio == true ? "오디오" : "무음" }
     static func shutterLimit(sensor: ClosedRange<Double>, fps: Int) throws -> ClosedRange<Double> {
         guard fps > 0, sensor.lowerBound.isFinite, sensor.upperBound.isFinite,
               sensor.lowerBound > 0, sensor.lowerBound <= 1 / Double(fps) else { throw CameraError.invalidSettings }

@@ -23,7 +23,9 @@ struct VideoOriginal: Sendable {
 }
 
 struct VideoManifest: Codable, Sendable {
-    var version = 1
+    // 1: silent, stabilization off/unknown. 2: records audio and stabilization requests.
+    static let currentVersion = 2
+    var version = VideoManifest.currentVersion
     let configuration: VideoConfiguration
     let actual: VideoFileInfo
     let sha256: String
@@ -95,7 +97,7 @@ enum VideoStore {
                 // Stream hashing instead of loading a potentially 2GiB movie into RAM.
                 let (digest, bytes) = try hashFile(pending)
                 let manifest = VideoManifest(configuration: configuration, actual: info, sha256: digest, bytes: bytes, originalFile: "Original.mov",
-                                             recoveredFromPending: recovered ? true : nil)
+                                             audioRequested: configuration.audio, recoveredFromPending: recovered ? true : nil)
                 let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                 try encoder.encode(manifest).write(to: manifestURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
                 // Same-volume move preserves exact encoded bytes and never re-encodes the movie.
@@ -110,7 +112,7 @@ enum VideoStore {
 
     static func matches(_ info: VideoFileInfo, configuration: VideoConfiguration) -> Bool {
         info.durationSeconds.isFinite && info.durationSeconds > 0 && info.displayWidth > 0 && info.displayHeight > 0
-            && info.codec == configuration.codec && info.audioTrackCount == 0
+            && info.codec == configuration.codec && info.audioTrackCount == (configuration.audio ? 1 : 0)
             && max(info.encodedWidth, info.encodedHeight) == configuration.resolution.longEdge
             && min(info.encodedWidth, info.encodedHeight) == configuration.resolution.shortEdge
             && abs(Double(info.nominalFrameRate) - Double(configuration.framesPerSecond)) < 1

@@ -11,6 +11,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private let movieOutput = AVCaptureMovieFileOutput()
     private var videoConfiguration: VideoConfiguration?
     private var videoCapabilities: VideoCapabilities?
+    private var audioInput: AVCaptureDeviceInput?
     private var recording = VideoRecordingLifecycle()
     private var movieCompletion: CheckedContinuation<URL, Error>?
     private var movieTimeout: DispatchWorkItem?
@@ -685,6 +686,12 @@ private extension VideoCodec {
     var avCodec: AVVideoCodecType { self == .h264 ? .h264 : .hevc }
 }
 
+private extension VideoStabilization {
+    var avMode: AVCaptureVideoStabilizationMode {
+        switch self { case .off: return .off; case .standard: return .standard; case .cinematic: return .cinematic; case .cinematicExtended: return .cinematicExtended }
+    }
+}
+
 extension CameraService {
     func setVideoMode(_ enabled: Bool, configuration requested: VideoConfiguration? = nil) async throws {
         try await withCheckedThrowingContinuation { (completion: CheckedContinuation<Void, Error>) in
@@ -735,11 +742,18 @@ extension CameraService {
         let changedPreset = entering || videoConfiguration?.resolution != resolution
         let fps = requested?.framesPerSecond ?? 30
         let codec = requested?.codec ?? .h264
+        guard let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90) else { throw CameraError.invalidSettings }
+        let format = device.activeFormat
+        let stabilizationModes = connection.isVideoStabilizationSupported
+            ? VideoCapturePolicy.stabilizationModes(supported: { format.isVideoStabilizationModeSupported($0.avMode) }) : [VideoStabilization.off]
+        let stabilization = requested?.stabilization ?? .off
         guard let actualFPS = frameRates.contains(fps) ? fps : (changedPreset ? (frameRates.contains(30) ? 30 : frameRates.first) : nil),
               let actualCodec = codecs.contains(codec) ? codec : (changedPreset ? codecs.first : nil),
-              device.activeFormat.supportedColorSpaces.contains(.sRGB),
-              let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90)
+              let actualStabilization = stabilizationModes.contains(stabilization) ? stabilization : (changedPreset ? VideoStabilization.off : nil),
+              format.supportedColorSpaces.contains(.sRGB)
         else { throw CameraError.invalidSettings }
+        let audio = requested?.audio ?? false
+        try configureAudio(audio)
         try device.lockForConfiguration()
         // Select an SDR space BEFORE disabling HDR. HLG ignores isVideoHDREnabled=false.
         device.activeColorSpace = .sRGB
@@ -755,19 +769,42 @@ extension CameraService {
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = false // Saved front video is unmirrored, like an original photo.
         }
-        if connection.isVideoStabilizationSupported { connection.preferredVideoStabilizationMode = .off }
+        if connection.isVideoStabilizationSupported { connection.preferredVideoStabilizationMode = actualStabilization.avMode }
         movieOutput.setOutputSettings([AVVideoCodecKey: actualCodec.avCodec], for: connection)
         movieOutput.maxRecordedDuration = CMTime(seconds: 600, preferredTimescale: 600)
         movieOutput.maxRecordedFileSize = 2 * 1024 * 1024 * 1024
         movieOutput.minFreeDiskSpaceLimit = 32 * 1024 * 1024
-        videoConfiguration = VideoConfiguration(resolution: resolution, framesPerSecond: actualFPS, codec: actualCodec)
-        videoCapabilities = VideoCapabilities(resolutions: resolutions, frameRates: frameRates, codecs: codecs)
+        videoConfiguration = VideoConfiguration(resolution: resolution, framesPerSecond: actualFPS, codec: actualCodec,
+                                                audio: audio, stabilization: actualStabilization)
+        videoCapabilities = VideoCapabilities(resolutions: resolutions, frameRates: frameRates, codecs: codecs,
+                                              stabilizationModes: stabilizationModes, audio: audioAvailable())
+    }
+
+    private func audioAvailable() -> Bool {
+        AVCaptureDevice.authorizationStatus(for: .audio) != .denied && AVCaptureDevice.authorizationStatus(for: .audio) != .restricted
+            && AVCaptureDevice.default(for: .audio) != nil
+    }
+
+    // Called inside a session configuration. Permission is requested by the model before this runs.
+    private func configureAudio(_ enabled: Bool) throws {
+        guard enabled else {
+            if let audioInput { session.removeInput(audioInput); self.audioInput = nil }
+            return
+        }
+        guard audioInput == nil else { return }
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .authorized else { throw CameraError.microphonePermission }
+        guard let microphone = AVCaptureDevice.default(for: .audio) else { throw CameraError.invalidSettings }
+        let candidate = try AVCaptureDeviceInput(device: microphone)
+        guard session.canAddInput(candidate) else { throw CameraError.configuration }
+        session.addInput(candidate)
+        audioInput = candidate
     }
 
     private func restorePhotoMode() throws {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
         if session.outputs.contains(movieOutput) { session.removeOutput(movieOutput) }
+        try configureAudio(false)
         session.automaticallyConfiguresCaptureDeviceForWideColor = photoWideColor
         guard session.canSetSessionPreset(.photo) else { throw CameraError.configuration }
         session.sessionPreset = .photo
@@ -804,6 +841,9 @@ extension CameraService {
                     try VideoCapturePolicy.validate(configuration, capabilities: capabilities)
                     guard input?.device.activeColorSpace == .sRGB, input?.device.isVideoHDREnabled == false,
                           let connection = movieOutput.connection(with: .video), connection.isActive, connection.isEnabled else { throw CameraError.configuration }
+                    if configuration.audio {
+                        guard audioInput != nil, let audio = movieOutput.connection(with: .audio), audio.isActive, audio.isEnabled else { throw CameraError.configuration }
+                    }
                     guard ProcessInfo.processInfo.thermalState != .critical else { throw CameraError.interrupted }
                     let url = try VideoStore.newRecordingURL()
                     try recording.begin(url)

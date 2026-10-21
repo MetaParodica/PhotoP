@@ -35,7 +35,7 @@ extension VideoStore {
                 let manifestSize = try regularFileSize(manifestURL)
                 guard manifestSize > 0, manifestSize <= 64 * 1024 else { throw CameraError.invalidPhotoData }
                 let manifest = try JSONDecoder().decode(VideoManifest.self, from: Data(contentsOf: manifestURL))
-                guard manifest.version == 1, manifest.originalFile == "Original.mov", !manifest.audioRequested, !manifest.lutBaked,
+                guard VideoStore.acceptsManifest(manifest), manifest.originalFile == "Original.mov", !manifest.lutBaked,
                       manifest.sha256.count == 64, manifest.sha256.allSatisfy({ "0123456789abcdef".contains($0) }),
                       manifest.bytes > 0, try regularFileSize(original) == manifest.bytes,
                       matches(manifest.actual, configuration: manifest.configuration) else { throw CameraError.invalidPhotoData }
@@ -79,11 +79,22 @@ extension VideoStore {
         guard hasKnownSDRTransfer(info) else { throw ImageEditingError.invalid("파일의 SDR 전달 함수를 확인하지 못해 자동 복구하지 않았습니다. 원본은 유지합니다.") }
         guard let resolution = VideoResolution.allCases.first(where: {
             $0.longEdge == max(info.encodedWidth, info.encodedHeight) && $0.shortEdge == min(info.encodedWidth, info.encodedHeight)
-        }), let fps = [24, 25, 30, 50, 60].first(where: { abs(Double($0) - Double(info.nominalFrameRate)) < 0.1 }) else {
-            throw ImageEditingError.invalid("지원 범위의 완성된 SDR 무음 MOV만 복구할 수 있습니다. 원본 파일은 유지합니다.")
+        }), let fps = [24, 25, 30, 50, 60].first(where: { abs(Double($0) - Double(info.nominalFrameRate)) < 0.1 }),
+              info.audioTrackCount <= 1 else {
+            throw ImageEditingError.invalid("지원 범위의 완성된 SDR MOV(오디오 트랙 0~1개)만 복구할 수 있습니다. 원본 파일은 유지합니다.")
         }
-        return try await finalize(pending, configuration: .init(resolution: resolution, framesPerSecond: fps, codec: info.codec),
+        // The stabilization request is not stored in the file, so it is recorded as unknown.
+        return try await finalize(pending, configuration: .init(resolution: resolution, framesPerSecond: fps, codec: info.codec,
+                                                                audio: info.audioTrackCount == 1, stabilization: nil),
                                   in: folder, recovered: true)
+    }
+
+    static func acceptsManifest(_ manifest: VideoManifest) -> Bool {
+        switch manifest.version {
+        case 1: return !manifest.audioRequested && !manifest.configuration.audio
+        case 2: return manifest.audioRequested == manifest.configuration.audio
+        default: return false
+        }
     }
 
     private static func validatePendingPath(_ url: URL, root: URL) throws {

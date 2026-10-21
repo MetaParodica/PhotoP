@@ -308,8 +308,12 @@ final class CameraModel: ObservableObject {
         guard !busy, !snapshot.isApplyingSettings else { return }
         guard livePreview == nil else { message = "룩·분석 프리뷰를 해제한 뒤 영상 모드를 선택해 주세요."; return }
         busy = true; defer { busy = false }
-        do { try await service.setVideoMode(enabled, configuration: configuration) }
-        catch { message = error.localizedDescription }
+        do {
+            if enabled, configuration?.audio == true, !(await AVCaptureDevice.requestAccess(for: .audio)) {
+                throw CameraError.microphonePermission
+            }
+            try await service.setVideoMode(enabled, configuration: configuration)
+        } catch { message = error.localizedDescription }
     }
 
     func recordVideo() async {
@@ -318,11 +322,12 @@ final class CameraModel: ObservableObject {
         do {
             let pending = try await service.recordVideo()
             let original = try await VideoStore.finalize(pending, configuration: configuration)
+            let sound = VideoCapturePolicy.audioLabel(configuration)
             latestVideo = original; videoSavedToPhotos = false
-            message = "무음 SDR 영상 원본을 앱에 보관했습니다."
+            message = "\(sound) SDR 영상 원본을 앱에 보관했습니다."
             try await VideoStore.addToPhotos(original.url)
             videoSavedToPhotos = true
-            message = "무음 SDR 영상 원본과 사진 보관함에 저장했습니다."
+            message = "\(sound) SDR 영상 원본과 사진 보관함에 저장했습니다."
         } catch { message = error.localizedDescription }
     }
 
