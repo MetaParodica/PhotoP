@@ -13,6 +13,12 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["camera.panel.close"].isHittable)
         XCTAssertTrue(app.staticTexts["구도선"].exists)
+        let grid = app.buttons["camera.guide.grid"]
+        XCTAssertEqual(grid.value as? String, "삼분할")
+        grid.tap(); app.buttons["숨기기"].tap()
+        XCTAssertEqual(grid.value as? String, "숨기기")
+        grid.tap(); app.buttons["삼분할"].tap()
+        XCTAssertEqual(grid.value as? String, "삼분할")
         XCTAssertTrue(shutter.exists)
         let guide = XCTAttachment(screenshot: app.screenshot()); guide.name = "PhotoP-inline-guide"; guide.lifetime = .keepAlways; add(guide)
         app.buttons["camera.panel.close"].tap()

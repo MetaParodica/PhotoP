@@ -126,7 +126,7 @@ struct CameraQuickControls: View {
     }
     private var composition: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack { Text("구도선"); Spacer(); Picker("구도선", selection: $model.guideGrid) { ForEach(GuideGrid.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
+            HStack { Text("구도선"); Spacer(); Picker("구도선", selection: $model.guideGrid) { ForEach(GuideGrid.allCases) { Text($0.title).tag($0) } }.labelsHidden().accessibilityValue(model.guideGrid.title).accessibilityIdentifier("camera.guide.grid") }
             HStack { Text("장면"); Spacer(); Picker("장면", selection: $model.guideScene) { ForEach(GuideScene.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("포즈"); Spacer(); Picker("포즈", selection: $model.poseTemplate) { ForEach(PoseTemplate.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }

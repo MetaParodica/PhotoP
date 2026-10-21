@@ -42,6 +42,7 @@ struct CameraView: View {
         }
         .fullScreenCover(isPresented: $showHistory, onDismiss: resume) { SavedEditsView() }
         .onAppear {
+            if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
                 if ProcessInfo.processInfo.arguments.contains("--review-guide") { tool = .guide; model.guideGrid = .thirds; model.showGrid = false }
             } else { resume() }
@@ -106,7 +107,7 @@ struct CameraView: View {
         }
     }
     private var previewBadge: some View {
-        Text(reviewing ? "SIMULATOR · UI 검토" : model.liveUsesLUT ? "LUT PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
+        Text(reviewing ? "SIMULATOR · UI 검토" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }

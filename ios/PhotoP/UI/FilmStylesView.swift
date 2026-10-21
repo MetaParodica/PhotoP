@@ -14,13 +14,13 @@ struct FilmStylesView: View {
     @State private var importing = false
     @State private var busy = false
     @State private var message: String?
-    private var categories: [String] { ["전체"] + Set(FilmStyle.all.map(\.category) + bundled.map(\.category) + company.map(\.category)).sorted() }
+    private var categories: [String] { ["전체"] + Set(FilmStyle.all.map(\.category) + bundled.map(\.category) + company.map(\.category) + ProceduralLook.all.map(\.category)).sorted() }
     private var visiblePresets: [FilterPreset] { presets.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) } }
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    Text("PhotoP 자체 \(FilmStyle.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n브랜드 필름·센서의 실측 재현이 아닙니다. 색상표는 생성된 참고 미리보기입니다.").font(.caption)
+                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n브랜드 필름·센서의 실측 재현이 아닙니다. 색상표는 생성된 참고 미리보기입니다.").font(.caption)
                     Picker("카테고리", selection: $category) { ForEach(categories, id: \.self) { Text($0) } }
                     Toggle("외부 룩의 SDR 입력·변환 가정 확인", isOn: $confirmedSRGB)
                     Text("표시용 LUT는 sRGB로 가정합니다. V-Log 파생 룩은 SDR→V-Gamut/V-Log→LUT→감마2.4 가정→sRGB로 변환합니다. 센서·HDR 원본을 복원하지 않습니다.").font(.caption)
@@ -28,6 +28,17 @@ struct FilmStylesView: View {
                 }
                 Section("PhotoP 자체 스타일") {
                     ForEach(FilmStyle.search(query, category: category)) { style in ownRow(style) }
+                }
+                Section("LUT 없는 공간 효과") {
+                    ForEach(ProceduralLook.all.filter { (category == "전체" || $0.category == category) && (query.isEmpty || "\($0.name) \($0.detail)".localizedCaseInsensitiveContains(query)) }) { style in
+                        Button { select { try style.imported() } } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Label(style.name, systemImage: "sparkles").font(.headline)
+                                Text(style.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    Text("주변 픽셀을 처리하는 Metal 효과입니다. 색상표로 표현할 수 없습니다. 저장하려면 전체 룩 프리셋을 사용하세요.").font(.caption)
                 }
                 Section("외부 룩 · slay / CC BY 4.0") {
                     ForEach(bundled.filter { (category == "전체" || $0.category == category) && (query.isEmpty || "\($0.name) \($0.category) \($0.detail)".localizedCaseInsensitiveContains(query)) }) { entry in externalRow(entry) }
