@@ -31,6 +31,7 @@ struct LiveLUTControls: View {
                     Text(model.liveIntensity, format: .percent.precision(.fractionLength(0)))
                     Slider(value: $model.liveGrain, in: 0...1) { Text("기본 필름 그레인") }.disabled(model.livePreview == nil)
                     Text("그레인 \(Int(model.liveGrain * 100))% · 기본 단색 입자")
+                    FilmFinishControls(settings: $model.liveFinish).disabled(model.livePreview == nil || !model.liveUsesLUT)
                     Toggle("원본 색상과 비교", isOn: $model.liveCompareOriginal).disabled(model.livePreview == nil)
                     Text("미리보기 전용입니다. 촬영 사진에는 LUT를 굽지 않습니다.").font(.caption)
                 }
@@ -52,6 +53,7 @@ struct LiveLUTControls: View {
             .sheet(isPresented: $showFavorites) {
                 LUTFavoritesView { imported in try await model.useLiveLUT(imported) }
             }
+            .onChange(of: model.liveFinish) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }

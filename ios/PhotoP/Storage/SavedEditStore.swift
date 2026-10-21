@@ -35,15 +35,17 @@ actor SavedEditStore {
         try requireLocal(folder)
         let data = try readBounded(folder.appendingPathComponent("recipe.json"), maximum: 64 * 1024)
         let recipe = try JSONDecoder().decode(ImageProcessingRecipe.self, from: data)
-        guard [1, 2].contains(recipe.version), recipe.intensity.isFinite, (0...1).contains(recipe.intensity),
+        guard [1, 2, 3].contains(recipe.version), recipe.intensity.isFinite, (0...1).contains(recipe.intensity),
               recipe.workingColorSpace == "encoded sRGB SDR", recipe.lutInputColorSpace == "sRGB",
               recipe.lutOutputColorSpace == "sRGB", recipe.outputColorSpace == "sRGB",
               !recipe.originalFilename.isEmpty, recipe.originalFilename != ".", recipe.originalFilename != "..",
               !recipe.originalFilename.contains("/"), !recipe.originalFilename.contains("\\"),
               !recipe.originalFilename.contains("\0"),
-              (recipe.version == 1 ? recipe.grain == nil : recipe.grain != nil)
+              (recipe.version == 1 ? recipe.grain == nil : recipe.grain != nil),
+              (recipe.version < 3 ? recipe.finish == nil : recipe.finish != nil)
         else { throw ImageEditingError.invalid("지원하지 않거나 손상된 편집 레시피입니다.") }
         try (recipe.grain ?? GrainSettings()).validate()
+        try (recipe.finish ?? FilmFinishSettings()).validate()
         let original = documents.appendingPathComponent("Originals", isDirectory: true).appendingPathComponent(recipe.originalFilename)
         try requireLocal(original)
         let cubeURL = folder.appendingPathComponent("look.cube")

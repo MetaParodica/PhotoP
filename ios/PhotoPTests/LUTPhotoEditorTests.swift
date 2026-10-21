@@ -164,7 +164,7 @@ final class LUTPhotoEditorTests: XCTestCase {
     }
     func testLegacyRecipeReopensWithZeroGrain() async throws {
         let (root, _, output) = try await savedFixture()
-        try changeRecipe(output) { $0["version"] = 1; $0.removeValue(forKey: "grain") }
+        try changeRecipe(output) { $0["version"] = 1; $0.removeValue(forKey: "grain"); $0.removeValue(forKey: "finish") }
         let loaded = try await SavedEditStore(documents: root).open(output.deletingLastPathComponent().lastPathComponent)
         XCTAssertNil(loaded.recipe.grain)
         XCTAssertEqual(loaded.recipe.intensity, 0.4)
@@ -176,7 +176,7 @@ final class LUTPhotoEditorTests: XCTestCase {
         let store = SavedEditStore(documents: root)
         let id = output.deletingLastPathComponent().lastPathComponent
         let changes: [(inout [String: Any]) -> Void] = [
-            { $0["version"] = 3 }, { $0["intensity"] = -1 },
+            { $0["version"] = 4 }, { $0["intensity"] = -1 },
             { $0["lutInputColorSpace"] = "Log" }, { $0["workingColorSpace"] = "linear" },
             { $0["originalFilename"] = "../original.png" }, { $0["originalFilename"] = ".." },
             { $0["grain"] = ["amount": 2, "seed": 1] }, { $0.removeValue(forKey: "grain") }
@@ -222,6 +222,28 @@ final class LUTPhotoEditorTests: XCTestCase {
         }
         let entries = try await store.list()
         XCTAssertTrue(entries.isEmpty)
+    }
+
+    func testFinishRecipeRestoresAllIndependentSettings() async throws {
+        let (root, original, output) = try await savedFixture()
+        let loaded = try await SavedEditStore(documents: root).open(output.deletingLastPathComponent().lastPathComponent)
+        let editor = LUTPhotoEditor(original: original)
+        _ = try await editor.loadOriginal(); _ = try await editor.useLUT(loaded.imported)
+        let finish = FilmFinishSettings(fade: 0.2, vignette: 0.4, bloom: 0.5, halation: 0.6)
+        let grain = GrainSettings(amount: 0.3, seed: 91)
+        let exported = try await editor.export(intensity: 0.7, grain: grain, effects: finish)
+        let reopened = try await SavedEditStore(documents: root).open(exported.deletingLastPathComponent().lastPathComponent)
+        XCTAssertEqual(reopened.recipe.version, 3); XCTAssertEqual(reopened.recipe.finish, finish); XCTAssertEqual(reopened.recipe.grain, grain)
+        let restored = LUTPhotoEditor(original: reopened.original)
+        _ = try await restored.loadOriginal(); _ = try await restored.useLUT(reopened.imported)
+        let image = try await restored.renderPreview(intensity: reopened.recipe.intensity, grain: reopened.recipe.grain!, effects: reopened.recipe.finish!)
+        XCTAssertEqual(try image.jpeg(), try Data(contentsOf: exported))
+    }
+    func testLegacyVersionTwoRecipeHasNeutralFinish() async throws {
+        let (root, _, output) = try await savedFixture()
+        try changeRecipe(output) { $0["version"] = 2; $0.removeValue(forKey: "finish") }
+        let reopened = try await SavedEditStore(documents: root).open(output.deletingLastPathComponent().lastPathComponent)
+        XCTAssertNil(reopened.recipe.finish); XCTAssertEqual(reopened.recipe.grain?.seed, 37)
     }
 
 }

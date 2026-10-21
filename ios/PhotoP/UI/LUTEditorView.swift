@@ -10,6 +10,7 @@ struct LUTEditorView: View {
     @State private var renderedImage: UIImage?
     @State private var title: String?
     @State private var intensity = 1.0
+    @State private var finish = FilmFinishSettings()
     @State private var grainAmount = 0.0
     @State private var grainSeed: UInt32 = 1
     @State private var revision = 0
@@ -71,6 +72,7 @@ struct LUTEditorView: View {
                         Text("\(Int(grainAmount * 100))%")
                     }.disabled(title == nil || busy)
                     Text("기본 단색 입자 · LUT 강도와 별도 조절").font(.caption)
+                    FilmFinishControls(settings: $finish).disabled(title == nil || busy)
                     Toggle("원본과 비교", isOn: $showOriginal).disabled(originalImage == nil)
                     if busy || rendering { ProgressView() }
                     if let message { Text(message).font(.caption).multilineTextAlignment(.center) }
@@ -80,7 +82,7 @@ struct LUTEditorView: View {
                         Task {
                             defer { busy = false }
                             do {
-                                exported = try await editor.export(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed))
+                                exported = try await editor.export(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed), effects: finish)
                                 message = "원본을 보존하고 JPEG·LUT·레시피를 별도 저장했습니다."
                             } catch { message = error.localizedDescription }
                         }
@@ -133,19 +135,20 @@ struct LUTEditorView: View {
                         intensity = saved.recipe.intensity
                         grainAmount = saved.recipe.grain?.amount ?? 0
                         grainSeed = saved.recipe.grain?.seed ?? 1
+                        finish = saved.recipe.finish ?? FilmFinishSettings()
                         profileConfirmed = true
                         revision += 1
                         message = "저장된 설정을 복원했습니다. 원본과 이전 편집본은 보존됩니다."
                     }
                 } catch { message = error.localizedDescription }
             }
-            .task(id: "\(revision):\(intensity):\(grainAmount):\(grainSeed)") {
+            .task(id: "\(revision):\(intensity):\(grainAmount):\(grainSeed):\(finish)") {
                 guard title != nil else { return }
                 rendering = true
                 do {
                     try await Task.sleep(for: .milliseconds(150))
                     try Task.checkCancellation()
-                    let image = try await editor.renderPreview(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed))
+                    let image = try await editor.renderPreview(intensity: intensity, grain: GrainSettings(amount: grainAmount, seed: grainSeed), effects: finish)
                     try Task.checkCancellation()
                     renderedImage = UIImage(cgImage: try image.cgImage())
                     rendering = false
@@ -155,6 +158,7 @@ struct LUTEditorView: View {
                     if !Task.isCancelled { message = error.localizedDescription; rendering = false }
                 }
             }
+            .onChange(of: finish) { _, _ in exported = nil }
             .onChange(of: grainAmount) { _, _ in exported = nil }
             .onChange(of: intensity) { _, _ in exported = nil }
         }.preferredColorScheme(.dark)

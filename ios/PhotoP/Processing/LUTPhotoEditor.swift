@@ -14,6 +14,7 @@ struct ImageProcessingRecipe: Codable, Sendable {
     let outputColorSpace: String
     let pipeline: String
     var grain: GrainSettings? = nil
+    var finish: FilmFinishSettings? = nil
 }
 
 // Separate actor for file decoding/encoding; the renderer owns GPU resources.
@@ -52,23 +53,24 @@ actor LUTPhotoEditor {
         try await LUTLibrary.shared.save(imported)
     }
 
-    func renderPreview(intensity: Double, grain: GrainSettings = GrainSettings()) async throws -> SDRImage {
+    func renderPreview(intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) async throws -> SDRImage {
         guard let preview, let renderer else { throw ImageEditingError.invalid("원본과 LUT를 먼저 불러오세요.") }
-        let data = try await renderer.render(preview.rgba, width: preview.width, height: preview.height, intensity: intensity, grain: grain)
+        let data = try await renderer.render(preview.rgba, width: preview.width, height: preview.height, intensity: intensity, grain: grain, effects: effects)
         return SDRImage(rgba: data, width: preview.width, height: preview.height)
     }
 
-    func export(intensity: Double, grain: GrainSettings = GrainSettings()) async throws -> URL {
+    func export(intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) async throws -> URL {
         guard let renderer, let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
         let source = try SDRImage.decode(original)
-        let pixels = try await renderer.render(source.rgba, width: source.width, height: source.height, intensity: intensity, grain: grain)
+        let pixels = try await renderer.render(source.rgba, width: source.width, height: source.height, intensity: intensity, grain: grain, effects: effects)
         let image = SDRImage(rgba: pixels, width: source.width, height: source.height)
-        var recipe = ImageProcessingRecipe(version: 2, originalFilename: original.lastPathComponent,
+        var recipe = ImageProcessingRecipe(version: 3, originalFilename: original.lastPathComponent,
                                             originalSHA256: try Self.hashFile(original), lutSHA256: Self.hash(cubeData),
                                             lutTitle: lut.title, intensity: intensity, workingColorSpace: "encoded sRGB SDR",
                                             lutInputColorSpace: "sRGB", lutOutputColorSpace: "sRGB", outputColorSpace: "sRGB",
-                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → trilinear LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → SDR clamp → JPEG 0.95; original metadata omitted")
+                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → trilinear LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted")
         recipe.grain = grain
+        recipe.finish = effects
         let folder = original.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Edits", isDirectory: true)
         return try Self.writeBundle(jpeg: image.jpeg(), cube: cubeData, recipe: recipe, in: folder)
     }

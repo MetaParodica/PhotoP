@@ -9,6 +9,7 @@ actor MetalLUTRenderer {
     private let device: MTLDevice
     private let queue: MTLCommandQueue
     private let pipeline: MTLComputePipelineState
+    private let finish: FilmFinishEncoder
     private let resources: MetalLUTResources
     private var sourceBuffer: MTLBuffer?
     private var destinationBuffer: MTLBuffer?
@@ -21,11 +22,13 @@ actor MetalLUTRenderer {
         self.device = device
         self.queue = queue
         self.pipeline = try device.makeComputePipelineState(function: function)
+        self.finish = try FilmFinishEncoder(device: device)
         self.resources = try MetalLUTResources(lut: lut, device: device)
     }
 
-    func render(_ rgba: Data, width: Int, height: Int, intensity: Double, grain: GrainSettings = GrainSettings()) throws -> Data {
+    func render(_ rgba: Data, width: Int, height: Int, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) throws -> Data {
         try grain.validate()
+        try effects.validate()
         guard width > 0, height > 0, width <= Self.maximumPixels,
               height <= Self.maximumPixels / width, intensity.isFinite, (0...1).contains(intensity)
         else { throw MetalLUTError.failed("SDR 처리는 최대 12.6MP이며 크기와 강도가 유효해야 합니다.") }
@@ -33,7 +36,7 @@ actor MetalLUTRenderer {
         let byteCount = count * 4
         guard rgba.count == byteCount else { throw MetalLUTError.failed("RGBA 데이터 크기가 이미지와 다릅니다.") }
         // Preserve exact source bytes at strength zero, including transparent pixels.
-        if intensity == 0 && grain.amount == 0 { return rgba }
+        if intensity == 0 && grain.amount == 0 && !effects.enabled { return rgba }
         if sourceBuffer?.length != byteCount || destinationBuffer?.length != byteCount {
             sourceBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
             destinationBuffer = device.makeBuffer(length: byteCount, options: .storageModeShared)
@@ -52,10 +55,11 @@ actor MetalLUTRenderer {
         encoder.dispatchThreads(MTLSize(width: count, height: 1, depth: 1),
                                 threadsPerThreadgroup: MTLSize(width: group, height: 1, depth: 1))
         encoder.endEncoding()
+        if effects.enabled { try finish.encode(source: destinationBuffer, destination: sourceBuffer, width: width, height: height, settings: effects, command: command) }
         command.commit()
         command.waitUntilCompleted()
         guard command.status == .completed else { throw MetalLUTError.failed(command.error?.localizedDescription ?? "GPU LUT 처리가 실패했습니다.") }
-        return Data(bytes: destinationBuffer.contents(), count: byteCount)
+        return Data(bytes: (effects.enabled ? sourceBuffer : destinationBuffer).contents(), count: byteCount)
     }
 }
 

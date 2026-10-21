@@ -36,6 +36,7 @@ final class CameraModel: ObservableObject {
     @Published private(set) var histogram: PreviewHistogram?
     @Published private(set) var liveUsesLUT = false
     @Published var liveIntensity = 1.0
+    @Published var liveFinish = FilmFinishSettings()
     @Published var liveGrain = 0.0
     @Published var liveCompareOriginal = false
     private var longJobID: UUID?
@@ -176,7 +177,7 @@ final class CameraModel: ObservableObject {
     }
 
     func updateLiveIntensity() {
-        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain))
+        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain), effects: !liveUsesLUT || liveCompareOriginal ? FilmFinishSettings() : liveFinish)
     }
 
     func updateMonitoring() {

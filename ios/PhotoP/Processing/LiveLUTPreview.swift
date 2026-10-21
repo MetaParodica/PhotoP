@@ -24,6 +24,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     var sourceImageSize: CGSize? { lock.withLock { imageSize } }
     private var intensity = 1.0
     private var grain = GrainSettings()
+    private var effects = FilmFinishSettings()
     private var monitoring = MonitoringSettings()
     private var lastHistogramTime: TimeInterval = 0
     private var announcedGeneration: UInt64?
@@ -71,10 +72,11 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         eventRevision &+= 1
         return Event(revision: eventRevision, kind: kind)
     }
-    func setIntensity(_ value: Double, grain settings: GrainSettings = GrainSettings()) {
+    func setIntensity(_ value: Double, grain settings: GrainSettings = GrainSettings(), effects finishing: FilmFinishSettings = FilmFinishSettings()) {
         guard value.isFinite, (0...1).contains(value) else { return }
         guard (try? settings.validate()) != nil else { return }
-        lock.withLock { intensity = value; grain = settings }
+        guard (try? finishing.validate()) != nil else { return }
+        lock.withLock { intensity = value; grain = settings; effects = finishing }
     }
 
     func setMonitoring(_ settings: MonitoringSettings) {
@@ -93,7 +95,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
 
     // The capture delegate calls this only on frameQueue.
     private func render(_ buffer: CVPixelBuffer) {
-        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, MonitoringSettings)? = lock.withLock {
+        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, FilmFinishSettings, MonitoringSettings)? = lock.withLock {
             guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }
             imageSize = CGSize(width: CGFloat(CVPixelBufferGetWidth(buffer)), height: CGFloat(CVPixelBufferGetHeight(buffer)))
@@ -101,15 +103,15 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
             let now = ProcessInfo.processInfo.systemUptime
             if sampleSettings.histogram && now - lastHistogramTime >= 0.25 { lastHistogramTime = now }
             else { sampleSettings.histogram = false }
-            return (layer, ticket, intensity, grain, sampleSettings)
+            return (layer, ticket, intensity, grain, effects, sampleSettings)
         }
-        guard let (surface, ticket, strength, grainSettings, monitorSettings) = request else { return }
+        guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings) = request else { return }
         var submitted = false
         defer { if !submitted { _ = lock.withLock { state.complete(ticket) } } }
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
-                let image = try processor.encode(buffer, intensity: strength, grain: grainSettings, monitoring: monitorSettings, command: command)
+                let image = try processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, command: command)
                 try display.encode(image: image, destination: drawable.texture, command: command)
                 command.present(drawable)
                 command.addCompletedHandler { [self, buffer] completed in
