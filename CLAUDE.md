@@ -36,4 +36,5 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 ## 현재 상태 (2026-10)
 
 - Phase 1–6(사진·LUT·RAW·모니터·브래킷·장노출·구도·필름 룩 59+3) 개발 범위 구현, 자동 테스트 통과. 실기기 품질 검증은 대기.
-- Phase 7 영상 진행 중: SDR 무보정(LUT 비굽기) 녹화, 720p/1080p/4K·24–60fps·H.264/HEVC, 파일 검증·영상 라이브러리. 오디오 없음(`audioRequested == false` 강제), Log/HDR·안정화·LUT 모니터 녹화 미구현.
+- Phase 7 영상 진행 중: SDR 무보정(LUT 비굽기) 녹화, 720p/1080p/4K·24–60fps·H.264/HEVC, 180° 셔터 제안, 선택 오디오(마이크 권한은 켤 때만), 지원 손떨림 보정, manifest v2(v1 호환), 파일 검증·영상 라이브러리. 영상 LUT/분석 모니터와 Log/HDR은 미구현.
+- CI는 `main`, `codex/**`, `claude/**` push와 PR에서 실행된다.

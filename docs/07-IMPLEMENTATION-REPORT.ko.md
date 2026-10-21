@@ -1,6 +1,6 @@
 # 현재 개발 단계 보고
 
-기준: 2026-10-21 KST. `MetaParodica/PhotoP`, `codex/camera-ui-refresh`, [Draft PR #2](https://github.com/MetaParodica/PhotoP/pull/2). 이전 PR #1은 main에 병합되었으며 이번 변경은 별도 PR에 보관한다. 초기 Phase1–6의 사진 기능을 바탕으로 UI·외부 룩·공간 효과를 확장했다. 실제 iPhone 품질 승인은 별도 대기다.
+기준: 2026-10-21 KST. `MetaParodica/PhotoP` main. 촬영 UI·외부 룩·공간 효과와 Phase 7 SDR 영상 1차 구현은 main에 병합되었다(`e87b484`). 이후 영상 오디오·손떨림 보정은 `claude/maintenance-guide` 브랜치에서 진행하며 [08 §31](08-STEP-VALIDATION.ko.md)에 기록한다. 초기 Phase1–6의 사진 기능을 바탕으로 UI·외부 룩·공간 효과를 확장했다. 실제 iPhone 품질 승인은 별도 대기다.
 
 ## 1. 구현 기능
 
