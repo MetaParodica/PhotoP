@@ -33,10 +33,41 @@ jobs:
         shell: bash
         run: |
           device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for k,v in d["devices"].items() if "iOS" in k for x in v if "iPhone" in x["name"]))')
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$device_id" CODE_SIGNING_ALLOWED=NO test
+          echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
+          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult CODE_SIGNING_ALLOWED=NO test
       - name: Verify LUT bundle policy
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v
           python3 scripts/check_lut_bundle.py
           cmp assets/luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts/manifest.json
           python3 scripts/check_lut_bundle.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts
+      - name: Capture implemented camera UI on Simulator
+        working-directory: ios
+        run: |
+          mkdir -p screenshots
+          xcrun simctl status_bar "$PHOTOP_SIMULATOR" override --time '9:41' --dataNetwork wifi --wifiMode active --wifiBars 3 --batteryState charged --batteryLevel 100
+          xcrun simctl install "$PHOTOP_SIMULATOR" .simulatorbuild/Build/Products/Debug-iphonesimulator/PhotoP.app
+          for view in camera guide; do
+            args="--ui-review"
+            if [ "$view" = guide ]; then args="$args --review-guide"; fi
+            xcrun simctl launch --terminate-running-process "$PHOTOP_SIMULATOR" com.photop.camera $args
+            sleep 3
+            xcrun simctl io "$PHOTOP_SIMULATOR" screenshot "screenshots/$view.png"
+            sips -Z 1280 -s format jpeg -s formatOptions 72 "screenshots/$view.png" --out "screenshots/$view.jpg"
+          done
+          python3 - <<'PYSCREEN'
+          import base64, pathlib
+          for p in sorted(pathlib.Path('screenshots').glob('*.jpg')):
+              print('PHOTOP_IMAGE_BEGIN:' + p.name)
+              data = base64.b64encode(p.read_bytes()).decode()
+              for i in range(0, len(data), 120): print('PHOTOP_IMAGE_DATA:' + data[i:i+120])
+              print('PHOTOP_IMAGE_END')
+          PYSCREEN
+      - name: Upload native UI screenshots and test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: photop-native-ui
+          path: |
+            ios/screenshots/
+            ios/UIValidation.xcresult
