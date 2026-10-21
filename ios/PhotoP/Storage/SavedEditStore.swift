@@ -54,10 +54,14 @@ actor SavedEditStore {
               LUTPhotoEditor.hash(cube) == recipe.lutSHA256 else {
             throw ImageEditingError.invalid("원본 또는 LUT 해시가 저장된 레시피와 다릅니다.")
         }
+        if let provenance = recipe.provenance {
+            guard provenance.renderLUTSHA256 == recipe.lutSHA256,
+                  provenance.inputColorSpace == "sRGB", provenance.outputColorSpace == "sRGB" else { throw CameraError.invalidPhotoData }
+        }
         guard let text = String(data: cube, encoding: .utf8) else { throw ImageEditingError.invalid("LUT UTF-8 데이터가 유효하지 않습니다.") }
         let lut = try CubeLUT.parse(text)
         return SavedEdit(id: id, original: original, recipe: recipe,
-                         imported: ImportedLUT(data: cube, lut: lut, displayName: recipe.lutTitle ?? lut.title ?? "저장된 LUT"))
+                         imported: ImportedLUT(data: cube, lut: lut, displayName: recipe.lutTitle ?? lut.title ?? "저장된 LUT", provenance: recipe.provenance))
     }
 
     private func requireLocal(_ url: URL) throws {

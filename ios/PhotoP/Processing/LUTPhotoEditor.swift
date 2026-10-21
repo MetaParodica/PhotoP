@@ -15,6 +15,7 @@ struct ImageProcessingRecipe: Codable, Sendable {
     let pipeline: String
     var grain: GrainSettings? = nil
     var finish: FilmFinishSettings? = nil
+    var provenance: LUTProvenance? = nil
 }
 
 // Separate actor for file decoding/encoding; the renderer owns GPU resources.
@@ -25,6 +26,7 @@ actor LUTPhotoEditor {
     private var cubeData: Data?
     private var lut: CubeLUT?
     private var lutDisplayName: String?
+    private var provenance: LUTProvenance?
 
     init(original: URL) { self.original = original }
 
@@ -44,6 +46,7 @@ actor LUTPhotoEditor {
         lutDisplayName = imported.displayName
         renderer = next
         cubeData = imported.data
+        provenance = imported.provenance
         return imported.displayName
     }
 
@@ -51,6 +54,12 @@ actor LUTPhotoEditor {
         guard let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
         let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT")
         try await LUTLibrary.shared.save(imported)
+    }
+
+    func savePreset(name: String, settings: ProcessingLookSettings) async throws {
+        guard let cubeData, let lut else { throw CameraError.invalidPhotoData }
+        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? "사용자 LUT", provenance: provenance)
+        try await FilterPresetLibrary.shared.save(imported, settings: settings, name: name)
     }
 
     func renderPreview(intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) async throws -> SDRImage {
@@ -71,6 +80,7 @@ actor LUTPhotoEditor {
                                             pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → trilinear LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted")
         recipe.grain = grain
         recipe.finish = effects
+        recipe.provenance = provenance
         let folder = original.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Edits", isDirectory: true)
         return try Self.writeBundle(jpeg: image.jpeg(), cube: cubeData, recipe: recipe, in: folder)
     }

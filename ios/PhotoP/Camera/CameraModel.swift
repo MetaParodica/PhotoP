@@ -38,6 +38,7 @@ final class CameraModel: ObservableObject {
     @Published var liveIntensity = 1.0
     @Published var liveFinish = FilmFinishSettings()
     @Published var liveGrain = 0.0
+    @Published var liveGrainSeed: UInt32 = 1
     @Published var liveCompareOriginal = false
     private var longJobID: UUID?
     private var longReprocessTask: Task<URL, Error>?
@@ -130,6 +131,12 @@ final class CameraModel: ObservableObject {
     private func activateLiveLUT(_ imported: ImportedLUT) async throws {
         let preview = try await makeLivePreview(imported.lut)
         try await service.setLivePreview(preview)
+        if let settings = imported.preset {
+            liveIntensity = settings.intensity
+            liveGrain = settings.grain.amount
+            liveGrainSeed = settings.grain.seed
+            liveFinish = settings.finish
+        }
         importedLiveLUT = imported
         liveLUTTitle = imported.displayName
         liveUsesLUT = true
@@ -145,6 +152,15 @@ final class CameraModel: ObservableObject {
         guard let importedLiveLUT else { return }
         do { try await LUTLibrary.shared.save(importedLiveLUT); message = "LUT 즐겨찾기에 저장했습니다." }
         catch { message = error.localizedDescription }
+    }
+
+    func saveLivePreset(name: String) async {
+        guard let importedLiveLUT, liveUsesLUT else { return }
+        do {
+            let settings = ProcessingLookSettings(intensity: liveIntensity, grain: .init(amount: liveGrain, seed: liveGrainSeed), finish: liveFinish)
+            try await FilterPresetLibrary.shared.save(importedLiveLUT, settings: settings, name: name)
+            message = "전체 룩을 사용자 프리셋에 저장했습니다."
+        } catch { message = error.localizedDescription }
     }
 
     func enableLiveLUT() async {
@@ -177,7 +193,7 @@ final class CameraModel: ObservableObject {
     }
 
     func updateLiveIntensity() {
-        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain), effects: !liveUsesLUT || liveCompareOriginal ? FilmFinishSettings() : liveFinish)
+        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain, seed: liveGrainSeed), effects: !liveUsesLUT || liveCompareOriginal ? FilmFinishSettings() : liveFinish)
     }
 
     func updateMonitoring() {

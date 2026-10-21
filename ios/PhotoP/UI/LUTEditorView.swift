@@ -18,6 +18,9 @@ struct LUTEditorView: View {
     @State private var showOriginal = false
     @State private var importing = false
     @State private var showFavorites = false
+    @State private var showStyles = false
+    @State private var savePreset = false
+    @State private var presetName = ""
     @State private var busy = false
     @State private var rendering = false
     @State private var message: String?
@@ -46,7 +49,7 @@ struct LUTEditorView: View {
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                         .disabled(busy || title != nil)
-                    Button(".cube 가져오기") { importing = true }
+                    Button(".cube / Hald PNG 가져오기") { importing = true }
                         .disabled(!profileConfirmed || busy || originalImage == nil)
                     HStack {
                         Button("즐겨찾기 불러오기") { showFavorites = true }.disabled(busy || originalImage == nil)
@@ -58,6 +61,10 @@ struct LUTEditorView: View {
                                 catch { message = error.localizedDescription }
                             }
                         }.disabled(busy || title == nil)
+                    }
+                    HStack {
+                        Button("스타일·사용자 프리셋") { showStyles = true }.disabled(busy || originalImage == nil)
+                        Button("전체 룩 저장") { savePreset = true }.disabled(busy || title == nil)
                     }
                     Text("Log/HDR LUT는 아직 지원하지 않습니다.").font(.caption).foregroundStyle(.secondary)
                     HStack {
@@ -112,6 +119,30 @@ struct LUTEditorView: View {
                         } catch { message = error.localizedDescription }
                     }
                 case .failure(let error): message = error.localizedDescription
+                }
+            }
+            .alert("전체 룩 저장", isPresented: $savePreset) {
+                TextField("프리셋 이름", text: $presetName)
+                Button("저장") {
+                    busy = true
+                    Task {
+                        defer { busy = false }
+                        do {
+                            try await editor.savePreset(name: presetName, settings: .init(intensity: intensity, grain: .init(amount: grainAmount, seed: grainSeed), finish: finish))
+                            message = "LUT·강도·입자·마감값을 저장했습니다."
+                        } catch { message = error.localizedDescription }
+                    }
+                }
+                Button("취소", role: .cancel) { }
+            }
+            .sheet(isPresented: $showStyles) {
+                FilmStylesView { imported in
+                    title = try await editor.useLUT(imported)
+                    if let settings = imported.preset {
+                        intensity = settings.intensity; grainAmount = settings.grain.amount
+                        grainSeed = settings.grain.seed; finish = settings.finish
+                    }
+                    profileConfirmed = true; renderedImage = nil; exported = nil; revision += 1; message = nil
                 }
             }
             .sheet(isPresented: $showFavorites) {
