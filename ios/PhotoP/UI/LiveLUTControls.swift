@@ -15,32 +15,27 @@ struct LiveLUTControls: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("실시간 LUT") {
+                Section("촬영 결과 룩 · 미리보기 없음") {
                     Text(model.liveLUTTitle ?? "사용자 .cube를 가져오세요")
                     if let credit = model.liveCredit { Text(credit).font(.caption2).textSelection(.enabled) }
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                     Button(".cube / Hald PNG 가져오기") { importing = true }
-                        .disabled(!profileConfirmed || model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
+                        .disabled(!profileConfirmed || model.busy || model.snapshot.isApplyingSettings)
                     Button("즐겨찾기에서 불러오기") { showFavorites = true }
-                        .disabled(model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
+                        .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Button("스타일·사용자 프리셋") { showStyles = true }
-                        .disabled(model.busy || model.snapshot.isApplyingSettings || model.livePreview != nil || model.snapshot.state != .running)
+                        .disabled(model.busy || model.snapshot.isApplyingSettings)
                     Button("전체 룩 저장") { savePreset = true }.disabled(model.busy || !model.liveUsesLUT)
                     Button("현재 LUT 즐겨찾기에 저장") { Task { await model.favoriteLiveLUT() } }
                         .disabled(model.liveLUTTitle == nil || model.busy)
-                    Toggle("미리보기 적용", isOn: Binding(get: { model.livePreview != nil && model.liveUsesLUT }, set: { value in
-                        if value { Task { await model.enableLiveLUT() } }
-                        else { model.disableLiveLUT() }
-                    }))
-                    .disabled(model.busy || model.snapshot.isApplyingSettings || model.liveLUTTitle == nil || model.snapshot.state != .running || (model.livePreview != nil && !model.liveUsesLUT))
+                    Button("룩 적용 해제") { Task { await model.selectOriginalLook() } }.disabled(!model.liveUsesLUT || model.busy)
                     Slider(value: $model.liveIntensity, in: 0...1) { Text("LUT 강도") }
-                        .disabled(model.livePreview == nil)
+                        .disabled(!model.liveUsesLUT)
                     Text(model.liveIntensity, format: .percent.precision(.fractionLength(0)))
-                    Slider(value: $model.liveGrain, in: 0...1) { Text("기본 필름 그레인") }.disabled(model.livePreview == nil)
+                    Slider(value: $model.liveGrain, in: 0...1) { Text("기본 필름 그레인") }.disabled(!model.liveUsesLUT)
                     Text("그레인 \(Int(model.liveGrain * 100))% · 기본 단색 입자")
-                    FilmFinishControls(settings: $model.liveFinish).disabled(model.livePreview == nil || !model.liveUsesLUT)
-                    Toggle("원본 색상과 비교", isOn: $model.liveCompareOriginal).disabled(model.livePreview == nil)
-                    Text("미리보기 전용입니다. 촬영 사진에는 LUT를 굽지 않습니다.").font(.caption)
+                    FilmFinishControls(settings: $model.liveFinish).disabled(!model.liveUsesLUT)
+                    Text("카메라·예시 미리보기에는 룩을 적용하지 않습니다. 촬영 후 SDR JPEG 결과물을 만들고 원본은 그대로 보존합니다. RAW와 영상에는 적용하지 않습니다.").font(.caption)
                 }
                 Section {
                     Text("발열·저전력 상태에 따라 처리 해상도와 분석 빈도를 자동으로 낮춥니다. 센서 프레임레이트와 사진 해상도는 이 설정으로 변경하지 않습니다.").font(.caption)
@@ -50,7 +45,7 @@ struct LiveLUTControls: View {
                     if let message = model.message { Text(message).font(.caption) }
                 }
             }
-            .navigationTitle("LUT 미리보기")
+            .navigationTitle("촬영 룩")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("닫기") { dismiss() } } }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
                 switch result {
@@ -64,7 +59,7 @@ struct LiveLUTControls: View {
                 Button("취소", role: .cancel) { }
             }
             .sheet(isPresented: $showStyles) {
-                FilmStylesView(sceneSample: model.sceneSample) { imported in try await model.useLiveLUT(imported) }
+                FilmStylesView { imported in try await model.useLiveLUT(imported) }
             }
             .sheet(isPresented: $showFavorites) {
                 LUTFavoritesView { imported in try await model.useLiveLUT(imported) }

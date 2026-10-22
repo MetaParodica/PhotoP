@@ -38,6 +38,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var fillsViewfinder = false
     private var lastSampleTime = -Double.infinity
     private var latestSampleID: UUID?
+    private var recordingBudget = false
 
     init(lut: CubeLUT, onSample: @escaping @Sendable (UUID, LookSceneSample) -> Void = { _, _ in }, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue()
@@ -82,6 +83,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     func setSampleDelivery(_ enabled: Bool) { lock.withLock { samplesWanted = enabled; if !enabled { latestSampleID = nil } } }
     func isCurrentSample(_ id: UUID) -> Bool { lock.withLock { latestSampleID == id && samplesWanted && state.running } }
     func setViewfinderFill(_ fill: Bool) { lock.withLock { fillsViewfinder = fill } }
+    func setRecordingBudget(_ active: Bool) { lock.withLock { recordingBudget = active } }
     // MainActor deliveries from different queues can arrive in a different order.
     func isCurrentEvent(_ event: Event) -> Bool { lock.withLock { event.revision == eventRevision } }
     private func makeEvent(_ kind: Event.Kind) -> Event {
@@ -128,7 +130,8 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                 }
             }
         }
-        composition.offer(buffer, minimumInterval: budget.analysisInterval)
+        let interval = lock.withLock { recordingBudget ? max(0.4, budget.compositionInterval) : budget.compositionInterval }
+        composition.offer(buffer, minimumInterval: interval)
         render(buffer, budget: budget)
     }
 

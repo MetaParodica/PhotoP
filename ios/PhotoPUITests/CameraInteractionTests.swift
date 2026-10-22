@@ -2,6 +2,42 @@ import XCTest
 import UIKit
 
 final class CameraInteractionTests: XCTestCase {
+    @MainActor func testIntelligentLibraryAppliesManualRuleWithoutFakeDetections() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        let ai = app.buttons["camera.ai"]
+        XCTAssertTrue(ai.waitForExistence(timeout: 10))
+        ai.press(forDuration: 1)
+        app.buttons["구도 라이브러리"].tap()
+        let golden = app.buttons["camera.ai.rule.golden"]
+        XCTAssertTrue(golden.waitForExistence(timeout: 3))
+        if !golden.isHittable { app.swipeUp() }
+        golden.tap()
+        XCTAssertEqual(ai.value as? String, "켜짐")
+        XCTAssertTrue(app.descendants(matching: .any)["camera.ai.status"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+        XCTAssertFalse(app.buttons["camera.coach.zoom"].exists)
+    }
+    @MainActor func testAIGuideCanToggleWithoutInventingPeopleOnSimulator() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        let ai = app.buttons["camera.ai"]
+        XCTAssertTrue(ai.waitForExistence(timeout: 10))
+        XCTAssertEqual(ai.value as? String, "꺼짐")
+        XCTAssertFalse(app.descendants(matching: .any)["camera.ai.status"].exists)
+        let off = XCTAttachment(screenshot: app.screenshot()); off.name = "PhotoP-AI-off-simulator-no-camera"; off.lifetime = .keepAlways; add(off)
+        ai.tap()
+        XCTAssertEqual(ai.value as? String, "켜짐")
+        XCTAssertTrue(app.descendants(matching: .any)["camera.ai.status"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+        let on = XCTAttachment(screenshot: app.screenshot()); on.name = "PhotoP-AI-on-simulator-no-camera"; on.lifetime = .keepAlways; add(on)
+        ai.tap()
+        XCTAssertEqual(ai.value as? String, "꺼짐")
+        XCTAssertFalse(app.descendants(matching: .any)["camera.ai.status"].exists)
+        XCTAssertTrue(app.buttons["camera.tool.ev"].exists)
+    }
     @MainActor
     func testContextualControlsStayOnCameraAndKeepShutterVisible() {
         let app = XCUIApplication()
@@ -131,7 +167,7 @@ final class CameraInteractionTests: XCTestCase {
         looks.name = "PhotoP-look-cards"; looks.lifetime = .keepAlways; add(looks)
     }
 
-    @MainActor func testControlsStayBelowViewfinderInBothOrientations() {
+    @MainActor func testViewfinderExtendsBehindControlsInBothOrientations() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
         app.launch()
@@ -142,25 +178,54 @@ final class CameraInteractionTests: XCTestCase {
             let dock = app.descendants(matching: .any)["camera.dock"]
             XCTAssertTrue(finder.waitForExistence(timeout: 5))
             XCTAssertTrue(dock.exists)
+            let before = finder.frame
             app.buttons["camera.monitor"].tap()
             let panel = app.descendants(matching: .any)["camera.panel.monitor"]
             XCTAssertTrue(panel.waitForExistence(timeout: 3))
-            XCTAssertGreaterThanOrEqual(panel.frame.minY, finder.frame.maxY - 1)
+            XCTAssertTrue(finder.frame.intersects(dock.frame))
+            XCTAssertTrue(finder.frame.contains(panel.frame.insetBy(dx: 2, dy: 2)))
+            XCTAssertEqual(finder.frame.width, before.width, accuracy: 1)
+            XCTAssertEqual(finder.frame.height, before.height, accuracy: 1)
             XCTAssertTrue(app.buttons["camera.shutter"].isHittable)
             XCTAssertFalse(app.buttons["디지털 줌"].exists)
             app.buttons["camera.panel.close"].tap()
         }
     }
 
-    @MainActor func testDepthModeExplainsUnavailableHardwareOnSimulator() {
+    @MainActor func testDepthIsAvailableFromProApertureControlNotASeparateMode() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
         app.launch()
-        app.buttons["camera.mode.depth"].tap()
-        XCTAssertTrue(app.staticTexts["LiDAR 지원 기기가 필요합니다"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["camera.depth.capture"].exists)
-        app.buttons["닫기"].tap()
+        XCTAssertFalse(app.buttons["camera.mode.depth"].exists)
+        app.buttons["PRO"].tap()
+        let rail = app.buttons["camera.tool.aperture"]
+        // PRO has a horizontally scrollable control rail on narrow devices.
+        for _ in 0..<4 where !rail.isHittable { app.descendants(matching: .any)["camera.controls.rail"].swipeLeft() }
+        XCTAssertTrue(rail.waitForExistence(timeout: 3)); rail.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["camera.panel.aperture"].waitForExistence(timeout: 3))
+        let toggle = app.switches["camera.depth.toggle"]
+        XCTAssertTrue(toggle.exists); XCTAssertFalse(toggle.isEnabled, "No simulated depth capability may be invented")
+        app.buttons["camera.panel.close"].tap()
         XCTAssertTrue(app.buttons["camera.shutter"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor func testLongExposureDurationIsFirstAndSupportsDirectEntry() {
+        let app = XCUIApplication(); app.launchArguments = ["--ui-review"]; app.launch()
+        app.buttons["LONG"].tap()
+        let duration = app.buttons["camera.tool.longExposure"]
+        XCTAssertTrue(duration.waitForExistence(timeout: 3))
+        XCTAssertLessThan(duration.frame.minX, app.buttons["camera.tool.iso"].frame.minX)
+        XCTAssertEqual(duration.value as? String, "4 s")
+        duration.tap()
+        let field = app.textFields["camera.long.duration.input"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (field.value as? String ?? "").count))
+        field.typeText("12")
+        if app.buttons["완료"].exists { app.buttons["완료"].tap() }
+        app.buttons["camera.panel.close"].tap()
+        XCTAssertEqual(app.buttons["camera.tool.longExposure"].value as? String, "12 s")
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
     }
 
     @MainActor private func reveal(_ element: XCUIElement, in panel: XCUIElement) {

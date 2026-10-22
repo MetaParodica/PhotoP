@@ -5,6 +5,11 @@ struct PreviewBudget: Equatable, Sendable {
     let framesPerSecond: Double
     let analysisInterval: Double
     let histogramInterval: Double
+    // Preview/monitor budgets remain independent from person tracking cadence.
+    var compositionInterval: Double {
+        guard analysisInterval.isFinite else { return .infinity }
+        return framesPerSecond >= 60 ? 0.2 : 0.4
+    }
     init(thermal: ProcessInfo.ThermalState, lowPower: Bool) {
         switch thermal {
         case .critical: maximumDimension = 480; framesPerSecond = 10; analysisInterval = .infinity; histogramInterval = 1

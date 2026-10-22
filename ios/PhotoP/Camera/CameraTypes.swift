@@ -6,6 +6,7 @@ struct CameraLens: Identifiable, Equatable, Sendable {
     let isFront: Bool
     // Magnification relative to the back wide lens from field of view; nil when it cannot be derived.
     var zoomEquivalent: Double? = nil
+    var depthCamera = false
 }
 
 struct CameraCapabilities: Equatable, Sendable {
@@ -26,6 +27,8 @@ struct CameraCapabilities: Equatable, Sendable {
     var maxZoom = 1.0
     var flashModes: [FlashSetting] = [.off]
     var shutterSoundSuppression = false
+    var depthAvailable = false
+    var depthDeliveryEnabled = false
 }
 
 struct ExposureSettings: Equatable, Sendable {

@@ -5,7 +5,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 ## 빌드·검증
 
 - Xcode 프로젝트는 생성물이다(`ios/PhotoP.xcodeproj/`는 gitignore). 원본은 `ios/project.yml` → `cd ios && xcodegen generate`.
-- Linux 세션에는 Swift/Xcode가 없다. Swift 빌드·XCTest·UI 테스트는 GitHub Actions(`.github/workflows/ios.yml`, macos-15)가 유일한 gate다. push 후 CI 결과로 확인한다.
+- Linux 기본 환경에는 Swift/Xcode가 없다. iOS SDK 빌드·앱 XCTest·UI 테스트는 GitHub Actions(`.github/workflows/ios.yml`, macos-15)에서 확인한다. 별도 Swift 도구 체인이 있으면 루트 `swift test`로 같은 프로덕션 구도/추적·코치·리뷰·촬영 정책 핵심의 portable XCTest를 실행할 수 있다. iOS 빌드나 Vision/카메라 검증과 혼동하지 않는다.
 - 로컬에서 가능한 검사(LUT 자산·아이콘):
   ```sh
   python3 -m unittest discover -s scripts -p 'test_*.py'
@@ -35,6 +35,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 
 ## 현재 상태 (2026-10)
 
+- 최신 UI·촬영 변경은 `docs/19-FULLSCREEN-CAPTURE-WORKFLOW.ko.md`를 우선한다. 전체 화면 뒤로 네이티브/중립 분석 프리뷰를 확장했다. LUT는 카메라·카드 미리보기 없이 촬영 후 별도 SDR JPEG로 적용한다. Depth는 별도 모드 대신 PRO f값 제어로 지원 렌즈의 실제 사진 깊이 데이터를 사용한다(소프트웨어 흐림 강도, 실제 조리개 아님). LONG 레일 맨 앞에 총 합성 시간과 직접 입력을 제공한다. 원본은 변경하지 않는다. 실제 iOS 빌드/기기 검증은 대기다.
+- 최신 AI Composition 전체 Phase 변경안: `docs/20-INTELLIGENT-CAMERA-ALL-PHASES.ko.md`. 후속 사용자의 전체 Phase 구현 요청으로 Phase 2–5 코드 통합까지 진행했다. 7개 촬영 의도, 자동 추천/수동 도식 29항목, 실제 영상 측정·Core Motion 코치, 사용자 탭 줌/노출 패널, 촬영 리뷰·전후 비교·선택적 기기 내 구도 횟수 학습을 추가했다. RAW/브래킷은 셔터 시 분석 출력을 해제, LONG은 합성 중 중지, 영상은 동시 출력 지원 시만 분석한다. 리뷰와 실시간 Vision은 공유 추론 게이트를 사용하며 리뷰 동안 실시간 추론을 잠시 멈춘다. iOS SDK/실영상/성능 인수는 대기이며 아래 기존 앱 로드맵의 Phase 번호와 구분한다. 과거 Phase 1 당시 기록은 `docs/18-AI-COMPOSITION-PHASE1.ko.md`.
 - Phase 1–6(사진·LUT·RAW·모니터·브래킷·장노출·구도·필름 룩 59+3) 개발 범위 구현, 자동 테스트 통과. 실기기 품질 검증은 대기.
 - Phase 7 영상 진행 중: SDR 무보정(LUT 비굽기) 녹화, 720p/1080p/4K·24–60fps·H.264/HEVC, 180° 셔터 제안, 선택 오디오, 지원 손떨림 보정, manifest v2(v1 호환), 파일 검증·영상 라이브러리. 노출 분석은 장치가 동시 출력을 허용할 때 연결한다. 영상 LUT 굽기·Log/HDR은 미구현이다.
 - 촬영 개선 변경안은 `docs/17-CAMERA-FIELD-FIXES.ko.md`를 따른다. 하단 dock·연속 설정 큐·가로 회전·초록 피킹·터치/길게 누르기·현장 룩 썸네일·장노출 연결·외부 룩 준비·지원 기기의 공식 셔터음 억제·ARKit LiDAR 패키지를 추가했다. 이 변경의 Xcode/실기기 검증은 아직 미수행이다. 기존 CI 성공을 새 코드의 성공으로 인용하지 않는다.

@@ -13,6 +13,7 @@ struct CameraQuickControls: View {
             case .iso, .shutter, .ev: exposure
             case .whiteBalance: whiteBalance
             case .focus: focus
+            case .aperture: depth
             case .format: if model.snapshot.video.isVideoMode { video } else { format }
             case .monitor: monitoring
             case .guide: composition
@@ -136,7 +137,7 @@ struct CameraQuickControls: View {
             Toggle("포커스 피킹", isOn: $model.monitoring.peaking)
             if model.monitoring.peaking { Slider(value: $model.monitoring.peakingThreshold, in: 0.01...1) { Text("피킹 임계값") } }
             Text("초록색 피킹은 선명한 윤곽을 표시합니다. 실제 초점 거리(m) 측정값은 아닙니다.").font(.caption).foregroundStyle(.secondary)
-            if model.livePreview != nil { Button("LUT·분석 프리뷰 끄기") { model.disableLiveLUT() } }
+            if model.livePreview != nil { Button("분석 프리뷰 끄기") { model.disableLiveLUT() } }
             else if model.monitoring.enabled { Button("프리뷰 다시 연결") { startMonitoring() }.disabled(model.snapshot.state != .running) }
         }
     }
@@ -154,7 +155,7 @@ struct CameraQuickControls: View {
             }
             CameraChoice(title: "포즈 골격", selection: $model.poseTemplate, values: PoseTemplate.allCases, identifier: "camera.guide.pose", key: { $0.id }, label: { $0.title })
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
-            Toggle("온디바이스 AI 제안", isOn: $model.guideAIEnabled)
+            AICompositionControls(model: model)
             Text("흰 선·점선은 목표 구도·실루엣, 노란 골격은 목표 포즈, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.guideGrid) { _, grid in model.showGrid = false; if grid != .off { model.compositionPresetID = nil } }
             .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
@@ -166,19 +167,18 @@ struct CameraQuickControls: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.liveLUTTitle ?? "원본 색상").font(.headline)
             HStack {
-                Button("스타일 선택", action: openStyles).buttonStyle(.borderedProminent).disabled(model.snapshot.state != .running)
+                Button("스타일 선택", action: openStyles).buttonStyle(.borderedProminent)
                 Button("가져오기·프리셋", action: openImports)
             }
             if model.liveUsesLUT {
                 HStack { Text("강도"); Slider(value: $model.liveIntensity, in: 0...1) { Text("룩 강도") }; Text("\(Int(model.liveIntensity * 100))%") }
-                Toggle("원본과 비교", isOn: $model.liveCompareOriginal)
                 DisclosureGroup("그레인·필름 마감") {
                     Slider(value: $model.liveGrain, in: 0...1) { Text("그레인") }
                     FilmFinishControls(settings: $model.liveFinish)
                 }
             }
-            if model.livePreview != nil { Button("프리뷰 해제 · 다른 룩 선택") { model.disableLiveLUT() } }
-            Text("룩은 프리뷰에 적용합니다. 촬영 원본은 보존하며 사진 편집에서 완성본을 저장합니다. 프리뷰 중 터치·길게 누르기로 AF/AE를 조절·고정할 수 있습니다.").font(.caption).foregroundStyle(.secondary)
+            if model.liveUsesLUT { Button("룩 적용 해제") { Task { await model.selectOriginalLook() } } }
+            Text("미리보기 없이 선택한 룩을 촬영 결과에만 적용합니다. 원본은 별도로 보존합니다. RAW·영상에는 적용하지 않습니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
@@ -186,12 +186,26 @@ struct CameraQuickControls: View {
     }
     private var longExposure: some View {
         VStack(alignment: .leading, spacing: 12) {
+            LongExposureDurationControl(duration: $model.longConfiguration.duration)
             Picker("합성 방식", selection: $model.longConfiguration.blend) { ForEach(LongExposureConfiguration.Blend.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-            CameraChoice(title: "총 합성 시간", selection: $model.longConfiguration.duration, values: [1.0, 2, 4, 8, 15, 30, 60, 120, 300],
-                         identifier: "camera.long.duration", label: { "\(Int($0))초" })
             Toggle("평행이동 정렬", isOn: $model.longConfiguration.align)
             Text("최대 1280px SDR 다중 프레임 합성입니다. 총 합성 시간은 센서 셔터 시간이 아닙니다.").font(.caption).foregroundStyle(.secondary)
             Button("촬영·진행·결과", action: openLongExposure).buttonStyle(.borderedProminent)
+        }
+    }
+    private var depth: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
+                .disabled(!model.depthEnabled && (model.snapshot.capabilities?.depthAvailable != true || !model.depthModeAllowed))
+                .accessibilityIdentifier("camera.depth.toggle")
+            CameraValueSlider(title: "심도 f값", value: $model.depthAperture, range: 1.4...16,
+                              display: { String(format: "f/%.1f", $0) }, onCommit: {})
+                .disabled(!model.depthEnabled).accessibilityIdentifier("camera.depth.aperture")
+            Text("작은 f값은 배경 흐림을 강하게, 큰 f값은 약하게 적용합니다. 실제 렌즈 조리개가 아닌 깊이 데이터 기반 소프트웨어 효과이며 촬영 결과에 적용합니다.")
+                .font(.caption).foregroundStyle(.secondary)
+            if !model.depthModeAllowed { Text("심도는 PRO의 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상과 동시 사용하지 않습니다.").font(.caption) }
+            else if model.snapshot.capabilities?.depthAvailable != true { Text("현재 카메라에서 사진 깊이 데이터를 제공하지 않습니다. 지원되는 듀얼/TrueDepth 카메라가 필요합니다.").font(.caption) }
+            Text("심도 카메라로 전환하면 렌즈의 노출·초점 지원 범위가 바뀔 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
         }
     }
     private var videoPreviewNotice: some View {

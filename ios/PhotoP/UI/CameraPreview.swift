@@ -34,6 +34,7 @@ struct CameraPreview: UIViewRepresentable {
     var fill = false
     var onOrientation: (CameraOrientation) -> Void = { _ in }
     var onIndicator: (CGPoint, Bool) -> Void = { _, _ in }
+    var onSubjectTap: (CGPoint) -> Void = { _ in }
     let onMeter: (CameraMeteringPoint, String, Bool) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -91,6 +92,12 @@ struct CameraPreview: UIViewRepresentable {
             let location = gesture.location(in: view)
             let imageRect = view.previewLayer.layerRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1))
             guard imageRect.contains(location) else { return }
+            // Official AVFoundation image rect accounts for rotation, mirroring,
+            // letterboxing and aspect-fill. Delivered Vision pixels are already
+            // rotated/mirrored too: DO NOT mirror the subject point a second time.
+            if !locked, let imagePoint = GuideGeometry.normalizedPoint(location, in: imageRect) {
+                parent.onSubjectTap(imagePoint)
+            }
             let point = view.previewLayer.captureDevicePointConverted(fromLayerPoint: location)
             guard let normalized = try? CameraMeteringPoint(x: point.x, y: point.y) else { return }
             parent.onIndicator(CGPoint(x: location.x / max(1, view.bounds.width), y: location.y / max(1, view.bounds.height)), locked)

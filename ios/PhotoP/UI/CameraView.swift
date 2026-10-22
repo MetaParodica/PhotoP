@@ -5,7 +5,7 @@ enum CameraDrawer: String {
 }
 
 enum CameraScreen: String, Identifiable {
-    case review, editor, history, videos, depth
+    case review, editor, history, videos
     var id: String { rawValue }
 }
 
@@ -18,6 +18,7 @@ struct CameraView: View {
     @State private var showLiveControls = false
     @State private var showStyles = false
     @State private var showLongExposure = false
+    @State private var showCompositionLibrary = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -35,23 +36,33 @@ struct CameraView: View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height
             let dockHeight = min(landscape ? (tool != nil ? 154.0 : drawer != nil ? 110.0 : 96.0) : (tool != nil ? 290.0 : drawer != nil ? 200.0 : 240.0), geometry.size.height * 0.48)
-            let available = max(1, geometry.size.height - dockHeight - 52)
-            let ratio: CGFloat = landscape ? 4 / 3 : 3 / 4
-            let width = isVideo ? geometry.size.width : min(geometry.size.width, available * ratio)
-            VStack(spacing: 4) {
-                topBar.padding(.horizontal, 10).frame(height: 44)
-                viewfinder(width: width, height: isVideo ? available : width / ratio)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            let insets = geometry.safeAreaInsets
+            ZStack(alignment: .topLeading) {
+                viewfinder(width: geometry.size.width + insets.leading + insets.trailing,
+                           height: geometry.size.height + insets.top + insets.bottom,
+                           topInset: geometry.safeAreaInsets.top + 52,
+                           bottomInset: dockHeight + geometry.safeAreaInsets.bottom + 8)
+                    .offset(x: -insets.leading, y: -insets.top)
                     .accessibilityElement(children: .contain).accessibilityIdentifier("camera.viewfinder")
-                cameraDock(landscape: landscape, height: dockHeight)
-                    .frame(height: dockHeight).clipped().accessibilityElement(children: .contain).accessibilityIdentifier("camera.dock")
-            }.frame(width: geometry.size.width, height: geometry.size.height)
+                VStack(spacing: 0) {
+                    topBar.padding(.horizontal, 10).frame(height: 44)
+                    Spacer(minLength: 0)
+                    cameraDock(landscape: landscape, height: dockHeight)
+                        .frame(height: dockHeight).clipped()
+                        .accessibilityElement(children: .contain).accessibilityIdentifier("camera.dock")
+                        .background(alignment: .bottom) {
+                            LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
+                                .allowsHitTesting(false)
+                        }
+                }.frame(width: geometry.size.width, height: geometry.size.height)
+            }.frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
         }
         .background(Color(red: 0.025, green: 0.025, blue: 0.035).ignoresSafeArea())
         .foregroundStyle(.white).tint(accent)
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
-        .sheet(isPresented: $showStyles) { FilmStylesView(sceneSample: model.sceneSample) { imported in try await model.useLiveLUT(imported) } }
+        .sheet(isPresented: $showStyles) { FilmStylesView { imported in try await model.useLiveLUT(imported) } }
         .sheet(isPresented: $showLongExposure) { LongExposureView(model: model) }
+        .sheet(isPresented: $showCompositionLibrary) { CompositionLibraryView(model: model) }
         .fullScreenCover(item: $screen, onDismiss: resume) { current in
             switch current {
             case .review: CaptureReviewView(model: model) { next in open(next) }
@@ -60,7 +71,6 @@ struct CameraView: View {
                 else { CaptureReviewView(model: model) { next in open(next) } }
             case .history: SavedEditsView()
             case .videos: VideoLibraryView()
-            case .depth: DepthCaptureView()
             }
         }
         .onAppear {
@@ -73,21 +83,35 @@ struct CameraView: View {
                 if arguments.contains("--review-person") { model.personGuide = PersonGuide(framing: .full, position: .left); model.framing = .square }
             } else { resume() }
         }
-        .onChange(of: scenePhase) { _, _ in if !reviewing { resume() } }
+        .onChange(of: scenePhase) { _, value in
+            if value != .active { model.pausePhotoReview() }
+            if !reviewing { resume() }
+        }
         .onChange(of: model.settings.exposure.manual) { _, manual in if manual { model.proMode = true } }
         .onChange(of: model.monitoring) { _, _ in model.monitoringChanged() }
         .onChange(of: model.focusAssistEnabled) { _, _ in model.monitoringChanged() }
         .onChange(of: model.guideAIEnabled) { _, _ in model.updateComposition(); model.monitoringChanged() }
         .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
+        .onChange(of: model.compositionTarget) { _, _ in model.compositionTargetChanged() }
+        .onChange(of: model.shootingIntent) { _, _ in model.intelligentOptionsChanged() }
+        .onChange(of: model.intelligentRule) { _, rule in model.selectIntelligentRule(rule) }
+        .onChange(of: model.cameraCoachEnabled) { _, _ in model.intelligentOptionsChanged() }
+        .onChange(of: model.coachLearningEnabled) { _, _ in model.learningChanged() }
+        .onChange(of: model.photoReviewEnabled) { _, _ in model.photoReviewSettingChanged() }
+        .onChange(of: model.framing) { _, _ in model.intelligentOptionsChanged() }
+        .sensoryFeedback(.success, trigger: model.compositionHapticID)
         .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
         .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
         .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
         .onChange(of: model.liveFinish) { _, _ in model.updateLiveIntensity() }
-        .onChange(of: model.videoPreviewFill) { _, fill in model.livePreview?.setViewfinderFill(isVideo && fill) }
+        .onChange(of: model.videoPreviewFill) { _, _ in
+            model.livePreview?.setViewfinderFill(model.viewfinderFill); model.intelligentOptionsChanged()
+        }
+        .onChange(of: model.proMode) { _, _ in model.validateDepthMode() }
+        .onChange(of: model.longMode) { _, _ in model.validateDepthMode() }
+        .onChange(of: model.rawMode) { _, _ in model.validateDepthMode() }
+        .onChange(of: model.bracketEnabled) { _, _ in model.validateDepthMode() }
         .onChange(of: model.snapshot.isApplyingSettings) { _, pending in if !pending { model.monitoringChanged() } }
-        .onChange(of: drawer) { _, value in model.setPreviewSamplesWanted(value == .looks || showStyles) }
-        .onChange(of: showStyles) { _, shown in model.setPreviewSamplesWanted(shown || drawer == .looks) }
-        .onChange(of: showLiveControls) { _, shown in model.setPreviewSamplesWanted(shown || showStyles || drawer == .looks) }
         .task { await model.prepareInstalledLooks() }
         .alert("카메라 알림", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
             Button("확인") { model.errorMessage = nil }
@@ -97,11 +121,7 @@ struct CameraView: View {
     }
     private func resume() { if !reviewing { model.setActive(scenePhase == .active && screen == nil) } }
     private func open(_ next: CameraScreen) {
-        if next == .depth {
-            Task { await model.suspendForDepth(); screen = .depth }
-            return
-        }
-        if next != .review && !reviewing { model.setActive(false) }
+        if !reviewing { model.setActive(false) }
         screen = next
     }
     private func toggle(_ selected: CameraTool) {
@@ -116,14 +136,15 @@ struct CameraView: View {
 
     // MARK: Viewfinder
 
-    private func viewfinder(width: CGFloat, height: CGFloat) -> some View {
+    private func viewfinder(width: CGFloat, height: CGFloat, topInset: CGFloat, bottomInset: CGFloat) -> some View {
         ZStack {
             if reviewing { reviewBackdrop }
             else {
                 CameraPreview(session: model.previewSession, mirrored: selectedFront, lensID: model.snapshot.selectedLens,
-                              zoom: model.snapshot.readout?.zoom ?? 1, onZoom: { model.setZoom($0) }, fill: isVideo && model.videoPreviewFill,
+                              zoom: model.snapshot.readout?.zoom ?? 1, onZoom: { model.setZoom($0) }, fill: model.viewfinderFill,
                               onOrientation: { value in Task { @MainActor in model.setOrientation(value) } },
-                              onIndicator: { point, locked in model.showMeteringTarget(point, locked: locked) }) { point, lensID, locked in
+                              onIndicator: { point, locked in model.showMeteringTarget(point, locked: locked) },
+                              onSubjectTap: { model.selectCompositionSubject(at: $0) }) { point, lensID, locked in
                     Task { await model.focusAndMeter(point, lensID: lensID, locked: locked) }
                 }
                 if model.snapshot.state != .running { unavailableCamera }
@@ -139,12 +160,18 @@ struct CameraView: View {
                 }.foregroundStyle(.yellow).position(x: target.point.x * width, y: target.point.y * height)
                     .allowsHitTesting(false).accessibilityIdentifier("camera.focus.target")
             }
-            CompositionOverlay(grid: model.guideGrid, pose: model.poseTemplate, opacity: model.guideOpacity,
-                               snapshot: model.composition, live: liveGuide, sourceSize: overlayImageSize, fill: isVideo && model.videoPreviewFill)
+            CompositionOverlay(grid: model.guideAIEnabled ? .off : model.guideGrid, pose: model.poseTemplate, opacity: model.guideOpacity,
+                               snapshot: model.composition, live: liveGuide, sourceSize: overlayImageSize,
+                               fill: model.viewfinderFill, showsAdvice: !model.guideAIEnabled)
+            if model.guideAIEnabled {
+                AICompositionOverlay(guide: model.aiComposition, live: liveGuide && !model.busy, opacity: model.guideOpacity,
+                                     fill: model.viewfinderFill, bottomInset: bottomInset,
+                                     manualRule: model.intelligentRule, sourceSize: overlayImageSize, status: model.coachAvailability)
+            }
             PersonGuideOverlay(guide: model.personGuide, opacity: model.guideOpacity, snapshot: model.composition,
-                               live: liveGuide, sourceSize: overlayImageSize, fill: isVideo && model.videoPreviewFill)
-            if let preset = model.compositionPreset { CompositionPresetOverlay(preset: preset, opacity: max(0.5, model.guideOpacity), imageSize: overlayImageSize, fill: isVideo && model.videoPreviewFill) }
-            if !isVideo && model.framing != .native { FramingMaskOverlay(aspect: model.framing, imageSize: model.orientation.imageSize) }
+                               live: liveGuide, sourceSize: overlayImageSize, fill: model.viewfinderFill)
+            if let preset = model.compositionPreset { CompositionPresetOverlay(preset: preset, opacity: max(0.5, model.guideOpacity), imageSize: overlayImageSize, fill: model.viewfinderFill) }
+            if !isVideo && model.framing != .native { FramingMaskOverlay(aspect: model.framing, imageSize: overlayImageSize, fill: model.viewfinderFill) }
             if model.showGrid { ThirdsGrid() }
             if let countdown = model.countdown {
                 Text("\(countdown)").font(.system(size: 96, weight: .thin, design: .rounded)).monospacedDigit()
@@ -152,7 +179,8 @@ struct CameraView: View {
             }
         }
         .frame(width: width, height: height).clipped()
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .onAppear { model.updateGuideViewport(CGSize(width: width, height: height)) }
+        .onChange(of: CGSize(width: width, height: height)) { _, size in model.updateGuideViewport(size) }
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
                 HStack(alignment: .top) {
@@ -160,8 +188,11 @@ struct CameraView: View {
                     Spacer()
                     if let histogram = model.histogram, model.liveHasFrame { PreviewHistogramView(histogram: histogram) }
                 }
-                if let feedback = personFeedback { feedbackChip(feedback) }
-            }.padding(.horizontal, 10).padding(.top, 8)
+                if model.guideAIEnabled && model.cameraCoachEnabled && liveGuide && !model.busy {
+                    CameraCoachBar(model: model) { toggle(model.settings.exposure.manual ? .shutter : .ev) }
+                }
+                if model.personGuide.framing != .off || model.compositionPresetID != nil, let feedback = personFeedback { feedbackChip(feedback) }
+            }.padding(.horizontal, 10).padding(.top, topInset)
                 .background(alignment: .top) { scrim(top: true).allowsHitTesting(false) }
         }
     }
@@ -187,7 +218,7 @@ struct CameraView: View {
             .frame(height: 120)
     }
     private var previewBadge: some View {
-        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · \(model.videoPreviewFill ? "화면 채움" : "전체 프레임") · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
+        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · \(model.videoPreviewFill ? "화면 채움" : "전체 프레임") · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.snapshot.state == .running ? "화면 채움 · 원본 전체 프레임 저장" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }
@@ -264,7 +295,8 @@ struct CameraView: View {
     // MARK: Zoom and controls rail
 
     private var sideLenses: [CameraLens] {
-        model.snapshot.lenses.filter { $0.isFront == selectedFront }.sorted { ($0.zoomEquivalent ?? 1) < ($1.zoomEquivalent ?? 1) }
+        model.snapshot.lenses.filter { $0.isFront == selectedFront && (!$0.depthCamera || $0.id == model.snapshot.selectedLens) }
+            .sorted { ($0.zoomEquivalent ?? 1) < ($1.zoomEquivalent ?? 1) }
     }
     private var zoomControl: some View {
         return HStack(spacing: 2) {
@@ -283,15 +315,13 @@ struct CameraView: View {
             .opacity(model.snapshot.lenses.isEmpty ? 0 : 1)
     }
     private var railTools: [CameraTool] {
-        var tools: [CameraTool] = model.proMode || isVideo || model.longMode ? [.iso, .shutter, .ev, .whiteBalance, .focus] : [.ev]
-        if model.longMode { tools.append(.longExposure) }
-        if isVideo { tools.append(.video) }
-        return tools
+        CaptureWorkflowPolicy.controls(pro: model.proMode, long: model.longMode, video: isVideo)
     }
     private var controlsRail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                if !model.proMode && !isVideo {
+                if !model.longMode || isVideo { aiButton }
+                if !model.proMode && !isVideo && !model.longMode {
                     Text("AUTO").font(.system(size: 10, weight: .bold, design: .rounded)).tracking(1).foregroundStyle(accent)
                         .padding(.horizontal, 8)
                 }
@@ -312,9 +342,29 @@ struct CameraView: View {
                     }.buttonStyle(.plain).accessibilityLabel(item.title).accessibilityValue(value(item))
                         .accessibilityIdentifier("camera.tool.\(item.rawValue)")
                 }
-                if !model.proMode && !isVideo { autoReadout }
+                if model.longMode && !isVideo { aiButton }
+                if !model.proMode && !isVideo && !model.longMode { autoReadout }
             }.padding(4)
         }.cameraGlass(radius: 22)
+            .accessibilityIdentifier("camera.controls.rail")
+    }
+    private var aiButton: some View {
+        Button { model.guideAIEnabled.toggle() } label: {
+            Text("AI").font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(model.guideAIEnabled ? accent : .white)
+                .frame(width: 44, height: verticalSizeClass == .compact ? 40 : 44)
+                .background(model.guideAIEnabled ? accent.opacity(0.15) : .clear, in: RoundedRectangle(cornerRadius: 14))
+        }.buttonStyle(.plain)
+            .accessibilityLabel("실시간 AI 구도 가이드")
+            .accessibilityValue(model.guideAIEnabled ? "켜짐" : "꺼짐")
+            .accessibilityIdentifier("camera.ai")
+            .contextMenu {
+                Button("구도 라이브러리") { showCompositionLibrary = true }
+                Button("촬영 의도·코치 설정") { toggle(.guide) }
+                ForEach(CompositionTarget.allCases) { target in
+                    Button(target.title) { model.compositionTarget = target; model.guideAIEnabled = true }
+                }
+            }
     }
     // Read-only live values in AUTO; PRO turns them into controls.
     private var autoReadoutText: String {
@@ -356,6 +406,8 @@ struct CameraView: View {
         case .ev: return r.map { String(format: "%+.1f EV", $0.exposureBias) } ?? "EV"
         case .whiteBalance: return r?.kelvin.map { "\(Int($0)) K" } ?? "WB"
         case .focus: return model.settings.focus.manual ? "MF" : "AF"
+        case .aperture: return model.depthEnabled ? String(format: "f/%.1f", model.depthAperture) : "f/—"
+        case .longExposure: return CaptureWorkflowPolicy.durationLabel(model.longConfiguration.duration)
         default: return ""
         }
     }
@@ -411,7 +463,7 @@ struct CameraView: View {
                     shutterRow.frame(height: 78)
                 }
             }
-        }.padding(.horizontal, 4).background(Color(white: 0.045))
+        }.padding(.horizontal, 4).background(.black.opacity(0.12))
     }
     private var shutterRow: some View {
         HStack {
@@ -453,8 +505,6 @@ struct CameraView: View {
                     if !reviewing && !isVideo { Task { await model.setVideoMode(true) } }
                     tool = nil; drawer = nil
                 }.accessibilityIdentifier("camera.mode.video")
-                modeButton("DEPTH", selected: screen == .depth) { open(.depth) }
-                    .accessibilityIdentifier("camera.mode.depth")
             }.disabled(locked || model.countdown != nil || model.recordingRequested)
             .frame(minHeight: 36).frame(maxWidth: .infinity)
         }
@@ -490,26 +540,26 @@ struct CameraView: View {
     }
     // Same carousel as guides: original, PhotoP colour styles, spatial looks, then adjust/browse.
     private var lookItems: [CameraCarouselItem] {
-        var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(LookSceneThumbnail(id: "original", sample: model.sceneSample))) {
+        var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(SymbolThumbnail(symbol: "camera"))) {
             Task { await model.selectOriginalLook() }
         }]
         items.append(CameraCarouselItem(id: "adjust", title: "강도·마감", thumbnail: AnyView(SymbolThumbnail(symbol: "slider.horizontal.3"))) { toggle(CameraTool.looks) })
         items.append(CameraCarouselItem(id: "browse", title: "전체·가져오기", thumbnail: AnyView(SymbolThumbnail(symbol: "square.grid.2x2"))) { showStyles = true })
         items += FilmStyle.all.map { style in
             CameraCarouselItem(id: style.id, title: style.name, selected: model.liveLookID == style.id,
-                               thumbnail: AnyView(LookSceneThumbnail(id: style.id, sample: model.sceneSample, load: { try style.imported() }))) {
+                               thumbnail: AnyView(SymbolThumbnail(symbol: "camera.filters"))) {
                 Task { await model.selectLook(id: style.id) { try style.imported() } }
             }
         }
         items += ProceduralLook.all.map { look in
             CameraCarouselItem(id: look.id, title: look.name, selected: model.liveLookID == look.id,
-                               thumbnail: AnyView(LookSceneThumbnail(id: look.id, sample: model.sceneSample, load: { try look.imported() }))) {
+                               thumbnail: AnyView(SymbolThumbnail(symbol: "sparkles"))) {
                 Task { await model.selectLook(id: look.id) { try look.imported() } }
             }
         }
         items += model.installedLooks.filter(\.canApply).map { look in
             CameraCarouselItem(id: look.id, title: look.name, selected: model.liveLookID == look.id,
-                               thumbnail: AnyView(LookSceneThumbnail(id: look.id, sample: model.sceneSample, load: { try await look.load() }))) {
+                               thumbnail: AnyView(SymbolThumbnail(symbol: "camera.filters"))) {
                 Task { await model.selectLook(id: look.id) { try await look.load() } }
             }
         }

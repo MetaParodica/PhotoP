@@ -20,6 +20,6 @@ final class CameraChromeTests: XCTestCase {
         XCTAssertEqual(CameraControlScale.shutter(1.0 / 125), "1/125")
         XCTAssertEqual(CameraControlScale.shutter(2), "2.0 s")
         XCTAssertEqual(CameraControlScale.shutter(0), "—")
-        XCTAssertEqual(Set(CameraTool.allCases.map(\.id)).count, 11)
+        XCTAssertEqual(Set(CameraTool.allCases.map(\.id)).count, 12)
     }
 }

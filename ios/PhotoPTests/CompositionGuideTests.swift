@@ -15,7 +15,7 @@ final class CompositionGuideTests: XCTestCase {
     }
     func testStaleAndFutureAdviceAreHidden() {
         let s = CompositionSnapshot(generatedAt: 10, width: 10, height: 10, bodies: [], polygons: [], advice: "fixture")
-        XCTAssertTrue(s.isFresh(at: 11)); XCTAssertFalse(s.isFresh(at: 12)); XCTAssertFalse(s.isFresh(at: 9))
+        XCTAssertTrue(s.isFresh(at: 10.5)); XCTAssertFalse(s.isFresh(at: 11)); XCTAssertFalse(s.isFresh(at: 9))
     }
     func testPoseTargetsStayInImageAndHaveExpectedPersonCounts() {
         XCTAssertTrue(PoseTemplate.off.targets.isEmpty)

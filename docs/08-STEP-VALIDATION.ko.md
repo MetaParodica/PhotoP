@@ -257,3 +257,23 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 이전 2차 개편 코드는 [실행39602679861](https://github.com/MetaParodica/PhotoP/actions/runs/39602679861)에서 SDK·전체 테스트·캡처 성공.
 - 결과: `7384cfa`, [실행39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835) SDK·Swift186·UI5·Python17·캡처 성공. 중간 실패(실행39604154344·39606862163·39608523260: UI 테스트 카드 탭/중복 ID, 39610737746: 20분 제한 취소)는 원인 수정 후 재검증했다.
 
+## 34. AI Composition Phase 1 코드 통합 (실영상 인수 대기)
+
+- 기준 `bddf682`, 이번 변경은 로컬 작업 트리. 인물/얼굴 실제 Vision 요청, 위치 대응/평활화/일시 가림 복구, 탭 선택과 기존 AF/AE 공존, 삼분할 목표/방향/완료 상태/햅틱, 만료/세대/발열 예산을 추가했다. 자세한 파일·제약·실기기 검사표는 [18 문서](18-AI-COMPOSITION-PHASE1.ko.md).
+- Swift 6.0.3/Linux에서 프로덕션 구도/추적 핵심을 Swift 5 언어 모드·strict concurrency complete로 컴파일하고 XCTest 17개 실행, 실패 0개. 최초 타입 추론 시간 초과를 switch로 단순화한 뒤 재검증했다. Python17·기존 자산 무결성 검사 통과, iOS Swift112개 구문 검사 통과.
+- iOS 전용 분석 예산/AI UI 테스트를 추가하고 CI에 portable `swift test`를 추가했다. 이번 변경의 iOS SDK build·앱 테스트·스크린샷·새 CI 결과는 아직 없다. 핵심의 합성 검출 입력 테스트는 Vision의 실제 인물 검출 정확도 검증이 아니다.
+- 실제 iPhone 카메라 검출·좌표 일치·추적 품질·햅틱·성능·촬영/저장 공존은 인수 대기다. 이번 첨부 지시서의 Phase 1 전체를 완료 처리하거나 후속 촬영 의도/코치/사진 리뷰를 함께 확대하지 않는다.
+
+## 35. 전체 화면·촬영 결과 룩·PRO 심도·LONG 시간 입력
+
+- 이전 AI 변경을 보존하고 전체 뷰파인더 뒤에 반투명 제어를 배치했다. LUT 실시간/예시 프리뷰를 끄고 원본 보존 후 별도 JPEG로 처리한다. 별도 DEPTH 모드 대신 PRO f값에서 실제 사진 깊이 기반 흐림을 제공한다. LONG 레일/패널 맨 앞에는 1~300초 총 합성 시간과 직접 입력을 제공한다. 상세·제약은 [19 문서](19-FULLSCREEN-CAPTURE-WORKFLOW.ko.md).
+- Swift 6.0.3/Linux portable XCTest26(기존17+정책9)·Python17·기존 LUT 무결성 검사 통과. iOS Swift116 구문 검사·diff 검사 통과. SDK 빌드가 아니다.
+- iOS 저장/룩 상태 테스트4 및 레이아웃/PRO f/시간 입력 UI 테스트는 추가/수정만 했으며 미실행이다. 실제 Depth 전달·화면·흐림 품질·촬영/저장·성능은 실기기 인수 대기다. 새 CI/커밋/푸시 기록은 없다.
+
+## 36. AI Composition & Intelligent Camera Coach 전체 Phase 코드 통합
+
+- 2026-10-23 KST, 후속 사용자의 전체 Phase 구현 요청에 따라 34단계 당시의 후속 코드 보류를 해제했다. 7개 촬영 의도, 자동 추천/수동 도식 29항목, 인물·관심 영역·직선·사각형·수평 기반 구도, 지원 렌즈/배율의 탭 줌 및 SDR 노출/기울기 코치, 촬영 리뷰·제한된 전후 비교·선택적 구도 횟수 학습을 통합했다. AUTO/PRO/RAW/LONG/VIDEO 실제 경로만 사용하며 원본/수동 설정을 보존한다. 상세는 [20 문서](20-INTELLIGENT-CAMERA-ALL-PHASES.ko.md).
+- 라이브/리뷰 추론 공유 게이트, 사진/RAW·브래킷/장노출 중 추론·출력 해제와 복구, 영상 2.5Hz 상한, 새 촬영/녹화·백그라운드 시 리뷰 취소, 결과 만료·렌즈/배율 재확인·해시/스키마 검증과 유한 캐시를 추가했다. 새 외부 의존성·모델·이미지 자산 없음.
+- Swift 6.0.3/Linux portable XCTest63(추적17+촬영 정책9+코치/구도28+리뷰9), Python17, 기존 LUT 무결성 검사 통과. iOS Swift127개 구문 검사 및 diff 검사 통과. SDK 타입 검사/앱 실행이 아니다.
+- iOS 전용 통합 테스트5개와 라이브러리 UI 테스트1개 추가, CI 원본/번들 모션 권한 문구 검사 추가. Xcode/iOS SDK/Simulator/iPhone이 없는 환경이므로 이번 SDK 빌드·앱/UI 테스트·새 스크린샷·실제 검출·FPS/발열/저장 검증은 미수행이다. 과거 CI를 이번 코드의 성공으로 인용하지 않는다. 커밋·푸시는 하지 않았다.
+

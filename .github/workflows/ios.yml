@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+      - name: Test portable composition and capture policies
+        run: swift test
       - name: Install project generator
         run: brew install xcodegen
       - name: Generate Xcode project
@@ -23,6 +25,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' PhotoP/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryAddUsageDescription' PhotoP/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' PhotoP/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print :NSMotionUsageDescription' PhotoP/Info.plist
       - name: Build for iPhone without signing
         working-directory: ios
         run: |
@@ -30,6 +33,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :NSCameraUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryAddUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print :NSMotionUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
       - name: Test model validation on Simulator
         working-directory: ios
         shell: bash

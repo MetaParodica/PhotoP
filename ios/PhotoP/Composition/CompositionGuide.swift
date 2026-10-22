@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
 import CoreGraphics
+#endif
 
 enum GuideScene: String, CaseIterable, Identifiable, Sendable {
     case general, portrait, architecture, landscape
@@ -54,10 +56,26 @@ struct CompositionSnapshot: Sendable {
     let bodies: [[String: CGPoint]] // Vision normalized, bottom-left origin.
     let polygons: [[CGPoint]]
     let advice: String
-    func isFresh(at time: Double) -> Bool { time >= generatedAt && time - generatedAt <= 1.5 }
+    var epoch: UInt64 = 0
+    var people: [DetectedPerson] = []
+    var evidence = SceneEvidence()
+    var peopleAnalysisMessage = "인물을 찾지 못했습니다. 인물이 보이도록 프레임을 조절하세요."
+    var detectionAvailable = true
+    func isFresh(at time: Double) -> Bool { time >= generatedAt && time - generatedAt <= 0.65 }
 }
 
 enum GuideGeometry {
+    static func visibleRegion(image: CGSize, viewport: CGSize, fill: Bool) -> CGRect {
+        let rect = imageRect(image: image, viewport: viewport, fill: fill)
+        guard rect.width > 0, rect.height > 0 else { return CGRect(x: 0, y: 0, width: 1, height: 1) }
+        let visible = rect.intersection(CGRect(origin: .zero, size: viewport))
+        return CGRect(x: (visible.minX - rect.minX) / rect.width, y: (visible.minY - rect.minY) / rect.height,
+                      width: visible.width / rect.width, height: visible.height / rect.height)
+    }
+    static func normalizedPoint(_ point: CGPoint, in rect: CGRect) -> CGPoint? {
+        guard rect.width > 0, rect.height > 0, point.x.isFinite, point.y.isFinite, rect.contains(point) else { return nil }
+        return CGPoint(x: (point.x - rect.minX) / rect.width, y: (point.y - rect.minY) / rect.height)
+    }
     static func imageRect(image: CGSize, viewport: CGSize, fill: Bool = false) -> CGRect {
         guard image.width > 0, image.height > 0, viewport.width > 0, viewport.height > 0 else { return .zero }
         let x = viewport.width / image.width, y = viewport.height / image.height

@@ -35,6 +35,34 @@ final class CameraModel: ObservableObject {
     @Published var guideOpacity = 0.6
     @Published var guideAIEnabled = false
     @Published private(set) var composition: CompositionSnapshot?
+    @Published private(set) var aiComposition: LiveCompositionGuide?
+    @Published var compositionTarget: CompositionTarget = .automatic
+    @Published private(set) var compositionHapticID: UInt64 = 0
+    private var compositionEngine = CompositionGuideEngine()
+    private var lastCompositionHapticTime = -Double.infinity
+    @Published var shootingIntent: ShootingIntent = .balanced
+    @Published var intelligentRule: CompositionRule = .automatic
+    @Published var cameraCoachEnabled = true
+    @Published var photoReviewEnabled = true
+    @Published var coachLearningEnabled = false
+    @Published private(set) var cameraTilt: CameraTilt?
+    @Published private(set) var cameraCoach: CameraCoachResult?
+    @Published private(set) var photoReviews: [URL: PhotoReviewReport] = [:]
+    @Published private(set) var photoReviewErrors: [URL: String] = [:]
+    @Published private(set) var reviewingURL: URL?
+    private var learning = CompositionLearning()
+    private var coachStabilizer = CoachAdviceStabilizer()
+    private var guideViewport = CGSize.zero
+    private var compositionCaptureSuspended = false
+    private var zoomAdviceSuppressedUntil = -Double.infinity
+    private var reviewTask: Task<Void, Never>?
+    private var reviewJobID = UUID()
+    private var reviewReferences: [URL: CaptureGuideReference] = [:]
+    private lazy var motionMonitor: CameraMotionMonitor = {
+        let monitor = CameraMotionMonitor()
+        monitor.onUpdate = { [weak self] value in self?.cameraTilt = value }
+        return monitor
+    }()
     @Published var monitoring = MonitoringSettings()
     @Published var focusAssistEnabled = true
     @Published private(set) var histogram: PreviewHistogram?
@@ -57,6 +85,12 @@ final class CameraModel: ObservableObject {
     @Published private(set) var countdown: Int?
     @Published private(set) var latestThumbnail: PhotoThumbnailImage?
     @Published var longMode = false
+    @Published private(set) var depthEnabled = false
+    @Published var depthAperture = 2.8
+    @Published private(set) var latestRendered: URL?
+    @Published private(set) var latestRenderedSeries: [URL] = []
+    private var depthReturnLens: String?
+    private var depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
     @Published private(set) var orientation: CameraOrientation = .portrait
     @Published private(set) var applyingSettings = false
     @Published private(set) var recordingRequested = false
@@ -80,6 +114,11 @@ final class CameraModel: ObservableObject {
     private var longJobID: UUID?
     private var longReprocessTask: Task<URL, Error>?
     private var importedLiveLUT: ImportedLUT?
+    init() {
+        coachLearningEnabled = UserDefaults.standard.bool(forKey: "coach.learning.enabled")
+        if coachLearningEnabled, let data = UserDefaults.standard.data(forKey: "coach.learning.data"), data.count <= 64 * 1024,
+           let saved = try? JSONDecoder().decode(CompositionLearning.self, from: data), saved.valid { learning = saved }
+    }
     var longExposureRunning: Bool { longJobID != nil }
     private var liveLookForRestoration: ImportedLUT? {
         guard liveUsesLUT, var imported = importedLiveLUT else { return nil }
@@ -91,9 +130,29 @@ final class CameraModel: ObservableObject {
         Task { @MainActor [weak self] in self?.receive(value) }
     }
     var previewSession: AVCaptureSession { service.session }
+    var viewfinderFill: Bool { !snapshot.video.isVideoMode || videoPreviewFill }
+    var coachMode: CoachCaptureMode {
+        if snapshot.video.isVideoMode { return .video }
+        if longMode { return .longExposure }
+        if rawMode != .processed { return .raw }
+        return proMode ? .pro : .photo
+    }
+    var motionAvailable: Bool { motionMonitor.available }
+    var coachAvailability: String {
+        if longExposureRunning { return "장노출 합성 중 분석 일시 중지 · 종료 후 복구" }
+        if busy { return "촬영/처리 중 분석 대기" }
+        if reviewingURL != nil { return "촬영 후 리뷰 분석 중 · 실시간 추론 잠시 대기" }
+        if snapshot.state != .running { return "카메라 연결 후 실영상 분석" }
+        if livePreview == nil { return snapshot.video.isVideoMode ? "이 영상 구성의 동시 분석 출력을 확인하세요. 해상도·FPS를 낮추거나 수동 가이드를 사용하세요." : "분석 프리뷰 대기 · 수동 촬영 가능" }
+        return "최신 측정 프레임 대기 · 수동 촬영 가능"
+    }
+    var depthModeAllowed: Bool {
+        CaptureWorkflowPolicy.depthAllowed(pro: proMode, long: longMode, video: snapshot.video.isVideoMode,
+                                          raw: rawMode != .processed, bracket: bracketEnabled)
+    }
     var rawUnavailableReason: String? {
         RawCapturePolicy.unavailableReason(mode: rawMode, available: snapshot.capabilities?.rawModes ?? [.processed],
-                                          live: livePreview != nil,
+                                          live: false,
                                           exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))
             ?? ZoomPolicy.rawReason(zoom: snapshot.readout?.zoom ?? 1, raw: rawMode)
     }
@@ -101,17 +160,18 @@ final class CameraModel: ObservableObject {
         guard bracketEnabled else { return nil }
         guard let caps = snapshot.capabilities,
               (try? ExposureBracketPlan.make(center: snapshot.readout?.exposureBias ?? settings.exposure.ev, step: bracketStep,
-                    limits: caps.exposureBias, maximumCount: caps.maximumBracketCount, rawMode: rawMode, live: livePreview != nil,
+                    limits: caps.exposureBias, maximumCount: caps.maximumBracketCount, rawMode: rawMode, live: false,
                     exposureMode: settings.exposure.manual ? .custom : (settings.exposure.locked ? .locked : .continuousAutoExposure))) != nil
-        else { return "브래킷은 지원 렌즈의 일반 사진·AUTO 노출·모니터 끔에서 제공합니다. EV 중심값과 간격도 장치 범위 안이어야 합니다." }
+        else { return "브래킷은 지원 렌즈의 일반 사진·AUTO 노출에서 제공합니다. 촬영 동안 분석을 일시 중지합니다. EV와 간격은 장치 범위 안이어야 합니다." }
         return nil
     }
-    var canCapture: Bool { !snapshot.video.isVideoMode && bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !switchingMode && !applyingSettings && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+    var canCapture: Bool { !snapshot.video.isVideoMode && (!depthEnabled || depthModeAllowed && snapshot.capabilities?.depthDeliveryEnabled == true) && bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !switchingMode && !applyingSettings && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
 
     func setActive(_ active: Bool) {
         self.active = active
+        updateMotion()
         if !active {
-            cancelCountdown(); liveHasFrame = false; histogram = nil; composition = nil; sceneSample = nil
+            cancelCountdown(); liveHasFrame = false; histogram = nil; resetComposition(); sceneSample = nil
             livePreview?.setSampleDelivery(false)
             Task { await LookThumbnailRenderer.shared.clear() }
         } else { livePreview?.setSampleDelivery(previewSamplesWanted) }
@@ -120,17 +180,21 @@ final class CameraModel: ObservableObject {
     func selectLens(_ id: String) {
         guard !snapshot.video.isVideoMode, !busy, !applyingSettings, !snapshot.isApplyingSettings else { return }
         guard id != snapshot.selectedLens else { return }
+        zoomAdviceSuppressedUntil = ProcessInfo.processInfo.systemUptime + 8; cameraCoach = nil
+        let hadDepth = depthEnabled
+        depthEnabled = false; depthReturnLens = nil
         let previous = liveLookForRestoration
         let restorationRequest = lookRequestID
         if livePreview != nil { tearDownLivePreview() }
         busy = true; meteringTarget = nil; sceneSample = nil
         Task {
             do {
+                if hadDepth { await service.disablePhotoDepth() }
                 try await service.selectLens(id)
                 if let previous, restorationRequest == lookRequestID { try await activateLiveLUT(previous) }
             } catch { report(error) }
             busy = false
-            if previous == nil || restorationRequest != lookRequestID { await enableMonitoring() }
+            await enableMonitoring()
         }
     }
 
@@ -138,6 +202,7 @@ final class CameraModel: ObservableObject {
         guard value.revision > snapshot.revision else { return }
         let resetControls = value.selectedLens != snapshot.selectedLens || value.video.isVideoMode != snapshot.video.isVideoMode || value.video.configuration?.resolution != snapshot.video.configuration?.resolution
         let resuming = value.state == .running && snapshot.state != .running
+        if resetControls || value.state != .running { resetComposition() }
         if resetControls, let caps = value.capabilities {
             pendingSettings = PendingCameraSettings()
             settings = CameraSettings()
@@ -154,6 +219,7 @@ final class CameraModel: ObservableObject {
             message = "해상도 요청이 현재 구성에서 지원되지 않아 최대 상한으로 복귀했습니다."
         }
         snapshot = value
+        livePreview?.setRecordingBudget(value.video.phase.isActive)
         if let text = value.message { message = text; if active { errorMessage = text }; meteringTarget = nil }
         if resetControls || resuming { monitoringChanged() }
     }
@@ -177,6 +243,41 @@ final class CameraModel: ObservableObject {
     func suspendForDepth() async {
         setActive(false)
         await service.waitUntilStopped()
+    }
+
+    func validateDepthMode() {
+        guard depthEnabled, !depthModeAllowed else { return }
+        depthEnabled = false; depthReturnLens = nil
+        Task { await service.disablePhotoDepth() }
+    }
+
+    func setDepthEnabled(_ enabled: Bool) async {
+        guard !busy, !switchingMode, snapshot.state == .running, !recordingRequested else { return }
+        guard !enabled || depthModeAllowed else { return }
+        guard enabled != depthEnabled else { return }
+        await settingsTask?.value
+        guard !busy, !switchingMode, snapshot.state == .running, !enabled || depthModeAllowed else { return }
+        busy = true
+        let originalLens = snapshot.selectedLens
+        let returnLens = depthReturnLens
+        if livePreview != nil { tearDownLivePreview() }
+        defer { busy = false; monitoringChanged() }
+        do {
+            if enabled {
+                try await service.enablePhotoDepth()
+                depthReturnLens = originalLens; depthEnabled = true
+                // The new input may have different manual-control capabilities;
+                // use the actual snapshot/readout rather than guessing support.
+            } else {
+                await service.disablePhotoDepth(); depthEnabled = false; depthReturnLens = nil
+                if let returnLens { try await service.selectLens(returnLens) }
+            }
+        } catch {
+            depthEnabled = false; depthReturnLens = nil
+            await service.disablePhotoDepth()
+            if let originalLens { try? await service.selectLens(originalLens) }
+            report(error)
+        }
     }
 
     func applySettings() async {
@@ -207,7 +308,9 @@ final class CameraModel: ObservableObject {
 
     func setOrientation(_ value: CameraOrientation) {
         guard value != orientation else { return }
-        orientation = value; sceneSample = nil; composition = nil; meteringTarget = nil; previewImageSize = nil
+        orientation = value; sceneSample = nil; resetComposition(); meteringTarget = nil; previewImageSize = nil
+        motionMonitor.orientation = value.rawValue; cameraTilt = nil
+        depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
         videoPreviewFill = value == .portrait
         service.setOrientation(value)
     }
@@ -223,7 +326,7 @@ final class CameraModel: ObservableObject {
     }
 
     func importLiveLUT(_ url: URL) async {
-        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil else { return }
+        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings else { return }
         busy = true
         defer { busy = false }
         do {
@@ -236,19 +339,16 @@ final class CameraModel: ObservableObject {
         guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings else { throw CameraError.busy }
         busy = true
         defer { busy = false }
-        if livePreview != nil { tearDownLivePreview() }
         try await activateLiveLUT(imported)
     }
 
     private func activateLiveLUT(_ imported: ImportedLUT) async throws {
-        let preview = try await makeLivePreview(imported.lut)
-        try await service.setLivePreview(preview)
-        if let settings = imported.preset {
-            liveIntensity = settings.intensity
-            liveGrain = settings.grain.amount
-            liveGrainSeed = settings.grain.seed
-            liveFinish = settings.finish
-        }
+        // Legacy live* property names now describe a selected CAPTURE look.
+        // Choosing a LUT never creates/replaces the camera's analysis preview.
+        let settings = imported.preset ?? ProcessingLookSettings()
+        try settings.validate()
+        liveIntensity = settings.intensity; liveGrain = settings.grain.amount
+        liveGrainSeed = settings.grain.seed; liveFinish = settings.finish
         importedLiveLUT = imported
         let identifier = imported.provenance?.identifier
         liveLookID = FilmStyle.all.first(where: { identifier == "photop.\($0.id).v1" })?.id
@@ -258,12 +358,8 @@ final class CameraModel: ObservableObject {
         liveCredit = imported.provenance?.requiredCredit
         liveUsesLUT = true
         liveCompareOriginal = false
-        liveHasFrame = false
-        livePreview = preview
         updateLiveIntensity()
-        updateMonitoring()
-        updateComposition()
-        message = "LUT는 미리보기에만 적용합니다. 촬영 사진은 원본 색상으로 저장합니다."
+        message = "선택한 룩은 촬영 결과에만 적용합니다. 미리보기 없이 원본을 별도 보존합니다."
     }
 
     func favoriteLiveLUT() async {
@@ -282,19 +378,8 @@ final class CameraModel: ObservableObject {
     }
 
     func enableLiveLUT() async {
-        guard !snapshot.video.isVideoMode, !busy, !snapshot.isApplyingSettings, livePreview == nil, let importedLiveLUT else { return }
-        busy = true
-        defer { busy = false }
-        do {
-            let preview = try await makeLivePreview(importedLiveLUT.lut)
-            try await service.setLivePreview(preview)
-            liveHasFrame = false
-            livePreview = preview
-            liveUsesLUT = true
-            updateLiveIntensity()
-            updateMonitoring()
-            updateComposition()
-        } catch { report(error) }
+        guard !snapshot.video.isVideoMode, !busy, let importedLiveLUT else { return }
+        do { try await activateLiveLUT(importedLiveLUT) } catch { report(error) }
     }
 
     var compositionPreset: CompositionPreset? { CompositionPreset.preset(compositionPresetID) }
@@ -306,9 +391,9 @@ final class CameraModel: ObservableObject {
         if compositionPreset?.subject != nil { guideScene = .portrait; updateComposition() }
     }
 
-    // Carousel selection: swap the preview look while keeping monitoring and AI guide settings.
+    // Load only the selected capture look. No camera frame or thumbnail rendering.
     func selectLook(id: String, load: @escaping @Sendable () async throws -> ImportedLUT) async {
-        guard !snapshot.video.isVideoMode, snapshot.state == .running else { return }
+        guard !snapshot.video.isVideoMode else { return }
         lookRequestID = UUID()
         pendingLook = (lookRequestID, id, load)
         guard !changingLook else { return }
@@ -322,66 +407,57 @@ final class CameraModel: ObservableObject {
                 guard request.token == lookRequestID else { continue }
                 await settingsTask?.value
                 while busy || applyingSettings || snapshot.isApplyingSettings || switchingMode {
-                    guard request.token == lookRequestID, active, snapshot.state == .running else { continue requests }
+                    guard request.token == lookRequestID else { continue requests }
                     try await Task.sleep(nanoseconds: 20_000_000)
                 }
-                guard request.token == lookRequestID, active, !snapshot.video.isVideoMode, snapshot.state == .running else { continue }
+                guard request.token == lookRequestID, !snapshot.video.isVideoMode else { continue }
                 busy = true
                 ownsCamera = true
-                if livePreview != nil { tearDownLivePreview() }
                 try await activateLiveLUT(imported)
                 if request.token == lookRequestID { liveLookID = request.id }
-                else { tearDownLivePreview(); liveLookID = nil }
                 busy = false
-                if request.token != lookRequestID, pendingLook == nil { await enableMonitoring() }
             } catch { if ownsCamera { busy = false }; if request.token == lookRequestID { report(error) } }
         }
     }
 
     func selectOriginalLook() async {
-        lookRequestID = UUID(); pendingLook = nil
-        liveLookID = nil
         guard !busy else { return }
-        guard liveUsesLUT else { liveLookID = nil; return }
-        let keepAnalysis = needsAnalysis
-        tearDownLivePreview()
-        liveLookID = nil
-        if keepAnalysis { await enableMonitoring() }
+        lookRequestID = UUID(); pendingLook = nil
+        liveLookID = nil; liveUsesLUT = false; liveLUTTitle = nil; liveCredit = nil
+        importedLiveLUT = nil
+        updateLiveIntensity()
     }
 
     private func tearDownLivePreview() {
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false
-        liveUsesLUT = false
-        liveLUTTitle = nil
-        liveCredit = nil
         previewImageSize = nil
         histogram = nil
-        composition = nil
+        resetComposition()
         service.removeLivePreview()
     }
 
     func disableLiveLUT() {
-        liveLookID = nil
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false
-        liveUsesLUT = false
         previewImageSize = nil
         histogram = nil
         monitoring = MonitoringSettings()
         focusAssistEnabled = false
-        composition = nil
+        resetComposition()
         guideAIEnabled = false
         service.removeLivePreview()
     }
 
     func updateLiveIntensity() {
-        livePreview?.setIntensity(!liveUsesLUT || liveCompareOriginal ? 0 : liveIntensity, grain: GrainSettings(amount: !liveUsesLUT || liveCompareOriginal ? 0 : liveGrain, seed: liveGrainSeed), effects: !liveUsesLUT || liveCompareOriginal ? FilmFinishSettings() : liveFinish)
+        // Monitoring/AI may still use Metal, but the camera image is ungraded.
+        livePreview?.setIntensity(0)
     }
 
     func updateMonitoring() {
+        livePreview?.setViewfinderFill(viewfinderFill)
         if !monitoring.histogram { histogram = nil }
         var effective = monitoring
         if settings.focus.manual && focusAssistEnabled { effective.peaking = true; if !monitoring.peaking { effective.peakingThreshold = 0.08 } }
@@ -393,7 +469,7 @@ final class CameraModel: ObservableObject {
     func monitoringChanged() {
         updateMonitoring()
         if needsAnalysis { Task { await enableMonitoring() } }
-        else if livePreview != nil && !liveUsesLUT { tearDownLivePreview() }
+        else if livePreview != nil { tearDownLivePreview() }
     }
 
     func setPreviewSamplesWanted(_ wanted: Bool) {
@@ -428,15 +504,125 @@ final class CameraModel: ObservableObject {
             guard active, needsAnalysis else { preview.setRunning(false); service.removeLivePreview(); return }
             livePreview = preview
             liveHasFrame = false
-            liveUsesLUT = false
             updateMonitoring(); updateComposition()
             message = "SDR 프리뷰 기준 보조 도구입니다. 원본에 표시를 굽지 않습니다."
         } catch { report(error) }
     }
 
     func updateComposition() {
-        composition = nil
-        livePreview?.setComposition(enabled: guideAIEnabled, scene: guideScene)
+        resetComposition()
+        updateMotion()
+        livePreview?.setComposition(enabled: guideAIEnabled && active && !compositionCaptureSuspended && reviewingURL == nil, scene: guideScene)
+    }
+
+    private func resetComposition() {
+        composition = nil; aiComposition = nil; compositionEngine = CompositionGuideEngine()
+        cameraCoach = nil; coachStabilizer = CoachAdviceStabilizer()
+    }
+
+    func compositionTargetChanged() { aiComposition = nil }
+
+    func intelligentOptionsChanged() {
+        aiComposition = nil; cameraCoach = nil; coachStabilizer = CoachAdviceStabilizer(); updateMotion()
+    }
+    private func updateMotion() {
+        if active && guideAIEnabled && cameraCoachEnabled { motionMonitor.start() } else { motionMonitor.stop() }
+    }
+    func updateGuideViewport(_ size: CGSize) {
+        guard size != guideViewport else { return }
+        guideViewport = size; aiComposition = nil; cameraCoach = nil
+    }
+    private func guideRegion(_ size: CGSize) -> CGRect {
+        var region = GuideGeometry.visibleRegion(image: size, viewport: guideViewport, fill: viewfinderFill)
+        if !snapshot.video.isVideoMode, framing != .native {
+            let box = framing.rect(in: CGRect(origin: .zero, size: size))
+            let normalized = CGRect(x: box.minX / size.width, y: box.minY / size.height, width: box.width / size.width, height: box.height / size.height)
+            region = region.intersection(normalized)
+        }
+        return region.isNull ? CGRect(x: 0, y: 0, width: 1, height: 1) : region
+    }
+    func learningChanged() {
+        UserDefaults.standard.set(coachLearningEnabled, forKey: "coach.learning.enabled")
+        if !coachLearningEnabled { resetCoachLearning() }
+    }
+    func resetCoachLearning() { learning = CompositionLearning(); UserDefaults.standard.removeObject(forKey: "coach.learning.data") }
+    private func recordCoachPreference() {
+        guard coachLearningEnabled, guideAIEnabled, intelligentRule != .automatic else { return }
+        learning.record(intent: shootingIntent, rule: intelligentRule)
+        if let data = try? JSONEncoder().encode(learning) { UserDefaults.standard.set(data, forKey: "coach.learning.data") }
+    }
+    private func coachContext() -> CoachCameraContext {
+        let selected = snapshot.lenses.first { $0.id == snapshot.selectedLens }
+        let lenses = snapshot.lenses.filter { $0.isFront == selected?.isFront && !$0.depthCamera }
+        return CoachCameraContext(mode: coachMode, lensID: snapshot.selectedLens ?? "", zoom: snapshot.readout?.zoom ?? 1,
+            maximumZoom: snapshot.capabilities?.maxZoom ?? 1, lensEquivalent: selected?.zoomEquivalent ?? 1,
+            opticalLenses: depthEnabled ? [] : lenses.compactMap { lens in lens.zoomEquivalent.map { CoachLens(id: lens.id, equivalent: $0) } },
+            exposureManual: settings.exposure.manual, exposureLocked: settings.exposure.locked || snapshot.readout?.exposureLocked == true,
+            ev: snapshot.readout?.exposureBias ?? settings.exposure.ev, minimumEV: snapshot.capabilities?.exposureBias.lowerBound ?? 0,
+            maximumEV: snapshot.capabilities?.exposureBias.upperBound ?? 0,
+            zoomSuppressed: ProcessInfo.processInfo.systemUptime < zoomAdviceSuppressedUntil)
+    }
+    func applyCoachZoom() {
+        guard !busy, !switchingMode, !applyingSettings, !snapshot.isApplyingSettings, snapshot.state == .running,
+              let result = cameraCoach, result.isFresh(at: ProcessInfo.processInfo.systemUptime), result.lensID == snapshot.selectedLens,
+              abs(result.baseZoom - (snapshot.readout?.zoom ?? 1)) < 0.02,
+              let proposal = result.advice.compactMap(\.zoom).first else { return }
+        cameraCoach = nil; zoomAdviceSuppressedUntil = ProcessInfo.processInfo.systemUptime + 8
+        if let lens = proposal.lensID { selectLens(lens) } else { setZoom(proposal.factor) }
+    }
+    private func captureGuideReference() -> CaptureGuideReference? {
+        guard let guide = aiComposition else { return nil }
+        let mirrored = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
+        return CaptureGuideReference.make(guide: guide, intent: shootingIntent, mode: coachMode, mirrored: mirrored,
+                                          tilt: cameraTilt, now: ProcessInfo.processInfo.systemUptime)
+    }
+    func requestPhotoReview(_ url: URL) {
+        guard !busy, !snapshot.video.phase.isActive, photoReviews[url] == nil, reviewingURL != url else { return }
+        reviewTask?.cancel(); reviewJobID = UUID(); let job = reviewJobID
+        if photoReviewErrors.count >= 8 { photoReviewErrors.removeAll() }
+        reviewingURL = url; photoReviewErrors[url] = nil
+        // Share the Vision budget: still review must not compete with live
+        // inference. Native preview/Metal monitoring continue unchanged.
+        updateComposition()
+        let reference = reviewReferences[url]
+        reviewTask = Task { [weak self] in
+            do {
+                let worker = Task.detached(priority: .utility) { try await PhotoReviewService.shared.review(url, reference: reference) }
+                let result = try await withTaskCancellationHandler(operation: { try await worker.value }, onCancel: { worker.cancel() })
+                guard let self, !Task.isCancelled, self.reviewJobID == job else { return }
+                if self.photoReviews.count >= 8 { self.photoReviews.removeAll() }
+                self.photoReviews[url] = result; self.reviewingURL = nil; self.updateComposition()
+            } catch {
+                guard let self, self.reviewJobID == job else { return }
+                self.reviewingURL = nil; self.photoReviewErrors[url] = error.localizedDescription; self.updateComposition()
+            }
+        }
+    }
+    func photoReviewSettingChanged() {
+        if !photoReviewEnabled { pausePhotoReview() }
+    }
+    func pausePhotoReview() {
+        let hadReview = reviewingURL != nil
+        reviewTask?.cancel(); reviewJobID = UUID(); reviewingURL = nil
+        if hadReview { updateComposition() }
+    }
+    func selectIntelligentRule(_ rule: CompositionRule) {
+        compositionPresetID = nil; personGuide.framing = .off; poseTemplate = .off; guideGrid = .off
+        intelligentRule = rule; guideAIEnabled = true; intelligentOptionsChanged()
+    }
+
+    func selectCompositionSubject(_ id: Int?) {
+        compositionEngine.select(id)
+        // Never leave the old target or completed status on screen after a tap.
+        aiComposition = nil
+    }
+
+    func selectCompositionSubject(at imagePoint: CGPoint) {
+        depthFocusPoint = imagePoint
+        guard guideAIEnabled, let guide = aiComposition,
+              guide.isFresh(at: ProcessInfo.processInfo.systemUptime),
+              let id = CompositionSubjectTracker.subject(at: imagePoint, in: guide.subjects) else { return }
+        selectCompositionSubject(id)
     }
 
     private func makeLivePreview(_ lut: CubeLUT) async throws -> LiveLUTPreview {
@@ -459,9 +645,26 @@ final class CameraModel: ObservableObject {
         }
         let onGuide: @Sendable (UUID, CompositionSnapshot) -> Void = { [weak self] id, snapshot in
             Task { @MainActor [weak self] in
-                guard let self, let preview = self.livePreview, preview.id == id, self.guideAIEnabled,
+                guard let self, self.active, !self.busy, self.snapshot.state == .running,
+                      let preview = self.livePreview, preview.id == id, self.guideAIEnabled,
                       preview.isCurrentComposition(snapshot) else { return }
                 self.composition = snapshot
+                if let (guide, haptic) = self.compositionEngine.update(snapshot, target: self.compositionTarget,
+                    now: ProcessInfo.processInfo.systemUptime, rule: self.intelligentRule, intent: self.shootingIntent,
+                    mode: self.coachMode, region: self.guideRegion(CGSize(width: snapshot.width, height: snapshot.height)),
+                    learning: self.coachLearningEnabled ? self.learning : CompositionLearning()) {
+                    self.aiComposition = guide
+                    let now = ProcessInfo.processInfo.systemUptime
+                    if self.cameraCoachEnabled {
+                        let context = self.coachContext()
+                        let advice = CameraCoachEngine.evaluate(guide: guide, intent: self.shootingIntent, camera: context, tilt: self.cameraTilt, now: now)
+                        let stable = self.coachStabilizer.update(advice, at: snapshot.generatedAt)
+                        self.cameraCoach = CameraCoachResult(generatedAt: snapshot.generatedAt, lensID: context.lensID, baseZoom: context.zoom, advice: stable)
+                    } else { self.cameraCoach = nil }
+                    if haptic, self.liveHasFrame, now - self.lastCompositionHapticTime >= 3 {
+                        self.lastCompositionHapticTime = now; self.compositionHapticID &+= 1
+                    }
+                }
             }
         }
         let onSample: @Sendable (UUID, LookSceneSample) -> Void = { [weak self] id, sample in
@@ -472,27 +675,31 @@ final class CameraModel: ObservableObject {
         }
         let preview = try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onSample: onSample, onGuide: onGuide, onEvent: onEvent) }.value
         preview.setSampleDelivery(previewSamplesWanted)
-        preview.setViewfinderFill(snapshot.video.isVideoMode && videoPreviewFill)
+        preview.setViewfinderFill(viewfinderFill)
+        preview.setRecordingBudget(snapshot.video.phase.isActive)
         return preview
     }
 
     func captureLongExposure() async {
         guard canCapture, rawMode == .processed, !bracketEnabled else { message = "합성 전 RAW·브래킷을 꺼 주세요."; return }
+        pausePhotoReview()
         let restoreLook = liveLookForRestoration
         let restorationRequest = lookRequestID
+        let reference = captureGuideReference()
         if livePreview != nil { tearDownLivePreview() }
         busy = true; longProgress = nil
         let id = UUID(); longJobID = id
         var completed = false
         defer {
             busy = false; longJobID = nil
+            if photoReviewEnabled, let url = latestComposite, completed { requestPhotoReview(url) }
             if completed, let progress = longProgress {
                 longProgress = LongExposureProgress(fraction: 1, accepted: progress.accepted, rejected: progress.rejected, previewJPEG: progress.previewJPEG)
             }
             Task {
                 guard active, snapshot.state == .running else { return }
                 if let restoreLook, restorationRequest == lookRequestID { do { try await activateLiveLUT(restoreLook) } catch { report(error) } }
-                else if needsAnalysis { await enableMonitoring() }
+                if needsAnalysis { await enableMonitoring() }
             }
         }
         do {
@@ -506,9 +713,13 @@ final class CameraModel: ObservableObject {
             latestComposite = url
             completed = true; compositeSavedToPhotos = false
             latestOriginal = url; latestOriginals = [url]; latestPhotoResolution = nil; savedToPhotos = false
+            reviewReferences = [:]; reviewReferences[url] = reference
+            recordCoachPreference()
+            latestRendered = nil; latestRenderedSeries = []
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(url, maxPixel: 240) }.value
             message = "SDR 합성 결과와 재처리 프레임을 저장했습니다."
-            try await PhotoStore.addToPhotos(url); compositeSavedToPhotos = true; savedToPhotos = true
+            await renderCaptureResults([url], look: restoreLook, aperture: nil, focus: CGPoint(x: 0.5, y: 0.5))
+            try await PhotoStore.addToPhotos([url] + latestRenderedSeries); compositeSavedToPhotos = true; savedToPhotos = true
         } catch { report(error) }
     }
     func cancelLongExposure() { longReprocessTask?.cancel(); service.cancelLongExposure() }
@@ -524,6 +735,7 @@ final class CameraModel: ObservableObject {
             latestComposite = url; compositeSavedToPhotos = false
             if latestOriginal == result {
                 latestOriginal = url; latestOriginals = [url]; savedToPhotos = false
+                latestRendered = nil; latestRenderedSeries = []
                 latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(url, maxPixel: 240) }.value
             }
             message = "저장한 프레임으로 새 합성본을 만들었습니다."
@@ -533,7 +745,7 @@ final class CameraModel: ObservableObject {
     func saveCompositeToPhotos() async {
         guard !busy, let result = latestComposite, !compositeSavedToPhotos else { return }
         busy = true; defer { busy = false }
-        do { try await PhotoStore.addToPhotos(result); compositeSavedToPhotos = true; if latestOriginal == result { savedToPhotos = true } }
+        do { try await PhotoStore.addToPhotos([result] + (latestOriginal == result ? latestRenderedSeries : [])); compositeSavedToPhotos = true; if latestOriginal == result { savedToPhotos = true } }
         catch { report(error) }
     }
 
@@ -543,6 +755,8 @@ final class CameraModel: ObservableObject {
     }
 
     func setVideoMode(_ enabled: Bool, configuration: VideoConfiguration? = nil) async {
+        guard !busy, !switchingMode else { return }
+        if enabled, depthEnabled { await setDepthEnabled(false) }
         guard !busy, !switchingMode else { return }
         switchingMode = true
         defer { switchingMode = false; if !changingVideo { monitoringChanged() } }
@@ -579,6 +793,7 @@ final class CameraModel: ObservableObject {
 
     func recordVideo() async {
         guard canRecordVideo, let configuration = snapshot.video.configuration else { return }
+        pausePhotoReview()
         recordingRequested = true; defer { recordingRequested = false; busy = false }
         do {
             let pending = try await service.recordVideo()
@@ -608,6 +823,9 @@ final class CameraModel: ObservableObject {
     func cycleFlash() { flash = PhotoFlashPolicy.next(after: flash, supported: snapshot.capabilities?.flashModes ?? [.off]) }
 
     func setZoom(_ factor: Double) {
+        resetComposition()
+        zoomAdviceSuppressedUntil = ProcessInfo.processInfo.systemUptime + 8
+        depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
         service.setZoom(ZoomPolicy.clamp(factor, maxAvailable: snapshot.capabilities?.maxZoom ?? 1))
     }
 
@@ -640,22 +858,58 @@ final class CameraModel: ObservableObject {
 
     func capture() async {
         guard canCapture else { return }
+        pausePhotoReview()
+        let reference = captureGuideReference()
+        var capturedReviewURL: URL?
+        let look = rawMode == .processed ? liveLookForRestoration : nil
+        let aperture = depthEnabled ? depthAperture : nil
+        let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
+        let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
         busy = true
-        defer { busy = false }
+        compositionCaptureSuspended = true
+        livePreview?.setComposition(enabled: false, scene: guideScene); cameraCoach = nil
+        if (rawMode != .processed || bracketEnabled) && livePreview != nil { tearDownLivePreview() }
+        defer {
+            busy = false; compositionCaptureSuspended = false; updateComposition(); monitoringChanged()
+            if photoReviewEnabled, let url = capturedReviewURL { requestPhotoReview(url) }
+        }
         do {
             let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil,
-                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash)
+                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash, depth: aperture != nil)
             latestPhotoResolution = series.photos.first?.pixelDimensions
             let urls = try await CaptureSeriesStore.preserve(series)
             latestOriginals = urls
             latestOriginal = urls[urls.count / 2]
+            capturedReviewURL = latestOriginal
+            reviewReferences = [:]
+            for url in urls { reviewReferences[url] = reference }
+            recordCoachPreference()
+            latestRendered = nil; latestRenderedSeries = []
             let center = urls[urls.count / 2]
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
-            try await PhotoStore.addToPhotos(urls)
+            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus)
+            try await PhotoStore.addToPhotos(urls + latestRenderedSeries)
             savedToPhotos = true
             message = "원본 \(urls.count)장과 사진 보관함에 저장했습니다."
         } catch { report(error) }
+    }
+
+    private func renderCaptureResults(_ urls: [URL], look: ImportedLUT?, aperture: Double?, focus: CGPoint) async {
+        guard look != nil || aperture != nil else { return }
+        for (index, url) in urls.enumerated() {
+            do {
+                let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus)
+                latestRenderedSeries.append(rendered)
+                reviewReferences[rendered] = reviewReferences[url]
+                if index == urls.count / 2 {
+                    latestRendered = rendered
+                    latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(rendered, maxPixel: 240) }.value
+                }
+            } catch {
+                report(ImageEditingError.invalid("원본은 보존했습니다. 효과 결과 처리 실패: \(error.localizedDescription)"))
+            }
+        }
     }
 
     func saveLatestToPhotos() async {
@@ -663,7 +917,7 @@ final class CameraModel: ObservableObject {
         busy = true
         defer { busy = false }
         do {
-            try await PhotoStore.addToPhotos(latestOriginals.isEmpty ? [latestOriginal] : latestOriginals)
+            try await PhotoStore.addToPhotos((latestOriginals.isEmpty ? [latestOriginal] : latestOriginals) + latestRenderedSeries)
             savedToPhotos = true
             message = "사진 보관함에 저장했습니다."
         } catch { report(error) }

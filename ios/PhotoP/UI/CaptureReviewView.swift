@@ -9,7 +9,10 @@ struct CaptureReviewView: View {
     @State private var preview: PhotoThumbnailImage?
     @State private var index = 0
 
-    private var originals: [URL] { model.latestOriginals.isEmpty ? (model.latestOriginal.map { [$0] } ?? []) : model.latestOriginals }
+    private var originals: [URL] {
+        let source = model.latestOriginals.isEmpty ? (model.latestOriginal.map { [$0] } ?? []) : model.latestOriginals
+        return (model.latestRendered.map { [$0] } ?? []) + model.latestRenderedSeries.filter { $0 != model.latestRendered } + source
+    }
 
     var body: some View {
         NavigationStack {
@@ -20,11 +23,20 @@ struct CaptureReviewView: View {
                 } else {
                     photo.frame(maxHeight: .infinity)
                     if originals.count > 1 {
-                        Picker("브래킷 원본", selection: $index) {
-                            ForEach(originals.indices, id: \.self) { Text("원본 \($0 + 1)").tag($0) }
-                        }.pickerStyle(.segmented).padding(.horizontal)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack {
+                                ForEach(originals.indices, id: \.self) { i in
+                                    Button((model.latestRenderedSeries.contains(originals[i]) ? "효과 결과 " : "원본 ") + "\(i + 1)") { index = i }
+                                        .buttonStyle(.bordered).accessibilityAddTraits(index == i ? .isSelected : [])
+                                }
+                            }
+                        }.padding(.horizontal)
                     }
                     facts
+                    if let current {
+                        DisclosureGroup("AI 촬영 리뷰") { PhotoReviewPanel(model: model, url: current) }
+                            .padding(.horizontal).accessibilityIdentifier("camera.review.coach")
+                    }
                     actions
                 }
                 library
@@ -42,7 +54,7 @@ struct CaptureReviewView: View {
         if let preview {
             Image(decorative: preview.image, scale: 1).resizable().scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12)).padding(.horizontal)
-                .accessibilityLabel("최근 촬영 원본 미리보기")
+                .accessibilityLabel("최근 촬영 \(current.map { model.latestRenderedSeries.contains($0) } == true ? "효과 결과" : "원본") 미리보기")
         } else {
             ProgressView("원본 미리보기 불러오는 중").frame(maxWidth: .infinity)
         }
@@ -53,7 +65,7 @@ struct CaptureReviewView: View {
             if let current {
                 Text(current.pathExtension.uppercased() + (model.latestPhotoResolution.map { " · \($0.title)" } ?? ""))
                     .font(.system(.subheadline, design: .monospaced))
-                Text(model.savedToPhotos ? "앱 원본 보관 · 사진 앱 저장됨" : "앱 원본 보관 · 사진 앱 미저장")
+                Text((model.latestRenderedSeries.isEmpty ? "앱 원본 보관" : "앱 원본·결과 별도 보관") + (model.savedToPhotos ? " · 사진 앱 저장됨" : " · 사진 앱 미저장"))
                     .font(.caption).foregroundStyle(.secondary)
             }
         }.accessibilityElement(children: .combine)
@@ -68,7 +80,7 @@ struct CaptureReviewView: View {
                         .buttonStyle(.bordered).disabled(model.busy)
                 }
                 if current.pathExtension.lowercased() != "dng" {
-                    Button { open(.editor) } label: { Label("사진 편집", systemImage: "slider.horizontal.3") }
+                    Button { open(.editor) } label: { Label("원본 편집", systemImage: "slider.horizontal.3") }
                         .buttonStyle(.borderedProminent)
                 }
             }

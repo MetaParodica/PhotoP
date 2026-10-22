@@ -26,6 +26,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var livePreview: LiveLUTPreview?
     private var removeLivePreviewRequested = false
     private var devices: [AVCaptureDevice] = []
+    private var depthDeviceIDs = Set<String>()
     private var input: AVCaptureDeviceInput?
     private var observers: [NSObjectProtocol] = []
     private var wantsRunning = false
@@ -126,9 +127,14 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     private func configure() throws {
         devices = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera],
+            deviceTypes: [.builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera,
+                          .builtInLiDARDepthCamera, .builtInDualCamera, .builtInDualWideCamera,
+                          .builtInTripleCamera, .builtInTrueDepthCamera],
             mediaType: .video, position: .unspecified
         ).devices
+        depthDeviceIDs = Set(devices.filter { device in
+            device.formats.contains { !$0.supportedDepthDataFormats.isEmpty }
+        }.map(\.uniqueID))
         guard let device = devices.first(where: { $0.position == .back && $0.deviceType == .builtInWideAngleCamera }) ?? devices.first
         else { throw CameraError.unavailable }
         let candidate = try AVCaptureDeviceInput(device: device)
@@ -198,7 +204,52 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     private func configureRAW() {
         // Configure before startRunning and again after changing the input.
+        output.isDepthDataDeliveryEnabled = false
         output.isAppleProRAWEnabled = output.isAppleProRAWSupported
+    }
+
+    func enablePhotoDepth() async throws {
+        let lens: String = try await withCheckedThrowingContinuation { completion in
+            queue.async { [self] in
+                guard state == .running, videoConfiguration == nil, let current = input?.device else {
+                    completion.resume(throwing: CameraError.interrupted); return
+                }
+                if output.isDepthDataDeliverySupported { completion.resume(returning: current.uniqueID); return }
+                let candidates = devices.filter { $0.position == current.position && depthDeviceIDs.contains($0.uniqueID) }
+                let preferred = candidates.first { $0.deviceType == .builtInLiDARDepthCamera }
+                    ?? candidates.first { $0.deviceType == .builtInDualWideCamera }
+                    ?? candidates.first { $0.deviceType == .builtInDualCamera }
+                    ?? candidates.first { $0.deviceType == .builtInTripleCamera }
+                    ?? candidates.first { $0.deviceType == .builtInTrueDepthCamera }
+                guard let preferred else {
+                    completion.resume(throwing: ImageEditingError.invalid("이 방향의 카메라는 사진 깊이 데이터를 지원하지 않습니다.")); return
+                }
+                completion.resume(returning: preferred.uniqueID)
+            }
+        }
+        try await selectLens(lens)
+        try await withCheckedThrowingContinuation { (completion: CheckedContinuation<Void, Error>) in
+            queue.async { [self] in
+                guard state == .running, videoConfiguration == nil, continuation == nil, longExposure == nil,
+                      !controls.isPending, input?.device.uniqueID == lens, output.isDepthDataDeliverySupported else {
+                    completion.resume(throwing: ImageEditingError.invalid("현재 렌즈·포맷은 사진 깊이 데이터를 전달할 수 없습니다.")); return
+                }
+                session.beginConfiguration()
+                output.isAppleProRAWEnabled = false
+                output.isDepthDataDeliveryEnabled = true
+                session.commitConfiguration()
+                publish(); completion.resume()
+            }
+        }
+    }
+
+    func disablePhotoDepth() async {
+        await withCheckedContinuation { (completion: CheckedContinuation<Void, Never>) in
+            queue.async { [self] in
+                session.beginConfiguration(); configureRAW(); session.commitConfiguration()
+                publish(); completion.resume()
+            }
+        }
     }
 
     // Called only inside begin/commitConfiguration, before attaching an RGB stream.
@@ -275,7 +326,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             photoResolutions: PhotoResolutionPolicy.options(supported: format.supportedMaxPhotoDimensions.map { .init(width: $0.width, height: $0.height) },
                 ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height)),
             maxZoom: ZoomPolicy.range(maxAvailable: Double(d.maxAvailableVideoZoomFactor)).upperBound,
-            flashModes: videoConfiguration == nil ? flashModes() : [.off], shutterSoundSuppression: silent
+            flashModes: videoConfiguration == nil ? flashModes() : [.off], shutterSoundSuppression: silent,
+            depthAvailable: videoConfiguration == nil && (output.isDepthDataDeliverySupported || devices.contains { $0.position == d.position && depthDeviceIDs.contains($0.uniqueID) }),
+            depthDeliveryEnabled: output.isDepthDataDeliveryEnabled
         )
     }
 
@@ -296,6 +349,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 try device.lockForConfiguration()
                 device.videoZoomFactor = CGFloat(value)
                 device.unlockForConfiguration()
+                livePreview?.invalidateFrames()
                 publish()
             } catch { publish(error.localizedDescription) }
         }
@@ -676,7 +730,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     }
 
     func captureSeries(format: PhotoFileFormat, rawMode: RawCaptureMode = .processed, bracketStep: Double? = nil, resolution: PhotoResolution? = nil,
-                       flash: FlashSetting = .off) async throws -> CapturedSeries {
+                       flash: FlashSetting = .off, depth: Bool = false) async throws -> CapturedSeries {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 guard state == .running, session.isRunning, !session.isInterrupted else {
@@ -685,6 +739,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending else { completion.resume(throwing: CameraError.busy); return }
                 let settings: AVCapturePhotoSettings
                 let expectedFormat: PhotoFileFormat
+                guard !depth || (rawMode == .processed && bracketStep == nil && output.isDepthDataDeliveryEnabled) else {
+                    completion.resume(throwing: CameraError.invalidSettings); return
+                }
                 var biases: [Double]?
                 guard RawCapturePolicy.unavailableReason(mode: rawMode, available: rawModes(), live: livePreview != nil,
                                                         exposureMode: input?.device.exposureMode) == nil,
@@ -731,6 +788,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 case .on: settings.flashMode = .on
                 }
                 settings.photoQualityPrioritization = biases != nil ? .speed : (rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode))
+                if depth {
+                    settings.isDepthDataDeliveryEnabled = true
+                    settings.embedsDepthDataInPhoto = true
+                }
                 if #available(iOS 18.0, *), output.isShutterSoundSuppressionSupported {
                     settings.isShutterSoundSuppressionEnabled = true
                 }
@@ -835,7 +896,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         let wide = devices.first { $0.position == .back && $0.deviceType == .builtInWideAngleCamera }
         onSnapshot(CameraSnapshot(lenses: devices.map { d in
             CameraLens(id: d.uniqueID, name: d.localizedName, isFront: d.position == .front,
-                       zoomEquivalent: d.position == .front ? 1 : wide.flatMap { ZoomPolicy.equivalent(fieldOfView: Double(d.activeFormat.videoFieldOfView), wideFieldOfView: Double($0.activeFormat.videoFieldOfView)) })
+                       zoomEquivalent: d.position == .front ? 1 : wide.flatMap { ZoomPolicy.equivalent(fieldOfView: Double(d.activeFormat.videoFieldOfView), wideFieldOfView: Double($0.activeFormat.videoFieldOfView)) },
+                       depthCamera: d.isVirtualDevice || d.deviceType == .builtInLiDARDepthCamera || d.deviceType == .builtInTrueDepthCamera)
         }, selectedLens: input?.device.uniqueID, capabilities: capabilities(), state: state, message: message,
            revision: snapshotRevision, readout: currentReadout(), isApplyingSettings: controls.isPending,
            video: VideoSnapshot(configuration: videoConfiguration, capabilities: videoCapabilities, phase: recording.phase,

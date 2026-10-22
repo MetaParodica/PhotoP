@@ -68,9 +68,10 @@ private func + (lhs: CGPoint, rhs: CGPoint) -> CGPoint { CGPoint(x: lhs.x + rhs.
 struct FramingMaskOverlay: View {
     let aspect: FramingAspect
     var imageSize = CGSize(width: 3, height: 4)
+    var fill = false
     var body: some View {
         GeometryReader { geometry in
-            let image = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size)
+            let image = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size, fill: fill)
             let frame = aspect.rect(in: image)
             ZStack {
                 Path { path in path.addRect(image); path.addRect(frame) }

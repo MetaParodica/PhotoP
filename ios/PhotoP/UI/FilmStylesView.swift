@@ -4,7 +4,6 @@ import UniformTypeIdentifiers
 @MainActor
 struct FilmStylesView: View {
     @Environment(\.dismiss) private var dismiss
-    var sceneSample: LookSceneSample? = nil
     let onSelect: (ImportedLUT) async throws -> Void
     @State private var query = ""
     @State private var category = "전체"
@@ -21,7 +20,7 @@ struct FilmStylesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n예시는 현재 카메라 장면에 효과를 적용합니다. 브랜드 필름·센서의 실측 재현이 아닙니다.").font(.caption)
+                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n미리보기 없이 이름으로 룩을 선택합니다. 촬영 화면에서는 결과에만 적용하며 원본을 별도 보존합니다. 브랜드 필름·센서의 실측 재현이 아닙니다.").font(.caption)
                     Picker("카테고리", selection: $category) { ForEach(categories, id: \.self) { Text($0) } }
                     Toggle("가져올 사용자 LUT의 sRGB 입력·출력 확인", isOn: $confirmedSRGB)
                     Text("표시용 LUT는 sRGB로 가정합니다. V-Log 파생 룩은 SDR→V-Gamut/V-Log→LUT→감마2.4 가정→sRGB로 변환합니다. 센서·HDR 원본을 복원하지 않습니다.").font(.caption)
@@ -36,8 +35,6 @@ struct FilmStylesView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Label(style.name, systemImage: "sparkles").font(.headline)
                                 Text(style.detail).font(.caption).foregroundStyle(.secondary)
-                                LookSceneThumbnail(id: style.id, sample: sceneSample, load: { try style.imported() })
-                                    .frame(width: 96, height: 128).clipped()
                             }
                         }
                     }
@@ -112,7 +109,6 @@ struct FilmStylesView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(style.name).font(.headline)
                 Text(style.detail).font(.caption).foregroundStyle(.secondary)
-                LookSceneThumbnail(id: style.id, sample: sceneSample, load: { try style.imported() }).frame(width: 96, height: 128).clipped()
             }
         }
     }
@@ -123,8 +119,6 @@ struct FilmStylesView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(entry.name).font(.headline)
                 Text("\(entry.detail) · sRGB 해석 가정").font(.caption)
-                LookSceneThumbnail(id: entry.id, sample: sceneSample, load: { try BundledFilmLibrary.load(entry, in: BundledFilmLibrary.root(), confirmedSRGB: true) })
-                    .frame(width: 96, height: 128).clipped()
                 Text(entry.requiredCredit).font(.caption2)
             }
         }
@@ -138,10 +132,6 @@ struct FilmStylesView: View {
                     Text(entry.name).font(.headline)
                     Text("\(entry.brand) · 비공식 파생/외부 미러 · 권리 미확인").font(.caption2)
                     Text(entry.role == "technical" ? "기술 변환" : "크리에이티브 룩").font(.caption2)
-                    if entry.canApply {
-                        LookSceneThumbnail(id: entry.id, sample: sceneSample, load: { try await CompanyLookCompiler.shared.load(entry, in: CompanyFilmLibrary.root()) })
-                            .frame(width: 96, height: 128).clipped()
-                    }
                 }
             }.disabled(!entry.canApply)
             if !entry.canApply { Text("출력 WDR 프로파일 미확인 · 적용 없이 원본 제공").font(.caption) }
