@@ -31,13 +31,37 @@ struct CameraView: View {
     }
     private var locked: Bool { model.busy || model.switchingMode }
     private var isVideo: Bool { model.snapshot.video.isVideoMode }
+    // Typed helper: nested ternaries of literals inside `min` exceeded the type-checker budget in body.
+    private func dockHeightFor(landscape: Bool, screenHeight: CGFloat) -> CGFloat {
+        let base: CGFloat
+        if landscape { base = tool != nil ? 154 : (drawer != nil ? 110 : 96) }
+        else { base = tool != nil ? 290 : (drawer != nil ? 200 : 240) }
+        return min(base, screenHeight * 0.48)
+    }
+    // The chain is split into layout, presentation and observation stages so each is checked on its own.
     var body: some View {
+        observed
+            .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
+            .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
+            .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
+            .onChange(of: model.liveFinish) { _, _ in model.updateLiveIntensity() }
+            .onChange(of: model.videoPreviewFill) { _, fill in model.livePreview?.setViewfinderFill(isVideo && fill) }
+            .onChange(of: model.snapshot.isApplyingSettings) { _, pending in if !pending { model.monitoringChanged() } }
+            .modifier(PreviewSampleObserver(wanted: drawer == .looks || showStyles || showLiveControls) { model.setPreviewSamplesWanted($0) })
+            .task { await model.prepareInstalledLooks() }
+            .alert("카메라 알림", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+                Button("확인") { model.errorMessage = nil }
+            } message: { Text(model.errorMessage ?? "") }
+            .onDisappear { if !reviewing { model.setActive(false) } }
+            .preferredColorScheme(.dark)
+    }
+    private var layout: some View {
         GeometryReader { geometry in
-            let landscape = geometry.size.width > geometry.size.height
-            let dockHeight = min(landscape ? (tool != nil ? 154.0 : drawer != nil ? 110.0 : 96.0) : (tool != nil ? 290.0 : drawer != nil ? 200.0 : 240.0), geometry.size.height * 0.48)
-            let available = max(1, geometry.size.height - dockHeight - 52)
+            let landscape: Bool = geometry.size.width > geometry.size.height
+            let dockHeight: CGFloat = dockHeightFor(landscape: landscape, screenHeight: geometry.size.height)
+            let available: CGFloat = max(1, geometry.size.height - dockHeight - 52)
             let ratio: CGFloat = landscape ? 4 / 3 : 3 / 4
-            let width = isVideo ? geometry.size.width : min(geometry.size.width, available * ratio)
+            let width: CGFloat = isVideo ? geometry.size.width : min(geometry.size.width, available * ratio)
             VStack(spacing: 4) {
                 topBar.padding(.horizontal, 10).frame(height: 44)
                 viewfinder(width: width, height: isVideo ? available : width / ratio)
@@ -49,6 +73,9 @@ struct CameraView: View {
         }
         .background(Color(red: 0.025, green: 0.025, blue: 0.035).ignoresSafeArea())
         .foregroundStyle(.white).tint(accent)
+    }
+    private var presented: some View {
+        layout
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
         .sheet(isPresented: $showStyles) { FilmStylesView(sceneSample: model.sceneSample) { imported in try await model.useLiveLUT(imported) } }
         .sheet(isPresented: $showLongExposure) { LongExposureView(model: model) }
@@ -63,6 +90,9 @@ struct CameraView: View {
             case .depth: DepthCaptureView()
             }
         }
+    }
+    private var observed: some View {
+        presented
         .onAppear {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
@@ -79,21 +109,6 @@ struct CameraView: View {
         .onChange(of: model.focusAssistEnabled) { _, _ in model.monitoringChanged() }
         .onChange(of: model.guideAIEnabled) { _, _ in model.updateComposition(); model.monitoringChanged() }
         .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
-        .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
-        .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
-        .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
-        .onChange(of: model.liveFinish) { _, _ in model.updateLiveIntensity() }
-        .onChange(of: model.videoPreviewFill) { _, fill in model.livePreview?.setViewfinderFill(isVideo && fill) }
-        .onChange(of: model.snapshot.isApplyingSettings) { _, pending in if !pending { model.monitoringChanged() } }
-        .onChange(of: drawer) { _, value in model.setPreviewSamplesWanted(value == .looks || showStyles) }
-        .onChange(of: showStyles) { _, shown in model.setPreviewSamplesWanted(shown || drawer == .looks) }
-        .onChange(of: showLiveControls) { _, shown in model.setPreviewSamplesWanted(shown || showStyles || drawer == .looks) }
-        .task { await model.prepareInstalledLooks() }
-        .alert("카메라 알림", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
-            Button("확인") { model.errorMessage = nil }
-        } message: { Text(model.errorMessage ?? "") }
-        .onDisappear { if !reviewing { model.setActive(false) } }
-        .preferredColorScheme(.dark)
     }
     private func resume() { if !reviewing { model.setActive(scenePhase == .active && screen == nil) } }
     private func open(_ next: CameraScreen) {
@@ -577,3 +592,13 @@ struct CameraView: View {
     }
     private var selectedFront: Bool { model.snapshot.lenses.first(where: { $0.id == model.snapshot.selectedLens })?.isFront ?? false }
 }
+
+// Reports the combined "look cards or style browser visible" state; replaces three overlapping onChange handlers.
+private struct PreviewSampleObserver: ViewModifier {
+    let wanted: Bool
+    let update: (Bool) -> Void
+    func body(content: Content) -> some View {
+        content.onChange(of: wanted) { _, value in update(value) }
+    }
+}
+
