@@ -19,8 +19,32 @@ final class LivePreviewImageProcessor {
 
     func histogram() -> PreviewHistogram? { monitor?.histogram() }
 
-    static func inputColorSpace(_ buffer: CVPixelBuffer) throws -> CGColorSpace {
+    static func inputColorSpace(_ buffer: CVPixelBuffer, negotiatedSRGB: Bool = false) throws -> CGColorSpace {
         let format = CVPixelBufferGetPixelFormatType(buffer)
+        // CameraService explicitly negotiates sRGB, disables automatic wide colour/HDR,
+        // and requests RGB delivery. RGB has no YCbCr matrix attachment to validate.
+        // Never guess a matrix for untagged YUV or accept HDR under this contract.
+        if format == kCVPixelFormatType_32BGRA, negotiatedSRGB {
+            let metadata = CVBufferCopyAttachments(buffer, .shouldPropagate) as? [String: Any] ?? [:]
+            if let transfer = metadata[kCVImageBufferTransferFunctionKey as String] as? String,
+               ![kCVImageBufferTransferFunction_sRGB as String, kCVImageBufferTransferFunction_ITU_R_709_2 as String].contains(transfer) {
+                throw ImageEditingError.invalid("HDR/Log 입력은 SDR 프리뷰로 처리할 수 없습니다.")
+            }
+            if let primaries = metadata[kCVImageBufferColorPrimariesKey as String] as? String,
+               primaries != kCVImageBufferColorPrimaries_ITU_R_709_2 as String {
+                throw ImageEditingError.invalid("요청한 sRGB 프리뷰와 입력 색역이 다릅니다.")
+            }
+            if metadata[kCVImageBufferTransferFunctionKey as String] as? String == kCVImageBufferTransferFunction_ITU_R_709_2 as String {
+                let profile: [String: Any] = [kCVImageBufferColorPrimariesKey as String: kCVImageBufferColorPrimaries_ITU_R_709_2,
+                    kCVImageBufferTransferFunctionKey as String: kCVImageBufferTransferFunction_ITU_R_709_2,
+                    kCVImageBufferYCbCrMatrixKey as String: kCVImageBufferYCbCrMatrix_ITU_R_709_2]
+                guard let space = CVImageBufferCreateColorSpaceFromAttachments(profile as CFDictionary)?.takeRetainedValue() else {
+                    throw ImageEditingError.invalid("RGB 프리뷰의 BT.709 전송 프로파일을 만들지 못했습니다.")
+                }
+                return space
+            }
+            return CGColorSpace(name: CGColorSpace.sRGB)!
+        }
         guard [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange].contains(format)
         else { throw ImageEditingError.invalid("실시간 LUT는 8비트 YUV SDR 입력만 지원합니다.") }
         let metadata = CVBufferCopyAttachments(buffer, .shouldPropagate) as? [String: Any] ?? [:]
@@ -45,7 +69,7 @@ final class LivePreviewImageProcessor {
         guard [480, 720, 1024].contains(maximumDimension), intensity.isFinite, (0...1).contains(intensity) else { throw CameraError.invalidSettings }
         try grain.validate(); try effects.validate()
         let needsGrade = intensity != 0 || grain.amount != 0 || effects.enabled
-        let space = try Self.inputColorSpace(buffer)
+        let space = try Self.inputColorSpace(buffer, negotiatedSRGB: true)
         let image = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
         guard w > 0, h > 0 else { throw ImageEditingError.invalid("프리뷰 크기가 유효하지 않습니다.") }

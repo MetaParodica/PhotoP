@@ -2,6 +2,8 @@
 
 # PhotoP
 
+2026-10-22 촬영 개선 변경안: [16개 요청 반영·제한·검증 및 추가 개선 보고](docs/17-CAMERA-FIELD-FIXES.ko.md). 위 CI 기록은 이전 코드의 결과이며 이번 변경의 iOS 빌드·실기기 검증은 아직 미수행입니다.
+
 An iPhone-first professional camera platform, with native Android planned after the photo pipeline is validated.
 
 **Status: initial implementation; iPhone validation is still required.** The first slice contains an AVFoundation preview, physical-camera selection, HEIF/JPEG capture, original-byte preservation, add-only Photos export, a thirds grid, basic manual ISO/shutter/EV/focus/WB controls, touch AF/AE, independent AE/AF/WB locks, and live device readouts. A strict standalone 1D/3D `.cube` parser, CPU reference interpolation and Metal renderer support an SDR/sRGB editor for the last photo. User LUT import requires an explicit sRGB input/output declaration; originals remain unchanged. An SDR live LUT preview and persistent user LUT favorites are also implemented. Basic monochrome grain and saved-edit reopening are implemented. Phase 2 development scope is complete within the SDR limits below; device acceptance is pending. Phase 3 adds dynamically gated Bayer RAW/Apple ProRAW DNG capture, SDR RGB/luma histograms, zebra, focus peaking, and native three-frame exposure brackets. Phases 4–6 add sampled SDR long exposure, on-device composition suggestions and an original film-style library. SDR video recording (optional audio, supported stabilization) is implemented; video LUT monitoring, Log/HDR and Android remain future work.
@@ -63,11 +65,11 @@ Grain has an independent 0–100% amount and deterministic seed, stored in versi
 
 ## Live LUT preview and favorites
 
-Open **LUT** on the camera screen, confirm sRGB input/output and import a `.cube`, or load a saved favorite. The LUT applies to the preview only; capture continues saving the original HEIF/JPEG. Strength, basic monochrome grain and original-color comparison are available. Turn LUT off before switching lenses, touch AF/AE or importing another LUT; manual PRO controls remain available.
+Open **LUT** on the camera screen, confirm sRGB input/output and import a `.cube`, or load a saved favorite. The LUT applies to the preview only; capture continues saving the original HEIF/JPEG. Strength, basic monochrome grain and original-color comparison are available. Tap/hold AF/AE works with the preview active. Lens changes suspend and restore the look. Preinstalled external looks are available from the camera cards after their local integrity/cache preparation.
 
-The native 8-bit NV12 stream accepts BT.709 primaries, 709/sRGB transfer and 601/709 matrix metadata. Core Video derives the video matching profile; Core Image converts it to encoded sRGB on the GPU before the shared Metal LUT and aspect-fit display pass. Unknown/HDR/Log profiles disable the LUT with an explanation. Camera device color/HDR settings are not forcibly changed. Front portrait rotation/mirroring is requested through the supported connection APIs.
+The camera explicitly negotiates an sRGB SDR BGRA stream for looks, analysis and long exposure. RGB input does not require a YCbCr matrix; any declared BT.709 transfer is converted to sRGB. Tagged NV12 remains supported by the processor, but untagged YUV, HDR/Log and conflicting primaries are rejected. Previous device colour/HDR configuration is restored when leaving the photo analysis stream. Portrait and both landscape orientations use the supported rotation/mirroring APIs.
 
-One frame is allowed in flight; late frames are dropped. Intermediate textures are reused at up to 1024px on the long edge. The capture buffer stays alive through GPU completion. This live path performs no CPU pixel readback or GPU completion wait. Actual camera delivery, screen color match, FPS and thermal performance still require device measurements.
+One frame is allowed in flight; late frames are dropped. Intermediate textures are reused at up to 1024px on the long edge. The capture buffer stays alive through GPU completion. The main preview has no CPU pixel readback or GPU completion wait; visible look cards separately request a bounded 160px scene sample at 1Hz. Actual camera delivery, screen color match, FPS and thermal performance still require device measurements.
 
 Favorites are saved only when requested, under Application Support/UserLUTFavorites with SHA-256 IDs, original `.cube` bytes and sRGB profile metadata. Both the editor and live preview can load them after restarting the app. Changed file hashes or unsupported metadata are rejected. Removing a favorite does not delete the original imported source or existing photo edit bundles. Favorites are user documents and never become distributable bundle assets.
 
@@ -91,7 +93,7 @@ Choose **장노출**, average or whole-RGB luminance Lighten, 1–300 seconds an
 
 ## Composition suggestions (Phase 5)
 
-Open **구도** for advanced geometric grids and nine independently drawn pose targets. Optional on-device Apple Vision runs at up to 2Hz with one analysis in flight: attention saliency, body joints, rectangle edges or horizon angle. Suggested targets and detected observations use different colors; stale observations disappear. Rectangle edges are not semantic building recognition. No perspective correction, pose-quality certification or server upload is provided. The app remains portrait-only; normalized coordinate and aspect-fit helpers are tested independently of real camera accuracy.
+Open **구도** for advanced geometric grids and nine independently drawn pose targets. Optional on-device Apple Vision runs at up to 2Hz with one analysis in flight: attention saliency, body joints, rectangle edges or horizon angle. Suggested targets and detected observations use different colors; stale observations disappear. Rectangle edges are not semantic building recognition. No perspective correction, pose-quality certification or server upload is provided. Portrait and landscape layouts are supported; device accuracy remains unverified.
 
 ## Original film styles and full-look presets (Phase 6)
 

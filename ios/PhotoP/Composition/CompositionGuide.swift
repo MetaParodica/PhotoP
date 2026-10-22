@@ -58,9 +58,10 @@ struct CompositionSnapshot: Sendable {
 }
 
 enum GuideGeometry {
-    static func imageRect(image: CGSize, viewport: CGSize) -> CGRect {
+    static func imageRect(image: CGSize, viewport: CGSize, fill: Bool = false) -> CGRect {
         guard image.width > 0, image.height > 0, viewport.width > 0, viewport.height > 0 else { return .zero }
-        let scale = min(viewport.width / image.width, viewport.height / image.height)
+        let x = viewport.width / image.width, y = viewport.height / image.height
+        let scale = fill ? max(x, y) : min(x, y)
         let size = CGSize(width: image.width * scale, height: image.height * scale)
         return CGRect(x: (viewport.width - size.width) / 2, y: (viewport.height - size.height) / 2, width: size.width, height: size.height)
     }

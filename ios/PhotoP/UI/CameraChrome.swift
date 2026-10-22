@@ -110,12 +110,40 @@ struct CameraValueSlider: View {
                 Text(display(value)).font(.system(.title3, design: .rounded, weight: .semibold)).monospacedDigit()
             }
             Slider(value: Binding(get: { CameraControlScale.unit(value, range: range, logarithmic: logarithmic) },
-                                  set: { value = CameraControlScale.value($0, range: range, logarithmic: logarithmic) }),
-                   in: 0...1, onEditingChanged: { if !$0 { onCommit() } })
+                                  set: { value = CameraControlScale.value($0, range: range, logarithmic: logarithmic); onCommit() }),
+                   in: 0...1)
                 .disabled(range.lowerBound == range.upperBound)
                 .accessibilityLabel(title).accessibilityValue(display(value))
             HStack { Text(display(range.lowerBound)); Spacer(); Text(display(range.upperBound)) }
                 .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
         }
+    }
+}
+
+// Discrete settings stay inside the dock rather than opening a system popup over
+// the camera image. Horizontal scrolling also works inside the vertical panel.
+struct CameraChoice<Value: Hashable>: View {
+    let title: String
+    @Binding var selection: Value
+    let values: [Value]
+    let identifier: String
+    var key: (Value) -> String = { String(describing: $0) }
+    let label: (Value) -> String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(values, id: \.self) { value in
+                        Button { selection = value } label: {
+                            Text(label(value)).font(.caption.weight(.semibold)).padding(.horizontal, 12).frame(minHeight: 36)
+                                .background(selection == value ? Color.purple.opacity(0.45) : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                        }.buttonStyle(.plain).accessibilityLabel(label(value))
+                            .accessibilityIdentifier(identifier + "." + key(value))
+                            .accessibilityAddTraits(selection == value ? .isSelected : [])
+                    }
+                }
+            }.frame(height: 40)
+        }.accessibilityElement(children: .contain).accessibilityIdentifier(identifier)
     }
 }

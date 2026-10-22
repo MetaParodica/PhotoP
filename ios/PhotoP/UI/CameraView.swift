@@ -5,7 +5,7 @@ enum CameraDrawer: String {
 }
 
 enum CameraScreen: String, Identifiable {
-    case review, editor, history, videos
+    case review, editor, history, videos, depth
     var id: String { rawValue }
 }
 
@@ -20,9 +20,8 @@ struct CameraView: View {
     @State private var showLongExposure = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     private let accent = Color(red: 0.78, green: 0.69, blue: 1)
-    // Shutter row, mode row or card drawer, and status line below the viewfinder.
-    private let bottomHeight: CGFloat = 226
     private var reviewing: Bool {
         #if DEBUG && targetEnvironment(simulator)
         return ProcessInfo.processInfo.arguments.contains("--ui-review")
@@ -30,24 +29,28 @@ struct CameraView: View {
         return false
         #endif
     }
-    private var locked: Bool { model.busy || model.snapshot.isApplyingSettings }
+    private var locked: Bool { model.busy || model.switchingMode }
     private var isVideo: Bool { model.snapshot.video.isVideoMode }
     var body: some View {
         GeometryReader { geometry in
-            // The viewfinder spans the full width; the header and control rail float over it.
-            let ratio: CGFloat = isVideo ? 9 / 16 : 3 / 4
-            let width = max(0, min(geometry.size.width, (geometry.size.height - bottomHeight) * ratio))
-            VStack(spacing: 0) {
-                viewfinder(width: width, height: width / ratio).frame(maxWidth: .infinity)
-                Spacer(minLength: 8)
-                bottomBar
-                Spacer(minLength: 4)
+            let landscape = geometry.size.width > geometry.size.height
+            let dockHeight = min(landscape ? (tool != nil ? 154.0 : drawer != nil ? 110.0 : 96.0) : (tool != nil ? 290.0 : drawer != nil ? 200.0 : 240.0), geometry.size.height * 0.48)
+            let available = max(1, geometry.size.height - dockHeight - 52)
+            let ratio: CGFloat = landscape ? 4 / 3 : 3 / 4
+            let width = isVideo ? geometry.size.width : min(geometry.size.width, available * ratio)
+            VStack(spacing: 4) {
+                topBar.padding(.horizontal, 10).frame(height: 44)
+                viewfinder(width: width, height: isVideo ? available : width / ratio)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityElement(children: .contain).accessibilityIdentifier("camera.viewfinder")
+                cameraDock(landscape: landscape, height: dockHeight)
+                    .frame(height: dockHeight).clipped().accessibilityElement(children: .contain).accessibilityIdentifier("camera.dock")
             }.frame(width: geometry.size.width, height: geometry.size.height)
         }
         .background(Color(red: 0.025, green: 0.025, blue: 0.035).ignoresSafeArea())
         .foregroundStyle(.white).tint(accent)
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
-        .sheet(isPresented: $showStyles) { FilmStylesView { imported in try await model.useLiveLUT(imported) } }
+        .sheet(isPresented: $showStyles) { FilmStylesView(sceneSample: model.sceneSample) { imported in try await model.useLiveLUT(imported) } }
         .sheet(isPresented: $showLongExposure) { LongExposureView(model: model) }
         .fullScreenCover(item: $screen, onDismiss: resume) { current in
             switch current {
@@ -57,6 +60,7 @@ struct CameraView: View {
                 else { CaptureReviewView(model: model) { next in open(next) } }
             case .history: SavedEditsView()
             case .videos: VideoLibraryView()
+            case .depth: DepthCaptureView()
             }
         }
         .onAppear {
@@ -71,16 +75,40 @@ struct CameraView: View {
         }
         .onChange(of: scenePhase) { _, _ in if !reviewing { resume() } }
         .onChange(of: model.settings.exposure.manual) { _, manual in if manual { model.proMode = true } }
+        .onChange(of: model.monitoring) { _, _ in model.monitoringChanged() }
+        .onChange(of: model.focusAssistEnabled) { _, _ in model.monitoringChanged() }
+        .onChange(of: model.guideAIEnabled) { _, _ in model.updateComposition(); model.monitoringChanged() }
+        .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
+        .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
+        .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
+        .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
+        .onChange(of: model.liveFinish) { _, _ in model.updateLiveIntensity() }
+        .onChange(of: model.videoPreviewFill) { _, fill in model.livePreview?.setViewfinderFill(isVideo && fill) }
+        .onChange(of: model.snapshot.isApplyingSettings) { _, pending in if !pending { model.monitoringChanged() } }
+        .onChange(of: drawer) { _, value in model.setPreviewSamplesWanted(value == .looks || showStyles) }
+        .onChange(of: showStyles) { _, shown in model.setPreviewSamplesWanted(shown || drawer == .looks) }
+        .onChange(of: showLiveControls) { _, shown in model.setPreviewSamplesWanted(shown || showStyles || drawer == .looks) }
+        .task { await model.prepareInstalledLooks() }
+        .alert("카메라 알림", isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })) {
+            Button("확인") { model.errorMessage = nil }
+        } message: { Text(model.errorMessage ?? "") }
         .onDisappear { if !reviewing { model.setActive(false) } }
         .preferredColorScheme(.dark)
     }
     private func resume() { if !reviewing { model.setActive(scenePhase == .active && screen == nil) } }
     private func open(_ next: CameraScreen) {
+        if next == .depth {
+            Task { await model.suspendForDepth(); screen = .depth }
+            return
+        }
         if next != .review && !reviewing { model.setActive(false) }
         screen = next
     }
     private func toggle(_ selected: CameraTool) {
-        withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { tool = tool == selected ? nil : selected }
+        withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) {
+            tool = tool == selected ? nil : selected
+            if tool != nil { drawer = nil }
+        }
     }
     private func toggleDrawer(_ selected: CameraDrawer) {
         withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { drawer = drawer == selected ? nil : selected; tool = nil }
@@ -93,8 +121,10 @@ struct CameraView: View {
             if reviewing { reviewBackdrop }
             else {
                 CameraPreview(session: model.previewSession, mirrored: selectedFront, lensID: model.snapshot.selectedLens,
-                              zoom: model.snapshot.readout?.zoom ?? 1, onZoom: { model.setZoom($0) }) { point, lensID in
-                    Task { await model.focusAndMeter(point, lensID: lensID) }
+                              zoom: model.snapshot.readout?.zoom ?? 1, onZoom: { model.setZoom($0) }, fill: isVideo && model.videoPreviewFill,
+                              onOrientation: { value in Task { @MainActor in model.setOrientation(value) } },
+                              onIndicator: { point, locked in model.showMeteringTarget(point, locked: locked) }) { point, lensID, locked in
+                    Task { await model.focusAndMeter(point, lensID: lensID, locked: locked) }
                 }
                 if model.snapshot.state != .running { unavailableCamera }
             }
@@ -102,12 +132,19 @@ struct CameraView: View {
                 LivePreviewSurface(preview: preview)
                     .opacity(model.liveHasFrame && model.snapshot.state == .running ? 1 : 0).allowsHitTesting(false)
             }
+            if let target = model.meteringTarget {
+                VStack(spacing: 4) {
+                    if target.locked { Text(model.snapshot.readout?.focusLocked == true || model.snapshot.readout?.exposureLocked == true ? "AE/AF 잠금" : "AE/AF 고정 중").font(.caption2.weight(.semibold)) }
+                    Rectangle().stroke(.yellow, lineWidth: 1.5).frame(width: 64, height: 64)
+                }.foregroundStyle(.yellow).position(x: target.point.x * width, y: target.point.y * height)
+                    .allowsHitTesting(false).accessibilityIdentifier("camera.focus.target")
+            }
             CompositionOverlay(grid: model.guideGrid, pose: model.poseTemplate, opacity: model.guideOpacity,
-                               snapshot: model.composition, live: liveGuide, sourceSize: model.previewImageSize)
+                               snapshot: model.composition, live: liveGuide, sourceSize: overlayImageSize, fill: isVideo && model.videoPreviewFill)
             PersonGuideOverlay(guide: model.personGuide, opacity: model.guideOpacity, snapshot: model.composition,
-                               live: liveGuide, sourceSize: model.previewImageSize)
-            if let preset = model.compositionPreset { CompositionPresetOverlay(preset: preset, opacity: max(0.5, model.guideOpacity)) }
-            if !isVideo && model.framing != .native { FramingMaskOverlay(aspect: model.framing) }
+                               live: liveGuide, sourceSize: overlayImageSize, fill: isVideo && model.videoPreviewFill)
+            if let preset = model.compositionPreset { CompositionPresetOverlay(preset: preset, opacity: max(0.5, model.guideOpacity), imageSize: overlayImageSize, fill: isVideo && model.videoPreviewFill) }
+            if !isVideo && model.framing != .native { FramingMaskOverlay(aspect: model.framing, imageSize: model.orientation.imageSize) }
             if model.showGrid { ThirdsGrid() }
             if let countdown = model.countdown {
                 Text("\(countdown)").font(.system(size: 96, weight: .thin, design: .rounded)).monospacedDigit()
@@ -118,7 +155,6 @@ struct CameraView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
-                topBar
                 HStack(alignment: .top) {
                     previewBadge
                     Spacer()
@@ -128,26 +164,18 @@ struct CameraView: View {
             }.padding(.horizontal, 10).padding(.top, 8)
                 .background(alignment: .top) { scrim(top: true).allowsHitTesting(false) }
         }
-        .overlay(alignment: .bottom) {
-            if tool == nil {
-                VStack(spacing: 8) {
-                    zoomControl
-                    // While cards are open the rail steps aside so the whole guide stays visible.
-                    if drawer == nil { HStack(spacing: 8) { controlsRail; looksButton } }
-                }.frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.bottom, 10)
-                    .background(alignment: .bottom) { scrim(top: false).allowsHitTesting(false) }
-                    .transition(.opacity)
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if let tool { panel(tool, availableHeight: height - 70).padding(8) }
-        }
     }
     private var liveGuide: Bool { model.liveHasFrame && model.snapshot.state == .running }
+    private var overlayImageSize: CGSize {
+        if let actual = model.previewImageSize { return actual }
+        if isVideo { return model.orientation == .portrait ? CGSize(width: 9, height: 16) : CGSize(width: 16, height: 9) }
+        return model.orientation.imageSize
+    }
     private var personFeedback: String? {
         guard liveGuide, model.guideAIEnabled, let snapshot = model.composition,
               snapshot.isFresh(at: ProcessInfo.processInfo.systemUptime), let body = snapshot.bodies.first else { return nil }
-        return model.compositionPreset?.feedback(body: body) ?? model.personGuide.feedback(body: body)
+        let size = model.previewImageSize ?? model.orientation.imageSize
+        return model.compositionPreset?.feedback(body: body) ?? model.personGuide.feedback(body: body, aspect: size.width / size.height)
     }
     private func feedbackChip(_ text: String) -> some View {
         Label(text, systemImage: "figure.stand").font(.caption.weight(.semibold))
@@ -159,7 +187,7 @@ struct CameraView: View {
             .frame(height: 120)
     }
     private var previewBadge: some View {
-        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · ORIGINAL · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
+        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · \(model.videoPreviewFill ? "화면 채움" : "전체 프레임") · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.liveUsesLUT ? "LOOK PREVIEW · 원본 저장" : model.snapshot.state == .running ? "ORIGINAL" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }
@@ -203,11 +231,18 @@ struct CameraView: View {
                     .accessibilityIdentifier("camera.framing")
             }
             Spacer(minLength: 0)
+            if isVideo {
+                CameraIconButton(symbol: model.videoPreviewFill ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                                 label: model.videoPreviewFill ? "영상 전체 프레임 보기" : "영상 미리보기 화면 채움", size: 40) { model.videoPreviewFill.toggle() }
+                    .accessibilityIdentifier("camera.video.previewFit")
+            }
             formatChip
             CameraIconButton(symbol: "waveform.path", label: "노출 보조", selected: tool == .monitor, size: 40) { toggle(.monitor) }
                 .accessibilityIdentifier("camera.monitor")
             CameraIconButton(symbol: "person.crop.rectangle", label: "구도·인물 가이드",
-                             selected: drawer == .composition || tool == .guide || model.personGuide.framing != .off || model.compositionPresetID != nil, size: 40) { toggleDrawer(.composition) }
+                             selected: drawer == .composition || tool == .guide || model.personGuide.framing != .off || model.compositionPresetID != nil, size: 40) {
+                if isVideo { toggle(.guide) } else { toggleDrawer(.composition) }
+            }
                 .accessibilityIdentifier("camera.guide")
         }
     }
@@ -220,30 +255,10 @@ struct CameraView: View {
             Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold))
         }.font(.system(.caption, design: .rounded, weight: .semibold)).padding(.horizontal, 12).frame(minHeight: 40)
     }
-    @ViewBuilder private var formatChip: some View {
-        if isVideo {
-            Button { toggle(.video) } label: { chipLabel }.buttonStyle(.plain).cameraGlass(radius: 20)
-                .accessibilityLabel("촬영 포맷").accessibilityIdentifier("camera.format")
-        } else {
-            // Common choices are one tap away; resolution and brackets stay in the detailed panel.
-            Menu {
-                if let caps = model.snapshot.capabilities {
-                    ForEach(caps.photoFormats) { format in
-                        Button { model.rawMode = .processed; model.photoFormat = format } label: {
-                            if model.rawMode == .processed && model.photoFormat == format { Label(format.title, systemImage: "checkmark") } else { Text(format.title) }
-                        }
-                    }
-                    ForEach(caps.rawModes.filter { $0 != .processed }) { mode in
-                        Button { model.rawMode = mode } label: {
-                            if model.rawMode == mode { Label(mode.title, systemImage: "checkmark") } else { Text(mode.title) }
-                        }
-                    }
-                    Divider()
-                }
-                Button("상세 설정 · 해상도 · 브래킷") { toggle(.format) }
-            } label: { chipLabel }.cameraGlass(radius: 20).disabled(locked)
-                .accessibilityLabel("촬영 포맷").accessibilityIdentifier("camera.format")
-        }
+    private var formatChip: some View {
+        Button { toggle(isVideo ? .video : .format) } label: { chipLabel }
+            .buttonStyle(.plain).cameraGlass(radius: 20).disabled(locked)
+            .accessibilityLabel("촬영 포맷").accessibilityIdentifier("camera.format")
     }
 
     // MARK: Zoom and controls rail
@@ -251,9 +266,7 @@ struct CameraView: View {
     private var sideLenses: [CameraLens] {
         model.snapshot.lenses.filter { $0.isFront == selectedFront }.sorted { ($0.zoomEquivalent ?? 1) < ($1.zoomEquivalent ?? 1) }
     }
-    private var digitalSteps: [Double] { [1, 2, 4].filter { $0 <= (model.snapshot.capabilities?.maxZoom ?? 1) } }
     private var zoomControl: some View {
-        let zoom = model.snapshot.readout?.zoom ?? 1
         return HStack(spacing: 2) {
             ForEach(sideLenses) { lens in
                 let selected = lens.id == model.snapshot.selectedLens
@@ -264,24 +277,17 @@ struct CameraView: View {
                         .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 2)
                         .background(selected ? Color.black.opacity(0.35) : .clear, in: Circle())
                 }.buttonStyle(.plain).accessibilityLabel("\(lens.name) 렌즈").accessibilityAddTraits(selected ? .isSelected : [])
-                    .disabled(locked || model.livePreview != nil || isVideo)
-            }
-            if digitalSteps.count > 1 {
-                Button {
-                    let next = digitalSteps.first { $0 > zoom + 0.05 } ?? 1
-                    model.setZoom(next)
-                } label: {
-                    Text(zoom > 1.01 ? "D \(ZoomPolicy.label(zoom))" : "D")
-                        .font(.system(size: 12, weight: .bold, design: .rounded)).monospacedDigit()
-                        .foregroundStyle(zoom > 1.01 ? .yellow : .white.opacity(0.7))
-                        .frame(minWidth: 40, minHeight: 40).padding(.horizontal, 4)
-                }.buttonStyle(.plain).accessibilityLabel("디지털 줌").accessibilityValue(ZoomPolicy.label(zoom))
-                    .accessibilityHint("핀치로도 조절합니다. 디지털 줌은 화질이 낮아집니다.")
+                    .disabled(locked || isVideo)
             }
         }.padding(.horizontal, 4).cameraGlass(radius: 22)
             .opacity(model.snapshot.lenses.isEmpty ? 0 : 1)
     }
-    private var railTools: [CameraTool] { model.proMode || isVideo ? [.iso, .shutter, .ev, .whiteBalance, .focus] : [.ev] }
+    private var railTools: [CameraTool] {
+        var tools: [CameraTool] = model.proMode || isVideo || model.longMode ? [.iso, .shutter, .ev, .whiteBalance, .focus] : [.ev]
+        if model.longMode { tools.append(.longExposure) }
+        if isVideo { tools.append(.video) }
+        return tools
+    }
     private var controlsRail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
@@ -294,7 +300,7 @@ struct CameraView: View {
                         VStack(spacing: 5) {
                             Image(systemName: item.symbol).font(.system(size: 17, weight: .regular))
                             Text(value(item)).font(.system(size: 10, weight: .medium, design: .monospaced)).lineLimit(1)
-                        }.frame(minWidth: 51, minHeight: 50).padding(.horizontal, 2)
+                        }.frame(minWidth: 51, minHeight: verticalSizeClass == .compact ? 34 : 50).padding(.horizontal, 2)
                             .foregroundStyle(tool == item ? accent : .white.opacity(0.85))
                             .background(tool == item ? accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 14))
                             .overlay(alignment: .topTrailing) {
@@ -337,7 +343,7 @@ struct CameraView: View {
                 Image(systemName: CameraTool.looks.symbol).font(.system(size: 17))
                 Text(model.liveUsesLUT ? "ON" : "룩").font(.system(size: 9, weight: .bold, design: .rounded))
             }.foregroundStyle(drawer == .looks || tool == .looks || model.liveUsesLUT ? accent : .white)
-                .frame(width: 58, height: 58).contentShape(Circle())
+                .frame(width: verticalSizeClass == .compact ? 44 : 58, height: verticalSizeClass == .compact ? 44 : 58).contentShape(Circle())
         }.buttonStyle(.plain).cameraGlass(radius: 29)
             .accessibilityLabel("룩").accessibilityValue(model.liveLUTTitle ?? "원본 색상")
             .accessibilityIdentifier("camera.tool.looks")
@@ -366,7 +372,7 @@ struct CameraView: View {
                 CameraQuickControls(model: model, tool: selected, openStyles: { showStyles = true },
                                     openImports: { showLiveControls = true }, openLongExposure: { showLongExposure = true })
                     .padding(.bottom, 8)
-            }.frame(maxHeight: max(48, min(260, availableHeight - 68)))
+            }.frame(maxHeight: max(32, availableHeight - 60))
         }.padding(.horizontal, 16).padding(.bottom, 8).cameraGlass(radius: 24)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("camera.panel.\(selected.rawValue)")
@@ -375,10 +381,40 @@ struct CameraView: View {
 
     // MARK: Bottom bar
 
-    private var bottomBar: some View {
-        VStack(spacing: 10) {
-            if let drawer, !isVideo { carousel(drawer) } else { modeRow }
-            HStack {
+    private func cameraDock(landscape: Bool, height: CGFloat) -> some View {
+        Group {
+            if landscape {
+                HStack(spacing: 12) {
+                    VStack(spacing: 2) {
+                        Group {
+                            if let tool { panel(tool, availableHeight: height - 48) }
+                            else if let drawer, !isVideo { carousel(drawer) }
+                            else { HStack { controlsRail; if !isVideo { looksButton } } }
+                        }.frame(height: drawer == nil ? height - 48 : height).clipped()
+                        if drawer == nil { modeRow.frame(height: 44) }
+                    }
+                    shutterRow.frame(width: 240)
+                }
+            } else {
+                VStack(spacing: 4) {
+                    Group {
+                        if let tool { panel(tool, availableHeight: height - 130) }
+                        else if let drawer, !isVideo { carousel(drawer) }
+                        else {
+                            VStack(spacing: 4) {
+                                HStack(spacing: 8) { controlsRail; if !isVideo { looksButton } }.padding(.horizontal, 10)
+                                if !sideLenses.isEmpty && !isVideo { zoomControl }
+                            }
+                        }
+                    }.frame(height: max(60, height - (drawer == nil ? 130 : 86))).clipped()
+                    if drawer == nil { modeRow.frame(height: 44) }
+                    shutterRow.frame(height: 78)
+                }
+            }
+        }.padding(.horizontal, 4).background(Color(white: 0.045))
+    }
+    private var shutterRow: some View {
+        HStack {
                 if drawer != nil && !isVideo {
                     CameraIconButton(symbol: "chevron.down", label: "카드 선택 닫기", size: 52) { toggleDrawer(drawer ?? .composition) }
                         .accessibilityIdentifier("camera.drawer.close")
@@ -388,35 +424,40 @@ struct CameraView: View {
                 Spacer()
                 CameraIconButton(symbol: "arrow.triangle.2.circlepath.camera", label: "전후면 카메라 전환") {
                     if let lens = model.snapshot.lenses.first(where: { $0.isFront != selectedFront }) { model.selectLens(lens.id) }
-                }.disabled(locked || isVideo || model.livePreview != nil || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
-            }.padding(.horizontal, 20)
-            status
-        }
+                }.disabled(locked || isVideo || !model.snapshot.lenses.contains(where: { $0.isFront != selectedFront }))
+            }.padding(.horizontal, 12)
     }
     private var modeRow: some View {
-            HStack(spacing: 24) {
-                modeButton("AUTO", selected: !isVideo && !model.proMode && tool != .longExposure) {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 18) {
+                modeButton("AUTO", selected: !isVideo && !model.proMode && !model.longMode) {
                     if isVideo { Task { await model.setVideoMode(false) } }
                     else if model.snapshot.capabilities != nil {
                         model.settings = CameraSettings(); Task { await model.applySettings() }
                     }
                     model.proMode = false
+                    model.longMode = false
                     tool = nil
                 }
-                modeButton("PRO", selected: !isVideo && model.proMode && tool != .longExposure) {
+                modeButton("PRO", selected: !isVideo && model.proMode && !model.longMode) {
                     if isVideo { Task { await model.setVideoMode(false) } }
                     model.proMode = true
-                    toggle(.iso)
+                    model.longMode = false; tool = nil; drawer = nil
                 }
-                modeButton("LONG", selected: tool == .longExposure) {
-                    if isVideo { Task { await model.setVideoMode(false) } }; toggle(.longExposure)
+                modeButton("LONG", selected: model.longMode && !isVideo) {
+                    if isVideo { Task { await model.setVideoMode(false); model.longMode = true } }
+                    else { model.longMode = true }
+                    model.rawMode = .processed; model.bracketEnabled = false; tool = nil; drawer = nil
                 }
                 modeButton("VIDEO", selected: isVideo) {
                     if !reviewing && !isVideo { Task { await model.setVideoMode(true) } }
-                    toggle(.video)
+                    tool = nil; drawer = nil
                 }.accessibilityIdentifier("camera.mode.video")
-            }.disabled(locked || model.countdown != nil)
-            .frame(minHeight: 88)
+                modeButton("DEPTH", selected: screen == .depth) { open(.depth) }
+                    .accessibilityIdentifier("camera.mode.depth")
+            }.disabled(locked || model.countdown != nil || model.recordingRequested)
+            .frame(minHeight: 36).frame(maxWidth: .infinity)
+        }
     }
 
     // MARK: Card drawers
@@ -449,23 +490,34 @@ struct CameraView: View {
     }
     // Same carousel as guides: original, PhotoP colour styles, spatial looks, then adjust/browse.
     private var lookItems: [CameraCarouselItem] {
-        let sample = LookThumbnail.scene
-        var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(LookThumbnail(colors: sample))) {
+        var items = [CameraCarouselItem(id: "original", title: "원본", selected: !model.liveUsesLUT, thumbnail: AnyView(LookSceneThumbnail(id: "original", sample: model.sceneSample))) {
             Task { await model.selectOriginalLook() }
         }]
         items.append(CameraCarouselItem(id: "adjust", title: "강도·마감", thumbnail: AnyView(SymbolThumbnail(symbol: "slider.horizontal.3"))) { toggle(CameraTool.looks) })
         items.append(CameraCarouselItem(id: "browse", title: "전체·가져오기", thumbnail: AnyView(SymbolThumbnail(symbol: "square.grid.2x2"))) { showStyles = true })
         items += FilmStyle.all.map { style in
             CameraCarouselItem(id: style.id, title: style.name, selected: model.liveLookID == style.id,
-                               thumbnail: AnyView(LookThumbnail(colors: sample.map(style.color)))) {
+                               thumbnail: AnyView(LookSceneThumbnail(id: style.id, sample: model.sceneSample, load: { try style.imported() }))) {
                 Task { await model.selectLook(id: style.id) { try style.imported() } }
             }
         }
         items += ProceduralLook.all.map { look in
             CameraCarouselItem(id: look.id, title: look.name, selected: model.liveLookID == look.id,
-                               thumbnail: AnyView(SymbolThumbnail(symbol: "sparkles"))) {
+                               thumbnail: AnyView(LookSceneThumbnail(id: look.id, sample: model.sceneSample, load: { try look.imported() }))) {
                 Task { await model.selectLook(id: look.id) { try look.imported() } }
             }
+        }
+        items += model.installedLooks.filter(\.canApply).map { look in
+            CameraCarouselItem(id: look.id, title: look.name, selected: model.liveLookID == look.id,
+                               thumbnail: AnyView(LookSceneThumbnail(id: look.id, sample: model.sceneSample, load: { try await look.load() }))) {
+                Task { await model.selectLook(id: look.id) { try await look.load() } }
+            }
+        }
+        if model.installedLooks.isEmpty {
+            items.append(CameraCarouselItem(id: "installing", title: model.lookInstallationError == nil ? "외부 룩 준비 중" : "외부 룩 재시도",
+                                            thumbnail: AnyView(SymbolThumbnail(symbol: "arrow.down.circle"))) {
+                Task { await model.prepareInstalledLooks() }
+            })
         }
         return items
     }
@@ -484,17 +536,20 @@ struct CameraView: View {
             .disabled(locked || model.countdown != nil)
     }
     private var shutterButton: some View {
-        Button { model.shutterPressed() } label: {
+        Button { if model.longExposureRunning { model.cancelLongExposure() } else { model.shutterPressed() } } label: {
             ZStack {
                 Circle().stroke(.white.opacity(0.85), lineWidth: 2.5)
-                if model.countdown != nil {
+                if model.countdown != nil || model.longExposureRunning {
                     RoundedRectangle(cornerRadius: 6).fill(.white).frame(width: 28, height: 28)
                 } else {
                     Circle().fill(.white).padding(6).opacity(model.canCapture ? 1 : 0.4)
                 }
             }.frame(width: 78, height: 78)
-        }.buttonStyle(.plain).disabled(!model.canCapture && model.countdown == nil)
-            .accessibilityLabel(model.countdown != nil ? "셀프타이머 취소" : model.bracketEnabled ? "노출 브래킷 3장 촬영"
+        }.buttonStyle(.plain).disabled(!model.canCapture && model.countdown == nil && !model.longExposureRunning)
+            .overlay(alignment: .top) {
+                if model.longExposureRunning, let progress = model.longProgress { ProgressView(value: progress.fraction).tint(.purple).offset(y: -6) }
+            }
+            .accessibilityLabel(model.longExposureRunning ? "장노출 취소" : model.countdown != nil ? "셀프타이머 취소" : model.longMode ? "장노출 합성 촬영" : model.bracketEnabled ? "노출 브래킷 3장 촬영"
                                 : model.selfTimer != .off ? "\(model.selfTimer.rawValue)초 후 사진 촬영" : "사진 촬영")
             .accessibilityIdentifier("camera.shutter")
     }
@@ -519,14 +574,6 @@ struct CameraView: View {
                 .foregroundStyle(selected ? accent : .white.opacity(0.5)).frame(minWidth: 54, minHeight: 44)
                 .overlay(alignment: .bottom) { if selected { Circle().fill(accent).frame(width: 4, height: 4) } }
         }.buttonStyle(.plain).accessibilityAddTraits(selected ? .isSelected : [])
-    }
-    private var status: some View {
-        HStack(spacing: 6) {
-            if locked { ProgressView().controlSize(.mini) }
-            Text(reviewing ? "시뮬레이터 · 실제 촬영 검증 전" : (isVideo ? nil : model.rawUnavailableReason ?? model.bracketUnavailableReason) ?? model.message ?? "원본을 보존하는 카메라")
-                .font(.caption2).foregroundStyle(.secondary).lineLimit(2)
-                .accessibilityAddTraits(.updatesFrequently)
-        }.frame(maxWidth: .infinity, minHeight: 24).padding(.horizontal, 16)
     }
     private var selectedFront: Bool { model.snapshot.lenses.first(where: { $0.id == model.snapshot.selectedLens })?.isFront ?? false }
 }

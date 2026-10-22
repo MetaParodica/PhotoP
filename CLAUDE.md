@@ -36,7 +36,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 ## 현재 상태 (2026-10)
 
 - Phase 1–6(사진·LUT·RAW·모니터·브래킷·장노출·구도·필름 룩 59+3) 개발 범위 구현, 자동 테스트 통과. 실기기 품질 검증은 대기.
-- Phase 7 영상 진행 중: SDR 무보정(LUT 비굽기) 녹화, 720p/1080p/4K·24–60fps·H.264/HEVC, 180° 셔터 제안, 선택 오디오(마이크 권한은 켤 때만), 지원 손떨림 보정, manifest v2(v1 호환), 파일 검증·영상 라이브러리. 영상 LUT/분석 모니터와 Log/HDR은 미구현.
+- Phase 7 영상 진행 중: SDR 무보정(LUT 비굽기) 녹화, 720p/1080p/4K·24–60fps·H.264/HEVC, 180° 셔터 제안, 선택 오디오, 지원 손떨림 보정, manifest v2(v1 호환), 파일 검증·영상 라이브러리. 노출 분석은 장치가 동시 출력을 허용할 때 연결한다. 영상 LUT 굽기·Log/HDR은 미구현이다.
+- 촬영 개선 변경안은 `docs/17-CAMERA-FIELD-FIXES.ko.md`를 따른다. 하단 dock·연속 설정 큐·가로 회전·초록 피킹·터치/길게 누르기·현장 룩 썸네일·장노출 연결·외부 룩 준비·지원 기기의 공식 셔터음 억제·ARKit LiDAR 패키지를 추가했다. 이 변경의 Xcode/실기기 검증은 아직 미수행이다. 기존 CI 성공을 새 코드의 성공으로 인용하지 않는다.
 - 사진 중심 UI 2차 개편: 전폭 뷰파인더+오버레이 헤더/레일, 인물 실루엣 가이드(`Composition/PersonGuide.swift`), 최근 촬영 확인(`CaptureReviewView`), 렌즈 배율·디지털 줌·플래시·타이머·프레이밍 가이드(`Camera/PhotoShootingTypes.swift`). 1:1/16:9는 가이드이며 원본은 4:3.
 - 구도 프리셋(`Composition/CompositionPreset.swift`, 점선 영역·포인트·메모)과 하단 카드 선택(`CameraCarousel`, 구도·룩 공용)이 있다.
 - CI는 `main`, `codex/**`, `claude/**` push와 PR에서 실행된다.

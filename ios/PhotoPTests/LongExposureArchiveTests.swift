@@ -2,6 +2,16 @@ import XCTest
 @testable import PhotoP
 
 final class LongExposureArchiveTests: XCTestCase {
+    func testDurationStartsAtFirstFrameAndLaterFramesDoNotResetIt() {
+        var clock = LongExposureClock()
+        XCTAssertEqual(clock.elapsed(at: 500), 0, "Waiting for the camera must not consume exposure time")
+        XCTAssertFalse(clock.startIfNeeded(at: .nan))
+        XCTAssertTrue(clock.startIfNeeded(at: 500))
+        XCTAssertEqual(clock.elapsed(at: 500.5), 0.5)
+        XCTAssertFalse(clock.startIfNeeded(at: 501))
+        XCTAssertEqual(clock.elapsed(at: 501), 1)
+        XCTAssertEqual(clock.elapsed(at: 499), 0)
+    }
     private func folder() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).resolvingSymlinksInPath()
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)

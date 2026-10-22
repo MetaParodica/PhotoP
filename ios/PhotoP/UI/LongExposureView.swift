@@ -27,7 +27,7 @@ struct LongExposureView: View {
                 if model.busy { Button("합성 취소", role: .destructive) { model.cancelLongExposure() } }
                 else {
                     Button("합성 시작") { Task { await model.captureLongExposure() } }
-                        .disabled(!model.canCapture || model.livePreview != nil || model.rawMode != .processed || model.bracketEnabled)
+                        .disabled(!model.canCapture || model.rawMode != .processed || model.bracketEnabled)
                     if let url = model.latestComposite {
                         ShareLink("결과 JPEG 공유", item: url)
                         Button("현재 합성 방식·정렬로 재처리") { Task { await model.reprocessLongExposure() } }

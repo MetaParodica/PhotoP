@@ -17,6 +17,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var movieTimeout: DispatchWorkItem?
     private var photoWideColor = true
     private var photoAutoHDR = true
+    private var orientation: CameraOrientation = .portrait
+    private var previewColorState: (wide: Bool, hdr: Bool, autoHDR: Bool, color: AVCaptureColorSpace)?
+    private var meteringLockID: UUID?
     private let longOutput = AVCaptureVideoDataOutput()
     private var longExposure: LongExposureCapture?
     private let videoOutput = AVCaptureVideoDataOutput()
@@ -30,6 +33,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private var snapshotRevision: UInt64 = 0
     private var readoutTimer: DispatchSourceTimer?
     private var controls = CameraControlApplication()
+    private var appliedSettings: CameraSettings?
+    private var pendingAppliedSettings: CameraSettings?
     private var settingsCompletion: CheckedContinuation<CameraReadout, Error>?
     private var settingsTimeout: DispatchWorkItem?
     private var photoTimeout: DispatchWorkItem?
@@ -71,6 +76,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         queue.async { [self] in
             wantsRunning = active
             if !active {
+                meteringLockID = nil
+                appliedSettings = nil
                 stopVideoOnQueue()
                 longExposure?.cancel()
                 state = .stopped
@@ -97,6 +104,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             default: publish(CameraError.permission.localizedDescription)
             }
         }
+    }
+
+    func waitUntilStopped() async {
+        await withCheckedContinuation { (completion: CheckedContinuation<Void, Never>) in queue.async { completion.resume() } }
     }
 
     private func startAuthorized() {
@@ -137,13 +148,18 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         configureDimensions()
     }
 
-    func selectLens(_ id: String) {
-        queue.async { [self] in
-            guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending else { publish(CameraError.busy.localizedDescription); return }
-            guard livePreview == nil else { publish("LUT를 끈 뒤 렌즈를 전환해 주세요."); return }
-            guard let old = input, let device = devices.first(where: { $0.uniqueID == id }),
-                  device.uniqueID != old.device.uniqueID else { return }
+    func selectLens(_ id: String) async throws {
+        let _: CameraReadout = try await withCheckedThrowingContinuation { completion in
+          queue.async { [self] in
             do {
+                guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                guard let old = input, let device = devices.first(where: { $0.uniqueID == id }) else { throw CameraError.unavailable }
+                if device.uniqueID == old.device.uniqueID {
+                    guard let readout = currentReadout() else { throw CameraError.interrupted }
+                    completion.resume(returning: readout); return
+                }
+                meteringLockID = nil
+                appliedSettings = nil
                 let candidate = try AVCaptureDeviceInput(device: device)
                 session.beginConfiguration()
                 session.removeInput(old)
@@ -163,9 +179,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     device.unlockForConfiguration()
                 }
                 // Switching a lens explicitly returns controls to AUTO.
-                try applyOnQueue(CameraSettings())
+                try applyOnQueue(CameraSettings(), completion: completion)
                 publish()
-            } catch { publish(error.localizedDescription) }
+            } catch { publish(error.localizedDescription); completion.resume(throwing: error) }
+          }
         }
     }
 
@@ -184,6 +201,49 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         output.isAppleProRAWEnabled = output.isAppleProRAWSupported
     }
 
+    // Called only inside begin/commitConfiguration, before attaching an RGB stream.
+    private func negotiateSDRPreview() throws {
+        guard let device = input?.device, device.activeFormat.supportedColorSpaces.contains(.sRGB) else {
+            throw ImageEditingError.invalid("이 카메라 구성은 sRGB SDR 프리뷰를 지원하지 않습니다.")
+        }
+        if previewColorState == nil {
+            previewColorState = (session.automaticallyConfiguresCaptureDeviceForWideColor, device.isVideoHDREnabled,
+                                 device.automaticallyAdjustsVideoHDREnabled, device.activeColorSpace)
+        }
+        session.automaticallyConfiguresCaptureDeviceForWideColor = false
+        try device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+        device.activeColorSpace = .sRGB
+        device.automaticallyAdjustsVideoHDREnabled = false
+        if device.activeFormat.isVideoHDRSupported { device.isVideoHDREnabled = false }
+    }
+
+    private func restorePreviewColor() {
+        guard let saved = previewColorState else { return }
+        previewColorState = nil
+        session.automaticallyConfiguresCaptureDeviceForWideColor = saved.wide
+        guard let device = input?.device, (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        if device.activeFormat.supportedColorSpaces.contains(saved.color) { device.activeColorSpace = saved.color }
+        if device.activeFormat.isVideoHDRSupported, saved.color != .HLG_BT2020 { device.isVideoHDREnabled = saved.hdr }
+        device.automaticallyAdjustsVideoHDREnabled = saved.autoHDR
+    }
+
+    func setOrientation(_ value: CameraOrientation) {
+        queue.async { [self] in
+            orientation = value
+            // Freeze the encoded movie/stack orientation for the current capture.
+            guard longExposure == nil else { return }
+            if let connection = videoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(value.rotationAngle) {
+                connection.videoRotationAngle = value.rotationAngle
+                livePreview?.invalidateFrames()
+            }
+            if !recording.phase.isActive, let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(value.rotationAngle) {
+                connection.videoRotationAngle = value.rotationAngle
+            }
+        }
+    }
+
     private func rawPixelFormats() -> [OSType] {
         guard output.availableRawPhotoFileTypes.contains(.dng) else { return [] }
         return output.supportedRawPhotoPixelFormatTypes(for: .dng)
@@ -199,6 +259,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private func capabilities() -> CameraCapabilities? {
         guard let d = input?.device else { return nil }
         let format = d.activeFormat
+        var silent = false
+        if #available(iOS 18.0, *) { silent = output.isShutterSoundSuppressionSupported }
         return CameraCapabilities(
             lensID: d.uniqueID, iso: Double(format.minISO)...Double(format.maxISO),
             shutterSeconds: (videoConfiguration.flatMap { try? VideoCapturePolicy.shutterLimit(sensor: format.minExposureDuration.seconds...format.maxExposureDuration.seconds, fps: $0.framesPerSecond) }) ?? (format.minExposureDuration.seconds...format.maxExposureDuration.seconds),
@@ -213,7 +275,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             photoResolutions: PhotoResolutionPolicy.options(supported: format.supportedMaxPhotoDimensions.map { .init(width: $0.width, height: $0.height) },
                 ceiling: .init(width: output.maxPhotoDimensions.width, height: output.maxPhotoDimensions.height)),
             maxZoom: ZoomPolicy.range(maxAvailable: Double(d.maxAvailableVideoZoomFactor)).upperBound,
-            flashModes: videoConfiguration == nil ? flashModes() : [.off]
+            flashModes: videoConfiguration == nil ? flashModes() : [.off], shutterSoundSuppression: silent
         )
     }
 
@@ -244,19 +306,23 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             queue.async { [self] in
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted, input != nil else { throw CameraError.interrupted }
-                    guard videoConfiguration == nil, continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending, livePreview == nil else { throw CameraError.busy }
                     session.beginConfiguration()
                     do {
-                        guard session.canAddOutput(videoOutput) else { throw CameraError.configuration }
+                        if videoConfiguration == nil { try negotiateSDRPreview() }
+                        else if input?.device.activeColorSpace != .sRGB || input?.device.isVideoHDREnabled != false { throw CameraError.configuration }
+                        guard session.canAddOutput(videoOutput) else {
+                            throw ImageEditingError.invalid("현재 해상도·FPS에서는 녹화와 분석 프리뷰를 함께 제공할 수 없습니다. 해상도·FPS를 낮춰 주세요.")
+                        }
                         session.addOutput(videoOutput)
-                        guard let format = [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
+                        guard let format = [kCVPixelFormatType_32BGRA]
                             .first(where: { videoOutput.availableVideoPixelFormatTypes.contains($0) }),
-                              let connection = videoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90)
+                              let connection = videoOutput.connection(with: .video), connection.isVideoRotationAngleSupported(orientation.rotationAngle)
                         else { throw CameraError.configuration }
                         videoOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
                         videoOutput.alwaysDiscardsLateVideoFrames = true
                         videoOutput.automaticallyConfiguresOutputBufferDimensions = true
-                        connection.videoRotationAngle = 90
+                        connection.videoRotationAngle = orientation.rotationAngle
                         if input?.device.position == .front && !connection.isVideoMirroringSupported { throw CameraError.configuration }
                         if connection.isVideoMirroringSupported {
                             connection.automaticallyAdjustsVideoMirroring = false
@@ -272,6 +338,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         completion.resume()
                     } catch {
                         if session.outputs.contains(videoOutput) { session.removeOutput(videoOutput) }
+                        restorePreviewColor()
                         session.commitConfiguration()
                         throw error
                     }
@@ -294,6 +361,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         if session.outputs.contains(videoOutput) {
             session.beginConfiguration()
             session.removeOutput(videoOutput)
+            restorePreviewColor()
             session.commitConfiguration()
             configureDimensions()
         }
@@ -309,7 +377,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     guard state == .running, session.isRunning, !session.isInterrupted else {
                         throw CameraError.interrupted
                     }
-                    guard !recording.phase.isActive, continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     try applyOnQueue(settings, completion: completion)
                 } catch { completion.resume(throwing: error) }
             }
@@ -320,20 +388,30 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                               completion: CheckedContinuation<CameraReadout, Error>? = nil) throws {
         guard let d = input?.device, let caps = capabilities() else { throw CameraError.unavailable }
         try CameraSettingsValidator.validate(settings, for: caps)
+        meteringLockID = nil
+        let delta = CameraSettingsDelta(previous: appliedSettings, next: settings)
+        if !delta.exposure && !delta.focus && !delta.whiteBalance {
+            guard let readout = currentReadout() else { throw CameraError.interrupted }
+            completion?.resume(returning: readout)
+            return
+        }
         guard settings.exposure.manual || settings.exposure.locked || d.isExposureModeSupported(.continuousAutoExposure)
         else { throw CameraError.invalidSettings }
         try d.lockForConfiguration()
         defer { d.unlockForConfiguration() }
 
-        var steps: Set<CameraControlApplication.Step> = [.exposure]
-        if settings.focus.manual || settings.focus.locked { steps.insert(.focus) }
-        if settings.whiteBalance.manual || settings.whiteBalance.locked { steps.insert(.whiteBalance) }
+        var steps: Set<CameraControlApplication.Step> = []
+        if delta.exposure { steps.insert(.exposure) }
+        if delta.focus { steps.insert(.focus) }
+        if delta.whiteBalance { steps.insert(.whiteBalance) }
         let id = try controls.begin(steps: steps)
+        pendingAppliedSettings = settings
         settingsCompletion = completion
 
         let timeout = DispatchWorkItem { [weak self] in
             guard let self, self.controls.id == id else { return }
             self.wantsRunning = false
+            self.stopVideoOnQueue()
             self.livePreview?.setRunning(false)
             self.state = .stopped
             self.stopReadouts()
@@ -347,7 +425,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                                   currentSeconds.isFinite ? max(0, currentSeconds) : 0)
         queue.asyncAfter(deadline: .now() + max(5, longestExposure + 3), execute: timeout)
 
-        if settings.exposure.locked {
+        if delta.exposure {
+          if settings.exposure.locked {
             // This mode setter is synchronous; it has no device completion callback.
             d.exposureMode = .locked
             queue.async { [self] in acknowledgeControl(.exposure, id: id) }
@@ -361,11 +440,18 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             d.setExposureTargetBias(Float(settings.exposure.ev),
                                     completionHandler: controlCompletion(.exposure, id: id))
         }
-        if settings.focus.manual || settings.focus.locked {
+        }
+        if delta.focus {
+          if settings.focus.manual || settings.focus.locked {
             d.setFocusModeLocked(lensPosition: settings.focus.locked ? AVCaptureDevice.currentLensPosition : Float(settings.focus.lensPosition),
                                 completionHandler: controlCompletion(.focus, id: id))
-        } else if d.isFocusModeSupported(.continuousAutoFocus) { d.focusMode = .continuousAutoFocus }
-        if settings.whiteBalance.locked {
+          } else {
+            if d.isFocusModeSupported(.continuousAutoFocus) { d.focusMode = .continuousAutoFocus }
+            queue.async { [self] in acknowledgeControl(.focus, id: id) }
+          }
+        }
+        if delta.whiteBalance {
+          if settings.whiteBalance.locked {
             d.setWhiteBalanceModeLocked(with: AVCaptureDevice.currentWhiteBalanceGains,
                                        completionHandler: controlCompletion(.whiteBalance, id: id))
         } else if settings.whiteBalance.manual {
@@ -377,8 +463,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             gains.blueGain = min(max(gains.blueGain, 1), d.maxWhiteBalanceGain)
             d.setWhiteBalanceModeLocked(with: gains,
                                        completionHandler: controlCompletion(.whiteBalance, id: id))
-        } else if d.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
-            d.whiteBalanceMode = .continuousAutoWhiteBalance
+          } else {
+            if d.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) { d.whiteBalanceMode = .continuousAutoWhiteBalance }
+            queue.async { [self] in acknowledgeControl(.whiteBalance, id: id) }
+          }
         }
         publish()
     }
@@ -407,9 +495,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         settingsCompletion = nil
         guard wasPending else { return }
         switch result {
-        case .success: publish()
-        case .failure(let error): publish(error.localizedDescription)
+        case .success: appliedSettings = pendingAppliedSettings; publish()
+        case .failure(let error): appliedSettings = nil; publish(error.localizedDescription)
         }
+        pendingAppliedSettings = nil
         completion?.resume(with: result)
         removeLivePreviewIfRequested()
     }
@@ -459,19 +548,22 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         readoutTimer = nil
     }
 
-    func focusAndMeter(at point: CameraMeteringPoint, lensID: String) async throws -> PointMeteringActions {
+    func focusAndMeter(at point: CameraMeteringPoint, lensID: String, locked: Bool = false) async throws -> PointMeteringActions {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted,
                           let d = input?.device, d.uniqueID == lensID else { throw CameraError.interrupted }
-                    guard !recording.phase.isActive, continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
+                    guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
                     let actions = PointMeteringPolicy.actions(
                         focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(.continuousAutoFocus),
                         exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
-                        focusLocked: d.focusMode == .locked,
-                        exposureLocked: d.exposureMode == .locked || d.exposureMode == .custom)
+                        focusLocked: false,
+                        exposureLocked: d.exposureMode == .custom)
+                    guard !locked || ((!actions.focus || d.isFocusModeSupported(.locked)) && (!actions.exposure || d.isExposureModeSupported(.locked))) else { throw CameraError.invalidSettings }
                     guard !actions.isEmpty else { throw CameraError.invalidSettings }
+                    meteringLockID = nil
+                    appliedSettings = nil
                     try d.lockForConfiguration()
                     if actions.focus {
                         d.focusPointOfInterest = point.cgPoint
@@ -482,11 +574,42 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         d.exposureMode = .continuousAutoExposure
                     }
                     d.unlockForConfiguration()
+                    if locked { scheduleMeteringLock(lensID: lensID) }
                     publish()
                     // A point request is accepted; AF/AE may still be adjusting.
                     completion.resume(returning: actions)
                 } catch { completion.resume(throwing: error) }
             }
+        }
+    }
+
+    private func scheduleMeteringLock(lensID: String) {
+        let id = UUID()
+        meteringLockID = id
+        pollMeteringLock(id: id, lensID: lensID, attempt: 0)
+    }
+
+    private func pollMeteringLock(id: UUID, lensID: String, attempt: Int) {
+        queue.asyncAfter(deadline: .now() + 0.05) { [self] in
+            guard meteringLockID == id, state == .running, let device = input?.device,
+                  device.uniqueID == lensID, !controls.isPending else { return }
+            if device.isAdjustingFocus || device.isAdjustingExposure {
+                guard attempt < 40 else {
+                    meteringLockID = nil
+                    publish("초점·노출이 안정되지 않아 고정하지 못했습니다. 다시 길게 눌러 주세요.")
+                    return
+                }
+                pollMeteringLock(id: id, lensID: lensID, attempt: attempt + 1)
+                return
+            }
+            do {
+                try device.lockForConfiguration()
+                if device.isFocusModeSupported(.locked) { device.focusMode = .locked }
+                if device.exposureMode != .custom, device.isExposureModeSupported(.locked) { device.exposureMode = .locked }
+                device.unlockForConfiguration()
+                meteringLockID = nil
+                publish()
+            } catch { meteringLockID = nil; publish(error.localizedDescription) }
         }
     }
 
@@ -510,7 +633,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         self.queue.async {
                             self.longOutput.setSampleBufferDelegate(nil, queue: nil)
                             if self.session.outputs.contains(self.longOutput) {
-                                self.session.beginConfiguration(); self.session.removeOutput(self.longOutput); self.session.commitConfiguration()
+                                self.session.beginConfiguration(); self.session.removeOutput(self.longOutput)
+                                self.restorePreviewColor()
+                                self.session.commitConfiguration()
                                 self.configureDimensions()
                             }
                             self.longExposure = nil
@@ -520,20 +645,22 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     }
                     session.beginConfiguration()
                     do {
+                        try negotiateSDRPreview()
                         guard session.canAddOutput(longOutput) else { throw CameraError.configuration }
                         session.addOutput(longOutput)
-                        guard let format = [kCVPixelFormatType_420YpCbCr8BiPlanarFullRange, kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
+                        guard let format = [kCVPixelFormatType_32BGRA]
                             .first(where: { longOutput.availableVideoPixelFormatTypes.contains($0) }),
-                              let connection = longOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90) else { throw CameraError.configuration }
+                              let connection = longOutput.connection(with: .video), connection.isVideoRotationAngleSupported(orientation.rotationAngle) else { throw CameraError.configuration }
                         longOutput.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: format]
                         longOutput.alwaysDiscardsLateVideoFrames = true
-                        connection.videoRotationAngle = 90
+                        connection.videoRotationAngle = orientation.rotationAngle
                         if connection.isVideoMirroringSupported { connection.automaticallyAdjustsVideoMirroring = false; connection.isVideoMirrored = false }
                         longExposure = job
                         longOutput.setSampleBufferDelegate(job, queue: job.frameQueue)
                         session.commitConfiguration(); configureDimensions(); job.start(); publish()
                     } catch {
                         if session.outputs.contains(longOutput) { session.removeOutput(longOutput) }
+                        restorePreviewColor()
                         session.commitConfiguration(); longExposure = nil; throw error
                     }
                 } catch { archive?.cancel(); completion.resume(throwing: error) }
@@ -604,9 +731,11 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 case .on: settings.flashMode = .on
                 }
                 settings.photoQualityPrioritization = biases != nil ? .speed : (rawMode == .appleProRAW ? .quality : PhotoCapturePolicy.quality(for: input?.device.exposureMode))
-                // Initial release is portrait-only. Front preview is mirrored; saved photo is not.
+                if #available(iOS 18.0, *), output.isShutterSoundSuppressionSupported {
+                    settings.isShutterSoundSuppressionEnabled = true
+                }
                 if let connection = output.connection(with: .video) {
-                    if connection.isVideoRotationAngleSupported(90) { connection.videoRotationAngle = 90 }
+                    if connection.isVideoRotationAngleSupported(orientation.rotationAngle) { connection.videoRotationAngle = orientation.rotationAngle }
                     if connection.isVideoMirroringSupported {
                         connection.automaticallyAdjustsVideoMirroring = false
                         connection.isVideoMirrored = false
@@ -754,7 +883,7 @@ extension CameraService {
                             throw error
                         }
                     } else { try restorePhotoMode() }
-                    publish("촬영 모드를 변경했습니다. 노출·초점·WB는 AUTO로 초기화됩니다.")
+                    publish()
                     completion.resume()
                 } catch { publish(error.localizedDescription); completion.resume(throwing: error) }
             }
@@ -780,7 +909,7 @@ extension CameraService {
         let changedPreset = entering || videoConfiguration?.resolution != resolution
         let fps = requested?.framesPerSecond ?? 30
         let codec = requested?.codec ?? .h264
-        guard let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(90) else { throw CameraError.invalidSettings }
+        guard let connection = movieOutput.connection(with: .video), connection.isVideoRotationAngleSupported(orientation.rotationAngle) else { throw CameraError.invalidSettings }
         let format = device.activeFormat
         let stabilizationModes = connection.isVideoStabilizationSupported
             ? VideoCapturePolicy.stabilizationModes(supported: { format.isVideoStabilizationModeSupported($0.avMode) }) : [VideoStabilization.off]
@@ -797,12 +926,12 @@ extension CameraService {
         device.activeColorSpace = .sRGB
         device.automaticallyAdjustsVideoHDREnabled = false
         if device.activeFormat.isVideoHDRSupported { device.isVideoHDREnabled = false }
-        resetAutomaticControls(device)
+        if entering || changedPreset { resetAutomaticControls(device) }
         let duration = CMTime(value: 1, timescale: CMTimeScale(actualFPS))
         device.activeVideoMinFrameDuration = duration
         device.activeVideoMaxFrameDuration = duration
         device.unlockForConfiguration()
-        connection.videoRotationAngle = 90
+        connection.videoRotationAngle = orientation.rotationAngle
         if connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = false // Saved front video is unmirrored, like an original photo.
@@ -863,6 +992,7 @@ extension CameraService {
     }
 
     private func resetAutomaticControls(_ device: AVCaptureDevice) {
+        appliedSettings = nil
         if device.isExposureModeSupported(.continuousAutoExposure) { device.exposureMode = .continuousAutoExposure }
         if device.isFocusModeSupported(.continuousAutoFocus) { device.focusMode = .continuousAutoFocus }
         if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) { device.whiteBalanceMode = .continuousAutoWhiteBalance }
@@ -875,7 +1005,7 @@ extension CameraService {
                     guard state == .running, session.isRunning, !session.isInterrupted else { throw CameraError.interrupted }
                     guard let configuration = videoConfiguration, let capabilities = videoCapabilities else { throw CameraError.invalidSettings }
                     guard movieCompletion == nil, !movieOutput.isRecording, !controls.isPending,
-                          continuation == nil, longExposure == nil, livePreview == nil else { throw CameraError.busy }
+                          continuation == nil, longExposure == nil else { throw CameraError.busy }
                     try VideoCapturePolicy.validate(configuration, capabilities: capabilities)
                     guard input?.device.activeColorSpace == .sRGB, input?.device.isVideoHDREnabled == false,
                           let connection = movieOutput.connection(with: .video), connection.isActive, connection.isEnabled else { throw CameraError.configuration }

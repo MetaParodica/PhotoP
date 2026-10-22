@@ -22,9 +22,13 @@ final class CompositionAnalyzer: @unchecked Sendable {
     private let completion: @Sendable (CompositionSnapshot) -> Void
     init(completion: @escaping @Sendable (CompositionSnapshot) -> Void) { self.completion = completion }
     func configure(enabled: Bool, scene: GuideScene) {
-        lock.withLock { self.enabled = enabled; self.scene = scene; generation &+= 1; currentID = nil }
+        lock.withLock {
+            guard self.enabled != enabled || self.scene != scene else { return }
+            self.enabled = enabled; self.scene = scene; generation &+= 1; currentID = nil
+        }
     }
     func setRunning(_ value: Bool) { lock.withLock { running = value; generation &+= 1; currentID = nil } }
+    func invalidate() { lock.withLock { generation &+= 1; currentID = nil } }
     func isCurrent(_ snapshot: CompositionSnapshot) -> Bool { lock.withLock { currentID == snapshot.id && enabled && running } }
     func offer(_ buffer: CVPixelBuffer, minimumInterval: Double = 0.5) {
         let request: (GuideScene, UInt64, Double)? = lock.withLock {

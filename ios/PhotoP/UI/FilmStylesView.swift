@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 @MainActor
 struct FilmStylesView: View {
     @Environment(\.dismiss) private var dismiss
+    var sceneSample: LookSceneSample? = nil
     let onSelect: (ImportedLUT) async throws -> Void
     @State private var query = ""
     @State private var category = "전체"
@@ -20,9 +21,9 @@ struct FilmStylesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n브랜드 필름·센서의 실측 재현이 아닙니다. 색상표는 생성된 참고 미리보기입니다.").font(.caption)
+                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n예시는 현재 카메라 장면에 효과를 적용합니다. 브랜드 필름·센서의 실측 재현이 아닙니다.").font(.caption)
                     Picker("카테고리", selection: $category) { ForEach(categories, id: \.self) { Text($0) } }
-                    Toggle("외부 룩의 SDR 입력·변환 가정 확인", isOn: $confirmedSRGB)
+                    Toggle("가져올 사용자 LUT의 sRGB 입력·출력 확인", isOn: $confirmedSRGB)
                     Text("표시용 LUT는 sRGB로 가정합니다. V-Log 파생 룩은 SDR→V-Gamut/V-Log→LUT→감마2.4 가정→sRGB로 변환합니다. 센서·HDR 원본을 복원하지 않습니다.").font(.caption)
                     Button("여러 LUT 가져오기 · 최대32개") { importing = true }.disabled(!confirmedSRGB)
                 }
@@ -35,10 +36,12 @@ struct FilmStylesView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 Label(style.name, systemImage: "sparkles").font(.headline)
                                 Text(style.detail).font(.caption).foregroundStyle(.secondary)
+                                LookSceneThumbnail(id: style.id, sample: sceneSample, load: { try style.imported() })
+                                    .frame(width: 96, height: 128).clipped()
                             }
                         }
                     }
-                    Text("주변 픽셀을 처리하는 Metal 효과입니다. 색상표로 표현할 수 없습니다. 저장하려면 전체 룩 프리셋을 사용하세요.").font(.caption)
+                    Text("주변 픽셀을 처리하는 Metal 효과입니다. 저장하려면 전체 룩 프리셋을 사용하세요.").font(.caption)
                 }
                 Section("외부 룩 · slay / CC BY 4.0") {
                     ForEach(bundled.filter { (category == "전체" || $0.category == category) && (query.isEmpty || "\($0.name) \($0.category) \($0.detail)".localizedCaseInsensitiveContains(query)) }) { entry in externalRow(entry) }
@@ -109,22 +112,22 @@ struct FilmStylesView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(style.name).font(.headline)
                 Text(style.detail).font(.caption).foregroundStyle(.secondary)
-                patches(FilmStyle.chart.map(style.color))
+                LookSceneThumbnail(id: style.id, sample: sceneSample, load: { try style.imported() }).frame(width: 96, height: 128).clipped()
             }
         }
     }
     private func externalRow(_ entry: BundledFilmStyle) -> some View {
         Button {
-            let confirmed = confirmedSRGB
-            select { try await Task.detached { try BundledFilmLibrary.load(entry, in: BundledFilmLibrary.root(), confirmedSRGB: confirmed) }.value }
+            select { try await Task.detached { try BundledFilmLibrary.load(entry, in: BundledFilmLibrary.root(), confirmedSRGB: true) }.value }
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 Text(entry.name).font(.headline)
                 Text("\(entry.detail) · sRGB 해석 가정").font(.caption)
-                patches(entry.previewColors.map { SIMD3($0[0], $0[1], $0[2]) })
+                LookSceneThumbnail(id: entry.id, sample: sceneSample, load: { try BundledFilmLibrary.load(entry, in: BundledFilmLibrary.root(), confirmedSRGB: true) })
+                    .frame(width: 96, height: 128).clipped()
                 Text(entry.requiredCredit).font(.caption2)
             }
-        }.disabled(!confirmedSRGB)
+        }
     }
     private func companyRow(_ entry: CompanyFilmStyle) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -135,9 +138,12 @@ struct FilmStylesView: View {
                     Text(entry.name).font(.headline)
                     Text("\(entry.brand) · 비공식 파생/외부 미러 · 권리 미확인").font(.caption2)
                     Text(entry.role == "technical" ? "기술 변환" : "크리에이티브 룩").font(.caption2)
-                    if entry.canApply { patches(entry.previewColors.map { SIMD3($0[0], $0[1], $0[2]) }) }
+                    if entry.canApply {
+                        LookSceneThumbnail(id: entry.id, sample: sceneSample, load: { try await CompanyLookCompiler.shared.load(entry, in: CompanyFilmLibrary.root()) })
+                            .frame(width: 96, height: 128).clipped()
+                    }
                 }
-            }.disabled(!confirmedSRGB || !entry.canApply)
+            }.disabled(!entry.canApply)
             if !entry.canApply { Text("출력 WDR 프로파일 미확인 · 적용 없이 원본 제공").font(.caption) }
             HStack {
                 if let original = try? CompanyFilmLibrary.original(entry, in: CompanyFilmLibrary.root()) {
@@ -146,13 +152,6 @@ struct FilmStylesView: View {
                 if let url = URL(string: entry.source) { Link("출처", destination: url) }
             }.font(.caption)
         }
-    }
-    private func patches(_ colors: [SIMD3<Double>]) -> some View {
-        HStack(spacing: 1) {
-            ForEach(colors.indices, id: \.self) { i in
-                Rectangle().fill(Color(.sRGB, red: colors[i].x, green: colors[i].y, blue: colors[i].z, opacity: 1)).frame(height: 24)
-            }
-        }.accessibilityLabel("생성 색상표 미리보기")
     }
     private func reload() async throws { presets = try await FilterPresetLibrary.shared.entries() }
     private func select(_ load: @escaping () async throws -> ImportedLUT) {

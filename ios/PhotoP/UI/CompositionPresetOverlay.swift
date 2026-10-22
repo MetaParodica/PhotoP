@@ -6,9 +6,11 @@ struct CompositionPresetOverlay: View {
     var opacity: Double = 1
     var showNotes = true
     var lineScale: CGFloat = 1
+    var imageSize = CGSize(width: 3, height: 4)
+    var fill = false
     var body: some View {
         GeometryReader { geometry in
-            let rect = GuideGeometry.imageRect(image: CGSize(width: 3, height: 4), viewport: geometry.size)
+            let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size, fill: fill)
             Canvas { context, _ in
                 CompositionPresetOverlay.draw(preset, in: rect, context: context, opacity: opacity, showNotes: showNotes, lineScale: lineScale)
             }
@@ -95,7 +97,7 @@ struct CameraCarousel: View {
     var body: some View {
         ScrollViewReader { reader in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                LazyHStack(spacing: 8) {
                     ForEach(items) { item in
                         Button(action: item.action) {
                             VStack(spacing: 4) {
@@ -146,30 +148,6 @@ struct SymbolThumbnail: View {
         ZStack {
             Color(white: 0.16)
             Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(.white.opacity(0.8))
-        }
-    }
-}
-
-struct LookThumbnail: View {
-    // Generated sample scene (not a photo): sky, distant hills, foliage, ground, shadow, with a skin tone disc.
-    static let scene: [SIMD3<Double>] = [.init(0.55, 0.72, 0.92), .init(0.78, 0.84, 0.92), .init(0.42, 0.52, 0.45),
-                                         .init(0.3, 0.52, 0.24), .init(0.62, 0.5, 0.36), .init(0.12, 0.12, 0.13), .init(0.86, 0.64, 0.52)]
-    let colors: [SIMD3<Double>]
-    private func color(_ i: Int) -> Color {
-        let v = colors.indices.contains(i) ? colors[i] : .zero
-        return Color(.sRGB, red: v.x, green: v.y, blue: v.z, opacity: 1)
-    }
-    var body: some View {
-        GeometryReader { g in
-            ZStack(alignment: .topLeading) {
-                VStack(spacing: 0) {
-                    LinearGradient(colors: [color(0), color(1)], startPoint: .top, endPoint: .bottom).frame(height: g.size.height * 0.45)
-                    color(2).frame(height: g.size.height * 0.12)
-                    color(3).frame(height: g.size.height * 0.18)
-                    LinearGradient(colors: [color(4), color(5)], startPoint: .top, endPoint: .bottom)
-                }
-                Circle().fill(color(6)).frame(width: g.size.width * 0.3).offset(x: g.size.width * 0.58, y: g.size.height * 0.28)
-            }
         }
     }
 }

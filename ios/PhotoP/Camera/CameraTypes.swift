@@ -25,6 +25,7 @@ struct CameraCapabilities: Equatable, Sendable {
     var photoResolutions: [PhotoResolution] = []
     var maxZoom = 1.0
     var flashModes: [FlashSetting] = [.off]
+    var shutterSoundSuppression = false
 }
 
 struct ExposureSettings: Equatable, Sendable {

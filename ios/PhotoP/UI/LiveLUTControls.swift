@@ -44,7 +44,7 @@ struct LiveLUTControls: View {
                 }
                 Section {
                     Text("발열·저전력 상태에 따라 처리 해상도와 분석 빈도를 자동으로 낮춥니다. 센서 프레임레이트와 사진 해상도는 이 설정으로 변경하지 않습니다.").font(.caption)
-                    Text("현재 입력은 8비트 YUV·BT.709 색역의 SDR만 지원합니다. LUT를 끈 뒤 렌즈 전환·터치 AF/AE·다른 LUT 가져오기를 사용할 수 있습니다.")
+                    Text("카메라는 sRGB SDR 프리뷰를 제공합니다. 프리뷰 중에도 터치 초점·길게 눌러 AE/AF 고정을 사용할 수 있습니다.")
                         .font(.caption)
                     if model.busy { ProgressView() }
                     if let message = model.message { Text(message).font(.caption) }
@@ -64,7 +64,7 @@ struct LiveLUTControls: View {
                 Button("취소", role: .cancel) { }
             }
             .sheet(isPresented: $showStyles) {
-                FilmStylesView { imported in try await model.useLiveLUT(imported) }
+                FilmStylesView(sceneSample: model.sceneSample) { imported in try await model.useLiveLUT(imported) }
             }
             .sheet(isPresented: $showFavorites) {
                 LUTFavoritesView { imported in try await model.useLiveLUT(imported) }

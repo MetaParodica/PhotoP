@@ -13,12 +13,19 @@ final class MetalPreviewDisplay {
         pipeline = try device.makeRenderPipelineState(descriptor: descriptor)
     }
 
-    func encode(image: MTLTexture, destination: MTLTexture, command: MTLCommandBuffer) throws {
+    static func scale(inputAspect: Float, outputAspect: Float, fill: Bool) -> SIMD2<Float> {
+        if fill {
+            return inputAspect > outputAspect ? SIMD2(inputAspect / outputAspect, 1) : SIMD2(1, outputAspect / inputAspect)
+        }
+        return inputAspect > outputAspect ? SIMD2(1, outputAspect / inputAspect) : SIMD2(inputAspect / outputAspect, 1)
+    }
+
+    func encode(image: MTLTexture, destination: MTLTexture, command: MTLCommandBuffer, fill: Bool = false) throws {
         guard destination.pixelFormat == .bgra8Unorm, destination.usage.contains(.renderTarget)
         else { throw MetalLUTError.failed("프리뷰 화면 texture 형식이 유효하지 않습니다.") }
         let inputAspect = Float(image.width) / Float(image.height)
         let outputAspect = Float(destination.width) / Float(destination.height)
-        var scale = inputAspect > outputAspect ? SIMD2<Float>(1, outputAspect / inputAspect) : SIMD2<Float>(inputAspect / outputAspect, 1)
+        var scale = Self.scale(inputAspect: inputAspect, outputAspect: outputAspect, fill: fill)
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = destination
         pass.colorAttachments[0].loadAction = .clear

@@ -82,6 +82,36 @@ final class LivePreviewTests: XCTestCase {
         let srgb = try LivePreviewImageProcessor.inputColorSpace(buffer(transfer: kCVImageBufferTransferFunction_sRGB))
         XCTAssertEqual(try srgbFrom709(128, space: srgb), 128, accuracy: 1)
     }
+
+    func testNegotiatedRGBWorksWithoutYCbCrTagsButDoesNotAcceptHDR() throws {
+        var pixelBuffer: CVPixelBuffer?
+        let attributes: [CFString: Any] = [kCVPixelBufferMetalCompatibilityKey: true, kCVPixelBufferIOSurfacePropertiesKey: [:]]
+        XCTAssertEqual(CVPixelBufferCreate(kCFAllocatorDefault, 4, 4, kCVPixelFormatType_32BGRA, attributes as CFDictionary, &pixelBuffer), kCVReturnSuccess)
+        let input = try XCTUnwrap(pixelBuffer)
+        XCTAssertThrowsError(try LivePreviewImageProcessor.inputColorSpace(input), "An unnegotiated RGB stream has no assumed profile")
+        let space = try LivePreviewImageProcessor.inputColorSpace(input, negotiatedSRGB: true)
+        XCTAssertEqual(try srgbFrom709(128, space: space), 128, accuracy: 1)
+        CVPixelBufferLockBaseAddress(input, [])
+        let base = try XCTUnwrap(CVPixelBufferGetBaseAddress(input)).assumingMemoryBound(to: UInt8.self)
+        for y in 0..<4 { for x in 0..<4 {
+            let offset = y * CVPixelBufferGetBytesPerRow(input) + x * 4
+            base[offset] = 64; base[offset + 1] = 128; base[offset + 2] = 192; base[offset + 3] = 255
+        } }
+        CVPixelBufferUnlockBaseAddress(input, [])
+        let (device, lut) = try fixture()
+        let processor = try LivePreviewImageProcessor(lut: lut, device: device)
+        let command = try XCTUnwrap(device.makeCommandQueue()?.makeCommandBuffer())
+        let texture = try processor.encode(input, intensity: 0, monitoring: .init(histogram: true, peaking: true), command: command)
+        let bytes = try readback(texture, command: command)
+        command.commit(); command.waitUntilCompleted()
+        XCTAssertEqual(command.status, .completed)
+        XCTAssertEqual(processor.histogram()?.sampleCount, 16)
+        let pixel = bytes.contents().assumingMemoryBound(to: UInt8.self)
+        XCTAssertEqual(Double(pixel[0]), 192, accuracy: 1); XCTAssertEqual(Double(pixel[1]), 128, accuracy: 1); XCTAssertEqual(Double(pixel[2]), 64, accuracy: 1)
+        CVBufferSetAttachment(input, kCVImageBufferTransferFunctionKey, kCVImageBufferTransferFunction_SMPTE_ST_2084_PQ, .shouldPropagate)
+        XCTAssertThrowsError(try LivePreviewImageProcessor.inputColorSpace(input, negotiatedSRGB: true))
+        XCTAssertThrowsError(try LivePreviewImageProcessor.inputColorSpace(buffer(tagged: false), negotiatedSRGB: true), "A negotiated RGB contract cannot invent a YUV matrix")
+    }
     func testFrameGateBoundsWorkAndReleasesResourcesAfterStop() throws {
         var state = PreviewFrameState()
         XCTAssertNil(state.begin())

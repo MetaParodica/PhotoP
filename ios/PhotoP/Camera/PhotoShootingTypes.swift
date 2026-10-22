@@ -39,8 +39,9 @@ enum FramingAspect: String, CaseIterable, Identifiable, Sendable {
     // Largest centered rect of this aspect inside the image rect.
     func rect(in image: CGRect) -> CGRect {
         guard image.width > 0, image.height > 0 else { return .zero }
-        var size = CGSize(width: image.width, height: image.width / ratio)
-        if size.height > image.height { size = CGSize(width: image.height * ratio, height: image.height) }
+        let targetRatio = image.width > image.height ? 1 / ratio : ratio
+        var size = CGSize(width: image.width, height: image.width / targetRatio)
+        if size.height > image.height { size = CGSize(width: image.height * targetRatio, height: image.height) }
         return CGRect(x: image.midX - size.width / 2, y: image.midY - size.height / 2, width: size.width, height: size.height)
     }
 }

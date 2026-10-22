@@ -58,7 +58,7 @@ final class PreviewMonitoringTests: XCTestCase {
         let (result, _) = try run(bytes, width: 8, height: 8, settings: MonitoringSettings(peaking: true))
         for y in 0..<8 { for x in 0..<8 {
             let offset = (y * 8 + x) * 4
-            let expected: [UInt8] = (x == 3 || x == 4) ? [255, 0, 0, 255] : Array(bytes[offset..<offset + 4])
+            let expected: [UInt8] = (x == 3 || x == 4) ? [0, 255, 0, 255] : Array(bytes[offset..<offset + 4])
             XCTAssertEqual(Array(result[offset..<offset + 4]), expected)
         } }
     }

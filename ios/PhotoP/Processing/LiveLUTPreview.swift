@@ -2,6 +2,7 @@
 @preconcurrency import CoreVideo
 import Metal
 import QuartzCore
+import CoreImage
 
 // Only the frame queue accesses processor/display. The lock protects UI/lifecycle state.
 final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -31,8 +32,14 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var announcedGeneration: UInt64?
     private var eventRevision: UInt64 = 0
     private let onEvent: @Sendable (UUID, Event) -> Void
+    private let onSample: @Sendable (UUID, LookSceneSample) -> Void
+    private let sampleContext = CIContext(options: [.cacheIntermediates: false])
+    private var samplesWanted = false
+    private var fillsViewfinder = false
+    private var lastSampleTime = -Double.infinity
+    private var latestSampleID: UUID?
 
-    init(lut: CubeLUT, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
+    init(lut: CubeLUT, onSample: @escaping @Sendable (UUID, LookSceneSample) -> Void = { _, _ in }, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue()
         else { throw MetalLUTError.unavailable }
         self.device = device
@@ -40,6 +47,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         processor = try LivePreviewImageProcessor(lut: lut, device: device)
         display = try MetalPreviewDisplay(device: device)
         self.onEvent = onEvent
+        self.onSample = onSample
         super.init()
         composition = CompositionAnalyzer { [weak self] snapshot in guard let self else { return }; onGuide(self.id, snapshot) }
     }
@@ -67,6 +75,13 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         }
         if let event { onEvent(id, event) }
     }
+    func invalidateFrames() {
+        lock.withLock { state.invalidate(); announcedGeneration = nil; imageSize = nil; latestSampleID = nil }
+        composition.invalidate()
+    }
+    func setSampleDelivery(_ enabled: Bool) { lock.withLock { samplesWanted = enabled; if !enabled { latestSampleID = nil } } }
+    func isCurrentSample(_ id: UUID) -> Bool { lock.withLock { latestSampleID == id && samplesWanted && state.running } }
+    func setViewfinderFill(_ fill: Bool) { lock.withLock { fillsViewfinder = fill } }
     // MainActor deliveries from different queues can arrive in a different order.
     func isCurrentEvent(_ event: Event) -> Bool { lock.withLock { event.revision == eventRevision } }
     private func makeEvent(_ kind: Event.Kind) -> Event {
@@ -94,13 +109,32 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         let now = ProcessInfo.processInfo.systemUptime
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
+        if lock.withLock({ samplesWanted }), now - lastSampleTime >= 1 {
+            let generation = lock.withLock { state.generation }
+            lastSampleTime = now
+            autoreleasepool {
+                guard let space = try? LivePreviewImageProcessor.inputColorSpace(buffer, negotiatedSRGB: true) else { return }
+                let source = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: space])
+                let scale = min(1, 160 / max(source.extent.width, source.extent.height))
+                let small = source.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                if let cg = sampleContext.createCGImage(small, from: small.extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!),
+                   let image = try? SDRImage.rasterize(cg) {
+                    let sample = LookSceneSample(image: image)
+                    let accepted = lock.withLock { () -> Bool in
+                        guard samplesWanted, state.running, state.generation == generation else { return false }
+                        latestSampleID = sample.id; return true
+                    }
+                    if accepted { onSample(id, sample) }
+                }
+            }
+        }
         composition.offer(buffer, minimumInterval: budget.analysisInterval)
         render(buffer, budget: budget)
     }
 
     // The capture delegate calls this only on frameQueue.
     private func render(_ buffer: CVPixelBuffer, budget: PreviewBudget) {
-        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, FilmFinishSettings, MonitoringSettings)? = lock.withLock {
+        let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, FilmFinishSettings, MonitoringSettings, Bool)? = lock.withLock {
             guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }
             imageSize = CGSize(width: CGFloat(CVPixelBufferGetWidth(buffer)), height: CGFloat(CVPixelBufferGetHeight(buffer)))
@@ -108,16 +142,16 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
             let now = ProcessInfo.processInfo.systemUptime
             if sampleSettings.histogram && now - lastHistogramTime >= budget.histogramInterval { lastHistogramTime = now }
             else { sampleSettings.histogram = false }
-            return (layer, ticket, intensity, grain, effects, sampleSettings)
+            return (layer, ticket, intensity, grain, effects, sampleSettings, fillsViewfinder)
         }
-        guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings) = request else { return }
+        guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings, fill) = request else { return }
         var submitted = false
         defer { if !submitted { _ = lock.withLock { state.complete(ticket) } } }
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
                 let image = try processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command)
-                try display.encode(image: image, destination: drawable.texture, command: command)
+                try display.encode(image: image, destination: drawable.texture, command: command, fill: fill)
                 command.present(drawable)
                 command.addCompletedHandler { [self, buffer] completed in
                     // Retain the capture buffer until all CI and Metal reads finish.

@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class CameraInteractionTests: XCTestCase {
     @MainActor
@@ -15,28 +16,28 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["camera.panel.close"].isHittable)
         XCTAssertTrue(app.staticTexts["구도선"].exists)
-        let grid = app.buttons["camera.guide.grid"]
-        XCTAssertEqual(grid.value as? String, "삼분할")
-        grid.tap(); app.buttons["숨기기"].tap()
-        XCTAssertEqual(grid.value as? String, "숨기기")
-        grid.tap(); app.buttons["삼분할"].tap()
-        XCTAssertEqual(grid.value as? String, "삼분할")
+        let thirds = app.buttons["camera.guide.grid.thirds"]
+        XCTAssertTrue(thirds.isSelected)
+        app.buttons["camera.guide.grid.off"].tap()
+        XCTAssertTrue(app.buttons["camera.guide.grid.off"].isSelected)
+        thirds.tap()
+        XCTAssertTrue(thirds.isSelected)
         XCTAssertTrue(shutter.exists)
         let guide = XCTAttachment(screenshot: app.screenshot()); guide.name = "PhotoP-inline-guide"; guide.lifetime = .keepAlways; add(guide)
         app.buttons["camera.panel.close"].tap()
-        app.buttons["camera.drawer.close"].tap()
         // AUTO keeps only EV on the rail; the look control is a separate button.
         XCTAssertFalse(app.buttons["camera.tool.iso"].exists)
         XCTAssertTrue(app.buttons["camera.tool.ev"].exists)
         XCTAssertTrue(app.buttons["camera.tool.looks"].exists)
         app.buttons["PRO"].tap()
         XCTAssertTrue(app.buttons["PRO"].isSelected)
+        XCTAssertFalse(app.otherElements["camera.panel.iso"].exists, "Changing mode must not open a settings tab")
+        app.buttons["camera.tool.iso"].tap()
         XCTAssertTrue(app.staticTexts["카메라를 연결하면 이 렌즈가 지원하는 제어 범위가 표시됩니다."].waitForExistence(timeout: 3))
         app.buttons["camera.panel.close"].tap()
         XCTAssertTrue(app.buttons["camera.tool.iso"].exists)
         XCTAssertTrue(app.buttons["camera.tool.whiteBalance"].exists)
         app.buttons["camera.format"].tap()
-        app.buttons["상세 설정 · 해상도 · 브래킷"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.format"].waitForExistence(timeout: 3))
         app.buttons["camera.panel.close"].tap()
         let framing = app.buttons["camera.framing"]
@@ -48,14 +49,12 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertFalse(app.buttons["camera.flash"].isEnabled, "Without a camera no flash mode may be offered")
         let camera = XCTAttachment(screenshot: app.screenshot()); camera.name = "PhotoP-camera"; camera.lifetime = .keepAlways; add(camera)
     }
-    @MainActor func testVideoPanelDoesNotInventHardwareCapabilities() {
+    @MainActor func testVideoModeDoesNotOpenSettingsOrInventHardwareCapabilities() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
         app.launch()
         app.buttons["camera.mode.video"].tap()
-        XCTAssertTrue(app.otherElements["camera.panel.video"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["SDR · 원본 색상 · 무음"].exists)
-        XCTAssertTrue(app.staticTexts["카메라 연결 후 지원 해상도·FPS·코덱이 표시됩니다."].exists)
+        XCTAssertFalse(app.otherElements["camera.panel.video"].exists, "Mode selection cannot open settings automatically")
         XCTAssertFalse(app.segmentedControls["camera.video.resolution"].exists)
         XCTAssertFalse(app.buttons["camera.record"].exists)
         XCTAssertFalse(app.buttons["camera.mode.video"].isSelected, "Opening a panel cannot advertise an unconfigured video mode")
@@ -89,12 +88,13 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.buttons["camera.card.settings"].waitForExistence(timeout: 3))
         app.buttons["camera.card.settings"].tap()
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
-        let person = app.buttons["camera.guide.person"]
+        let person = app.buttons["camera.guide.person.full"]
         XCTAssertTrue(person.waitForExistence(timeout: 3))
-        person.tap(); app.buttons["전신"].tap()
+        reveal(person, in: app.otherElements["camera.panel.guide"])
+        person.tap()
         XCTAssertTrue(app.segmentedControls["camera.guide.person.position"].waitForExistence(timeout: 3))
+        reveal(app.segmentedControls["camera.guide.person.position"], in: app.otherElements["camera.panel.guide"])
         app.segmentedControls["camera.guide.person.position"].buttons["왼쪽 1/3"].tap()
-        XCTAssertTrue(app.staticTexts[PersonFramingCopy.full].exists)
         app.buttons["camera.panel.close"].tap()
         let overlay = app.descendants(matching: .any)["camera.person.guide"]
         XCTAssertTrue(overlay.waitForExistence(timeout: 3))
@@ -130,8 +130,46 @@ final class CameraInteractionTests: XCTestCase {
         let looks = XCTAttachment(screenshot: app.screenshot())
         looks.name = "PhotoP-look-cards"; looks.lifetime = .keepAlways; add(looks)
     }
-}
 
-private enum PersonFramingCopy {
-    static let full = "발끝을 화면 아래 끝에 맞추고 카메라를 허리 높이로 낮추면 다리가 길어 보입니다."
+    @MainActor func testControlsStayBelowViewfinderInBothOrientations() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        defer { XCUIDevice.shared.orientation = .portrait }
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft, .landscapeRight] {
+            XCUIDevice.shared.orientation = orientation
+            let finder = app.descendants(matching: .any)["camera.viewfinder"]
+            let dock = app.descendants(matching: .any)["camera.dock"]
+            XCTAssertTrue(finder.waitForExistence(timeout: 5))
+            XCTAssertTrue(dock.exists)
+            app.buttons["camera.monitor"].tap()
+            let panel = app.descendants(matching: .any)["camera.panel.monitor"]
+            XCTAssertTrue(panel.waitForExistence(timeout: 3))
+            XCTAssertGreaterThanOrEqual(panel.frame.minY, finder.frame.maxY - 1)
+            XCTAssertTrue(app.buttons["camera.shutter"].isHittable)
+            XCTAssertFalse(app.buttons["디지털 줌"].exists)
+            app.buttons["camera.panel.close"].tap()
+        }
+    }
+
+    @MainActor func testDepthModeExplainsUnavailableHardwareOnSimulator() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        app.buttons["camera.mode.depth"].tap()
+        XCTAssertTrue(app.staticTexts["LiDAR 지원 기기가 필요합니다"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["camera.depth.capture"].exists)
+        app.buttons["닫기"].tap()
+        XCTAssertTrue(app.buttons["camera.shutter"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor private func reveal(_ element: XCUIElement, in panel: XCUIElement) {
+        for _ in 0..<8 {
+            if element.isHittable { return }
+            let start = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.9))
+            let end = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.35))
+            start.press(forDuration: 0.05, thenDragTo: end)
+        }
+        XCTAssertTrue(element.isHittable)
+    }
 }

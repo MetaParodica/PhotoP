@@ -39,7 +39,7 @@ kernel void photoPMonitor(texture2d<float, access::read> source [[texture(0)]],
             gx += luma * float(x * (y == 0 ? 2 : 1));
             gy += luma * float(y * (x == 0 ? 2 : 1));
         }
-        if (max(abs(gx), abs(gy)) / 4.0f >= p.peaking) result.rgb = float3(result.a, 0, 0);
+        if (max(abs(gx), abs(gy)) / 4.0f >= p.peaking) result.rgb = float3(0, result.a, 0);
     }
     overlay.write(result, position);
 }

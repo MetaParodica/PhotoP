@@ -7,10 +7,11 @@ struct PersonGuideOverlay: View {
     let snapshot: CompositionSnapshot?
     let live: Bool
     let sourceSize: CGSize?
+    var fill = false
     var body: some View {
         GeometryReader { geometry in
-            let imageSize = live ? (sourceSize ?? CGSize(width: 3, height: 4)) : CGSize(width: 3, height: 4)
-            let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size)
+            let imageSize = sourceSize ?? CGSize(width: 3, height: 4)
+            let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size, fill: fill)
             Canvas { context, _ in
                 let placements = guide.placements(aspect: rect.height > 0 ? rect.width / rect.height : 0.75)
                 func map(_ p: CGPoint) -> CGPoint { CGPoint(x: rect.minX + p.x * rect.width, y: rect.minY + p.y * rect.height) }
@@ -66,9 +67,10 @@ private func + (lhs: CGPoint, rhs: CGPoint) -> CGPoint { CGPoint(x: lhs.x + rhs.
 // Dims the area outside a 1:1 or 16:9 framing guide. The capture itself keeps the native aspect.
 struct FramingMaskOverlay: View {
     let aspect: FramingAspect
+    var imageSize = CGSize(width: 3, height: 4)
     var body: some View {
         GeometryReader { geometry in
-            let image = GuideGeometry.imageRect(image: CGSize(width: 3, height: 4), viewport: geometry.size)
+            let image = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size)
             let frame = aspect.rect(in: image)
             ZStack {
                 Path { path in path.addRect(image); path.addRect(frame) }

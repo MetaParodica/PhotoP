@@ -16,7 +16,7 @@ struct CompositionControls: View {
                     .disabled(!model.guideAIEnabled || model.busy || model.snapshot.state != .running)
                 Button("LUT·분석 프리뷰 끄기") { model.disableLiveLUT() }.disabled(model.busy || model.livePreview == nil)
                 Text("흰 선은 목표 구도, 노란 도식은 목표 포즈, 청록 표시는 실제 Vision 검출 결과입니다. AI는 제안이며 정답이나 점수가 아닙니다. 이미지 서버 전송은 하지 않습니다.").font(.caption)
-                Text("AI는 최대 2Hz·1작업으로 처리하며 오래된 결과를 숨깁니다. 현재 세로 화면만 지원하고 AI 프리뷰 중 렌즈·터치 AF/AE·RAW를 제한합니다.").font(.caption)
+                Text("AI는 최대 2Hz·1작업으로 처리하며 오래된 결과를 숨깁니다. 가로·세로 화면을 지원하며 프리뷰 중 터치 AF/AE를 사용할 수 있습니다.").font(.caption)
                 if let snapshot = model.composition { Text(snapshot.advice).font(.caption) }
                 if let message = model.message { Text(message).font(.caption) }
             }
@@ -36,12 +36,13 @@ struct CompositionOverlay: View {
     let snapshot: CompositionSnapshot?
     let live: Bool
     let sourceSize: CGSize?
+    var fill = false
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.5)) { _ in
             GeometryReader { geometry in
                 let fresh = snapshot.flatMap { $0.isFresh(at: ProcessInfo.processInfo.systemUptime) ? $0 : nil }
-                let imageSize = live ? (sourceSize ?? CGSize(width: 3, height: 4)) : CGSize(width: 3, height: 4)
-                let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size)
+                let imageSize = sourceSize ?? CGSize(width: 3, height: 4)
+                let rect = GuideGeometry.imageRect(image: imageSize, viewport: geometry.size, fill: fill)
                 Canvas { context, _ in
                     func map(_ point: CGPoint, vision: Bool = false) -> CGPoint { GuideGeometry.point(point, in: rect, vision: vision) }
                     func line(_ a: CGPoint, _ b: CGPoint, color: Color = .white) {
