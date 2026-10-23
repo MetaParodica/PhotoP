@@ -130,7 +130,7 @@ struct FilmStylesView: View {
             } label: {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(entry.name).font(.headline)
-                    Text("\(entry.brand) · 비공식 파생/외부 미러 · 권리 미확인").font(.caption2)
+                    Text("\(entry.brand) · 비공식 파생/외부 미러 · \(entry.rightsConfirmed ? "사용 권한 확인(프로젝트 소유자)" : "권리 미확인")").font(.caption2)
                     Text(entry.role == "technical" ? "기술 변환" : "크리에이티브 룩").font(.caption2)
                 }
             }.disabled(!entry.canApply)

@@ -23,8 +23,8 @@ class CompanyLUTTests(unittest.TestCase):
                           gitBlobSHA=hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest())
         self.write(self.entry)
 
-    def write(self, entry):
-        (self.root / 'manifest.json').write_text(json.dumps(dict(schemaVersion=1, assets=[entry])))
+    def write(self, entry, confirmation=None):
+        (self.root / 'manifest.json').write_text(json.dumps(dict(schemaVersion=1, assets=[entry], rightsConfirmation=confirmation)))
 
     def test_unverified_rights_do_not_block_integrity_validation(self):
         self.assertEqual(len(validate(self.root)), 1)
@@ -41,3 +41,23 @@ class CompanyLUTTests(unittest.TestCase):
     def test_unregistered_asset_is_rejected(self):
         (self.root / 'extra.cube').write_bytes((self.root / 'test.cube').read_bytes())
         with self.assertRaisesRegex(ValueError, 'unregistered'): validate(self.root)
+
+    def test_user_confirmed_permission_requires_record_and_all_flags(self):
+        entry = dict(self.entry, rightsStatus='user-confirmed', license='USER-CONFIRMED-PERMISSION',
+                     commercialUseAllowed=True, redistributionAllowed=True)
+        self.write(entry)
+        with self.assertRaisesRegex(ValueError, 'confirmation'): validate(self.root)
+        record = dict(confirmedBy='project-owner', confirmedOn='2026-10-23', basis='User confirmation')
+        self.write(entry, record)
+        self.assertEqual(len(validate(self.root)), 1)
+        for field in ['commercialUseAllowed', 'redistributionAllowed']:
+            invalid = dict(entry); invalid[field] = False; self.write(invalid, record)
+            with self.assertRaisesRegex(ValueError, 'confirmation'): validate(self.root)
+
+    def test_permission_never_changes_profile_or_official_status(self):
+        entry = dict(self.entry, rightsStatus='user-confirmed', license='USER-CONFIRMED-PERMISSION',
+                     commercialUseAllowed=True, redistributionAllowed=True)
+        record = dict(confirmedBy='project-owner', confirmedOn='2026-10-23', basis='User confirmation')
+        for field, value in [('official', True), ('nativeOutput', 'unknown')]:
+            invalid = dict(entry); invalid[field] = value; self.write(invalid, record)
+            with self.assertRaises(ValueError): validate(self.root)

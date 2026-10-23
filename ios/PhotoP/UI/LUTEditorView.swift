@@ -28,12 +28,15 @@ struct LUTEditorView: View {
     @State private var exported: URL?
 
     private let saved: SavedEdit?
-    init(original: URL) {
+    private let initialLook: ImportedLUT?
+    init(original: URL, initialLook: ImportedLUT? = nil) {
         saved = nil
+        self.initialLook = initialLook
         _editor = State(initialValue: LUTPhotoEditor(original: original))
     }
     init(saved: SavedEdit) {
         self.saved = saved
+        initialLook = nil
         _editor = State(initialValue: LUTPhotoEditor(original: saved.original))
     }
 
@@ -47,7 +50,7 @@ struct LUTEditorView: View {
                     } else { ProgressView().frame(height: 240) }
                     Text(title ?? "사용자 LUT 편집").font(.headline)
                     if let credit { Text(credit).font(.caption2).textSelection(.enabled) }
-                    Text("SDR · sRGB / 1024px 미리보기 · 최대 12.6MP 저장\nHDR gain map과 원본 EXIF는 편집본에 포함하지 않습니다.")
+                    Text("SDR · sRGB / 1024px 미리보기 · 최대 64MP 원본 해상도 저장\n타일 처리용 임시 저장 공간이 필요합니다. HDR gain map과 원본 EXIF는 결과에 포함하지 않습니다.")
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                         .disabled(busy || title != nil)
@@ -59,7 +62,10 @@ struct LUTEditorView: View {
                             busy = true
                             Task {
                                 defer { busy = false }
-                                do { try await editor.favoriteCurrent(); message = "LUT 즐겨찾기에 저장했습니다." }
+                                do {
+                                    try await editor.favoriteCurrent(settings: .init(intensity: intensity, grain: .init(amount: grainAmount, seed: grainSeed), finish: finish))
+                                    message = "LUT와 현재 효과 설정을 즐겨찾기에 저장했습니다."
+                                }
                                 catch { message = error.localizedDescription }
                             }
                         }.disabled(busy || title == nil)
@@ -156,6 +162,9 @@ struct LUTEditorView: View {
                     title = try await editor.useLUT(imported)
                     credit = imported.provenance?.requiredCredit
                     profileConfirmed = true
+                    if let settings = imported.preset {
+                        intensity = settings.intensity; grainAmount = settings.grain.amount; grainSeed = settings.grain.seed; finish = settings.finish
+                    }
                     exported = nil
                     renderedImage = nil
                     revision += 1
@@ -176,6 +185,13 @@ struct LUTEditorView: View {
                         profileConfirmed = true
                         revision += 1
                         message = "저장된 설정을 복원했습니다. 원본과 이전 편집본은 보존됩니다."
+                    } else if let initialLook {
+                        title = try await editor.useLUT(initialLook)
+                        credit = initialLook.provenance?.requiredCredit
+                        let settings = initialLook.preset ?? ProcessingLookSettings()
+                        intensity = settings.intensity; grainAmount = settings.grain.amount; grainSeed = settings.grain.seed; finish = settings.finish
+                        profileConfirmed = true; revision += 1
+                        message = "촬영 당시 룩을 원본에서 복원했습니다. 이미 처리한 결과에 중복 적용하지 않습니다."
                     }
                 } catch { message = error.localizedDescription }
             }

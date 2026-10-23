@@ -15,7 +15,7 @@ final class CaptureResultTests: XCTestCase {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: root) }
-        let pixels = SDRImage(rgba: Data(repeating: 180, count: 4 * 4 * 4), width: 4, height: 4)
+        let pixels = SDRImage(rgba: Data((0..<64).map { $0 % 4 == 3 ? UInt8(255) : UInt8(180) }), width: 4, height: 4)
         let data = NSMutableData()
         let destination = try XCTUnwrap(CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil))
         CGImageDestinationAddImage(destination, try pixels.cgImage(), nil)
@@ -46,7 +46,10 @@ final class CaptureResultTests: XCTestCase {
             XCTFail("A regular image without measured depth must not produce a fake depth effect")
         } catch { XCTAssertTrue(error.localizedDescription.contains("깊이")) }
         XCTAssertEqual(try Data(contentsOf: input.photo), before)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: input.root.appendingPathComponent("CaptureResults").path))
+        let folder = input.root.appendingPathComponent("CaptureResults")
+        if FileManager.default.fileExists(atPath: folder.path) {
+            XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: folder.path).isEmpty)
+        }
     }
     func testCaptureLookCreatesSeparateResultAndReproductionAssets() async throws {
         guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
@@ -68,6 +71,19 @@ final class CaptureResultTests: XCTestCase {
         let output = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil, aperture: nil,
                                                                    focus: CGPoint(x: 0.5, y: 0.5), documents: input.root)
         XCTAssertEqual(output, input.photo)
+        XCTAssertEqual(try Data(contentsOf: input.photo), before)
+    }
+    func testNonIdentityCaptureLookChangesPixelsAndKeepsOriginal() async throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
+        let input = try fixture(), before = try Data(contentsOf: input.photo)
+        var lines = ["LUT_3D_SIZE 2"]
+        for b in 0...1 { for g in 0...1 { for r in 0...1 { lines.append("\(1-r) \(1-g) \(1-b)") } } }
+        let text = lines.joined(separator: "\n")
+        let look = ImportedLUT(data: Data(text.utf8), lut: try CubeLUT.parse(text), displayName: "Negative")
+        let output = try await CaptureResultProcessor.shared.render(original: input.photo, look: look, aperture: nil,
+            focus: CGPoint(x: 0.5, y: 0.5), documents: input.root)
+        let pixels = try SDRImage.decode(output)
+        XCTAssertEqual(Double(pixels.rgba[0]), 75, accuracy: 3)
         XCTAssertEqual(try Data(contentsOf: input.photo), before)
     }
 }

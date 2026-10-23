@@ -1,6 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
-struct FilmParameters { float4 values; uint2 size; uint2 padding; float4 advanced; };
+struct FilmParameters { float4 values; uint2 size; uint2 padding; float4 advanced; uint4 frame; };
+static uint2 canvasSize(constant FilmParameters &p) { return p.frame.z > 0 ? p.frame.zw : p.size; }
 constant int2 filmOffsets[] = {int2(-1,-1),int2(0,-1),int2(1,-1),int2(-1,0),int2(1,0),int2(-1,1),int2(0,1),int2(1,1)};
 constant int streakOffsets[] = {-8,-4,-2,-1,1,2,4,8};
 constant float streakWeights[] = {0.05f,0.10f,0.15f,0.20f,0.20f,0.15f,0.10f,0.05f};
@@ -11,14 +12,15 @@ static float3 filmHighlight(float4 p) {
 }
 static uint2 bounded(int2 q, uint2 size) { return uint2(clamp(q, int2(0), int2(size) - 1)); }
 static int2 fringeOffset(uint2 q, constant FilmParameters &p) {
-    float2 radial = (float2(q) + 0.5f) / float2(p.size) * 2.0f - 1.0f;
-    return int2(round(radial * float(max(p.size.x, p.size.y)) * 0.006f * p.advanced.y));
+    uint2 canvas = canvasSize(p);
+    float2 radial = (float2(q + p.frame.xy) + 0.5f) / float2(canvas) * 2.0f - 1.0f;
+    return int2(round(radial * float(max(canvas.x, canvas.y)) * 0.006f * p.advanced.y));
 }
 static float4 finishFilm(float4 rgba, float3 glow, float3 softened, float3 fringed, float3 streak, uint2 position, constant FilmParameters &p) {
     if (rgba.a == 0) return rgba;
     float3 color = mix(fringed, softened, p.advanced.x * 0.65f);
     color = mix(color, float3(0.5f), p.values.x * 0.25f);
-    float2 uv = (float2(position) + 0.5f) / float2(p.size);
+    float2 uv = (float2(position + p.frame.xy) + 0.5f) / float2(canvasSize(p));
     float radius = length(uv * 2.0f - 1.0f);
     color *= 1.0f - p.values.y * 0.8f * smoothstep(0.2f, 1.2f, radius);
     color += glow * p.values.z * 0.25f;
@@ -32,7 +34,8 @@ kernel void photoPFilmBuffer(device const uchar4 *source [[buffer(0)]], device u
     if (i >= p.size.x * p.size.y) return;
     uint2 q(i % p.size.x, i / p.size.x);
     float4 center = float4(source[i]) / 255.0f;
-    int radius = max(1, int(round(float(max(p.size.x, p.size.y)) * 2.0f / 1024.0f)));
+    uint2 canvas = canvasSize(p);
+    int radius = max(1, int(round(float(max(canvas.x, canvas.y)) * 2.0f / 1024.0f)));
     float3 glow(0), soft = filmStraight(center) / 9.0f, fringe = filmStraight(center), streak(0);
     bool highlights = p.values.z > 0 || p.values.w > 0;
     if (highlights || p.advanced.x > 0) for (uint k = 0; k < 8; ++k) {
@@ -57,7 +60,8 @@ kernel void photoPFilmTexture(texture2d<float, access::read> source [[texture(0)
                               constant FilmParameters &p [[buffer(0)]], uint2 q [[thread_position_in_grid]]) {
     if (q.x >= p.size.x || q.y >= p.size.y) return;
     float4 center = source.read(q);
-    int radius = max(1, int(round(float(max(p.size.x, p.size.y)) * 2.0f / 1024.0f)));
+    uint2 canvas = canvasSize(p);
+    int radius = max(1, int(round(float(max(canvas.x, canvas.y)) * 2.0f / 1024.0f)));
     float3 glow(0), soft = filmStraight(center) / 9.0f, fringe = filmStraight(center), streak(0);
     bool highlights = p.values.z > 0 || p.values.w > 0;
     if (highlights || p.advanced.x > 0) for (uint k = 0; k < 8; ++k) {

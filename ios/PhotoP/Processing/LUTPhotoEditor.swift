@@ -16,6 +16,8 @@ struct ImageProcessingRecipe: Codable, Sendable {
     var grain: GrainSettings? = nil
     var finish: FilmFinishSettings? = nil
     var provenance: LUTProvenance? = nil
+    var outputWidth: Int? = nil
+    var outputHeight: Int? = nil
 }
 
 // Separate actor for file decoding/encoding; the renderer owns GPU resources.
@@ -50,9 +52,10 @@ actor LUTPhotoEditor {
         return imported.displayName
     }
 
-    func favoriteCurrent() async throws {
+    func favoriteCurrent(settings: ProcessingLookSettings? = nil) async throws {
         guard let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
-        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT", provenance: provenance)
+        try settings?.validate()
+        let imported = ImportedLUT(data: cubeData, lut: lut, displayName: lutDisplayName ?? lut.title ?? "사용자 LUT", preset: settings, provenance: provenance)
         try await LUTLibrary.shared.save(imported)
     }
 
@@ -69,21 +72,25 @@ actor LUTPhotoEditor {
     }
 
     func export(intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) async throws -> URL {
-        guard let renderer, let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
-        let source = try SDRImage.decode(original)
-        let pixels = try await renderer.render(source.rgba, width: source.width, height: source.height, intensity: intensity, grain: grain, effects: effects)
-        let image = SDRImage(rgba: pixels, width: source.width, height: source.height)
+        guard renderer != nil, let cubeData, let lut else { throw ImageEditingError.invalid("LUT를 먼저 불러오세요.") }
+        let workspace = FileManager.default.temporaryDirectory.appendingPathComponent("PhotoP-export-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: workspace, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: workspace) }
+        let jpeg = workspace.appendingPathComponent("photo.jpg")
+        let credit = provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
+        let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original, destination: jpeg, lut: lut,
+            settings: ProcessingLookSettings(intensity: intensity, grain: grain, finish: effects), credit: credit)
         var recipe = ImageProcessingRecipe(version: 3, originalFilename: original.lastPathComponent,
                                             originalSHA256: try Self.hashFile(original), lutSHA256: Self.hash(cubeData),
                                             lutTitle: lut.title, intensity: intensity, workingColorSpace: "encoded sRGB SDR",
                                             lutInputColorSpace: "sRGB", lutOutputColorSpace: "sRGB", outputColorSpace: "sRGB",
-                                            pipeline: "SDR base decode + EXIF orientation → ICC to sRGB → channel-linear 1D / trilinear 3D LUT → strength mix → deterministic monochrome grain v1 (512-cell long edge, seed) → creative fade/vignette/8-tap bloom/red halation v1 → SDR clamp → JPEG 0.95; original metadata omitted; LUT attribution caption when available")
+                                            pipeline: "Full-resolution SDR/ICC + EXIF orientation (max 64MP) → halo tiles, channel-linear 1D / trilinear 3D LUT → global deterministic grain/creative finish → disk-backed RGBA → sRGB JPEG 0.95; original metadata omitted; attribution caption when available")
         recipe.grain = grain
         recipe.finish = effects
         recipe.provenance = provenance
+        recipe.outputWidth = result.width; recipe.outputHeight = result.height
         let folder = original.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Edits", isDirectory: true)
-        let credit = provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
-        return try Self.writeBundle(jpeg: image.jpeg(credit: credit), cube: cubeData, recipe: recipe, in: folder)
+        return try Self.writeBundle(jpegFile: jpeg, cube: cubeData, recipe: recipe, in: folder)
     }
 
     static func hash(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
@@ -95,7 +102,8 @@ actor LUTPhotoEditor {
         return hash.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
-    static func writeBundle(jpeg: Data, cube: Data, recipe: ImageProcessingRecipe, in folder: URL) throws -> URL {
+    static func writeBundle(jpeg: Data? = nil, jpegFile: URL? = nil, cube: Data, recipe: ImageProcessingRecipe, in folder: URL) throws -> URL {
+        guard (jpeg != nil) != (jpegFile != nil) else { throw CameraError.invalidPhotoData }
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let id = UUID().uuidString
         let temporary = folder.appendingPathComponent(".pending-" + id, isDirectory: true)
@@ -103,7 +111,10 @@ actor LUTPhotoEditor {
         try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: false)
         do {
             let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-            try jpeg.write(to: temporary.appendingPathComponent("photo.jpg"), options: options)
+            let photo = temporary.appendingPathComponent("photo.jpg")
+            if let jpeg { try jpeg.write(to: photo, options: options) }
+            else if let jpegFile { try FileManager.default.copyItem(at: jpegFile, to: photo) }
+            try Task.checkCancellation()
             try cube.write(to: temporary.appendingPathComponent("look.cube"), options: options)
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

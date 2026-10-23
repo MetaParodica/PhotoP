@@ -12,6 +12,7 @@ struct LUTParameters {
     uint height;
     float grainAmount;
     uint grainSeed;
+    uint4 frame;
 };
 
 static float3 entry(device const float4 *table, uint3 p, uint n) {
@@ -26,7 +27,8 @@ static float grainValue(uint2 q, uint seed) {
 }
 
 static float grainNoise(uint2 position, constant LUTParameters &p) {
-    float2 q = (float2(position) + 0.5f) * (512.0f / float(max(p.width, p.height)));
+    uint2 canvas = p.frame.z > 0 ? p.frame.zw : uint2(p.width, p.height);
+    float2 q = (float2(position + p.frame.xy) + 0.5f) * (512.0f / float(max(canvas.x, canvas.y)));
     uint2 low = uint2(floor(q));
     float2 t = fract(q); t = t * t * (3.0f - 2.0f * t);
     return mix(mix(grainValue(low, p.grainSeed), grainValue(low + uint2(1, 0), p.grainSeed), t.x),

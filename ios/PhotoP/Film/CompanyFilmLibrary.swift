@@ -14,11 +14,21 @@ struct CompanyFilmStyle: Decodable, Identifiable, Sendable {
     let nativeOutput: String
     let rightsStatus: String
     let official: Bool
+    let license: String?
+    let commercialUseAllowed: Bool?
+    let redistributionAllowed: Bool?
     let previewColors: [[Double]]
     var canApply: Bool { (nativeInput == "srgb-assumed" && nativeOutput == "srgb-assumed") || (nativeInput == "vlog-vgamut" && nativeOutput == "rec709-gamma24-assumed") }
+    var rightsConfirmed: Bool { rightsStatus == "user-confirmed" && license == "USER-CONFIRMED-PERMISSION" && commercialUseAllowed == true && redistributionAllowed == true }
 }
 enum CompanyFilmLibrary {
-    private struct Manifest: Decodable { let schemaVersion: Int; let assets: [CompanyFilmStyle] }
+    private struct Confirmation: Decodable {
+        let confirmedBy: String
+        let confirmedOn: String
+        let basis: String
+        var valid: Bool { confirmedBy == "project-owner" && confirmedOn == "2026-10-23" && !basis.isEmpty && basis.count <= 2000 }
+    }
+    private struct Manifest: Decodable { let schemaVersion: Int; let assets: [CompanyFilmStyle]; let rightsConfirmation: Confirmation? }
     static func root() throws -> URL {
         guard let url = Bundle.main.url(forResource: "company-luts", withExtension: nil) else { throw CameraError.invalidPhotoData }
         return url
@@ -29,8 +39,10 @@ enum CompanyFilmLibrary {
         guard data.count <= 256 * 1024 else { throw CameraError.invalidPhotoData }
         let manifest = try JSONDecoder().decode(Manifest.self, from: data)
         guard manifest.schemaVersion == 1, manifest.assets.count <= 100, Set(manifest.assets.map(\.id)).count == manifest.assets.count else { throw CameraError.invalidPhotoData }
+        if manifest.assets.contains(where: \.rightsConfirmed), manifest.rightsConfirmation?.valid != true { throw CameraError.invalidPhotoData }
         for e in manifest.assets {
-            guard !e.official, e.rightsStatus == "unverified", e.sha256.count == 64,
+            let legacyUnknown = e.rightsStatus == "unverified" && e.license == nil && e.commercialUseAllowed == nil && e.redistributionAllowed == nil
+            guard !e.official, e.rightsConfirmed || legacyUnknown, e.sha256.count == 64,
                   e.sha256.allSatisfy({ "0123456789abcdef".contains($0) }),
                   ["creative", "technical"].contains(e.role), !e.source.isEmpty,
                   e.previewColors.count == FilmStyle.chart.count,
@@ -71,9 +83,11 @@ actor CompanyLookCompiler {
                 try JSONEncoder().encode(Record(version: SDRVendorAdapter.version, sourceSHA256: entry.sha256, renderSHA256: LUTPhotoEditor.hash(data))).write(to: record, options: options)
             }
         }
-        let note = "Unofficial third-party derivative; rights unverified; \(entry.nativeInput) → \(entry.nativeOutput); PhotoP SDR adaptation; not camera/sensor emulation"
+        let rights = entry.rightsConfirmed ? "permission confirmed by project owner, 2026-10-23; not an independent license audit" : "rights unverified"
+        let note = "Unofficial third-party derivative; \(rights); \(entry.nativeInput) → \(entry.nativeOutput); PhotoP SDR adaptation; not camera/sensor emulation"
         let provenance = LUTProvenance(identifier: entry.id, name: entry.name, creator: "Third-party source / \(entry.brand)", source: entry.source,
-            kind: "unofficial-derivative/rights-unverified", license: "UNVERIFIED", commercialUseAllowed: false, redistributionAllowed: false,
+            kind: entry.rightsConfirmed ? "unofficial-derivative/user-confirmed-permission" : "unofficial-derivative/rights-unverified",
+            license: entry.license ?? "UNVERIFIED", commercialUseAllowed: entry.commercialUseAllowed ?? false, redistributionAllowed: entry.redistributionAllowed ?? false,
             inputColorSpace: "sRGB", outputColorSpace: "sRGB", requiredCredit: "Source: \(entry.source) · \(note)",
             sourceSHA256: entry.sha256, renderLUTSHA256: LUTPhotoEditor.hash(data), minimumIntensity: 0, maximumIntensity: 1, previewDescription: note)
         return ImportedLUT(data: data, lut: lut, displayName: entry.name + " · SDR 파생", preset: .init(), provenance: provenance)

@@ -42,6 +42,14 @@ enum CaptureWorkflowPolicy {
     }
 }
 
+enum CaptureReviewRouting {
+    static func original(for selected: URL, originals: [URL], renderedSources: [URL: URL]) -> URL? {
+        let source = renderedSources[selected] ?? selected
+        guard originals.contains(source), source.pathExtension.lowercased() != "dng" else { return nil }
+        return source
+    }
+}
+
 // A software blur-strength scale, NOT physical aperture simulation. The mask
 // uses measured inverse depth and leaves invalid/uncertain pixels unblurred.
 enum DepthBlurPolicy {

@@ -90,4 +90,44 @@ final class LUTLibraryTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: blocked), Data([42]))
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: root.path), ["blocked"])
     }
+    func testFavoriteRestoresExactStrengthGrainAndFinishAcrossRestart() async throws {
+        let root = try folder(), library = LUTLibrary(folder: root)
+        var imported = try fixture()
+        let settings = ProcessingLookSettings(intensity: 0.3, grain: .init(amount: 0.4, seed: 77), finish: .init(vignette: 0.6, softFocus: 0.5))
+        imported.preset = settings
+        let entry = try await library.save(imported)
+        XCTAssertEqual(entry.version, 2)
+        let restored = try await LUTLibrary(folder: root).load(entry.id)
+        XCTAssertEqual(restored.preset, settings)
+        XCTAssertEqual(restored.data, imported.data)
+    }
+    func testIdentityCarriersWithDifferentSpatialSettingsDoNotCollide() async throws {
+        let root = try folder(), library = LUTLibrary(folder: root)
+        let first = try await library.save(ProceduralLook.all[0].imported())
+        let second = try await library.save(ProceduralLook.all[1].imported())
+        XCTAssertNotEqual(first.id, second.id)
+        let loaded = try await library.load(second.id)
+        XCTAssertEqual(loaded.preset, ProceduralLook.all[1].settings)
+        let entries = try await library.favorites(); XCTAssertEqual(entries.count, 2)
+    }
+    func testLegacySpatialFavoriteRecoversOnlyKnownMatchingCarrier() async throws {
+        let root = try folder(), look = try ProceduralLook.all[0].imported()
+        let hash = LUTPhotoEditor.hash(look.data), directory = root.appendingPathComponent(hash)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try look.data.write(to: directory.appendingPathComponent("look.cube"))
+        let legacy = LUTFavorite(id: hash, name: look.displayName, version: 1, inputColorSpace: "sRGB", outputColorSpace: "sRGB", provenance: look.provenance)
+        try JSONEncoder().encode(legacy).write(to: directory.appendingPathComponent("profile.json"))
+        let loaded = try await LUTLibrary(folder: root).load(hash)
+        XCTAssertEqual(loaded.preset, ProceduralLook.all[0].settings)
+    }
+    func testModifiedFavoriteSettingsAreRejectedWithoutOverwritingThem() async throws {
+        let root = try folder(), library = LUTLibrary(folder: root)
+        var look = try fixture(); look.preset = ProcessingLookSettings(intensity: 0.7)
+        var entry = try await library.save(look)
+        entry.settings?.intensity = 0
+        let record = root.appendingPathComponent(entry.id).appendingPathComponent("profile.json")
+        let changed = try JSONEncoder().encode(entry); try changed.write(to: record)
+        do { _ = try await library.load(entry.id); XCTFail("Tampered effect settings accepted") } catch {}
+        XCTAssertEqual(try Data(contentsOf: record), changed)
+    }
 }

@@ -166,6 +166,7 @@ struct CameraQuickControls: View {
     private var looks: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(model.liveLUTTitle ?? "원본 색상").font(.headline)
+            Text(model.captureLookNotice).font(.caption).foregroundStyle(.secondary)
             HStack {
                 Button("스타일 선택", action: openStyles).buttonStyle(.borderedProminent)
                 Button("가져오기·프리셋", action: openImports)

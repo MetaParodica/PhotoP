@@ -40,7 +40,7 @@ struct ProcessingLookSettings: Codable, Equatable, Sendable {
 // Small creative finishing pass; not a measured emulsion/optics simulation.
 // Eight highlight taps at a normalized image radius, identical for both paths.
 final class FilmFinishEncoder {
-    private struct Parameters { var values: SIMD4<Float>; var size: SIMD2<UInt32>; var padding = SIMD2<UInt32>(repeating: 0); var advanced: SIMD4<Float> }
+    private struct Parameters { var values: SIMD4<Float>; var size: SIMD2<UInt32>; var padding = SIMD2<UInt32>(repeating: 0); var advanced: SIMD4<Float>; var frame = SIMD4<UInt32>(repeating: 0) }
     private let bufferPipeline: MTLComputePipelineState
     private let texturePipeline: MTLComputePipelineState
     init(device: MTLDevice) throws {
@@ -53,8 +53,9 @@ final class FilmFinishEncoder {
                           size: .init(UInt32(width), UInt32(height)),
                           advanced: .init(Float(settings.softFocus), Float(settings.chromaticAberration), Float(settings.streak), 0))
     }
-    func encode(source: MTLBuffer, destination: MTLBuffer, width: Int, height: Int, settings: FilmFinishSettings, command: MTLCommandBuffer) throws {
+    func encode(source: MTLBuffer, destination: MTLBuffer, width: Int, height: Int, settings: FilmFinishSettings, command: MTLCommandBuffer, frame: SIMD4<UInt32> = .zero) throws {
         var p = try parameters(settings, width: width, height: height)
+        p.frame = frame
         guard let encoder = command.makeComputeCommandEncoder() else { throw MetalLUTError.unavailable }
         encoder.setComputePipelineState(bufferPipeline)
         encoder.setBuffer(source, offset: 0, index: 0); encoder.setBuffer(destination, offset: 0, index: 1)

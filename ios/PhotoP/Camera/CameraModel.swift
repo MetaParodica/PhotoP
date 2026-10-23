@@ -89,6 +89,11 @@ final class CameraModel: ObservableObject {
     @Published var depthAperture = 2.8
     @Published private(set) var latestRendered: URL?
     @Published private(set) var latestRenderedSeries: [URL] = []
+    @Published private(set) var latestCaptureLook: ImportedLUT?
+    @Published private(set) var latestRenderErrors: [URL: String] = [:]
+    @Published private(set) var lookEffectNotice: String?
+    private var latestRenderedSources: [URL: URL] = [:]
+    var editorSelection: (original: URL, look: ImportedLUT?)?
     private var depthReturnLens: String?
     private var depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
     @Published private(set) var orientation: CameraOrientation = .portrait
@@ -363,8 +368,8 @@ final class CameraModel: ObservableObject {
     }
 
     func favoriteLiveLUT() async {
-        guard let importedLiveLUT else { return }
-        do { try await LUTLibrary.shared.save(importedLiveLUT); message = "LUT 즐겨찾기에 저장했습니다." }
+        guard let look = liveLookForRestoration else { return }
+        do { try await LUTLibrary.shared.save(look); message = "LUT·강도·그레인·마감을 즐겨찾기에 저장했습니다." }
         catch { report(error) }
     }
 
@@ -454,6 +459,23 @@ final class CameraModel: ObservableObject {
     func updateLiveIntensity() {
         // Monitoring/AI may still use Metal, but the camera image is ungraded.
         livePreview?.setIntensity(0)
+        if liveUsesLUT, let importedLiveLUT {
+            lookEffectNotice = (try? LookEffectAssessment.evaluate(importedLiveLUT.lut,
+                intensity: liveIntensity, grain: liveGrain, spatial: liveFinish.enabled))?.notice
+        } else { lookEffectNotice = nil }
+    }
+    var captureLookNotice: String {
+        guard liveUsesLUT else { return "룩 해제 · 무보정 원본" }
+        if snapshot.video.isVideoMode { return "선택한 룩은 영상에 적용하지 않습니다." }
+        if rawMode != .processed { return "RAW/DNG에는 룩을 적용하지 않습니다. 일반 사진으로 전환하세요." }
+        return lookEffectNotice ?? "촬영 결과에 적용 · 카메라 프리뷰는 무보정 · 강도 \(Int(liveIntensity * 100))%"
+    }
+
+    func prepareEditor(for url: URL) -> Bool {
+        let originals = latestOriginals.isEmpty ? (latestOriginal.map { [$0] } ?? []) : latestOriginals
+        guard let original = CaptureReviewRouting.original(for: url, originals: originals, renderedSources: latestRenderedSources) else { return false }
+        editorSelection = (original, latestCaptureLook)
+        return true
     }
 
     func updateMonitoring() {
@@ -713,6 +735,7 @@ final class CameraModel: ObservableObject {
             latestComposite = url
             completed = true; compositeSavedToPhotos = false
             latestOriginal = url; latestOriginals = [url]; latestPhotoResolution = nil; savedToPhotos = false
+            latestCaptureLook = restoreLook; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
             reviewReferences = [:]; reviewReferences[url] = reference
             recordCoachPreference()
             latestRendered = nil; latestRenderedSeries = []
@@ -735,6 +758,7 @@ final class CameraModel: ObservableObject {
             latestComposite = url; compositeSavedToPhotos = false
             if latestOriginal == result {
                 latestOriginal = url; latestOriginals = [url]; savedToPhotos = false
+                latestCaptureLook = nil; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
                 latestRendered = nil; latestRenderedSeries = []
                 latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(url, maxPixel: 240) }.value
             }
@@ -880,6 +904,7 @@ final class CameraModel: ObservableObject {
             let urls = try await CaptureSeriesStore.preserve(series)
             latestOriginals = urls
             latestOriginal = urls[urls.count / 2]
+            latestCaptureLook = look; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
             capturedReviewURL = latestOriginal
             reviewReferences = [:]
             for url in urls { reviewReferences[url] = reference }
@@ -901,12 +926,14 @@ final class CameraModel: ObservableObject {
             do {
                 let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus)
                 latestRenderedSeries.append(rendered)
+                latestRenderedSources[rendered] = url
                 reviewReferences[rendered] = reviewReferences[url]
                 if index == urls.count / 2 {
                     latestRendered = rendered
                     latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(rendered, maxPixel: 240) }.value
                 }
             } catch {
+                latestRenderErrors[url] = error.localizedDescription
                 report(ImageEditingError.invalid("원본은 보존했습니다. 효과 결과 처리 실패: \(error.localizedDescription)"))
             }
         }

@@ -24,7 +24,7 @@ actor MetalLUTRenderer {
         self.resources = try MetalLUTResources(lut: lut, device: device)
     }
 
-    func render(_ rgba: Data, width: Int, height: Int, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings()) throws -> Data {
+    func render(_ rgba: Data, width: Int, height: Int, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), frame: SIMD4<UInt32> = .zero) throws -> Data {
         try grain.validate()
         try effects.validate()
         guard width > 0, height > 0, width <= Self.maximumPixels,
@@ -32,6 +32,12 @@ actor MetalLUTRenderer {
         else { throw MetalLUTError.failed("SDR 처리는 최대 12.6MP이며 크기와 강도가 유효해야 합니다.") }
         let count = width * height
         let byteCount = count * 4
+        if frame != .zero {
+            guard frame.z > 0, frame.w > 0, frame.z <= UInt32(HighResolutionPlan.maximumDimension),
+                  frame.w <= UInt32(HighResolutionPlan.maximumDimension),
+                  UInt64(frame.x) + UInt64(width) <= UInt64(frame.z), UInt64(frame.y) + UInt64(height) <= UInt64(frame.w)
+            else { throw MetalLUTError.failed("타일의 원본 좌표가 유효하지 않습니다.") }
+        }
         guard rgba.count == byteCount else { throw MetalLUTError.failed("RGBA 데이터 크기가 이미지와 다릅니다.") }
         // Preserve exact source bytes at strength zero, including transparent pixels.
         if intensity == 0 && grain.amount == 0 && !effects.enabled { return rgba }
@@ -43,7 +49,7 @@ actor MetalLUTRenderer {
               let command = queue.makeCommandBuffer(), let encoder = command.makeComputeCommandEncoder()
         else { throw MetalLUTError.failed("GPU 작업 메모리를 확보할 수 없습니다.") }
         rgba.withUnsafeBytes { sourceBuffer.contents().copyMemory(from: $0.baseAddress!, byteCount: byteCount) }
-        var parameters = try resources.parameters(intensity: intensity, pixelCount: count, width: width, height: height, grain: grain)
+        var parameters = try resources.parameters(intensity: intensity, pixelCount: count, width: width, height: height, grain: grain, frame: frame)
         encoder.setComputePipelineState(pipeline)
         encoder.setBuffer(sourceBuffer, offset: 0, index: 0)
         encoder.setBuffer(destinationBuffer, offset: 0, index: 1)
@@ -53,7 +59,7 @@ actor MetalLUTRenderer {
         encoder.dispatchThreads(MTLSize(width: count, height: 1, depth: 1),
                                 threadsPerThreadgroup: MTLSize(width: group, height: 1, depth: 1))
         encoder.endEncoding()
-        if effects.enabled { try finish.encode(source: destinationBuffer, destination: sourceBuffer, width: width, height: height, settings: effects, command: command) }
+        if effects.enabled { try finish.encode(source: destinationBuffer, destination: sourceBuffer, width: width, height: height, settings: effects, command: command, frame: frame) }
         command.commit()
         command.waitUntilCompleted()
         guard command.status == .completed else { throw MetalLUTError.failed(command.error?.localizedDescription ?? "GPU LUT 처리가 실패했습니다.") }

@@ -6,6 +6,18 @@ import XCTest
 #endif
 
 final class CaptureWorkflowTests: XCTestCase {
+    func testSelectedBracketAndRenderedPhotoRouteToTheirOwnOriginal() {
+        let a = URL(fileURLWithPath: "/fixture/a.jpg"), b = URL(fileURLWithPath: "/fixture/b.jpg")
+        let effect = URL(fileURLWithPath: "/fixture/effect.jpg")
+        XCTAssertEqual(CaptureReviewRouting.original(for: b, originals: [a, b], renderedSources: [:]), b)
+        XCTAssertEqual(CaptureReviewRouting.original(for: effect, originals: [a, b], renderedSources: [effect: b]), b)
+        XCTAssertNil(CaptureReviewRouting.original(for: effect, originals: [a, b], renderedSources: [:]))
+    }
+    func testRawAndUnrelatedPhotosCannotBeImplicitlyOpenedInSDREditor() {
+        let raw = URL(fileURLWithPath: "/fixture/raw.DNG"), unknown = URL(fileURLWithPath: "/fixture/unknown.jpg")
+        XCTAssertNil(CaptureReviewRouting.original(for: raw, originals: [raw], renderedSources: [:]))
+        XCTAssertNil(CaptureReviewRouting.original(for: unknown, originals: [raw], renderedSources: [:]))
+    }
     func testLongDurationPrecedesEveryOtherControl() {
         for pro in [true, false] {
             let tools = CaptureWorkflowPolicy.controls(pro: pro, long: true, video: false)

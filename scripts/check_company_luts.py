@@ -1,7 +1,4 @@
-"""Integrity/profile checks for the separately tracked, rights-unverified LUT collection.
-
-Unknown rights are recorded, not treated as an approval or an exclusion gate.
-"""
+"""Integrity/profile and permission-record checks, not an independent legal audit."""
 import argparse
 import hashlib
 import json
@@ -24,10 +21,23 @@ def validate(root):
         if item['id'] in identifiers or item['file'] in files:
             raise ValueError('duplicate LUT')
         identifiers.add(item['id']); files.add(item['file'])
-        if item['official'] is not False or item['rightsStatus'] != 'unverified':
-            raise ValueError('this mirror collection must not claim official or verified status')
-        if any(item.get(k) is not None for k in ('license', 'commercialUseAllowed', 'redistributionAllowed')):
-            raise ValueError('unverified rights must remain unknown')
+        if item['official'] is not False:
+            raise ValueError('user permission must not become a manufacturer endorsement')
+        status = item['rightsStatus']
+        if status == 'unverified':
+            if any(item.get(k) is not None for k in ('license', 'commercialUseAllowed', 'redistributionAllowed')):
+                raise ValueError('unverified rights must remain unknown')
+        elif status == 'user-confirmed':
+            record = manifest.get('rightsConfirmation') or {}
+            if not isinstance(record, dict):
+                raise ValueError('invalid confirmation record')
+            if (item.get('license') != 'USER-CONFIRMED-PERMISSION'
+                    or item.get('commercialUseAllowed') is not True or item.get('redistributionAllowed') is not True
+                    or record.get('confirmedBy') != 'project-owner' or record.get('confirmedOn') != '2026-10-23'
+                    or not record.get('basis')):
+                raise ValueError('user-confirmed permission requires a complete confirmation record')
+        else:
+            raise ValueError('unsupported rights status')
         revision = item['sourceRevision']
         if not re.fullmatch('[0-9a-f]{40}', revision) or f'/blob/{revision}/' not in item['source']:
             raise ValueError('source must be pinned')
@@ -77,4 +87,5 @@ if __name__ == '__main__':
     parser.add_argument('--bundle', type=Path, default=Path(__file__).resolve().parents[1] / 'assets/company-luts')
     args = parser.parse_args()
     entries = validate(args.bundle)
-    print(f'{len(entries)} external LUT files intact; rights unverified (recorded, not approved)')
+    confirmed = sum(e['rightsStatus'] == 'user-confirmed' for e in entries)
+    print(f'{len(entries)} external LUT files intact; {confirmed} user-confirmed permission records (not an independent audit)')

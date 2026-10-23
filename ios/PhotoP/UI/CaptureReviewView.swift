@@ -8,6 +8,7 @@ struct CaptureReviewView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var preview: PhotoThumbnailImage?
     @State private var index = 0
+    @State private var previewURL: URL?
 
     private var originals: [URL] {
         let source = model.latestOriginals.isEmpty ? (model.latestOriginal.map { [$0] } ?? []) : model.latestOriginals
@@ -51,7 +52,7 @@ struct CaptureReviewView: View {
     private var current: URL? { originals.indices.contains(index) ? originals[index] : nil }
 
     @ViewBuilder private var photo: some View {
-        if let preview {
+        if let preview, previewURL == current {
             Image(decorative: preview.image, scale: 1).resizable().scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12)).padding(.horizontal)
                 .accessibilityLabel("최근 촬영 \(current.map { model.latestRenderedSeries.contains($0) } == true ? "효과 결과" : "원본") 미리보기")
@@ -63,6 +64,11 @@ struct CaptureReviewView: View {
     private var facts: some View {
         VStack(spacing: 4) {
             if let current {
+                Text(model.latestRenderedSeries.contains(current) ? "효과 적용 결과 · \(model.latestCaptureLook?.displayName ?? "심도")" : "무보정 원본 · 룩 미적용")
+                    .font(.caption.weight(.semibold)).accessibilityIdentifier("camera.review.effectStatus")
+                if let failure = model.latestRenderErrors[current] {
+                    Text("효과 결과 생성 실패 · 원본은 보존됨\n" + failure).font(.caption).foregroundStyle(.orange)
+                }
                 Text(current.pathExtension.uppercased() + (model.latestPhotoResolution.map { " · \($0.title)" } ?? ""))
                     .font(.system(.subheadline, design: .monospaced))
                 Text((model.latestRenderedSeries.isEmpty ? "앱 원본 보관" : "앱 원본·결과 별도 보관") + (model.savedToPhotos ? " · 사진 앱 저장됨" : " · 사진 앱 미저장"))
@@ -80,7 +86,7 @@ struct CaptureReviewView: View {
                         .buttonStyle(.bordered).disabled(model.busy)
                 }
                 if current.pathExtension.lowercased() != "dng" {
-                    Button { open(.editor) } label: { Label("원본 편집", systemImage: "slider.horizontal.3") }
+                    Button { if model.prepareEditor(for: current) { open(.editor) } } label: { Label("원본에서 룩 편집", systemImage: "slider.horizontal.3") }
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -98,8 +104,11 @@ struct CaptureReviewView: View {
     }
 
     private func load() async {
-        preview = nil
+        preview = nil; previewURL = nil
         guard let current else { return }
-        preview = await Task.detached(priority: .userInitiated) { PhotoThumbnail.make(current, maxPixel: 2048) }.value
+        let task = Task.detached(priority: .userInitiated) { PhotoThumbnail.make(current, maxPixel: 2048) }
+        let image = await task.value
+        guard !Task.isCancelled, self.current == current else { return }
+        preview = image; previewURL = current
     }
 }

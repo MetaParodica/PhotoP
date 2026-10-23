@@ -14,6 +14,7 @@ struct MetalLUTResources {
         var height: UInt32 = 1
         var grainAmount: Float = 0
         var grainSeed: UInt32 = 1
+        var frame = SIMD4<UInt32>(repeating: 0) // tile origin XY, full canvas WH
     }
     let lut: CubeLUT
     let table: MTLBuffer
@@ -33,13 +34,13 @@ struct MetalLUTResources {
         self.table = table
     }
 
-    func parameters(intensity: Double, pixelCount: Int, width: Int = 1, height: Int = 1, grain: GrainSettings = GrainSettings()) throws -> Parameters {
+    func parameters(intensity: Double, pixelCount: Int, width: Int = 1, height: Int = 1, grain: GrainSettings = GrainSettings(), frame: SIMD4<UInt32> = .zero) throws -> Parameters {
         try grain.validate()
         guard intensity.isFinite, (0...1).contains(intensity), pixelCount > 0,
               pixelCount <= MetalLUTRenderer.maximumPixels else { throw MetalLUTError.failed("LUT 크기와 강도가 유효하지 않습니다.") }
         return Parameters(minimum: SIMD4(Float(lut.domainMin.x), Float(lut.domainMin.y), Float(lut.domainMin.z), 0),
                           maximum: SIMD4(Float(lut.domainMax.x), Float(lut.domainMax.y), Float(lut.domainMax.z), 0),
                           dimension: UInt32(lut.dimension), intensity: Float(intensity), pixelCount: UInt32(pixelCount), oneDimensional: lut.isOneDimensional ? 1 : 0, width: UInt32(width), height: UInt32(height),
-                          grainAmount: Float(grain.amount), grainSeed: grain.seed)
+                          grainAmount: Float(grain.amount), grainSeed: grain.seed, frame: frame)
     }
 }

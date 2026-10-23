@@ -67,7 +67,8 @@ struct CameraView: View {
             switch current {
             case .review: CaptureReviewView(model: model) { next in open(next) }
             case .editor:
-                if let original = model.latestOriginal { LUTEditorView(original: original) }
+                if let selection = model.editorSelection { LUTEditorView(original: selection.original, initialLook: selection.look) }
+                else if let original = model.latestOriginal { LUTEditorView(original: original, initialLook: model.latestCaptureLook) }
                 else { CaptureReviewView(model: model) { next in open(next) } }
             case .history: SavedEditsView()
             case .videos: VideoLibraryView()
@@ -187,6 +188,10 @@ struct CameraView: View {
                     previewBadge
                     Spacer()
                     if let histogram = model.histogram, model.liveHasFrame { PreviewHistogramView(histogram: histogram) }
+                }
+                if model.liveUsesLUT {
+                    Text(model.captureLookNotice).font(.caption2).lineLimit(2)
+                        .padding(5).background(.black.opacity(0.6), in: Capsule()).accessibilityIdentifier("camera.look.status")
                 }
                 if model.guideAIEnabled && model.cameraCoachEnabled && liveGuide && !model.busy {
                     CameraCoachBar(model: model) { toggle(model.settings.exposure.manual ? .shutter : .ev) }

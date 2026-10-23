@@ -18,36 +18,18 @@ struct CaptureResultRecipe: Codable {
     let lutSHA256: String?
     let provenance: LUTProvenance?
     let pipeline: String
+    var outputWidth: Int? = nil
+    var outputHeight: Int? = nil
 }
 
 // No camera/display resources: only runs AFTER original bytes are preserved.
 actor CaptureResultProcessor {
     static let shared = CaptureResultProcessor()
-    private let context = CIContext(options: [.cacheIntermediates: false])
 
     func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil) async throws -> URL {
         guard look != nil || aperture != nil else { return original }
-        var image = try SDRImage.decode(original)
-        var distance: Float?
-        var absoluteDepth = false
-        if let aperture {
-            let result = try depthBlur(original: original, image: image, aperture: aperture, focus: focus)
-            image = result.image; distance = result.focus; absoluteDepth = result.absolute
-        }
         let settings = look.map { $0.preset ?? ProcessingLookSettings() }
-        if let look, let settings {
-            try settings.validate()
-            let renderer = try MetalLUTRenderer(lut: look.lut)
-            let pixels = try await renderer.render(image.rgba, width: image.width, height: image.height,
-                                                  intensity: settings.intensity, grain: settings.grain, effects: settings.finish)
-            image = SDRImage(rgba: pixels, width: image.width, height: image.height)
-        }
-        let recipe = CaptureResultRecipe(version: 1, originalFilename: original.lastPathComponent,
-            originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
-            focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: absoluteDepth ? distance : nil,
-            focusDepthValue: distance, depthAccuracy: aperture == nil ? nil : absoluteDepth ? "absolute" : "relative",
-            look: settings, lutSHA256: look.map { LUTPhotoEditor.hash($0.data) }, provenance: look?.provenance,
-            pipeline: "Oriented SDR sRGB base (max 12.6MP) → optional measured-depth variable Gaussian blur (software f strength, not optical aperture) → optional LUT/grain/finish → sRGB JPEG; original metadata omitted")
+        try settings?.validate()
         let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let folder = root.appendingPathComponent("CaptureResults", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -58,7 +40,17 @@ actor CaptureResultProcessor {
         do {
             let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             let credit = look?.provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
-            try image.jpeg(credit: credit).write(to: pending.appendingPathComponent("photo.jpg"), options: options)
+            let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original,
+                destination: pending.appendingPathComponent("photo.jpg"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),
+                aperture: aperture, focus: focus, credit: credit)
+            var recipe = CaptureResultRecipe(version: 1, originalFilename: original.lastPathComponent,
+                originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
+                focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth ? result.focusDepth : nil,
+                focusDepthValue: result.focusDepth, depthAccuracy: aperture == nil ? nil : result.absoluteDepth ? "absolute" : "relative",
+                look: settings, lutSHA256: look.map { LUTPhotoEditor.hash($0.data) }, provenance: look?.provenance,
+                pipeline: "Full-resolution oriented SDR sRGB (max 64MP) → measured-depth variable blur → halo tiles with global LUT/grain/finish coordinates → disk-backed RGBA → JPEG; original metadata omitted")
+            recipe.outputWidth = result.width; recipe.outputHeight = result.height
+            try Task.checkCancellation()
             try JSONEncoder().encode(recipe).write(to: pending.appendingPathComponent("recipe.json"), options: options)
             if let look { try look.data.write(to: pending.appendingPathComponent("look.cube"), options: options) }
             try FileManager.default.moveItem(at: pending, to: final)
@@ -66,8 +58,11 @@ actor CaptureResultProcessor {
         } catch { try? FileManager.default.removeItem(at: pending); throw error }
     }
 
-    private func depthBlur(original: URL, image: SDRImage, aperture: Double, focus: CGPoint) throws -> (image: SDRImage, focus: Float, absolute: Bool) {
-        guard let radius = DepthBlurPolicy.radius(aperture: aperture, longEdge: max(image.width, image.height)),
+}
+
+enum MeasuredDepthEffect {
+    static func make(original: URL, color: CIImage, width: Int, height: Int, aperture: Double, focus: CGPoint) throws -> (image: CIImage, focus: Float, absolute: Bool) {
+        guard let radius = DepthBlurPolicy.radius(aperture: aperture, longEdge: max(width, height)),
               focus.x.isFinite, focus.y.isFinite, (0...1).contains(focus.x), (0...1).contains(focus.y),
               let source = CGImageSourceCreateWithURL(original as CFURL, nil) else { throw CameraError.invalidSettings }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
@@ -80,7 +75,7 @@ actor CaptureResultProcessor {
             .applyingExifOrientation(exif).converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
         let buffer = depth.depthDataMap
         let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
-        guard w > 0, h > 0, abs((Double(w) / Double(h)) / (Double(image.width) / Double(image.height)) - 1) < 0.02 else {
+        guard w > 0, h > 0, abs((Double(w) / Double(h)) / (Double(width) / Double(height)) - 1) < 0.02 else {
             throw ImageEditingError.invalid("깊이 지도와 사진 비율이 일치하지 않습니다. 원본은 보존했습니다.")
         }
         guard w >= 3, h >= 3, w <= 4096, h <= 4096,
@@ -105,17 +100,23 @@ actor CaptureResultProcessor {
         guard let provider = CGDataProvider(data: mask as CFData),
               let cgMask = CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: w,
                                    space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
-                                   provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent),
+                                   provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent) else { throw CameraError.configuration }
+        return (try compose(color: color, mask: cgMask, width: width, height: height, radius: radius), distance, depth.depthDataAccuracy == .absolute)
+    }
+    // Separate image graph construction from AVDepthData extraction for SDK
+    // tests. Production callers still require measured embedded photo depth.
+    static func compose(color: CIImage, mask: CGImage, width: Int, height: Int, radius: Double) throws -> CIImage {
+        guard HighResolutionPlan(width: width, height: height) != nil, radius.isFinite, (0...80).contains(radius),
+              color.extent == CGRect(x: 0, y: 0, width: width, height: height), mask.width > 0, mask.height > 0,
               let filter = CIFilter(name: "CIMaskedVariableBlur") else { throw CameraError.configuration }
-        let color = CIImage(cgImage: try image.cgImage())
-        let scaledMask = CIImage(cgImage: cgMask).transformed(by: CGAffineTransform(scaleX: CGFloat(image.width) / CGFloat(w), y: CGFloat(image.height) / CGFloat(h)))
+        let w = mask.width, h = mask.height
+        let scaledMask = CIImage(cgImage: mask).transformed(by: CGAffineTransform(scaleX: CGFloat(width) / CGFloat(w), y: CGFloat(height) / CGFloat(h)))
         filter.setValue(color.clampedToExtent(), forKey: kCIInputImageKey)
         filter.setValue(scaledMask, forKey: "inputMask")
         filter.setValue(radius, forKey: kCIInputRadiusKey)
-        guard let result = filter.outputImage?.cropped(to: color.extent),
-              let rendered = context.createCGImage(result, from: color.extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) else {
+        guard let result = filter.outputImage?.cropped(to: color.extent) else {
             throw CameraError.invalidPhotoData
         }
-        return (try SDRImage.rasterize(rendered), distance, depth.depthDataAccuracy == .absolute)
+        return result
     }
 }

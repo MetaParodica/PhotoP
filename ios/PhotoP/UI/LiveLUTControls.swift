@@ -17,6 +17,7 @@ struct LiveLUTControls: View {
             Form {
                 Section("촬영 결과 룩 · 미리보기 없음") {
                     Text(model.liveLUTTitle ?? "사용자 .cube를 가져오세요")
+                    Text(model.captureLookNotice).font(.caption).accessibilityIdentifier("camera.look.status")
                     if let credit = model.liveCredit { Text(credit).font(.caption2).textSelection(.enabled) }
                     Toggle("LUT 입력·출력이 sRGB임을 확인", isOn: $profileConfirmed)
                     Button(".cube / Hald PNG 가져오기") { importing = true }

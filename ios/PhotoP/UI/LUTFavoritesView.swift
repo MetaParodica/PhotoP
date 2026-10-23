@@ -26,6 +26,7 @@ struct LUTFavoritesView: View {
                     } label: {
                         VStack(alignment: .leading) {
                             Text(entry.name); Text("sRGB → sRGB").font(.caption).foregroundStyle(.secondary)
+                            Text(entry.settings == nil ? "기존 색상표 즐겨찾기" : "LUT·강도·그레인·마감 복원").font(.caption2)
                             if let p = entry.provenance { Text("\(p.creator) · \(p.license)").font(.caption2) }
                         }
                     }

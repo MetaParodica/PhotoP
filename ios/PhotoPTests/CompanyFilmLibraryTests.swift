@@ -28,7 +28,7 @@ final class CompanyFilmLibraryTests: XCTestCase {
         XCTAssertEqual(entries.filter { $0.role == "technical" }.count, 3)
         XCTAssertEqual(entries.filter { !$0.canApply }.count, 1)
         for e in entries {
-            XCTAssertFalse(e.official); XCTAssertEqual(e.rightsStatus, "unverified")
+            XCTAssertFalse(e.official); XCTAssertEqual(e.rightsStatus, "user-confirmed"); XCTAssertTrue(e.rightsConfirmed)
             let raw = try ImportedLUT.read(CompanyFilmLibrary.original(e, in: root))
             XCTAssertEqual(LUTPhotoEditor.hash(raw.data), e.sha256)
             if !e.canApply { continue }
@@ -93,12 +93,14 @@ final class CompanyFilmLibraryTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: json).write(to: manifest)
         XCTAssertThrowsError(try CompanyFilmLibrary.entries(in: root))
     }
-    func testRightsUnverifiedDisplayLookAndPresetKeepSourceProvenance() async throws {
+    func testUserConfirmedPermissionAndPresetKeepSourceProvenance() async throws {
         let root = try CompanyFilmLibrary.root(), entries = try CompanyFilmLibrary.entries(in: root), folder = try temporary()
         let entry = try XCTUnwrap(entries.first { $0.nativeInput == "srgb-assumed" })
         let imported = try await CompanyLookCompiler(folder: folder.appendingPathComponent("cache")).load(entry, in: root)
         XCTAssertEqual(LUTPhotoEditor.hash(imported.data), entry.sha256)
-        XCTAssertEqual(imported.provenance?.license, "UNVERIFIED")
+        XCTAssertEqual(imported.provenance?.license, "USER-CONFIRMED-PERMISSION")
+        XCTAssertEqual(imported.provenance?.commercialUseAllowed, true)
+        XCTAssertEqual(imported.provenance?.redistributionAllowed, true)
         let presets = FilterPresetLibrary(folder: folder.appendingPathComponent("presets"))
         try await presets.save(imported, settings: .init(intensity: 0.4), name: "External")
         let saved = try await presets.entries()
@@ -106,5 +108,18 @@ final class CompanyFilmLibraryTests: XCTestCase {
         let loaded = try await presets.load(id)
         XCTAssertEqual(loaded.provenance, imported.provenance)
         XCTAssertEqual(loaded.preset?.intensity, 0.4)
+    }
+    func testPermissionRecordCannotBeMissingOrImplyOfficialEndorsement() throws {
+        let root = try temporary(), source = try CompanyFilmLibrary.root().appendingPathComponent("manifest.json")
+        let baseline = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: source)) as? [String: Any])
+        var missing = baseline; missing.removeValue(forKey: "rightsConfirmation")
+        let destination = root.appendingPathComponent("manifest.json")
+        try JSONSerialization.data(withJSONObject: missing).write(to: destination)
+        XCTAssertThrowsError(try CompanyFilmLibrary.entries(in: root))
+        var official = baseline
+        var entries = try XCTUnwrap(official["assets"] as? [[String: Any]])
+        entries[0]["official"] = true; official["assets"] = entries
+        try JSONSerialization.data(withJSONObject: official).write(to: destination)
+        XCTAssertThrowsError(try CompanyFilmLibrary.entries(in: root))
     }
 }
