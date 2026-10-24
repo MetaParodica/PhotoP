@@ -348,8 +348,8 @@ final class CameraModel: ObservableObject {
     }
 
     private func activateLiveLUT(_ imported: ImportedLUT) async throws {
-        // Legacy live* property names now describe a selected CAPTURE look.
-        // Choosing a LUT never creates/replaces the camera's analysis preview.
+        // Selection drives both the live SDR viewfinder and a separate capture
+        // derivative. Preview comparison never changes the saved look settings.
         let settings = imported.preset ?? ProcessingLookSettings()
         try settings.validate()
         liveIntensity = settings.intensity; liveGrain = settings.grain.amount
@@ -364,7 +364,15 @@ final class CameraModel: ObservableObject {
         liveUsesLUT = true
         liveCompareOriginal = false
         updateLiveIntensity()
-        message = "선택한 룩은 촬영 결과에만 적용합니다. 미리보기 없이 원본을 별도 보존합니다."
+        if let livePreview {
+            liveHasFrame = false
+            livePreview.setLook(imported.lut, intensity: liveIntensity,
+                grain: .init(amount: liveGrain, seed: liveGrainSeed), effects: liveFinish)
+        } else if active, snapshot.state == .running {
+            do { try await installAnalysisPreview() }
+            catch { tearDownLivePreview(); throw ImageEditingError.invalid("룩 선택은 유지했지만 뷰파인더 연결에 실패했습니다: \(error.localizedDescription)") }
+        }
+        message = "룩을 뷰파인더와 촬영 결과에 적용합니다. 원본은 별도로 보존합니다."
     }
 
     func favoriteLiveLUT() async {
@@ -384,7 +392,7 @@ final class CameraModel: ObservableObject {
 
     func enableLiveLUT() async {
         guard !snapshot.video.isVideoMode, !busy, let importedLiveLUT else { return }
-        do { try await activateLiveLUT(importedLiveLUT) } catch { report(error) }
+        do { try await useLiveLUT(importedLiveLUT) } catch { report(error) }
     }
 
     var compositionPreset: CompositionPreset? { CompositionPreset.preset(compositionPresetID) }
@@ -396,7 +404,7 @@ final class CameraModel: ObservableObject {
         if compositionPreset?.subject != nil { guideScene = .portrait; updateComposition() }
     }
 
-    // Load only the selected capture look. No camera frame or thumbnail rendering.
+    // Serialize look selection; existing preview output is reused for LUT swaps.
     func selectLook(id: String, load: @escaping @Sendable () async throws -> ImportedLUT) async {
         guard !snapshot.video.isVideoMode else { return }
         lookRequestID = UUID()
@@ -431,6 +439,7 @@ final class CameraModel: ObservableObject {
         liveLookID = nil; liveUsesLUT = false; liveLUTTitle = nil; liveCredit = nil
         importedLiveLUT = nil
         updateLiveIntensity()
+        monitoringChanged()
     }
 
     private func tearDownLivePreview() {
@@ -444,6 +453,13 @@ final class CameraModel: ObservableObject {
     }
 
     func disableLiveLUT() {
+        // This action disables analysis tools, not the independently selected
+        // viewfinder look. Use "룩 적용 해제" to return to an ungraded image.
+        if liveUsesLUT {
+            monitoring = MonitoringSettings(); focusAssistEnabled = false; guideAIEnabled = false
+            updateMonitoring(); updateComposition(); monitoringChanged()
+            return
+        }
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false
@@ -457,8 +473,9 @@ final class CameraModel: ObservableObject {
     }
 
     func updateLiveIntensity() {
-        // Monitoring/AI may still use Metal, but the camera image is ungraded.
-        livePreview?.setIntensity(0)
+        if LiveLookPolicy.gradesFrame(selected: liveUsesLUT, comparingOriginal: liveCompareOriginal) {
+            livePreview?.setIntensity(liveIntensity, grain: .init(amount: liveGrain, seed: liveGrainSeed), effects: liveFinish)
+        } else { livePreview?.setIntensity(0) }
         if liveUsesLUT, let importedLiveLUT {
             lookEffectNotice = (try? LookEffectAssessment.evaluate(importedLiveLUT.lut,
                 intensity: liveIntensity, grain: liveGrain, spatial: liveFinish.enabled))?.notice
@@ -466,9 +483,10 @@ final class CameraModel: ObservableObject {
     }
     var captureLookNotice: String {
         guard liveUsesLUT else { return "룩 해제 · 무보정 원본" }
-        if snapshot.video.isVideoMode { return "선택한 룩은 영상에 적용하지 않습니다." }
-        if rawMode != .processed { return "RAW/DNG에는 룩을 적용하지 않습니다. 일반 사진으로 전환하세요." }
-        return lookEffectNotice ?? "촬영 결과에 적용 · 카메라 프리뷰는 무보정 · 강도 \(Int(liveIntensity * 100))%"
+        let state = liveCompareOriginal ? "원본 비교 중" : liveHasFrame && livePreview != nil ? "뷰파인더 룩 적용" : "룩 프리뷰 연결 대기"
+        if snapshot.video.isVideoMode { return state + " · 저장 영상은 무보정" }
+        if rawMode != .processed { return state + " · 저장 RAW/DNG는 무보정" }
+        return state + " · " + (lookEffectNotice ?? "강도 \(Int(liveIntensity * 100))% · 원본 별도 보존")
     }
 
     func prepareEditor(for url: URL) -> Bool {
@@ -486,7 +504,10 @@ final class CameraModel: ObservableObject {
         livePreview?.setMonitoring(effective)
     }
 
-    private var needsAnalysis: Bool { monitoring.enabled || guideAIEnabled || settings.focus.manual && focusAssistEnabled || previewSamplesWanted }
+    private var needsAnalysis: Bool {
+        LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
+                                   focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted)
+    }
 
     func monitoringChanged() {
         updateMonitoring()
@@ -509,26 +530,32 @@ final class CameraModel: ObservableObject {
 
     func enableMonitoring() async {
         guard active, snapshot.state == .running, !busy, !applyingSettings, !switchingMode, !changingVideo, !snapshot.isApplyingSettings, needsAnalysis else { return }
-        if livePreview != nil { updateMonitoring(); return }
+        if livePreview != nil { updateMonitoring(); updateLiveIntensity(); return }
         busy = true
         defer { busy = false }
-        do {
-            var lines = ["LUT_3D_SIZE 2"]
-            for b in 0...1 { for g in 0...1 { for r in 0...1 { lines.append("\(r) \(g) \(b)") } } }
-            let identity = try CubeLUT.parse(lines.joined(separator: "\n"))
-            let preview = try await makeLivePreview(identity)
-            preview.setIntensity(0)
-            var effective = monitoring
-            if settings.focus.manual && focusAssistEnabled { effective.peaking = true; if !monitoring.peaking { effective.peakingThreshold = 0.08 } }
-            preview.setMonitoring(effective)
-            preview.setComposition(enabled: guideAIEnabled, scene: guideScene)
-            try await service.setLivePreview(preview)
-            guard active, needsAnalysis else { preview.setRunning(false); service.removeLivePreview(); return }
-            livePreview = preview
-            liveHasFrame = false
-            updateMonitoring(); updateComposition()
-            message = "SDR 프리뷰 기준 보조 도구입니다. 원본에 표시를 굽지 않습니다."
-        } catch { report(error) }
+        do { try await installAnalysisPreview() } catch { report(error) }
+    }
+
+    private func installAnalysisPreview() async throws {
+        let token = lookRequestID
+        let selected = liveUsesLUT ? importedLiveLUT?.lut : nil
+        var lines = ["LUT_3D_SIZE 2"]
+        for b in 0...1 { for g in 0...1 { for r in 0...1 { lines.append("\(r) \(g) \(b)") } } }
+        let identity = try CubeLUT.parse(lines.joined(separator: "\n"))
+        let preview = try await makeLivePreview(selected ?? identity)
+        if LiveLookPolicy.gradesFrame(selected: liveUsesLUT, comparingOriginal: liveCompareOriginal) {
+            preview.setIntensity(liveIntensity, grain: .init(amount: liveGrain, seed: liveGrainSeed), effects: liveFinish)
+        } else { preview.setIntensity(0) }
+        var effective = monitoring
+        if settings.focus.manual && focusAssistEnabled { effective.peaking = true; if !monitoring.peaking { effective.peakingThreshold = 0.08 } }
+        preview.setMonitoring(effective)
+        guard active, needsAnalysis, token == lookRequestID else { return }
+        try await service.setLivePreview(preview)
+        guard active, needsAnalysis, token == lookRequestID else { preview.setRunning(false); service.removeLivePreview(); return }
+        livePreview = preview
+        liveHasFrame = false
+        updateMonitoring(); updateComposition()
+        message = liveUsesLUT ? "SDR 룩 프리뷰 연결 · 원본은 별도 보존합니다." : "SDR 프리뷰 기준 보조 도구입니다. 원본에 표시를 굽지 않습니다."
     }
 
     func updateComposition() {

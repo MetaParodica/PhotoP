@@ -14,7 +14,7 @@ struct CompositionControls: View {
                 AICompositionControls(model: model)
                 Button("AI 프리뷰 시작 · 적용") { Task { await model.enableMonitoring() } }
                     .disabled(!model.guideAIEnabled || model.busy || model.snapshot.state != .running)
-                Button("분석 프리뷰 끄기") { model.disableLiveLUT() }.disabled(model.busy || model.livePreview == nil)
+                Button("AI·노출 보조 끄기 · 선택 룩 유지") { model.disableLiveLUT() }.disabled(model.busy || model.livePreview == nil)
                 Text("흰 선은 목표 구도, 노란 도식은 목표 포즈, 청록 표시는 실제 Vision 검출 결과입니다. AI는 제안이며 정답이나 점수가 아닙니다. 이미지 서버 전송은 하지 않습니다.").font(.caption)
                 Text("인물 분석은 최대 5Hz·640px·1작업으로 처리하며 오래된 결과를 숨깁니다. 발열·저전력 시 빈도를 낮추거나 중지합니다. 추적은 위치 기반으로, 겹침·가림 후 동일 인물을 보장하지 않습니다.").font(.caption)
                 if let snapshot = model.composition { Text(snapshot.advice).font(.caption) }

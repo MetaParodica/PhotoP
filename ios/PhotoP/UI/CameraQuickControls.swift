@@ -137,7 +137,7 @@ struct CameraQuickControls: View {
             Toggle("포커스 피킹", isOn: $model.monitoring.peaking)
             if model.monitoring.peaking { Slider(value: $model.monitoring.peakingThreshold, in: 0.01...1) { Text("피킹 임계값") } }
             Text("초록색 피킹은 선명한 윤곽을 표시합니다. 실제 초점 거리(m) 측정값은 아닙니다.").font(.caption).foregroundStyle(.secondary)
-            if model.livePreview != nil { Button("분석 프리뷰 끄기") { model.disableLiveLUT() } }
+            if model.livePreview != nil { Button("AI·노출 보조 끄기 · 선택 룩 유지") { model.disableLiveLUT() } }
             else if model.monitoring.enabled { Button("프리뷰 다시 연결") { startMonitoring() }.disabled(model.snapshot.state != .running) }
         }
     }
@@ -172,6 +172,7 @@ struct CameraQuickControls: View {
                 Button("가져오기·프리셋", action: openImports)
             }
             if model.liveUsesLUT {
+                Toggle("원본 프리뷰와 비교", isOn: $model.liveCompareOriginal).accessibilityIdentifier("camera.look.compare")
                 HStack { Text("강도"); Slider(value: $model.liveIntensity, in: 0...1) { Text("룩 강도") }; Text("\(Int(model.liveIntensity * 100))%") }
                 DisclosureGroup("그레인·필름 마감") {
                     Slider(value: $model.liveGrain, in: 0...1) { Text("그레인") }
@@ -179,7 +180,7 @@ struct CameraQuickControls: View {
                 }
             }
             if model.liveUsesLUT { Button("룩 적용 해제") { Task { await model.selectOriginalLook() } } }
-            Text("미리보기 없이 선택한 룩을 촬영 결과에만 적용합니다. 원본은 별도로 보존합니다. RAW·영상에는 적용하지 않습니다.").font(.caption).foregroundStyle(.secondary)
+            Text("선택한 룩을 뷰파인더와 별도 사진 결과에 적용합니다. 원본 비교는 프리뷰만 바꿉니다. 저장 RAW·영상은 무보정입니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
             .onChange(of: model.liveGrain) { _, _ in model.updateLiveIntensity() }
@@ -210,7 +211,7 @@ struct CameraQuickControls: View {
         }
     }
     private var videoPreviewNotice: some View {
-        Text("영상은 원본 색상으로 녹화합니다. 노출 분석은 장치가 녹화·분석 스트림 동시 사용을 허용하는 구성에서 제공합니다. 영상용 컬러 LUT 프리뷰·LUT 굽기는 아직 제공하지 않습니다.")
+        Text("영상은 원본 색상으로 녹화합니다. 장치가 녹화·분석 스트림 동시 사용을 허용하면 사진 모드에서 선택한 룩을 뷰파인더에만 표시합니다. 룩 변경은 사진 모드에서 하세요. 영상에 LUT를 굽지는 않습니다.")
             .font(.callout).foregroundStyle(.secondary)
     }
     private func changeVideo(_ update: (inout VideoConfiguration) -> Void) {

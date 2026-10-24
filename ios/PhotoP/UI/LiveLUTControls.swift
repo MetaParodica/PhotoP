@@ -15,7 +15,7 @@ struct LiveLUTControls: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("촬영 결과 룩 · 미리보기 없음") {
+                Section("뷰파인더·촬영 결과 룩") {
                     Text(model.liveLUTTitle ?? "사용자 .cube를 가져오세요")
                     Text(model.captureLookNotice).font(.caption).accessibilityIdentifier("camera.look.status")
                     if let credit = model.liveCredit { Text(credit).font(.caption2).textSelection(.enabled) }
@@ -33,10 +33,12 @@ struct LiveLUTControls: View {
                     Slider(value: $model.liveIntensity, in: 0...1) { Text("LUT 강도") }
                         .disabled(!model.liveUsesLUT)
                     Text(model.liveIntensity, format: .percent.precision(.fractionLength(0)))
+                    Toggle("원본 프리뷰와 비교", isOn: $model.liveCompareOriginal).disabled(!model.liveUsesLUT)
+                        .accessibilityIdentifier("camera.look.compare")
                     Slider(value: $model.liveGrain, in: 0...1) { Text("기본 필름 그레인") }.disabled(!model.liveUsesLUT)
                     Text("그레인 \(Int(model.liveGrain * 100))% · 기본 단색 입자")
                     FilmFinishControls(settings: $model.liveFinish).disabled(!model.liveUsesLUT)
-                    Text("카메라·예시 미리보기에는 룩을 적용하지 않습니다. 촬영 후 SDR JPEG 결과물을 만들고 원본은 그대로 보존합니다. RAW와 영상에는 적용하지 않습니다.").font(.caption)
+                    Text("룩·강도·그레인·마감을 뷰파인더에 실시간 적용합니다. 사진은 원본과 별도 SDR 결과를 저장합니다. 원본 비교는 화면만 바꾸며, RAW/DNG·저장 영상은 무보정입니다. f값 심도는 촬영 결과에만 적용합니다.").font(.caption)
                 }
                 Section {
                     Text("발열·저전력 상태에 따라 처리 해상도와 분석 빈도를 자동으로 낮춥니다. 센서 프레임레이트와 사진 해상도는 이 설정으로 변경하지 않습니다.").font(.caption)

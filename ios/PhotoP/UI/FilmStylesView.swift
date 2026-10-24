@@ -20,7 +20,7 @@ struct FilmStylesView: View {
         NavigationStack {
             List {
                 Section {
-                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n미리보기 없이 이름으로 룩을 선택합니다. 촬영 화면에서는 결과에만 적용하며 원본을 별도 보존합니다. 브랜드 필름·센서의 실측 재현이 아닙니다.").font(.caption)
+                    Text("PhotoP 컬러 \(FilmStyle.all.count)종 · 공간 효과 \(ProceduralLook.all.count)종 · 외부 룩 \(bundled.count + company.filter { $0.role == "creative" }.count)종 · 기술 LUT \(company.filter { $0.role == "technical" }.count)종\n선택한 룩을 뷰파인더와 별도 사진 결과에 적용하며 원본을 보존합니다. 카드별 예시 미리보기는 제공하지 않습니다. 브랜드 필름·센서의 실측 재현이 아닙니다.").font(.caption)
                     Picker("카테고리", selection: $category) { ForEach(categories, id: \.self) { Text($0) } }
                     Toggle("가져올 사용자 LUT의 sRGB 입력·출력 확인", isOn: $confirmedSRGB)
                     Text("표시용 LUT는 sRGB로 가정합니다. V-Log 파생 룩은 SDR→V-Gamut/V-Log→LUT→감마2.4 가정→sRGB로 변환합니다. 센서·HDR 원본을 복원하지 않습니다.").font(.caption)

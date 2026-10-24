@@ -24,7 +24,7 @@ final class CaptureResultTests: XCTestCase {
         try (data as Data).write(to: url)
         return (root, url)
     }
-    @MainActor func testCaptureLookSelectionDoesNotCreateAPreviewOrChangeManualSettings() async throws {
+    @MainActor func testOfflineLookSelectionDoesNotInventAFrameOrChangeManualSettings() async throws {
         let model = CameraModel()
         model.settings.exposure.manual = true; model.settings.exposure.iso = 321
         model.guideAIEnabled = true; model.monitoring.histogram = true
@@ -37,6 +37,19 @@ final class CaptureResultTests: XCTestCase {
         XCTAssertFalse(model.liveUsesLUT); XCTAssertNil(model.liveLUTTitle)
         XCTAssertTrue(model.guideAIEnabled); XCTAssertTrue(model.monitoring.histogram)
         XCTAssertEqual(model.settings, previous)
+    }
+    @MainActor func testOriginalComparisonDoesNotChangeSelectedCapturePreset() async throws {
+        let model = CameraModel()
+        var look = try identity()
+        look.preset = .init(intensity: 0.7, grain: .init(amount: 0.2, seed: 8), finish: .init(vignette: 0.4))
+        try await model.useLiveLUT(look)
+        model.liveCompareOriginal = true; model.updateLiveIntensity()
+        XCTAssertTrue(model.liveUsesLUT); XCTAssertEqual(model.liveIntensity, 0.7)
+        XCTAssertEqual(model.liveGrain, 0.2); XCTAssertEqual(model.liveFinish.vignette, 0.4)
+        XCTAssertTrue(model.captureLookNotice.contains("원본 비교"))
+        model.disableLiveLUT() // Analysis-off must not turn a selected look off.
+        XCTAssertTrue(model.liveUsesLUT); XCTAssertFalse(model.guideAIEnabled)
+        XCTAssertFalse(model.monitoring.enabled)
     }
     func testMissingDepthRejectsEffectAndKeepsOriginalBytes() async throws {
         let input = try fixture(), before = try Data(contentsOf: input.photo)

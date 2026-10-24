@@ -289,3 +289,9 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - portable Swift76(기존69+실제CubeLUT 진단5+원본 라우팅2)·Python19·기존 자산 무결성·Swift 구문/diff 검사 통과. iOS 즐겨찾기4·실제 LUT 결과 픽셀 변화1 테스트 추가, SDK/Metal·실기기 미실행. CI 조회403으로 새 빌드 상태는 미확인이다.
 - 사용자 요청에 따라37단계의 고해상도/외부 권한 변경과 함께 feature branch 커밋·푸시 후 main에 병합한다. 최종 반영 hash는 대화의 Git 확인 결과를 참조한다. 단체 전후 비교·재시작 보관함·강제 종료 복구·기기 성능/색 인수는 추가 개발 항목으로 남긴다.
 
+## 39. 뷰파인더 실시간 LUT 복원
+
+- 2026-10-23 KST, 기준 main `c470430`. 최신 사용자 요청으로 촬영 결과 전용 정책을 변경했다. 선택 LUT 자체를 실제 Metal 프리뷰에 전달하고 강도/입자/마감·원본 비교를 반영한다. 룩만으로 출력 수요를 유지하고 보조 분석 끄기와 룩 해제를 분리한다. 빠른 LUT 교체는 frameQueue에서 최신 요청 하나만 준비/설치하며 이전 GPU 작업은 해당 processor를 보유한다. [23 문서](23-LIVE-VIEWFINDER-LOOK.ko.md).
+- AI·노출 측정 입력은 무보정, 일반 사진 원본/별도64MP 결과는 보존한다. f값 심도 프리뷰·카드 예시·영상 LUT 굽기는 추가하지 않는다. RAW/브래킷/LONG 복구, 지원 VIDEO 모니터링과 저장 원본의 차이를 명시했다.
+- portable Swift82·Python19·자산5+25 검사·Swift135 구문/diff 검사 통과. iOS 실제 LUT texture/설정 및 모델 비교/분석 끄기 검사2개 추가, 미실행. SDK/Metal·실기기 화면/색/FPS·새 CI는 미확인이다. 후속 사용자 요청에 따라 `codex/live-viewfinder-lut`에 커밋·푸시 후 main에 fast-forward 병합한다. 최종 반영 hash와 원격 상태는 대화의 Git 확인 결과를 참조한다.
+

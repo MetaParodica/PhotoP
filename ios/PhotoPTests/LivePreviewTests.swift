@@ -5,6 +5,34 @@ import QuartzCore
 @testable import PhotoP
 
 final class LivePreviewTests: XCTestCase {
+    func testNonIdentityViewfinderFrameAndUnchangedOriginalComparison() throws {
+        let (device, _) = try fixture()
+        var lines = ["LUT_3D_SIZE 2"]
+        for b in 0...1 { for g in 0...1 { for r in 0...1 { lines.append("\(1-r) \(1-g) \(1-b)") } } }
+        let lut = try CubeLUT.parse(lines.joined(separator: "\n"))
+        let processor = try LivePreviewImageProcessor(lut: lut, device: device)
+        let queue = try XCTUnwrap(device.makeCommandQueue()), pixelBuffer = try buffer()
+        let neutralCommand = try XCTUnwrap(queue.makeCommandBuffer())
+        let neutral = try readback(processor.encode(pixelBuffer, intensity: 0, command: neutralCommand), command: neutralCommand)
+        neutralCommand.commit(); neutralCommand.waitUntilCompleted()
+        XCTAssertEqual(neutralCommand.status, .completed)
+        let gradedCommand = try XCTUnwrap(queue.makeCommandBuffer())
+        let graded = try readback(processor.encode(pixelBuffer, intensity: 1, command: gradedCommand), command: gradedCommand)
+        gradedCommand.commit(); gradedCommand.waitUntilCompleted()
+        XCTAssertEqual(gradedCommand.status, .completed)
+        let a = neutral.contents().assumingMemoryBound(to: UInt8.self), b = graded.contents().assumingMemoryBound(to: UInt8.self)
+        XCTAssertGreaterThan(abs(Int(a[0]) - Int(b[0])), 30)
+        for y in 0..<4 { for x in 0..<4 { for c in 0..<3 {
+            let i = y * 256 + x * 4 + c
+            XCTAssertEqual(Double(b[i]), 255 - Double(a[i]), accuracy: 2)
+        } } }
+        let live = try LiveLUTPreview(lut: lut) { _, _ in }
+        live.setLook(lut, intensity: 0.6, grain: .init(amount: 0.2, seed: 8), effects: .init(vignette: 0.3))
+        XCTAssertEqual(live.lookSettings.intensity, 0.6)
+        XCTAssertEqual(live.lookSettings.grain.seed, 8); XCTAssertEqual(live.lookSettings.finish.vignette, 0.3)
+        live.setIntensity(0)
+        XCTAssertEqual(live.lookSettings.grain.amount, 0); XCTAssertFalse(live.lookSettings.finish.enabled)
+    }
     private func buffer(transfer: CFString = kCVImageBufferTransferFunction_ITU_R_709_2, tagged: Bool = true, format: OSType = kCVPixelFormatType_420YpCbCr8BiPlanarFullRange) throws -> CVPixelBuffer {
         var result: CVPixelBuffer?
         let attributes: [CFString: Any] = [kCVPixelBufferMetalCompatibilityKey: true, kCVPixelBufferIOSurfacePropertiesKey: [:]]

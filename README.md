@@ -2,6 +2,8 @@
 
 # PhotoP
 
+2026-10-23 최신 요청 반영: [뷰파인더 실시간 LUT·강도/입자/마감·원본 비교](docs/23-LIVE-VIEWFINDER-LOOK.ko.md). 룩 선택 시 실시간 프리뷰가 켜지며 저장 원본은 보존한다. 카드별 예시 미리보기는 계속 끈다. 아래 과거 기록의 “카메라 프리뷰 무보정/촬영 결과 전용” 설명보다 이 동작을 우선한다. iOS SDK/실기기 검증은 대기다.
+
 2026-10-23 LUT 적용 점검·수정: [적용 누락 원인·즐겨찾기 v2·편집 복원·추가 개발 보고](docs/22-LUT-APPLICATION-AND-NEXT-STEPS.ko.md). 선택 사진에 대응하는 원본과 촬영 당시 룩을 편집기에 전달하고, 즐겨찾기에 강도·입자·공간 효과를 함께 저장한다. 원본/효과 결과/실패/강도0/작은 색상 변화/RAW·영상 미적용을 구분한다. 카메라 미리보기는 계속 무보정이다.
 
 2026-10-23 고해상도·외부 LUT 변경안: [64MP 타일 LUT/심도 처리·사용 권한 확인 반영](docs/21-HIGH-RESOLUTION-LUT-DEPTH.ko.md). 24/48MP를 축소하지 않는 촬영 결과·편집기 내보내기를 연결했다. 외부25개는 프로젝트 소유자의 사용·상업 사용·재배포 가능 확인을 기록했다(독립 법률 검증이나 제조사 공식 인증 아님). 기술 LUT 1개는 색 출력 프로파일 미확인으로 원본 제공만 유지한다. 이번 iOS SDK/Metal·실기기 검증은 대기다.
@@ -73,7 +75,7 @@ Grain has an independent 0–100% amount and deterministic seed, stored in versi
 
 ## Capture-only LUT selection and favorites
 
-Open **룩** on the camera screen, select a preinstalled look, import a confirmed-sRGB `.cube` or load a saved favorite. There is no graded live preview or scene-thumbnail rendering. The selected LUT/strength/grain/finish is applied only after capture to a separate SDR JPEG (up to 64MP); original bytes are preserved separately. Photos export includes originals and successful derivatives. RAW/video remain ungraded; long-exposure results can use the selected look. Failures preserve the received original and report an error.
+Open **룩** on the camera screen, select a preinstalled look, import a confirmed-sRGB `.cube` or load a saved favorite. The viewfinder shows the selected LUT/strength/grain/finish live; scene-thumbnail/card previews remain disabled. Use **원본 프리뷰와 비교** for a neutral display without changing saved look settings. Capture creates a separate SDR JPEG (up to 64MP) while preserving original bytes. Photos export includes originals and successful derivatives. Stored RAW/video remain ungraded; their viewfinder may show the selected look if the device supports the analysis output. Long-exposure processing pauses live analysis and restores the look after completion. Failures preserve originals and report an error.
 
 The camera explicitly negotiates an sRGB SDR BGRA stream for analysis and long exposure. RGB input does not require a YCbCr matrix; any declared BT.709 transfer is converted to sRGB. Tagged NV12 remains supported by the processor, but untagged YUV, HDR/Log and conflicting primaries are rejected. Previous device colour/HDR configuration is restored when leaving the photo analysis stream. Portrait and both landscape orientations use the supported rotation/mirroring APIs.
 

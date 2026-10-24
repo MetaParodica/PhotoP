@@ -16,13 +16,21 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     let frameQueue = DispatchQueue(label: "com.photop.live-lut", qos: .userInteractive)
     private let commandQueue: MTLCommandQueue
     private var composition: CompositionAnalyzer!
-    private let processor: LivePreviewImageProcessor
+    private var processor: LivePreviewImageProcessor
+    // Processor is encoded only on frameQueue. A completion retains the exact
+    // immutable frame owner until its GPU/readback work has finished.
+    private struct FrameOwner: @unchecked Sendable { let processor: LivePreviewImageProcessor }
+    private var lookGeneration = PreviewLookGeneration()
+    private var pendingLUT: (version: UInt64, lut: CubeLUT)?
     private let display: MetalPreviewDisplay
     private let lock = NSLock()
     private var state = PreviewFrameState()
     private weak var layer: CAMetalLayer?
     private var imageSize: CGSize?
     var sourceImageSize: CGSize? { lock.withLock { imageSize } }
+    var lookSettings: ProcessingLookSettings {
+        lock.withLock { ProcessingLookSettings(intensity: intensity, grain: grain, finish: effects) }
+    }
     private var intensity = 1.0
     private var grain = GrainSettings()
     private var effects = FilmFinishSettings()
@@ -96,6 +104,40 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         guard (try? finishing.validate()) != nil else { return }
         lock.withLock { intensity = value; grain = settings; effects = finishing }
     }
+    func setLook(_ lut: CubeLUT, intensity value: Double, grain settings: GrainSettings, effects finishing: FilmFinishSettings) {
+        guard value.isFinite, (0...1).contains(value), (try? settings.validate()) != nil, (try? finishing.validate()) != nil else { return }
+        let event = lock.withLock { () -> Event in
+            pendingLUT = (lookGeneration.request(), lut)
+            intensity = value; grain = settings; effects = finishing
+            state.invalidate(); announcedGeneration = nil
+            return makeEvent(.waiting)
+        }
+        onEvent(id, event)
+    }
+
+    // Replace only GPU processing, not AVCaptureSession/device controls. Latest
+    // request wins; no unbounded queue of complete LUT tables or preview frames.
+    private func applyPendingLook() {
+        let request = lock.withLock { () -> (version: UInt64, lut: CubeLUT)? in
+            guard state.running else { return nil }
+            defer { pendingLUT = nil }
+            return pendingLUT
+        }
+        guard let request else { return }
+        do {
+            let next = try LivePreviewImageProcessor(lut: request.lut, device: device)
+            lock.withLock {
+                guard lookGeneration.install(request.version) else { return }
+                processor = next
+            }
+        } catch {
+            let event: Event? = lock.withLock {
+                guard lookGeneration.requested == request.version else { return nil }
+                state.setRunning(false); return makeEvent(.failed(error.localizedDescription))
+            }
+            if let event { onEvent(id, event) }
+        }
+    }
 
     func setMonitoring(_ settings: MonitoringSettings) {
         guard (try? settings.validate()) != nil else { return }
@@ -111,6 +153,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         let now = ProcessInfo.processInfo.systemUptime
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
+        applyPendingLook()
         if lock.withLock({ samplesWanted }), now - lastSampleTime >= 1 {
             let generation = lock.withLock { state.generation }
             lastSampleTime = now
@@ -138,7 +181,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     // The capture delegate calls this only on frameQueue.
     private func render(_ buffer: CVPixelBuffer, budget: PreviewBudget) {
         let request: (CAMetalLayer, PreviewFrameState.Ticket, Double, GrainSettings, FilmFinishSettings, MonitoringSettings, Bool)? = lock.withLock {
-            guard let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
+            guard lookGeneration.ready, let layer, layer.drawableSize.width > 0, layer.drawableSize.height > 0,
                   let ticket = state.begin() else { return nil }
             imageSize = CGSize(width: CGFloat(CVPixelBufferGetWidth(buffer)), height: CGFloat(CVPixelBufferGetHeight(buffer)))
             var sampleSettings = monitoring
@@ -149,18 +192,19 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         }
         guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings, fill) = request else { return }
         var submitted = false
+        let owner = FrameOwner(processor: processor)
         defer { if !submitted { _ = lock.withLock { state.complete(ticket) } } }
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
-                let image = try processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command)
+                let image = try owner.processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command)
                 try display.encode(image: image, destination: drawable.texture, command: command, fill: fill)
                 command.present(drawable)
-                command.addCompletedHandler { [self, buffer] completed in
+                command.addCompletedHandler { [self, buffer, owner] completed in
                     // Retain the capture buffer until all CI and Metal reads finish.
                     withExtendedLifetime(buffer) {}
                     // Copy only 1 KiB of histogram counts before freeing this frame's resources.
-                    let histogram = completed.status == .completed && monitorSettings.histogram ? processor.histogram() : nil
+                    let histogram = completed.status == .completed && monitorSettings.histogram ? owner.processor.histogram() : nil
                     let event: Event? = lock.withLock {
                         guard state.complete(ticket) else { return nil }
                         if completed.status != .completed {
