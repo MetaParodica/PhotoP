@@ -87,7 +87,11 @@ final class CameraModel: ObservableObject {
     @Published var longMode = false
     @Published private(set) var depthEnabled = false
     @Published var depthAperture = 2.8
+    @Published var depthSource: SoftwareDepthSource = .automatic
+    @Published var meteringScope: MeteringScope = .both
+    @Published var focusMagnification = 1.0
     @Published private(set) var latestRendered: URL?
+    @Published private(set) var latestDepthResult: URL?
     @Published private(set) var latestRenderedSeries: [URL] = []
     @Published private(set) var latestCaptureLook: ImportedLUT?
     @Published private(set) var latestRenderErrors: [URL: String] = [:]
@@ -153,7 +157,7 @@ final class CameraModel: ObservableObject {
     }
     var depthModeAllowed: Bool {
         CaptureWorkflowPolicy.depthAllowed(pro: proMode, long: longMode, video: snapshot.video.isVideoMode,
-                                          raw: rawMode != .processed, bracket: bracketEnabled)
+                                          raw: rawMode != .processed, bracket: bracketEnabled, tracking: settings.focus.subjectTracking)
     }
     var rawUnavailableReason: String? {
         RawCapturePolicy.unavailableReason(mode: rawMode, available: snapshot.capabilities?.rawModes ?? [.processed],
@@ -170,12 +174,20 @@ final class CameraModel: ObservableObject {
         else { return "브래킷은 지원 렌즈의 일반 사진·AUTO 노출에서 제공합니다. 촬영 동안 분석을 일시 중지합니다. EV와 간격은 장치 범위 안이어야 합니다." }
         return nil
     }
-    var canCapture: Bool { !snapshot.video.isVideoMode && (!depthEnabled || depthModeAllowed && snapshot.capabilities?.depthDeliveryEnabled == true) && bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !switchingMode && !applyingSettings && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+    var canCapture: Bool { !snapshot.video.isVideoMode && (!depthEnabled || depthModeAllowed && (depthSource != .measured || snapshot.capabilities?.depthDeliveryEnabled == true)) && bracketUnavailableReason == nil && rawUnavailableReason == nil && snapshot.state == .running && !busy && !switchingMode && !applyingSettings && !snapshot.isApplyingSettings && (snapshot.capabilities?.photoFormats.contains(photoFormat) == true) }
+
+    var focusPhase: FocusPhase {
+        guard snapshot.state == .running, snapshot.readout != nil else { return settings.focus.manual ? .manual : .idle }
+        if snapshot.capabilities?.automaticFocus == false && !settings.focus.manual { return .fixed }
+        return FocusPhase.resolve(manual: settings.focus.manual, locked: snapshot.readout?.focusLocked == true,
+            adjusting: snapshot.readout?.adjustingFocus == true, tracking: snapshot.readout?.subjectTracked == true)
+    }
 
     func setActive(_ active: Bool) {
         self.active = active
         updateMotion()
         if !active {
+            focusMagnification = 1
             cancelCountdown(); liveHasFrame = false; histogram = nil; resetComposition(); sceneSample = nil
             livePreview?.setSampleDelivery(false)
             Task { await LookThumbnailRenderer.shared.clear() }
@@ -260,6 +272,11 @@ final class CameraModel: ObservableObject {
         guard !busy, !switchingMode, snapshot.state == .running, !recordingRequested else { return }
         guard !enabled || depthModeAllowed else { return }
         guard enabled != depthEnabled else { return }
+        if enabled, depthSource == .ai || (depthSource == .automatic && snapshot.capabilities?.depthAvailable != true) {
+            depthEnabled = true
+            message = "AI 상대 깊이로 촬영 후 처리합니다. Natural은 최대12.6MP이며 실제 거리 측정이 아닙니다."
+            return
+        }
         await settingsTask?.value
         guard !busy, !switchingMode, snapshot.state == .running, !enabled || depthModeAllowed else { return }
         busy = true
@@ -323,10 +340,39 @@ final class CameraModel: ObservableObject {
     func focusAndMeter(_ point: CameraMeteringPoint, lensID: String, locked: Bool = false) async {
         guard snapshot.state == .running, !busy, !applyingSettings, !snapshot.isApplyingSettings else { return }
         do {
-            let actions = try await service.focusAndMeter(at: point, lensID: lensID, locked: locked)
-            if actions.focus { settings.focus.manual = false; settings.focus.locked = locked }
+            let actions = try await service.focusAndMeter(at: point, lensID: lensID, locked: locked,
+                scope: meteringScope, drive: settings.focus.drive, area: settings.focus.area,
+                userFocusLocked: settings.focus.manual || settings.focus.locked)
+            if actions.focus {
+                settings.focus.manual = false; settings.focus.locked = locked
+                if locked { settings.focus.subjectTracking = false }
+            }
             if actions.exposure { settings.exposure.locked = locked }
             monitoringChanged()
+        } catch { report(error) }
+    }
+
+    func autofocusOn() async {
+        guard snapshot.state == .running, !busy, !applyingSettings, let lens = snapshot.selectedLens else { return }
+        do {
+            let actions = try await service.focusAndMeter(at: CameraMeteringPoint(x: 0.5, y: 0.5), lensID: lens,
+                scope: .focus, explicitAFOn: true, drive: settings.focus.drive, area: settings.focus.area)
+            guard actions.focus else { throw CameraError.invalidSettings }
+            settings.focus.manual = false; settings.focus.locked = false
+            focusMagnification = 1; monitoringChanged()
+        } catch { report(error) }
+    }
+
+    func reprocessLatestDepth() async {
+        guard !busy, let previous = latestDepthResult, let original = latestRenderedSources[previous] else { return }
+        busy = true; pausePhotoReview()
+        defer { busy = false }
+        do {
+            let result = try await CaptureResultProcessor.shared.reprocess(result: previous, original: original, aperture: depthAperture)
+            latestRenderedSources[result] = original; latestDepthResult = result; latestRendered = result
+            latestRenderedSeries = [result]; savedToPhotos = false
+            latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(result, maxPixel: 240) }.value
+            try await PhotoStore.addToPhotos([result]); savedToPhotos = true
         } catch { report(error) }
     }
 
@@ -765,7 +811,7 @@ final class CameraModel: ObservableObject {
             latestCaptureLook = restoreLook; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
             reviewReferences = [:]; reviewReferences[url] = reference
             recordCoachPreference()
-            latestRendered = nil; latestRenderedSeries = []
+            latestRendered = nil; latestRenderedSeries = []; latestDepthResult = nil
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(url, maxPixel: 240) }.value
             message = "SDR 합성 결과와 재처리 프레임을 저장했습니다."
             await renderCaptureResults([url], look: restoreLook, aperture: nil, focus: CGPoint(x: 0.5, y: 0.5))
@@ -914,6 +960,7 @@ final class CameraModel: ObservableObject {
         var capturedReviewURL: URL?
         let look = rawMode == .processed ? liveLookForRestoration : nil
         let aperture = depthEnabled ? depthAperture : nil
+        let capturedDepthSource = depthSource
         let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
         let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
         busy = true
@@ -926,7 +973,8 @@ final class CameraModel: ObservableObject {
         }
         do {
             let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil,
-                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash, depth: aperture != nil)
+                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash,
+                depth: aperture != nil && snapshot.capabilities?.depthDeliveryEnabled == true)
             latestPhotoResolution = series.photos.first?.pixelDimensions
             let urls = try await CaptureSeriesStore.preserve(series)
             latestOriginals = urls
@@ -940,20 +988,25 @@ final class CameraModel: ObservableObject {
             let center = urls[urls.count / 2]
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
-            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus)
+            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource)
             try await PhotoStore.addToPhotos(urls + latestRenderedSeries)
             savedToPhotos = true
             message = "원본 \(urls.count)장과 사진 보관함에 저장했습니다."
         } catch { report(error) }
     }
 
-    private func renderCaptureResults(_ urls: [URL], look: ImportedLUT?, aperture: Double?, focus: CGPoint) async {
+    private func renderCaptureResults(_ urls: [URL], look: ImportedLUT?, aperture: Double?, focus: CGPoint,
+                                      depthSource: SoftwareDepthSource = .measured) async {
         guard look != nil || aperture != nil else { return }
         for (index, url) in urls.enumerated() {
             do {
-                let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus)
+                let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus,
+                    depthSource: depthSource)
                 latestRenderedSeries.append(rendered)
                 latestRenderedSources[rendered] = url
+                if aperture != nil, FileManager.default.fileExists(atPath: rendered.deletingLastPathComponent().appendingPathComponent("depth.f32").path) {
+                    latestDepthResult = rendered
+                }
                 reviewReferences[rendered] = reviewReferences[url]
                 if index == urls.count / 2 {
                     latestRendered = rendered

@@ -2,6 +2,28 @@ import XCTest
 @testable import PhotoP
 
 final class PointMeteringTests: XCTestCase {
+    func testAutoISORequiresNativeSupportAndManualDuration() throws {
+        var caps = CameraCapabilities(lensID: "fixture", iso: 32...1600, shutterSeconds: 0.0001...1,
+            exposureBias: -2...2, manualExposure: true, manualFocus: true, manualWhiteBalance: true)
+        var settings = CameraSettings(); settings.exposure.manual = true; settings.exposure.autoISO = true
+        XCTAssertThrowsError(try CameraSettingsValidator.validate(settings, for: caps))
+        caps.exposurePriority = true
+        try CameraSettingsValidator.validate(settings, for: caps)
+        settings.exposure.manual = false
+        XCTAssertThrowsError(try CameraSettingsValidator.validate(settings, for: caps))
+    }
+    func testNativeTrackingCannotConflictWithManualOrSingleAF() throws {
+        var caps = CameraCapabilities(lensID: "fixture", iso: 32...1600, shutterSeconds: 0.0001...1,
+            exposureBias: -2...2, manualExposure: true, manualFocus: true, manualWhiteBalance: true)
+        var settings = CameraSettings(); settings.focus.subjectTracking = true
+        XCTAssertThrowsError(try CameraSettingsValidator.validate(settings, for: caps))
+        caps.nativeSubjectTracking = true
+        try CameraSettingsValidator.validate(settings, for: caps)
+        settings.focus.manual = true
+        XCTAssertThrowsError(try CameraSettingsValidator.validate(settings, for: caps))
+        settings.focus.manual = false; settings.focus.drive = .single; caps.singleAutoFocus = true
+        XCTAssertThrowsError(try CameraSettingsValidator.validate(settings, for: caps))
+    }
     func testNormalizedPointAcceptsEdgesAndRejectsOutsideOrNonFinite() throws {
         _ = try CameraMeteringPoint(x: 0, y: 1)
         _ = try CameraMeteringPoint(x: 1, y: 0)

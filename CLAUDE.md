@@ -33,7 +33,11 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 - 외부 LUT/자산은 출처·hash·license·profile을 manifest에 기록한다(`assets/*/manifest.json`, `scripts/check_*`). 외부 소스 코드는 복사하지 않고 검토 후 독립 구현한다.
 - UI 문자열·문서는 한국어. 문서는 `docs/NN-*.ko.md`, 단계별 검증 기록은 `docs/08-STEP-VALIDATION.ko.md`에 커밋·CI 실행 번호와 함께 추가한다. 실기기에서 검증하지 않은 항목을 완료로 표기하지 않는다.
 
-## 현재 상태 (2026-10)
+## 현재 상태 (2026-11)
+
+- 2026-11-16 외부 모델·AF/심도1차 구현은 `docs/27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md`를 우선한다. `assets/depth-model`에 Apple Core ML Depth Anything V2 Small FP16을 고정 revision/Apache2 LICENSE·NOTICE·hash로 포함한다. `scripts/check_depth_model.py`를 실행한다. 센서 우선/AI 상대 깊이·최대12.6MP Natural disk layers·깊이 f32/recipe v2 저장과 f값 재처리, AF-S/C·독립 터치·AF-ON·MF 하단 확대를 추가했다. SDK26/27 조건부 어댑터는 availability+포맷 지원 검사도 요구한다. iOS27 native metadata/Auto ISO·iOS26 rect 분기는 SDK/실기기 미검증이다. 기존64MP LUT/고해상도 센서 기본 심도는 유지하며 새 Natural의 실시간 프리뷰·눈 AF·전체 DSLR 로드맵 완료를 주장하지 않는다. portable97/Python23·Swift142 구문 검사와 iOS SDK/CI/기기 품질 결과를 혼동하지 않는다.
+
+- 2026-11-16 추가 조사·계획은 `docs/24-SOFTWARE-DEPTH-DEVELOPMENT-PLAN.ko.md`, `docs/25-AF-DSLR-FEATURE-RESEARCH.ko.md`, `docs/26-IOS17-27-CAPABILITY-RESEARCH.ko.md`를 참조한다. 원격 main `dc75be6` 기준으로 Leica·Apple·Sony·Nikon 공식 문서 및 일부 공개 소스를 직접 검토하고 조회 hash를 `docs/research/2026-11-16-official-camera-sources.json`에 기록했다. iOS27 native tracking·auto exposure sentinel,26 rect/cinematic 제약을 구분한다. 이는 문서 변경일 뿐 새 AF/심도 기능이나27 SDK·실기기 검증이 완료된 것이 아니다. 앱 최소 배포17은 유지한다.
 
 - 최신 사용자 요청은 LUT 적용 상태를 뷰파인더에 보여 주는 것이다. `docs/23-LIVE-VIEWFINDER-LOOK.ko.md`를 우선한다. 룩 선택은 live output 수요에 포함하고, 현재 LUT와 강도/입자/마감을 실제 Metal 프리뷰에 전달한다. LUT 교체는 기존 출력의 frameQueue에서 최신 요청 하나만 설치하며 이전 GPU 작업은 해당 processor를 완료까지 보유한다. AI·노출 측정은 무보정 입력 유지, 원본 비교는 표시만 변경, 저장 RAW/영상은 무보정이다. 아래 과거 촬영 결과 전용/프리뷰 무보정 설명은 이전 요청 당시 기록이다. 카드별 예시 프리뷰는 다시 켜지 않는다. SDK/실기기 검증 대기.
 

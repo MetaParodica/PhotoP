@@ -37,8 +37,10 @@ enum CaptureWorkflowPolicy {
         guard seconds.isFinite, (1...300).contains(seconds) else { return "—" }
         return String(format: "%g s", seconds)
     }
-    static func depthAllowed(pro: Bool, long: Bool, video: Bool, raw: Bool, bracket: Bool) -> Bool {
-        pro && !long && !video && !raw && !bracket
+    static func depthAllowed(pro: Bool, long: Bool, video: Bool, raw: Bool, bracket: Bool, tracking: Bool = false) -> Bool {
+        // Until tracked metadata is aligned to photo depth, do not use an old
+        // touch coordinate as the focus plane of a moving native AF target.
+        pro && !long && !video && !raw && !bracket && !tracking
     }
 }
 

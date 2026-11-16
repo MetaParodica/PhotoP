@@ -295,3 +295,18 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - AI·노출 측정 입력은 무보정, 일반 사진 원본/별도64MP 결과는 보존한다. f값 심도 프리뷰·카드 예시·영상 LUT 굽기는 추가하지 않는다. RAW/브래킷/LONG 복구, 지원 VIDEO 모니터링과 저장 원본의 차이를 명시했다.
 - portable Swift82·Python19·자산5+25 검사·Swift135 구문/diff 검사 통과. iOS 실제 LUT texture/설정 및 모델 비교/분석 끄기 검사2개 추가, 미실행. SDK/Metal·실기기 화면/색/FPS·새 CI는 미확인이다. 후속 사용자 요청에 따라 `codex/live-viewfinder-lut`에 커밋·푸시 후 main에 fast-forward 병합한다. 최종 반영 hash와 원격 상태는 대화의 Git 확인 결과를 참조한다.
 
+## 40. 공식 자료 기반 심도·AF·DSLR 계획과 iOS27 범위 조사
+
+- 2026-11-16 KST. GitHub HTTPS 원격 조회·fetch 성공, 원격/로컬 main `dc75be6f6a8cc656976b030d64fd9f595c3991f4` 일치 확인. 작업 시작 시 clean. 네트워크 활성화 후 Apple·Leica 공식 URL HTTP200 및 공식 본문을 확인했다.
+- [24 심도 개발 계획](24-SOFTWARE-DEPTH-DEVELOPMENT-PLAN.ko.md), [25 AF·DSLR 조사](25-AF-DSLR-FEATURE-RESEARCH.ko.md), [26 iOS17~27 지원·제약](26-IOS17-27-CAPABILITY-RESEARCH.ko.md)을 저장했다. native27 tracking의 metadata 구독·시네마틱 상호 배제, 시스템 auto exposure sentinel·지원 조합,26 rect·시네마틱 녹화 중 f값 변경 금지를 공식 문서로 구분했다.
+- [출처 장부](research/2026-11-16-official-camera-sources.json)에 Apple 문서53건(27 도입 표시26건), 제조사 공식 웹9건, 커밋 고정 공개 저장소 파일8건, 합계70건의 URL/수신 본문 SHA-256을 기록했다. 튜토리얼 JS 셸처럼 본문 미확인인 항목은 별도 표시했다. 모든 hash를 실제 내려받은 파일과 대조하고 JSON·중복 URL·문서 상대 링크 검사 및 diff 검사에 오류가 없었다.
+- 문서만 변경했다. 앱 소스·테스트·프로젝트/의존성·모델 가중치는 변경하지 않았으며 Swift/Python 실행 테스트를 새로 돌리지 않았다. iOS27 문서 확인은 출시/SDK 설치/실제 지원 기기 확인이나 기능 구현·경쟁 앱 실측을 의미하지 않는다. Xcode/iOS SDK·실기기 검증은 미수행이다. 이번 보고서 변경은 미커밋·미푸시다.
+
+## 41. 외부 모델 확정·Natural 정지 심도·AF 기본 제어 1차 구현
+
+- 2026-11-16 KST, 기준 main `dc75be6`. [27 구현/제약 보고서](27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md)를 우선한다. Apple Core ML Depth Anything V2 Small FP16 revision `cfef6f6f2a70783dedc0bfae40cecbc2052285d3`의 실제 패키지 약49.8MB·Apache2 LICENSE/NOTICE·manifest/hash를 추가했다. protobuf로 RGB518×392 입력·FP16 grayscale 출력·내장 정규화를 확인했다. 세로 사진은 aspect-fit/edge-pad와 출력 ROI crop을 사용한다. Linux에서 Core ML 추론을 실행한 것은 아니다.
+- AF-C/S·독립 터치 AF/AE·명시적 AF-ON·MF 하단 확대·잠금 보호,26 실제 AF rect 및27 native tracking metadata/Auto ISO 조건부 어댑터를 추가했다. 새 Natural은 센서 우선/AI 대체, signed CoC·원판 깊이 레이어·로컬 배경 확장·초점면 뒤 전경 합성이다. 최대12.6MP이며 자동 축소하지 않는다. 원본·이전 결과를 보존하고 깊이 f32/recipe v2·hash 검사로 f값 재처리를 지원한다. 기존64MP LUT/센서 기본 심도는 유지한다.
+- portable Swift97(기존82+정책15)·Python23(기존19+모델4)·LUT5+25/모델3파일·권리 기록 무결성 검사, Swift142 구문 검사(SDK26/27 조건부 소스 포함), YAML/diff 검사 통과. 새 iOS 통합/모델/장치 정책 테스트7개는 작성했으나 미실행이다. 실제 ML/CI kernel·SDK 타입 검사·카메라·FPS/발열·사진 품질 검증과 구분한다.
+- CI를 공식 설치표의 macos-26/Xcode26.6 기본으로 변경하고27 수동 선택은 실제 설치가 없으면 실패하도록 했다. 모델 컴파일/번들 고지를 검사한다. 미푸시라 새 CI 결과는 없다. iOS27 문서/API 존재를 이번 코드의 컴파일/실기기 성공으로 인용하지 않는다.
+- 눈 AF·범용 대상 재획득·정밀 머리카락 색 복원·실시간 심도·48MP Natural·전체 DSLR 조사 목록은 완료가 아니다. 이 변경은 미커밋·미푸시다.
+

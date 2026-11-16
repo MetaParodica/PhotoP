@@ -1,0 +1,166 @@
+@preconcurrency import AVFoundation
+@preconcurrency import CoreImage
+import CoreVideo
+import ImageIO
+import Foundation
+
+struct NaturalDepthResult {
+    let image: CIImage
+    let field: SoftwareDepthField
+    let focusInverse: Float
+    let source: String
+    let matteUsed: Bool
+}
+
+// Initial Natural renderer: bounded inverse-depth layers, disk PSF, far-to-near
+// premultiplied compositing, local background extension, original focus plane.
+// This is an approximation, not a measured commercial-lens PSF or hidden-scene GT.
+// Owned only by the high-resolution processing actor.
+final class NaturalDepthEngine {
+    private let estimator = ExternalDepthEstimator()
+    private var sliceKernel: CIColorKernel?
+    private var backgroundKernel: CIColorKernel?
+    private var planeKernel: CIColorKernel?
+
+    func render(original: URL, color: CIImage, width: Int, height: Int, aperture: Double,
+                focus: CGPoint, source: SoftwareDepthSource, override: SoftwareDepthField? = nil) throws -> NaturalDepthResult {
+        guard SoftwareDepthPolicy.supports(width: width, height: height),
+              aperture.isFinite, (1.4...16).contains(aperture) else {
+            throw ImageEditingError.invalid("Natural 심도는 최대12.6MP 일반 사진에서 지원합니다. 해상도를 낮춰 다시 촬영하세요. 원본은 보존됩니다.")
+        }
+        try Task.checkCancellation()
+        let measured = source == .ai || override != nil ? nil : try Self.measured(original)
+        let field: SoftwareDepthField
+        let origin: String
+        if let override { field = override; origin = "saved-depth" }
+        else if let measured { field = measured; origin = "photo-depth" }
+        else {
+            guard source != .measured else {
+                throw ImageEditingError.invalid("사진 깊이 데이터가 없습니다. AI 대체를 선택하거나 원본을 사용하세요.")
+            }
+            field = try estimator.estimate(color); origin = SoftwareDepthPolicy.modelID
+        }
+        if origin == "photo-depth", abs((Double(field.width) / Double(field.height)) / (Double(width) / Double(height)) - 1) >= 0.02 {
+            throw ImageEditingError.invalid("사진과 센서 깊이 좌표 비율이 다릅니다. 원본은 보존됩니다.")
+        }
+        guard let focusValue = field.focusValue(x: Double(focus.x), y: Double(focus.y)), let bounds = field.bounds else {
+            throw ImageEditingError.invalid("초점 위치 또는 깊이 대비가 불확실합니다. 다른 위치를 선택하세요. 원본은 보존됩니다.")
+        }
+        let span = bounds.upper - bounds.lower
+        let normalized = field.inverseDepth.map { $0 > 0 ? UInt8((min(1, max(0, ($0 - bounds.lower) / span)) * 255).rounded()) : 0 }
+        let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }
+        let extent = color.extent
+        let map = try Self.mask(normalized, width: field.width, height: field.height, extent: extent)
+        let valid = try Self.mask(validity, width: field.width, height: field.height, extent: extent)
+        let focusNormalized = Double(min(1, max(0, (focusValue - bounds.lower) / span)))
+        let slice = try Self.kernel(&sliceKernel, source: """
+        kernel vec4 photopDepthSlice(__sample c, __sample d, __sample valid, float lo, float center, float hi) {
+            float w = d.r <= center ? (d.r-lo)/max(0.00001,center-lo) : (hi-d.r)/max(0.00001,hi-center);
+            return c * clamp(w,0.0,1.0) * valid.r;
+        }
+        """)
+        let fill = try Self.kernel(&backgroundKernel, source: """
+        kernel vec4 photopDepthFill(__sample c, __sample fallback) {
+            return c.a > 0.01 ? vec4(c.rgb/c.a,1.0) : fallback;
+        }
+        """)
+        let plane = try Self.kernel(&planeKernel, source: """
+        kernel vec4 photopFocusPlane(__sample d, __sample valid, float focus) {
+            float w = (1.0-smoothstep(0.008,0.035,abs(d.r-focus))) * valid.r;
+            return vec4(w,w,w,1.0);
+        }
+        """)
+        var centers = (0...16).map { Double($0) / 16 }
+        centers.append(focusNormalized)
+        centers.sort()
+        centers = centers.enumerated().filter { $0.offset == 0 || $0.element - centers[$0.offset - 1] > 0.0001 }.map(\.element)
+        // The fill only estimates occluded background; never claim it recovers
+        // unseen detail. Foreground layers subsequently overwrite it by depth.
+        var result = color.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 24]).cropped(to: extent)
+        var foreground = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
+        for i in centers.indices {
+            try Task.checkCancellation()
+            let center = centers[i], lo = i == 0 ? -0.0625 : centers[i - 1], hi = i == centers.count - 1 ? 1.0625 : centers[i + 1]
+            let inverse = Double(bounds.lower) + center * Double(span)
+            guard let signedRadius = SoftwareDepthPolicy.radius(inverse: inverse, focus: Double(focusValue), span: Double(span),
+                absolute: field.units == .inverseMetres, aperture: aperture, longEdge: max(width, height)),
+                  var layer = slice.apply(extent: extent, arguments: [color, map, valid, lo, center, hi]) else { throw CameraError.configuration }
+            let radius = abs(signedRadius)
+            if radius > 0.3 { layer = layer.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: radius]).cropped(to: extent) }
+            if i == 0 {
+                // Extend only background samples into the occluded boundary.
+                // Keep known sharp background intact; filling must not simply
+                // blur foreground colors into the newly revealed background.
+                let extended = layer.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 48]).cropped(to: extent)
+                guard let localFill = fill.apply(extent: extent, arguments: [extended, result]),
+                      let background = fill.apply(extent: extent, arguments: [layer, localFill]) else { throw CameraError.configuration }
+                result = background
+            } else if signedRadius < -0.3 {
+                foreground = layer.composited(over: foreground)
+            } else { result = layer.composited(over: result) }
+        }
+        guard var sharp = plane.apply(extent: extent, arguments: [map, valid, focusNormalized]) else { throw CameraError.configuration }
+        // An embedded portrait matte is a boundary aid, not metric depth. Use
+        // only around the focal plane rather than flattening the entire person.
+        var matteUsed = false
+        if let matte = try Self.portraitMatte(original, extent: extent) {
+            sharp = sharp.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: matte])
+            matteUsed = true
+        }
+        result = color.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: result, kCIInputMaskImageKey: sharp])
+        // Foreground bokeh must spread over a sharp background. Restoring the
+        // focus plane AFTER this step would erase that physically important spill.
+        result = foreground.composited(over: result)
+        result = result.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: color, kCIInputMaskImageKey: valid]).cropped(to: extent)
+        return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: origin, matteUsed: matteUsed)
+    }
+
+    private static func kernel(_ cache: inout CIColorKernel?, source: String) throws -> CIColorKernel {
+        if let cache { return cache }
+        guard let value = CIColorKernel(source: source) else { throw CameraError.configuration }
+        cache = value; return value
+    }
+
+    private static func mask(_ bytes: [UInt8], width: Int, height: Int, extent: CGRect) throws -> CIImage {
+        guard let provider = CGDataProvider(data: Data(bytes) as CFData),
+              let cg = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width,
+                space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
+                provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent) else { throw CameraError.invalidPhotoData }
+        // Depth/matte values are data, not display gray: no gamma conversion.
+        return CIImage(cgImage: cg, options: [.colorSpace: NSNull()])
+            .transformed(by: CGAffineTransform(scaleX: extent.width / CGFloat(width), y: extent.height / CGFloat(height)))
+    }
+
+    private static func portraitMatte(_ url: URL, extent: CGRect) throws -> CIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let info = CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, kCGImageAuxiliaryDataTypePortraitEffectsMatte) as? [AnyHashable: Any] else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let orientation = CGImagePropertyOrientation(rawValue: (properties?[kCGImagePropertyOrientation] as? UInt32) ?? 1) ?? .up
+        let matte = try AVPortraitEffectsMatte(fromDictionaryRepresentation: info).applyingExifOrientation(orientation)
+        let image = CIImage(cvPixelBuffer: matte.mattingImage, options: [.colorSpace: NSNull()])
+        return image.transformed(by: CGAffineTransform(scaleX: extent.width / image.extent.width, y: extent.height / image.extent.height))
+    }
+
+    private static func measured(_ url: URL) throws -> SoftwareDepthField? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let dictionary = (CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, kCGImageAuxiliaryDataTypeDepth)
+                ?? CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, kCGImageAuxiliaryDataTypeDisparity)) as? [AnyHashable: Any] else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let orientation = CGImagePropertyOrientation(rawValue: (properties?[kCGImagePropertyOrientation] as? UInt32) ?? 1) ?? .up
+        let data = try AVDepthData(fromDictionaryRepresentation: dictionary).applyingExifOrientation(orientation)
+            .converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
+        let buffer = data.depthDataMap, w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
+        guard w >= 3, h >= 3, w <= 4096, h <= 4096, w * h <= 2_097_152,
+              CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { throw CameraError.invalidPhotoData }
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        let stride = CVPixelBufferGetBytesPerRow(buffer)
+        guard stride >= w * 4, let base = CVPixelBufferGetBaseAddress(buffer) else { throw CameraError.invalidPhotoData }
+        var values = [Float](repeating: 0, count: w * h)
+        for y in 0..<h {
+            let row = base.advanced(by: y * stride).assumingMemoryBound(to: Float.self)
+            for x in 0..<w { let z = row[x]; values[y * w + x] = z.isFinite && z > 0 ? 1 / z : 0 }
+        }
+        return SoftwareDepthField(width: w, height: h, inverseDepth: values,
+                                  units: data.depthDataAccuracy == .absolute ? .inverseMetres : .relativeInverse)
+    }
+}

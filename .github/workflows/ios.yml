@@ -4,14 +4,34 @@ on:
     branches: [main, 'codex/**', 'claude/**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      xcode:
+        description: 'Installed Xcode to validate (27 requires a runner image that contains Xcode 27)'
+        type: choice
+        options: ['26.6', '27']
+        default: '26.6'
 permissions:
   contents: read
 jobs:
   ios:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
+      - name: Select and report SDK (never infer support from documentation alone)
+        env:
+          REQUESTED_XCODE: ${{ inputs.xcode || '26.6' }}
+        run: |
+          developer_dir="/Applications/Xcode_${REQUESTED_XCODE}.app/Contents/Developer"
+          if [ ! -d "$developer_dir" ]; then
+            echo "::error::Requested Xcode is not installed on this runner. Choose a compatible runner; iOS27 validation has NOT passed."
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$developer_dir" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$developer_dir" xcodebuild -version
+          DEVELOPER_DIR="$developer_dir" xcrun --sdk iphoneos --show-sdk-version
+      - name: Verify pinned offline depth model
+        run: python3 scripts/check_depth_model.py
       - name: Test portable composition and capture policies
         run: swift test
       - name: Install project generator
@@ -46,6 +66,9 @@ jobs:
           python3 -m unittest discover -s scripts -p 'test_*.py' -v
           python3 scripts/check_lut_bundle.py
           python3 scripts/check_company_luts.py
+          python3 scripts/check_depth_model.py
+          test -d ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/DepthAnythingV2SmallF16.mlmodelc
+          test -f ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/legal/NOTICE.txt
           cmp assets/luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts/manifest.json
           python3 scripts/check_lut_bundle.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts
           cmp assets/company-luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts/manifest.json

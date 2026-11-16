@@ -156,7 +156,7 @@ struct CameraView: View {
             }
             if let target = model.meteringTarget {
                 VStack(spacing: 4) {
-                    if target.locked { Text(model.snapshot.readout?.focusLocked == true || model.snapshot.readout?.exposureLocked == true ? "AE/AF 잠금" : "AE/AF 고정 중").font(.caption2.weight(.semibold)) }
+                    Text(target.locked ? "요청 위치 · 잠금 상태는 하단 확인" : "요청 위치").font(.caption2.weight(.semibold))
                     Rectangle().stroke(.yellow, lineWidth: 1.5).frame(width: 64, height: 64)
                 }.foregroundStyle(.yellow).position(x: target.point.x * width, y: target.point.y * height)
                     .allowsHitTesting(false).accessibilityIdentifier("camera.focus.target")
@@ -386,7 +386,8 @@ struct CameraView: View {
     private func controlMark(_ item: CameraTool) -> String? {
         let s = model.settings
         switch item {
-        case .iso, .shutter: return s.exposure.manual ? "M" : (s.exposure.locked ? "L" : nil)
+        case .iso: return s.exposure.autoISO ? "A" : s.exposure.manual ? "M" : (s.exposure.locked ? "L" : nil)
+        case .shutter: return s.exposure.autoISO ? "S" : s.exposure.manual ? "M" : (s.exposure.locked ? "L" : nil)
         case .whiteBalance: return s.whiteBalance.manual ? "M" : (s.whiteBalance.locked ? "L" : nil)
         case .focus: return s.focus.manual ? "M" : (s.focus.locked ? "L" : nil)
         default: return nil
@@ -410,7 +411,7 @@ struct CameraView: View {
         case .shutter: return r.map { CameraControlScale.shutter($0.shutterSeconds) } ?? "SHUTTER"
         case .ev: return r.map { String(format: "%+.1f EV", $0.exposureBias) } ?? "EV"
         case .whiteBalance: return r?.kelvin.map { "\(Int($0)) K" } ?? "WB"
-        case .focus: return model.settings.focus.manual ? "MF" : "AF"
+        case .focus: return model.settings.focus.manual ? "MF" : model.settings.focus.drive.title
         case .aperture: return model.depthEnabled ? String(format: "f/%.1f", model.depthAperture) : "f/—"
         case .longExposure: return CaptureWorkflowPolicy.durationLabel(model.longConfiguration.duration)
         default: return ""

@@ -9,6 +9,9 @@ struct HighResolutionResult: Sendable {
     let height: Int
     let focusDepth: Float?
     let absoluteDepth: Bool
+    var depthField: SoftwareDepthField? = nil
+    var depthSource: String? = nil
+    var matteUsed = false
 }
 
 // File-backed full-size RGBA, with bounded CPU/GPU tile buffers. ImageIO may
@@ -76,10 +79,13 @@ private final class DiskBackedPhotoRaster {
 
 actor HighResolutionPhotoProcessor {
     static let shared = HighResolutionPhotoProcessor()
-    private let context = CIContext(options: [.cacheIntermediates: false])
+    private let context = CIContext(options: [.cacheIntermediates: false,
+        .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
+    private lazy var depthEngine = NaturalDepthEngine()
     private var rendering = false
     func renderJPEG(original: URL, destination: URL, lut: CubeLUT?, settings: ProcessingLookSettings,
-                    aperture: Double? = nil, focus: CGPoint = CGPoint(x: 0.5, y: 0.5), credit: String? = nil) async throws -> HighResolutionResult {
+                    aperture: Double? = nil, focus: CGPoint = CGPoint(x: 0.5, y: 0.5), credit: String? = nil,
+                    depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil) async throws -> HighResolutionResult {
         guard !rendering else { throw CameraError.busy }
         rendering = true; defer { rendering = false; context.clearCaches() }
         try Task.checkCancellation(); try settings.validate()
@@ -110,9 +116,19 @@ actor HighResolutionPhotoProcessor {
               let plan = HighResolutionPlan(width: width, height: height, halo: halo),
               (width == rawWidth && height == rawHeight) || (width == rawHeight && height == rawWidth) else { throw CameraError.invalidPhotoData }
         var distance: Float?, absolute = false
+        var renderedDepth: NaturalDepthResult?
         if let aperture {
-            let depth = try MeasuredDepthEffect.make(original: original, color: color, width: width, height: height, aperture: aperture, focus: focus)
-            color = depth.image; distance = depth.focus; absolute = depth.absolute
+            if !SoftwareDepthPolicy.supports(width: width, height: height), depthSource == .measured, depthOverride == nil {
+                // Preserve the pre-existing 64MP measured-depth baseline. Do not
+                // claim this variable blur is the new Natural lens renderer.
+                let depth = try MeasuredDepthEffect.make(original: original, color: color, width: width, height: height, aperture: aperture, focus: focus)
+                color = depth.image; distance = depth.focus; absolute = depth.absolute
+            } else {
+                let depth = try depthEngine.render(original: original, color: color, width: width, height: height,
+                    aperture: aperture, focus: focus, source: depthSource, override: depthOverride)
+                renderedDepth = depth; color = depth.image; absolute = depth.field.units == .inverseMetres
+                distance = absolute ? 1 / depth.focusInverse : depth.focusInverse
+            }
         }
         let renderer: MetalLUTRenderer?
         if let lut { renderer = try MetalLUTRenderer(lut: lut) } else { renderer = nil }
@@ -146,6 +162,8 @@ actor HighResolutionPhotoProcessor {
             try Task.checkCancellation()
             try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: destination.path)
         } catch { try? FileManager.default.removeItem(at: destination); throw error }
-        return HighResolutionResult(width: width, height: height, focusDepth: distance, absoluteDepth: absolute)
+        return HighResolutionResult(width: width, height: height, focusDepth: distance, absoluteDepth: absolute,
+            depthField: renderedDepth?.field, depthSource: renderedDepth?.source ?? (aperture == nil ? nil : "measured-baseline-highres"),
+            matteUsed: renderedDepth?.matteUsed ?? false)
     }
 }

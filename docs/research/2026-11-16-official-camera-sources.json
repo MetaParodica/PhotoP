@@ -1,0 +1,809 @@
+{
+  "checked_date_kst": "2026-11-16",
+  "repository": "MetaParodica/PhotoP",
+  "main_commit": "dc75be6f6a8cc656976b030d64fd9f595c3991f4",
+  "scope": "Source retrieval receipts, not SDK/runtime/benchmark verification. SHA-256 identifies fetched content, not upstream authorship. Absent beta metadata is unknown, not proof of a stable OS release.",
+  "apple": [
+    {
+      "title": "activeExposureSignals",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/activeexposuresignals",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/activeexposuresignals.json",
+      "sha256": "aeb6c1a82e6a168edb900784908125f9fbf4010640b9f5254509c9e7a76ffe34",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "autoExposureDuration",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/autoexposureduration",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/autoexposureduration.json",
+      "sha256": "be467ac62336f6b1bc2ecb1d8e85c80161565fe7cb8a0d04e83a9e22834da0d8",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "autoFocusRangeRestriction",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/autofocusrangerestriction-swift.property",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/autofocusrangerestriction-swift.property.json",
+      "sha256": "d0ffd032dd846cb74d801deaf4cb30f88e20c6a3450e9ff4b088d878c17f69bf",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "7.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "autoISO",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/autoiso",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/autoiso.json",
+      "sha256": "07c42b0633cc1eb183690373eaa3a9966e3a362d7a9c05a546cd3e8593a1c945",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "autoLensAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/autolensaperture",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/autolensaperture.json",
+      "sha256": "db683309b2021b33e077bd1f127d88f5c9c1e03edff3c001fb166d5b578dcd21",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "automaticallyAdjustsExposureDuration",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/automaticallyadjustsexposureduration",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/automaticallyadjustsexposureduration.json",
+      "sha256": "b5a3933dea93e947d75deb73a353214514efba0ab6d67b50f812eacd517329ba",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "automaticallyAdjustsISO",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/automaticallyadjustsiso",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/automaticallyadjustsiso.json",
+      "sha256": "18e5d8fc19f897faabf2ac6c556669f9c1707fb0c6f19295cb862f58ab4e5415",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "automaticallyAdjustsLensAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/automaticallyadjustslensaperture",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/automaticallyadjustslensaperture.json",
+      "sha256": "9339bc7d9ca3bbe860df6165eb059a3499627735d22e3d738f0344b8660bc482",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVCaptureDeviceExposureSignal",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceexposuresignal",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceexposuresignal.json",
+      "sha256": "635868cf8dab0d7d525e50f1f72716cedfc149f672a6402d3661ae323d42f25a",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVMetadataFocusTrackedObject",
+      "url": "https://developer.apple.com/documentation/avfoundation/avmetadatafocustrackedobject",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avmetadatafocustrackedobject.json",
+      "sha256": "ff9e687a14ff17935d40e3de7bde5110071792956b469d38b59a4a495f47a81f",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "Capturing photos with depth",
+      "url": "https://developer.apple.com/documentation/avfoundation/capturing-photos-with-depth",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/capturing-photos-with-depth.json",
+      "sha256": "3b536b30c2317434b198f9dca7f9764a2727ee327717e3eacfc0c9f71f675269",
+      "ios_platform_metadata": [],
+      "kind": "article"
+    },
+    {
+      "title": "AVCaptureDevice.CinematicVideoFocusMode",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/cinematicvideofocusmode",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/cinematicvideofocusmode.json",
+      "sha256": "96942a1a332e1a4c77ad5bab072a203ff67af41cbe40ec47a822d14e8eaadfde",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "Configuring camera capture to collect a Portrait Effects matte",
+      "url": "https://developer.apple.com/documentation/avfoundation/configuring-camera-capture-to-collect-a-portrait-effects-matte",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/configuring-camera-capture-to-collect-a-portrait-effects-matte.json",
+      "sha256": "efddcadecfb276369d131d5262b25924453bd1d73e530b068b4d180868069c09",
+      "ios_platform_metadata": [],
+      "kind": "article"
+    },
+    {
+      "title": "continuousAutoFocusTrackingLensPositionBias",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/continuousautofocustrackinglenspositionbias",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/continuousautofocustrackinglenspositionbias.json",
+      "sha256": "2e33bd27516ae206bd51aff9efbf9082294020de80f23954e8302db5ca1525b2",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVCaptureDevice",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice.json",
+      "sha256": "f7545a932f80f88cfad203cdcfa1e24552bf51fb9117dbb2c5b326377b57aa6e",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVCaptureDeviceInput",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceinput",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput.json",
+      "sha256": "f22849bcf2bbfe843cbfeb1485b4944526788bdee748e0187043bdf2cfc3fd9f",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "enabledExposureSignals",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/enabledexposuresignals",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/enabledexposuresignals.json",
+      "sha256": "75144b571602594385c0c4b359614fcbca6c9f92cbeb301596c23686fc902644",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "exposureRectOfInterest",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/exposurerectofinterest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/exposurerectofinterest.json",
+      "sha256": "49d8d3730b9d766796252c2654b1fbec1e7cb34a56152530d28d11523e114649",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "flicker",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceexposuresignal/flicker",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceexposuresignal/flicker.json",
+      "sha256": "f74f32526ef1eba80e1885818f7ca815753c7472b208d4e7422a495230c38606",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "focusPointOfInterest",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/focuspointofinterest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/focuspointofinterest.json",
+      "sha256": "667917291da501e3385901a9781a382f29d1192deb41579a7a3abe7bdae5ca54",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "focusRectOfInterest",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/focusrectofinterest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/focusrectofinterest.json",
+      "sha256": "25145326d3667647cc3825a0acce452aae93b021a33002f1fa23e404df504794",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVCaptureDevice.Format",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format.json",
+      "sha256": "b68e44f57317f88e9223dca0c174188af89047c8d70d642034853c96b83d4cd2",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "7.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "groupPhoto",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceexposuresignal/groupphoto",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceexposuresignal/groupphoto.json",
+      "sha256": "fb55c4784af425dbfaabdfba0eb502272c29bab6adb786cf956984c5405f598e",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isAdjustingFocus",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/isadjustingfocus",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/isadjustingfocus.json",
+      "sha256": "55a0e68e820e2c68ff56bdd79de4c946d9d29bfb4d2517d600a208ed11a2e8dd",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isCinematicVideoCaptureEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocaptureenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocaptureenabled.json",
+      "sha256": "c7f9438752a4d11922de4e2d910a86ec58273185cb14abbd81baa7344d34b445",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isContinuousAutoFocusTrackingEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/iscontinuousautofocustrackingenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/iscontinuousautofocustrackingenabled.json",
+      "sha256": "6b09c662c2d0aefbf371f970a70ebe864f90d177e2fdce07da57c12202e71560",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isContinuousAutoFocusTrackingSubjectAcquired",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/iscontinuousautofocustrackingsubjectacquired",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/iscontinuousautofocustrackingsubjectacquired.json",
+      "sha256": "8f510e890f2735f06f460e4b06bdb3a4dd4d9610ca5ba420b6adf76ce84fd3ca",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isContinuousAutoFocusTrackingSupported",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/iscontinuousautofocustrackingsupported",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/iscontinuousautofocustrackingsupported.json",
+      "sha256": "be38d5aebcad91272baee0de41bcdaeb5843dd78402457d5c3ab045795049fb1",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isFaceDrivenAutoFocusEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/isfacedrivenautofocusenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/isfacedrivenautofocusenabled.json",
+      "sha256": "bac8c8919e0f1f7687880cc44cf732e152f1876fd85946a8c7b468496194e3d7",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "15.4",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isFastCapturePrioritizationEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturephotooutput/isfastcaptureprioritizationenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/isfastcaptureprioritizationenabled.json",
+      "sha256": "c4567e3514d8cebdd8a41bb2609973dce76a23a71ed8aea8cf772dce5377590f",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isPrimaryConstituentDeviceSwitchingBehaviorLockedWithDeviceSupported",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/isprimaryconstituentdeviceswitchingbehaviorlockedwithdevicesupported",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/isprimaryconstituentdeviceswitchingbehaviorlockedwithdevicesupported.json",
+      "sha256": "96db9d40321fad7a99a8a7fea3f85af43fe0b262d0439c44547538be77e5a9b3",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isResponsiveCaptureEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturephotooutput/isresponsivecaptureenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/isresponsivecaptureenabled.json",
+      "sha256": "28b4db0730bebbdc2d0abf3f13cda9b79afe55ac9eba56195869f3f80b27fc42",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isSmoothAutoFocusEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/issmoothautofocusenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/issmoothautofocusenabled.json",
+      "sha256": "557460ab983a036fb79910aa144913aff030c1633e600a3ff7b3cd6174032d7a",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "7.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "isZeroShutterLagEnabled",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturephotooutput/iszeroshutterlagenabled",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/iszeroshutterlagenabled.json",
+      "sha256": "0cdffa2fa7203c5fa4718b966bda95977693733c8ef9fe6ac7660fe044e20731",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "lensPosition",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/lensposition",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/lensposition.json",
+      "sha256": "f508f34b3eec848be6f399722fcbea0c756d9fce39a10ad4b1dc05f1bbde008c",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "maxLensAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/maxlensaperture",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/maxlensaperture.json",
+      "sha256": "5fda72aa4fd0da19a3fc6cb918c0faeaff0de11897e396526d0034a6fec35f74",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "minFocusRectOfInterestSize",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/minfocusrectofinterestsize",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/minfocusrectofinterestsize.json",
+      "sha256": "ec3d972c50db01f2c1225ace4b66212ba48ab5755502a3c5fe8c2a036d48b012",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "minimumFocusDistance",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/minimumfocusdistance",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/minimumfocusdistance.json",
+      "sha256": "f8d97e8834987101480358a12daabba1e6ba2503cc9118eb13c3b1a9f412ee97",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "15.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "minLensAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/minlensaperture",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/minlensaperture.json",
+      "sha256": "34219b159b505e219455203be46fa40820fc1f45655122b7f94e84dd57a19177",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "AVCapturePhotoOutput",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturephotooutput",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput.json",
+      "sha256": "5afaab250083805a361bb57e31d012e03e6e642ffa3a791c0e84f0df3e386fcb",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "10.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "recommendedLensApertureStops",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/recommendedlensaperturestops",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/recommendedlensaperturestops.json",
+      "sha256": "577114629f79d3ed38f7c8cae31b8e8b9dac6be558c6c62e68f333e537919d53",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "setCinematicVideoTrackingFocus(at:focusMode:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/setcinematicvideotrackingfocus(at:focusmode:)",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/setcinematicvideotrackingfocus(at:focusmode:).json",
+      "sha256": "a29d85e50e059fe820fbd48fe47122c30f8a5947c8f949fdab65fc8f7e31b01d",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "setExposureModeCustom(duration:iso:completionHandler:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/setexposuremodecustom(duration:iso:completionhandler:)",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/setexposuremodecustom(duration:iso:completionhandler:).json",
+      "sha256": "623e42b038078a488214cadfa95679c25e550d2a83970ab38109e904359ff3c7",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "setExposureModeCustom(lensAperture:duration:iso:completionHandler:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/setexposuremodecustom(lensaperture:duration:iso:completionhandler:)",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/setexposuremodecustom(lensaperture:duration:iso:completionhandler:).json",
+      "sha256": "f0c015c43024fcba8a362b588a0b55fc94bd4488fd2f5a2ee2bf2c3dd6583b68",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "setPrimaryConstituentDeviceSwitchingBehaviorLockedWith(_:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/setprimaryconstituentdeviceswitchingbehaviorlockedwith(_:)",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/setprimaryconstituentdeviceswitchingbehaviorlockedwith(_:).json",
+      "sha256": "9b6df3c67899060a27df8ef1cb129c078aee6c317215d52dda199ff2545e890c",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "simulatedAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceinput/simulatedaperture",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput/simulatedaperture.json",
+      "sha256": "e0a105214a0be87ce3fe71408d117e7900ca6a3f325d1ad419b5213dd86d8a38",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "starburst",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceexposuresignal/starburst",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceexposuresignal/starburst.json",
+      "sha256": "0d339a88025b7013bdcdc3fad353f7e93528796eaee4b0c16e9adb32c5ff2c89",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "subjectMotion",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceexposuresignal/subjectmotion",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceexposuresignal/subjectmotion.json",
+      "sha256": "3b7d67498587c0374502bcee957631c7c6cbbadaf1d3f0ac5a363bfaf5275c67",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "supportedExposureSignals",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/supportedexposuresignals",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/supportedexposuresignals.json",
+      "sha256": "1232fdc3eb664d272b8f9a3abbc4d6ba9a04def2ce99a1e01ccc18c72a3ae536",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "supportsExposureModeCustom(lensAperture:duration:iso:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/format/supportsexposuremodecustom(lensaperture:duration:iso:)",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/supportsexposuremodecustom(lensaperture:duration:iso:).json",
+      "sha256": "e3c0b265ec18553ab477a77bf0e3d0d9342e74e5cb0ff8b92ff40e7fcddd22be",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "VNDetectFaceLandmarksRequest",
+      "url": "https://developer.apple.com/documentation/vision/vndetectfacelandmarksrequest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/vision/vndetectfacelandmarksrequest.json",
+      "sha256": "07574ad42d18b2fb1ede214fcdd7418430272bc7cb6f9c0f44828fe726f64802",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "VNGenerateForegroundInstanceMaskRequest",
+      "url": "https://developer.apple.com/documentation/vision/vngenerateforegroundinstancemaskrequest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/vision/vngenerateforegroundinstancemaskrequest.json",
+      "sha256": "04a5b5d4b21130512aaaaa181c7b435c2e8919343fae5139062d306a6315b847",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    },
+    {
+      "title": "VNTrackObjectRequest",
+      "url": "https://developer.apple.com/documentation/vision/vntrackobjectrequest",
+      "document_data_url": "https://developer.apple.com/tutorials/data/documentation/vision/vntrackobjectrequest.json",
+      "sha256": "96edaa51324993e09e65665804ebc3cfc642632ba43de4c95fd1ecd682e9b4a5",
+      "ios_platform_metadata": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        }
+      ],
+      "kind": "symbol"
+    }
+  ],
+  "official_web": [
+    {
+      "title": "Leica LUX official product page",
+      "url": "https://leica-camera.com/en-int/photography/leica-apps/leica-lux",
+      "sha256": "810eacb5ef91fca577f9d172871aae32bbadb0483a848fe7c81146078666d5b3",
+      "inspection_scope": "Product body read; private algorithm and app performance not established"
+    },
+    {
+      "title": "Leica LUX tutorial/support",
+      "url": "https://manuals.leica-camera.com/lux",
+      "sha256": "ad95dc586510214704b08d6f2de9fb5b3ea012498800f4d405e6b02911706377",
+      "inspection_scope": "HTTP JavaScript shell only; Chromium content access failed certificate trust; no TLS bypass"
+    },
+    {
+      "title": "Sony ILCE-7M4: Focusing on human eyes",
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000657952.html",
+      "sha256": "24a4799d06597314a477ea24371083fb93d63635ec2eeedefd342579c9f6c02d",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Sony ILCE-7M4: Using the AF-ON button",
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000657960.html",
+      "sha256": "7d625e5d2d6ae918b37c43b5cba69eaa9f4a4401cb2b035409005889d01645c8",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Nikon Z8: AF Activation",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/csma_af_activation_209.html",
+      "sha256": "ef19208f49e6801bea44efdc5a876e2e6b3478680a6fa88a0e1e6a252aa534ee",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Nikon Z8: Focus Tracking with Lock-On",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/csma_focus_tracking_with_lock-on_206.html",
+      "sha256": "bae1f75ad61fbcbdf48d278d5fd197c5725b5578af1db928d41bc6339e3d79af",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Nikon Z8: Focus Shift Shooting",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/psm_focus_shift_shooting_155.html",
+      "sha256": "567b006835b77b05a197091792a623f2fdcc2ec0739c466a357bb65a57f3c30c",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Nikon Z8: Interval Timer Shooting",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/psm_interval_timer_shooting_153.html",
+      "sha256": "ed0a4d6437189985ea0990711d51e536c9861c1f8f2c6177d614ac68b537ae7e",
+      "inspection_scope": "Body read"
+    },
+    {
+      "title": "Nikon Z8: Metering",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/psm_metering_141.html",
+      "sha256": "454375894b5e211ebc4ab935a5c957d5c8b12cca9e39344fe8be6221ec99249c",
+      "inspection_scope": "Body read"
+    }
+  ],
+  "upstream": [
+    {
+      "repository": "DepthAnything/Depth-Anything-V2",
+      "commit": "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf",
+      "path": "README.md",
+      "url": "https://github.com/DepthAnything/Depth-Anything-V2/blob/a561b849ebae10a6f5ef49e26c83cbbcd36c71bf/README.md",
+      "download_url": "https://raw.githubusercontent.com/DepthAnything/Depth-Anything-V2/a561b849ebae10a6f5ef49e26c83cbbcd36c71bf/README.md",
+      "sha256": "987d1ab991c1b149276a0426bec7d8f3472d85c29ec976d96ea657aa960fad50"
+    },
+    {
+      "repository": "DepthAnything/Depth-Anything-V2",
+      "commit": "a561b849ebae10a6f5ef49e26c83cbbcd36c71bf",
+      "path": "depth_anything_v2/dpt.py",
+      "url": "https://github.com/DepthAnything/Depth-Anything-V2/blob/a561b849ebae10a6f5ef49e26c83cbbcd36c71bf/depth_anything_v2/dpt.py",
+      "download_url": "https://raw.githubusercontent.com/DepthAnything/Depth-Anything-V2/a561b849ebae10a6f5ef49e26c83cbbcd36c71bf/depth_anything_v2/dpt.py",
+      "sha256": "7cc9a29b41d31e1628e5c8b8705e25ae95bc6490f779dbb695297ce2341566f5"
+    },
+    {
+      "repository": "apple/ml-depth-pro",
+      "commit": "9e65e4dbe9568d23c546fcec53302b10445e109e",
+      "path": "README.md",
+      "url": "https://github.com/apple/ml-depth-pro/blob/9e65e4dbe9568d23c546fcec53302b10445e109e/README.md",
+      "download_url": "https://raw.githubusercontent.com/apple/ml-depth-pro/9e65e4dbe9568d23c546fcec53302b10445e109e/README.md",
+      "sha256": "5a10be5d4c040e382a82ffc356ce06f1f73a8f7ff4250e53efea98680b4ea1e0"
+    },
+    {
+      "repository": "apple/ml-depth-pro",
+      "commit": "9e65e4dbe9568d23c546fcec53302b10445e109e",
+      "path": "LICENSE",
+      "url": "https://github.com/apple/ml-depth-pro/blob/9e65e4dbe9568d23c546fcec53302b10445e109e/LICENSE",
+      "download_url": "https://raw.githubusercontent.com/apple/ml-depth-pro/9e65e4dbe9568d23c546fcec53302b10445e109e/LICENSE",
+      "sha256": "21a6551d1f8f851d2d10b5c6cc56535956b983c3cb997d25f3db4dd6f59ef99f"
+    },
+    {
+      "repository": "ZHKKKe/MODNet",
+      "commit": "28165a451e4610c9d77cfdf925a94610bb2810fb",
+      "path": "README.md",
+      "url": "https://github.com/ZHKKKe/MODNet/blob/28165a451e4610c9d77cfdf925a94610bb2810fb/README.md",
+      "download_url": "https://raw.githubusercontent.com/ZHKKKe/MODNet/28165a451e4610c9d77cfdf925a94610bb2810fb/README.md",
+      "sha256": "be9f8603539c2e1820e1eb0d58eb75b348e30bfd2de45799500b2cd6aa2ad9ed"
+    },
+    {
+      "repository": "PeterL1n/RobustVideoMatting",
+      "commit": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "path": "README.md",
+      "url": "https://github.com/PeterL1n/RobustVideoMatting/blob/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+      "download_url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+      "sha256": "239354ea615b768de0be7f17a703d784dd1eccd9f773b6be76cacbdde3a4aa06"
+    },
+    {
+      "repository": "facebookresearch/sam2",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "path": "README.md",
+      "url": "https://github.com/facebookresearch/sam2/blob/2b90b9f5ceec907a1c18123530e92e794ad901a4/README.md",
+      "download_url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/README.md",
+      "sha256": "eea69ee1042fb30933c5ca5019fbf0f6f9366cec5e792109281b5023a4f1589c"
+    },
+    {
+      "repository": "pymatting/pymatting",
+      "commit": "6d5c4a6bed0e5672abac0bad078e594423ffe4fd",
+      "path": "LICENSE.md",
+      "url": "https://github.com/pymatting/pymatting/blob/6d5c4a6bed0e5672abac0bad078e594423ffe4fd/LICENSE.md",
+      "download_url": "https://raw.githubusercontent.com/pymatting/pymatting/6d5c4a6bed0e5672abac0bad078e594423ffe4fd/LICENSE.md",
+      "sha256": "7be1f2cc0777ebabe655ba85c59ba1026ace94d7d906c791c5ada0e7b4b68323"
+    }
+  ]
+}

@@ -6,19 +6,19 @@ import Foundation
 // This is not an iOS build and cannot exercise Vision, AVFoundation or SwiftUI.
 let testPath = "ios/PhotoPTests"
 let testURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(testPath)
-let coreTests = ["CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift"]
+let coreTests = ["CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift", "FocusDepthPolicyTests.swift"]
 let excludedTests = try FileManager.default.contentsOfDirectory(atPath: testURL.path)
     .filter { !coreTests.contains($0) }
 let cameraPath = "ios/PhotoP/Camera"
 let cameraURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(cameraPath)
 let excludedCameraSources = try FileManager.default.contentsOfDirectory(atPath: cameraURL.path)
-    .filter { $0 != "CaptureWorkflowPolicy.swift" }
+    .filter { !["CaptureWorkflowPolicy.swift", "FocusControlPolicy.swift"].contains($0) }
 let coreSources = ["CompositionGuide.swift", "CompositionTracking.swift", "SceneMeasurements.swift", "IntelligentComposition.swift", "CameraCoach.swift", "PhotoReview.swift"]
 let coreURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent("ios/PhotoP/Composition")
 let excludedCoreSources = try FileManager.default.contentsOfDirectory(atPath: coreURL.path).filter { !coreSources.contains($0) }
 let imagePath = "ios/PhotoP/Processing"
 let imageURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(imagePath)
-let imageSources = ["HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift"]
+let imageSources = ["HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift", "SoftwareDepthPolicy.swift"]
 let excludedImageSources = try FileManager.default.contentsOfDirectory(atPath: imageURL.path).filter { !imageSources.contains($0) }
 
 let package = Package(
@@ -29,7 +29,7 @@ let package = Package(
                 exclude: excludedCoreSources, sources: coreSources,
                 swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
         .target(name: "PhotoPCameraPolicies", path: cameraPath, exclude: excludedCameraSources,
-                sources: ["CaptureWorkflowPolicy.swift"], swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
+                sources: ["CaptureWorkflowPolicy.swift", "FocusControlPolicy.swift"], swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
         .target(name: "PhotoPImagePolicies", path: imagePath, exclude: excludedImageSources, sources: imageSources,
                 swiftSettings: [.unsafeFlags(["-strict-concurrency=complete"])]),
         .testTarget(name: "PhotoPCompositionCoreTests", dependencies: ["PhotoPCompositionCore", "PhotoPCameraPolicies", "PhotoPImagePolicies"],

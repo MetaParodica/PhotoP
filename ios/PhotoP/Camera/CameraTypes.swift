@@ -29,6 +29,13 @@ struct CameraCapabilities: Equatable, Sendable {
     var shutterSoundSuppression = false
     var depthAvailable = false
     var depthDeliveryEnabled = false
+    var singleAutoFocus = false
+    var focusRangeRestriction = false
+    var smoothAutoFocus = false
+    var focusRectangle = false
+    var nativeSubjectTracking = false
+    var exposurePriority = false
+    var automaticFocus = false
 }
 
 struct ExposureSettings: Equatable, Sendable {
@@ -37,6 +44,7 @@ struct ExposureSettings: Equatable, Sendable {
     var iso: Double = 100
     var shutterSeconds: Double = 1.0 / 125
     var ev: Double = 0
+    var autoISO = false
 }
 
 struct FocusSettings: Equatable, Sendable {
@@ -44,6 +52,11 @@ struct FocusSettings: Equatable, Sendable {
     var locked = false
     // Normalized lens position, not a distance in metres.
     var lensPosition: Double = 0.5
+    var drive: AutoFocusDrive = .continuous
+    var range: FocusRange = .unrestricted
+    var smooth = false
+    var area: FocusArea = .point
+    var subjectTracking = false
 }
 
 struct WhiteBalanceSettings: Equatable, Sendable {
@@ -75,6 +88,8 @@ struct CameraReadout: Sendable {
     let focusLocked: Bool
     let whiteBalanceLocked: Bool
     var zoom = 1.0
+    var adjustingFocus = false
+    var subjectTracked = false
 }
 
 struct CameraSnapshot: Sendable {
@@ -122,12 +137,19 @@ enum CameraSettingsValidator {
               !f.locked || capabilities.focusLock,
               !w.locked || capabilities.whiteBalanceLock else { throw CameraError.invalidSettings }
         if e.manual {
-            guard capabilities.manualExposure, capabilities.iso.contains(e.iso),
+            guard capabilities.manualExposure, (e.autoISO || capabilities.iso.contains(e.iso)),
                   capabilities.shutterSeconds.contains(e.shutterSeconds) else { throw CameraError.invalidSettings }
         } else if !e.locked && !capabilities.exposureBias.contains(e.ev) { throw CameraError.invalidSettings }
+        guard !e.autoISO || (e.manual && !e.locked && capabilities.exposurePriority) else { throw CameraError.invalidSettings }
         if f.manual && (!capabilities.manualFocus || !(0...1).contains(f.lensPosition)) {
             throw CameraError.invalidSettings
         }
+        guard f.drive != .single || capabilities.singleAutoFocus,
+              f.range == .unrestricted || capabilities.focusRangeRestriction,
+              !f.smooth || capabilities.smoothAutoFocus,
+              f.area == .point || capabilities.focusRectangle,
+              !f.subjectTracking || (!f.manual && !f.locked && f.drive == .continuous && capabilities.nativeSubjectTracking)
+        else { throw CameraError.invalidSettings }
         if w.manual && (!capabilities.manualWhiteBalance || !(2000...10000).contains(w.kelvin) || !(-150...150).contains(w.tint)) {
             throw CameraError.invalidSettings
         }

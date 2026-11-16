@@ -2,6 +2,10 @@
 
 # PhotoP
 
+2026-11-16 1차 구현: [외부 모델 확정·AF 제어·Natural 정지 사진 심도·검증/제약](docs/27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md). Apache-2.0의 Apple Core ML Depth Anything V2 Small FP16을 고정 버전으로 포함하고, 센서 깊이/AI 대체·최대12.6MP 원형 보케·저장 깊이 f값 재처리, AF-C/AF-S·독립 AF/AE·AF-ON·MF 확대를 연결했다. iOS26 영역/27 추적·Auto ISO는 SDK 및 기기 지원 검사로 분리한다. 기존64MP LUT/센서 기본 심도는 유지한다. **실시간 심도·눈 AF·경쟁 품질·iOS SDK/실기기 인수 완료는 아니다.** Swift97/Python23은 Linux 핵심/자산 검증이며 iOS 테스트 성공과 다르다.
+
+2026-11-16 개발 조사 보고서: [DSLR형 소프트웨어 심도 개발 계획](docs/24-SOFTWARE-DEPTH-DEVELOPMENT-PLAN.ko.md) · [AF·DSLR 추가 기능](docs/25-AF-DSLR-FEATURE-RESEARCH.ko.md) · [iOS 17~27 공식 API·지원 제약](docs/26-IOS17-27-CAPABILITY-RESEARCH.ko.md) · [공식 출처·조회 hash](docs/research/2026-11-16-official-camera-sources.json). 공식 웹 문서와 현재 main 소스를 대조한 **계획**이며, 새 심도/AF 기능 구현·iOS 27 SDK/실기기 검증 완료를 의미하지 않는다.
+
 2026-10-23 최신 요청 반영: [뷰파인더 실시간 LUT·강도/입자/마감·원본 비교](docs/23-LIVE-VIEWFINDER-LOOK.ko.md). 룩 선택 시 실시간 프리뷰가 켜지며 저장 원본은 보존한다. 카드별 예시 미리보기는 계속 끈다. 아래 과거 기록의 “카메라 프리뷰 무보정/촬영 결과 전용” 설명보다 이 동작을 우선한다. iOS SDK/실기기 검증은 대기다.
 
 2026-10-23 LUT 적용 점검·수정: [적용 누락 원인·즐겨찾기 v2·편집 복원·추가 개발 보고](docs/22-LUT-APPLICATION-AND-NEXT-STEPS.ko.md). 선택 사진에 대응하는 원본과 촬영 당시 룩을 편집기에 전달하고, 즐겨찾기에 강도·입자·공간 효과를 함께 저장한다. 원본/효과 결과/실패/강도0/작은 색상 변화/RAW·영상 미적용을 구분한다. 카메라 미리보기는 계속 무보정이다.
@@ -57,7 +61,7 @@ Original HEIF/JPEG bytes are retained in the app's Documents/Originals directory
 
 All 14 requested modes remain the product roadmap; the app currently exposes still photos and sampled computational long exposure. Frame duration, RAW/ProRAW, Log and maximum resolution depend on the device and active capture configuration.
 
-Third-party project and LUT rights are tracked separately. No third-party source code, model weights or commercial UI assets are bundled. Five unmodified slay LUTs are included with CC BY 4.0 license, attribution and hashes. Their upstream color profile is unspecified; applying them requires confirming PhotoP’s sRGB SDR interpretation.
+Third-party project, model and LUT rights are tracked separately. One unmodified Apache-2.0 Apple Core ML Depth Anything V2 Small FP16 package is now bundled with pinned revision, hashes, LICENSE and NOTICE; see `assets/depth-model/legal`. No third-party application source or commercial UI assets are copied. Five unmodified slay LUTs are included with CC BY 4.0 license, attribution and hashes. Their upstream color profile is unspecified; applying them requires confirming PhotoP’s sRGB SDR interpretation.
 
 
 ## SDR LUT photo editor
@@ -94,7 +98,7 @@ Open **보조** for RGB/luma histograms, zebra and focus peaking. Enable one or 
 
 Under **PRO → 노출 브라케팅**, enable three-frame bracketing and select ±0.5/1/2 EV. Supported AUTO/processed/livestream-off configurations capture three separate originals around the device's current EV, within actual device limits. A manifest stores filenames, SHA-256 hashes and requested EV values; frame EXIF remains in each original. All originals can be shared or added to Photos together. RAW brackets and HDR fusion remain future work.
 
-Automated validation through the previous Phase 6 slice: unsigned iPhone SDK build, 120 Swift tests and 7 Python tests passed. Current expansion evidence is recorded in the report below. Real capture, EXIF agreement, RAW-developer compatibility, display color, FPS, memory and thermal acceptance remain unverified. The repository bundles five attributed CC BY 4.0 LUTs and no third-party models.
+Automated validation through the previous Phase 6 slice: unsigned iPhone SDK build, 120 Swift tests and 7 Python tests passed. Current expansion evidence is recorded in the report above. Real capture, EXIF agreement, RAW-developer compatibility, display color, FPS, memory and thermal acceptance remain unverified. That historical validation predates the newly bundled depth model and does not validate the current implementation.
 
 
 ## Sampled long exposure (Phase 4)

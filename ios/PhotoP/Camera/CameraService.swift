@@ -4,11 +4,13 @@ import CoreVideo
 
 // All session/device mutations and delegate state live on queue. Only the preview
 // layer binds to the immutable session reference on the main thread.
-final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureDelegate, AVCaptureFileOutputRecordingDelegate {
+final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureDelegate, AVCaptureFileOutputRecordingDelegate, AVCaptureMetadataOutputObjectsDelegate {
     let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "com.photop.capture", qos: .userInitiated)
     private let output = AVCapturePhotoOutput()
     private let movieOutput = AVCaptureMovieFileOutput()
+    private let focusMetadataOutput = AVCaptureMetadataOutput()
+    private var lastFocusMetadataTime = -Double.infinity
     private var videoConfiguration: VideoConfiguration?
     private var videoCapabilities: VideoCapabilities?
     private var audioInput: AVCaptureDeviceInput?
@@ -167,6 +169,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 meteringLockID = nil
                 appliedSettings = nil
                 let candidate = try AVCaptureDeviceInput(device: device)
+                resetTrackingOutput()
                 session.beginConfiguration()
                 session.removeInput(old)
                 if session.canAddInput(candidate) {
@@ -204,6 +207,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
 
     private func configureRAW() {
         // Configure before startRunning and again after changing the input.
+        output.isPortraitEffectsMatteDeliveryEnabled = false
         output.isDepthDataDeliveryEnabled = false
         output.isAppleProRAWEnabled = output.isAppleProRAWSupported
     }
@@ -237,6 +241,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 session.beginConfiguration()
                 output.isAppleProRAWEnabled = false
                 output.isDepthDataDeliveryEnabled = true
+                if output.isPortraitEffectsMatteDeliverySupported { output.isPortraitEffectsMatteDeliveryEnabled = true }
                 session.commitConfiguration()
                 publish(); completion.resume()
             }
@@ -328,7 +333,12 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             maxZoom: ZoomPolicy.range(maxAvailable: Double(d.maxAvailableVideoZoomFactor)).upperBound,
             flashModes: videoConfiguration == nil ? flashModes() : [.off], shutterSoundSuppression: silent,
             depthAvailable: videoConfiguration == nil && (output.isDepthDataDeliverySupported || devices.contains { $0.position == d.position && depthDeviceIDs.contains($0.uniqueID) }),
-            depthDeliveryEnabled: output.isDepthDataDeliveryEnabled
+            depthDeliveryEnabled: output.isDepthDataDeliveryEnabled,
+            singleAutoFocus: d.isFocusModeSupported(.autoFocus), focusRangeRestriction: d.isAutoFocusRangeRestrictionSupported,
+            smoothAutoFocus: d.isSmoothAutoFocusSupported, focusRectangle: CameraPlatformFeatures.focusRectangleSupported(d),
+            nativeSubjectTracking: videoConfiguration == nil && CameraPlatformFeatures.nativeTrackingSupported(d),
+            exposurePriority: CameraPlatformFeatures.autoISOSupported(d),
+            automaticFocus: d.isFocusModeSupported(.continuousAutoFocus) || d.isFocusModeSupported(.autoFocus)
         )
     }
 
@@ -451,9 +461,27 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
         guard settings.exposure.manual || settings.exposure.locked || d.isExposureModeSupported(.continuousAutoExposure)
         else { throw CameraError.invalidSettings }
+        if settings.focus.subjectTracking {
+            try CameraPlatformFeatures.prepareTrackingMetadata(focusMetadataOutput, session: session, delegate: self, queue: queue)
+        }
         try d.lockForConfiguration()
         defer { d.unlockForConfiguration() }
 
+        let duration = CMTime(seconds: settings.exposure.shutterSeconds, preferredTimescale: 1_000_000_000)
+        let requestedISO = try CameraPlatformFeatures.requestedISO(Float(settings.exposure.iso), automatic: settings.exposure.autoISO,
+            device: d, duration: duration)
+        if delta.focus {
+            // Validate/apply hints before a completion transaction is opened.
+            // A Swift validation failure must not leave controls pending.
+            if !settings.focus.manual && !settings.focus.locked {
+                let mode: AVCaptureDevice.FocusMode = settings.focus.drive == .single ? .autoFocus : .continuousAutoFocus
+                // Fixed-focus lenses still support exposure/WB/capture. Only
+                // an explicit unsupported AF-S request is an error.
+                guard mode == .continuousAutoFocus || d.isFocusModeSupported(mode) else { throw CameraError.invalidSettings }
+            }
+            try CameraPlatformFeatures.setTracking(settings.focus.subjectTracking, device: d)
+            try CameraPlatformFeatures.setFocusArea(settings.focus.area, point: d.focusPointOfInterest, device: d)
+        }
         var steps: Set<CameraControlApplication.Step> = []
         if delta.exposure { steps.insert(.exposure) }
         if delta.focus { steps.insert(.focus) }
@@ -486,8 +514,8 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
             queue.async { [self] in acknowledgeControl(.exposure, id: id) }
         } else if settings.exposure.manual {
             d.setExposureModeCustom(
-                duration: CMTime(seconds: settings.exposure.shutterSeconds, preferredTimescale: 1_000_000_000),
-                iso: Float(settings.exposure.iso),
+                duration: duration,
+                iso: requestedISO,
                 completionHandler: controlCompletion(.exposure, id: id))
         } else {
             d.exposureMode = .continuousAutoExposure
@@ -496,11 +524,16 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
         }
         if delta.focus {
+          if d.isAutoFocusRangeRestrictionSupported {
+            d.autoFocusRangeRestriction = settings.focus.range == .near ? .near : settings.focus.range == .far ? .far : .none
+          }
+          if d.isSmoothAutoFocusSupported { d.isSmoothAutoFocusEnabled = settings.focus.smooth }
           if settings.focus.manual || settings.focus.locked {
             d.setFocusModeLocked(lensPosition: settings.focus.locked ? AVCaptureDevice.currentLensPosition : Float(settings.focus.lensPosition),
                                 completionHandler: controlCompletion(.focus, id: id))
           } else {
-            if d.isFocusModeSupported(.continuousAutoFocus) { d.focusMode = .continuousAutoFocus }
+            let mode: AVCaptureDevice.FocusMode = settings.focus.drive == .single ? .autoFocus : .continuousAutoFocus
+            if d.isFocusModeSupported(mode) { d.focusMode = mode }
             queue.async { [self] in acknowledgeControl(.focus, id: id) }
           }
         }
@@ -579,9 +612,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         return CameraReadout(iso: iso, shutterSeconds: seconds, exposureBias: bias,
                              lensPosition: position, kelvin: kelvin, tint: tint,
                              isAdjusting: d.isAdjustingExposure || d.isAdjustingFocus || d.isAdjustingWhiteBalance,
-                             exposureLocked: d.exposureMode == .locked || d.exposureMode == .custom,
+                             exposureLocked: d.exposureMode == .locked || (d.exposureMode == .custom && !CameraPlatformFeatures.autoISOActive(d)),
                              focusLocked: d.focusMode == .locked, whiteBalanceLocked: d.whiteBalanceMode == .locked,
-                             zoom: Double(d.videoZoomFactor))
+                             zoom: Double(d.videoZoomFactor), adjustingFocus: d.isAdjustingFocus,
+                             subjectTracked: CameraPlatformFeatures.isTracking(d))
     }
 
     private func startReadouts() {
@@ -602,33 +636,38 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         readoutTimer = nil
     }
 
-    func focusAndMeter(at point: CameraMeteringPoint, lensID: String, locked: Bool = false) async throws -> PointMeteringActions {
+    func focusAndMeter(at point: CameraMeteringPoint, lensID: String, locked: Bool = false,
+                       scope: MeteringScope = .both, explicitAFOn: Bool = false,
+                       drive: AutoFocusDrive = .continuous, area: FocusArea = .point,
+                       userFocusLocked: Bool? = nil) async throws -> PointMeteringActions {
         try await withCheckedThrowingContinuation { completion in
             queue.async { [self] in
                 do {
                     guard state == .running, session.isRunning, !session.isInterrupted,
                           let d = input?.device, d.uniqueID == lensID else { throw CameraError.interrupted }
                     guard continuation == nil, longExposure == nil, !controls.isPending else { throw CameraError.busy }
-                    let actions = PointMeteringPolicy.actions(
-                        focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(.continuousAutoFocus),
+                    let focusMode: AVCaptureDevice.FocusMode = drive == .single ? .autoFocus : .continuousAutoFocus
+                    let wanted = FocusTouchPolicy.actions(scope: scope,
+                        focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(focusMode),
                         exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
-                        focusLocked: false,
-                        exposureLocked: d.exposureMode == .custom)
+                        focusLocked: userFocusLocked ?? (d.focusMode == .locked),
+                        exposureLocked: d.exposureMode == .custom || d.exposureMode == .locked, explicitAFOn: explicitAFOn)
+                    let actions = PointMeteringActions(focus: wanted.focus, exposure: wanted.exposure)
                     guard !locked || ((!actions.focus || d.isFocusModeSupported(.locked)) && (!actions.exposure || d.isExposureModeSupported(.locked))) else { throw CameraError.invalidSettings }
-                    guard !actions.isEmpty else { throw CameraError.invalidSettings }
+                    guard !actions.isEmpty else { completion.resume(returning: actions); return }
                     meteringLockID = nil
                     appliedSettings = nil
                     try d.lockForConfiguration()
+                    defer { d.unlockForConfiguration() }
                     if actions.focus {
-                        d.focusPointOfInterest = point.cgPoint
-                        d.focusMode = .continuousAutoFocus
+                        try CameraPlatformFeatures.setFocusArea(area, point: point.cgPoint, device: d)
+                        d.focusMode = focusMode
                     }
                     if actions.exposure {
                         d.exposurePointOfInterest = point.cgPoint
                         d.exposureMode = .continuousAutoExposure
                     }
-                    d.unlockForConfiguration()
-                    if locked { scheduleMeteringLock(lensID: lensID) }
+                    if locked { scheduleMeteringLock(lensID: lensID, actions: actions) }
                     publish()
                     // A point request is accepted; AF/AE may still be adjusting.
                     completion.resume(returning: actions)
@@ -637,34 +676,55 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         }
     }
 
-    private func scheduleMeteringLock(lensID: String) {
+    private func scheduleMeteringLock(lensID: String, actions: PointMeteringActions) {
         let id = UUID()
         meteringLockID = id
-        pollMeteringLock(id: id, lensID: lensID, attempt: 0)
+        pollMeteringLock(id: id, lensID: lensID, attempt: 0, actions: actions)
     }
 
-    private func pollMeteringLock(id: UUID, lensID: String, attempt: Int) {
+    private func pollMeteringLock(id: UUID, lensID: String, attempt: Int, actions: PointMeteringActions) {
         queue.asyncAfter(deadline: .now() + 0.05) { [self] in
             guard meteringLockID == id, state == .running, let device = input?.device,
                   device.uniqueID == lensID, !controls.isPending else { return }
-            if device.isAdjustingFocus || device.isAdjustingExposure {
+            if (actions.focus && device.isAdjustingFocus) || (actions.exposure && device.isAdjustingExposure) {
                 guard attempt < 40 else {
                     meteringLockID = nil
                     publish("초점·노출이 안정되지 않아 고정하지 못했습니다. 다시 길게 눌러 주세요.")
                     return
                 }
-                pollMeteringLock(id: id, lensID: lensID, attempt: attempt + 1)
+                pollMeteringLock(id: id, lensID: lensID, attempt: attempt + 1, actions: actions)
                 return
             }
             do {
                 try device.lockForConfiguration()
-                if device.isFocusModeSupported(.locked) { device.focusMode = .locked }
-                if device.exposureMode != .custom, device.isExposureModeSupported(.locked) { device.exposureMode = .locked }
+                if actions.focus, device.isFocusModeSupported(.locked) { device.focusMode = .locked }
+                if actions.exposure, device.exposureMode != .custom, device.isExposureModeSupported(.locked) { device.exposureMode = .locked }
                 device.unlockForConfiguration()
                 meteringLockID = nil
                 publish()
             } catch { meteringLockID = nil; publish(error.localizedDescription) }
         }
+    }
+
+    // A subscribed output is required for iOS27 native AF tracking/acquired
+    // updates. Device readouts report acquisition, never a fabricated sharpness.
+    func metadataOutput(_ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+        guard output === focusMetadataOutput, state == .running else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastFocusMetadataTime >= 0.25 else { return }
+        lastFocusMetadataTime = now
+        publish()
+    }
+
+    private func resetTrackingOutput() {
+        guard session.outputs.contains(focusMetadataOutput) else { return }
+        if let d = input?.device, (try? d.lockForConfiguration()) != nil {
+            try? CameraPlatformFeatures.setTracking(false, device: d)
+            d.unlockForConfiguration()
+        }
+        focusMetadataOutput.setMetadataObjectsDelegate(nil, queue: nil)
+        session.beginConfiguration(); session.removeOutput(focusMetadataOutput); session.commitConfiguration()
+        lastFocusMetadataTime = -Double.infinity
     }
 
     func captureLongExposure(_ configuration: LongExposureConfiguration,
@@ -791,6 +851,10 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                 if depth {
                     settings.isDepthDataDeliveryEnabled = true
                     settings.embedsDepthDataInPhoto = true
+                    if output.isPortraitEffectsMatteDeliveryEnabled {
+                        settings.isPortraitEffectsMatteDeliveryEnabled = true
+                        settings.embedsPortraitEffectsMatteInPhoto = true
+                    }
                 }
                 if #available(iOS 18.0, *), output.isShutterSoundSuppressionSupported {
                     settings.isShutterSoundSuppressionEnabled = true
@@ -953,6 +1017,7 @@ extension CameraService {
     }
 
     private func configureVideo(_ requested: VideoConfiguration?, entering: Bool) throws {
+        resetTrackingOutput()
         guard let device = input?.device else { throw CameraError.unavailable }
         session.beginConfiguration()
         defer { session.commitConfiguration() }

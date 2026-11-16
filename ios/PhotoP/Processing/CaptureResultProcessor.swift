@@ -20,13 +20,60 @@ struct CaptureResultRecipe: Codable {
     let pipeline: String
     var outputWidth: Int? = nil
     var outputHeight: Int? = nil
+    var depthSource: String? = nil
+    var depthMapFilename: String? = nil
+    var depthMapSHA256: String? = nil
+    var depthWidth: Int? = nil
+    var depthHeight: Int? = nil
+    var depthUnits: String? = nil
+    var portraitMatteUsed: Bool? = nil
 }
 
 // No camera/display resources: only runs AFTER original bytes are preserved.
 actor CaptureResultProcessor {
     static let shared = CaptureResultProcessor()
 
-    func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil) async throws -> URL {
+    func reprocess(result: URL, original: URL, aperture: Double, documents: URL? = nil) async throws -> URL {
+        let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let folder = result.deletingLastPathComponent()
+        guard result.lastPathComponent == "photo.jpg",
+              folder.resolvingSymlinksInPath().deletingLastPathComponent().path == root.appendingPathComponent("CaptureResults").resolvingSymlinksInPath().path else {
+            throw ImageEditingError.invalid("심도 결과 경로가 유효하지 않습니다.")
+        }
+        let recipe = try JSONDecoder().decode(CaptureResultRecipe.self, from: bounded(folder.appendingPathComponent("recipe.json"), limit: 131_072))
+        guard recipe.version == 2, recipe.originalFilename == original.lastPathComponent,
+              recipe.originalSHA256 == (try LUTPhotoEditor.hashFile(original)),
+              recipe.depthMapFilename == "depth.f32", let hash = recipe.depthMapSHA256,
+              let w = recipe.depthWidth, let h = recipe.depthHeight,
+              w >= 3, h >= 3, w <= 4096, h <= 4096, w * h <= 2_097_152,
+              let unit = recipe.depthUnits.flatMap(SoftwareDepthField.Units.init(rawValue:)) else {
+            throw ImageEditingError.invalid("원본 또는 저장 심도 레시피가 변경되었거나 지원되지 않습니다.")
+        }
+        let bytes = try bounded(folder.appendingPathComponent("depth.f32"), limit: w * h * 4)
+        guard bytes.count == w * h * 4, LUTPhotoEditor.hash(bytes) == hash else { throw CameraError.invalidPhotoData }
+        let values: [Float] = bytes.withUnsafeBytes { raw in
+            (0..<(w * h)).map { Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 4, as: UInt32.self))) }
+        }
+        guard let field = SoftwareDepthField(width: w, height: h, inverseDepth: values, units: unit) else { throw CameraError.invalidPhotoData }
+        var look: ImportedLUT?
+        if let expected = recipe.lutSHA256 {
+            let data = try bounded(folder.appendingPathComponent("look.cube"), limit: CubeLUT.maximumFileBytes)
+            guard LUTPhotoEditor.hash(data) == expected, let text = String(data: data, encoding: .utf8) else { throw CameraError.invalidPhotoData }
+            look = ImportedLUT(data: data, lut: try CubeLUT.parse(text), displayName: "촬영 당시 룩", preset: recipe.look, provenance: recipe.provenance)
+        } else if recipe.look != nil { throw CameraError.invalidPhotoData }
+        return try await render(original: original, look: look, aperture: aperture,
+            focus: CGPoint(x: recipe.focusX, y: recipe.focusY), documents: root, depthOverride: field)
+    }
+
+    private func bounded(_ url: URL, limit: Int) throws -> Data {
+        let info = try url.resourceValues(forKeys: [.fileSizeKey, .isSymbolicLinkKey, .isRegularFileKey])
+        guard info.isSymbolicLink != true, info.isRegularFile == true, let size = info.fileSize, size > 0, size <= limit else { throw CameraError.invalidPhotoData }
+        let bytes = try Data(contentsOf: url)
+        guard bytes.count <= limit else { throw CameraError.invalidPhotoData }; return bytes
+    }
+
+    func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil,
+                depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil) async throws -> URL {
         guard look != nil || aperture != nil else { return original }
         let settings = look.map { $0.preset ?? ProcessingLookSettings() }
         try settings?.validate()
@@ -42,14 +89,23 @@ actor CaptureResultProcessor {
             let credit = look?.provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
             let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original,
                 destination: pending.appendingPathComponent("photo.jpg"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),
-                aperture: aperture, focus: focus, credit: credit)
-            var recipe = CaptureResultRecipe(version: 1, originalFilename: original.lastPathComponent,
+                aperture: aperture, focus: focus, credit: credit, depthSource: depthSource, depthOverride: depthOverride)
+            let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space Natural disk layers (max12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
+            var recipe = CaptureResultRecipe(version: 2, originalFilename: original.lastPathComponent,
                 originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
                 focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth ? result.focusDepth : nil,
                 focusDepthValue: result.focusDepth, depthAccuracy: aperture == nil ? nil : result.absoluteDepth ? "absolute" : "relative",
                 look: settings, lutSHA256: look.map { LUTPhotoEditor.hash($0.data) }, provenance: look?.provenance,
-                pipeline: "Full-resolution oriented SDR sRGB (max 64MP) → measured-depth variable blur → halo tiles with global LUT/grain/finish coordinates → disk-backed RGBA → JPEG; original metadata omitted")
+                pipeline: "Oriented color-managed SDR → \(depthStep) → encoded-sRGB LUT/grain/finish halo tiles → disk-backed RGBA → JPEG; original preserved; derivatives omit original metadata")
             recipe.outputWidth = result.width; recipe.outputHeight = result.height
+            recipe.depthSource = result.depthSource; recipe.portraitMatteUsed = result.matteUsed
+            if let field = result.depthField {
+                let words = field.inverseDepth.map { $0.bitPattern.littleEndian }
+                let bytes = words.withUnsafeBytes { Data($0) }
+                try bytes.write(to: pending.appendingPathComponent("depth.f32"), options: options)
+                recipe.depthMapFilename = "depth.f32"; recipe.depthMapSHA256 = LUTPhotoEditor.hash(bytes)
+                recipe.depthWidth = field.width; recipe.depthHeight = field.height; recipe.depthUnits = field.units.rawValue
+            }
             try Task.checkCancellation()
             try JSONEncoder().encode(recipe).write(to: pending.appendingPathComponent("recipe.json"), options: options)
             if let look { try look.data.write(to: pending.appendingPathComponent("look.cube"), options: options) }
@@ -110,7 +166,8 @@ enum MeasuredDepthEffect {
               color.extent == CGRect(x: 0, y: 0, width: width, height: height), mask.width > 0, mask.height > 0,
               let filter = CIFilter(name: "CIMaskedVariableBlur") else { throw CameraError.configuration }
         let w = mask.width, h = mask.height
-        let scaledMask = CIImage(cgImage: mask).transformed(by: CGAffineTransform(scaleX: CGFloat(width) / CGFloat(w), y: CGFloat(height) / CGFloat(h)))
+        let scaledMask = CIImage(cgImage: mask, options: [.colorSpace: NSNull()])
+            .transformed(by: CGAffineTransform(scaleX: CGFloat(width) / CGFloat(w), y: CGFloat(height) / CGFloat(h)))
         filter.setValue(color.clampedToExtent(), forKey: kCIInputImageKey)
         filter.setValue(scaledMask, forKey: "inputMask")
         filter.setValue(radius, forKey: kCIInputRadiusKey)

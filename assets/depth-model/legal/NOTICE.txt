@@ -1,0 +1,8 @@
+PhotoP uses Depth Anything V2 Small, converted to Core ML by Apple.
+Original research: Lihe Yang et al., Depth Anything V2 (2024).
+Original project: https://github.com/DepthAnything/Depth-Anything-V2
+Core ML package: https://huggingface.co/apple/coreml-depth-anything-v2-small
+Pinned revision and hashes: manifest.json. Licensed under Apache License 2.0 (LICENSE).
+Weights are redistributed unmodified. PhotoP's inference adapter and depth/bokeh
+processing are independently implemented. No manufacturer endorsement is claimed.
+Depth is AI-estimated relative structure, not measured metric distance.

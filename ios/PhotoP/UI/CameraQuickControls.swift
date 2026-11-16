@@ -26,12 +26,14 @@ struct CameraQuickControls: View {
     }
     private func apply() { model.requestSettings() }
     private var exposureMode: Binding<Int> {
-        Binding(get: { model.settings.exposure.manual ? 1 : model.settings.exposure.locked ? 2 : 0 }, set: { value in
+        Binding(get: { model.settings.exposure.manual ? (model.settings.exposure.autoISO ? 3 : 1) : model.settings.exposure.locked ? 2 : 0 }, set: { value in
             if value == 1, !model.settings.exposure.manual, let readout = model.snapshot.readout, let caps = model.snapshot.capabilities {
                 model.settings.exposure.iso = min(max(readout.iso, caps.iso.lowerBound), caps.iso.upperBound)
                 model.settings.exposure.shutterSeconds = min(max(readout.shutterSeconds, caps.shutterSeconds.lowerBound), caps.shutterSeconds.upperBound)
             }
-            model.settings.exposure.manual = value == 1; model.settings.exposure.locked = value == 2; apply()
+            model.settings.exposure.manual = value == 1 || value == 3
+            model.settings.exposure.autoISO = value == 3
+            model.settings.exposure.locked = value == 2; apply()
         })
     }
     @ViewBuilder private var exposure: some View {
@@ -40,6 +42,7 @@ struct CameraQuickControls: View {
                 Text("AUTO").tag(0)
                 if caps.manualExposure { Text("수동").tag(1) }
                 if caps.exposureLock { Text("AE 잠금").tag(2) }
+                if caps.exposurePriority { Text("S·ISO 자동").tag(3) }
             }.pickerStyle(.segmented)
             if tool == .ev {
                 if !model.settings.exposure.manual && !model.settings.exposure.locked {
@@ -48,12 +51,14 @@ struct CameraQuickControls: View {
                 } else { Text("EV는 AUTO 노출에서 조절합니다. 수동 모드에서는 ISO·셔터를 조절하세요.").font(.caption) }
             } else if model.settings.exposure.manual {
                 if tool == .iso {
-                    CameraValueSlider(title: "ISO", value: $model.settings.exposure.iso, range: caps.iso, logarithmic: true, onCommit: apply)
+                    if model.settings.exposure.autoISO {
+                        Text("Auto ISO · 현재 \(Int(model.snapshot.readout?.iso ?? 0))").monospacedDigit()
+                    } else { CameraValueSlider(title: "ISO", value: $model.settings.exposure.iso, range: caps.iso, logarithmic: true, onCommit: apply) }
                 } else {
                     CameraValueSlider(title: "노출 시간", value: $model.settings.exposure.shutterSeconds, range: caps.shutterSeconds, logarithmic: true,
                                       display: CameraControlScale.shutter, onCommit: apply)
                 }
-                Text("ISO와 셔터가 함께 고정됩니다. EV는 AUTO에서 조절합니다.").font(.caption).foregroundStyle(.secondary)
+                Text(model.settings.exposure.autoISO ? "셔터 고정·시스템 Auto ISO입니다. EV는 현재 이 모드에서 제공하지 않습니다." : "ISO와 셔터가 함께 고정됩니다. EV는 AUTO에서 조절합니다.").font(.caption).foregroundStyle(.secondary)
             } else if !model.settings.exposure.locked {
                 Button("현재 노출에서 수동 조절") { exposureMode.wrappedValue = 1 }.disabled(!caps.manualExposure)
             }
@@ -85,6 +90,7 @@ struct CameraQuickControls: View {
         Binding(get: { model.settings.focus.manual ? 1 : model.settings.focus.locked ? 2 : 0 }, set: { value in
             if value == 1, !model.settings.focus.manual { model.settings.focus.lensPosition = model.snapshot.readout?.lensPosition ?? 0.5 }
             if value == 1 { model.focusAssistEnabled = true }
+            if value != 0 { model.settings.focus.subjectTracking = false; model.focusMagnification = 1 }
             model.settings.focus.manual = value == 1; model.settings.focus.locked = value == 2; apply()
         })
     }
@@ -101,6 +107,48 @@ struct CameraQuickControls: View {
                 Toggle("초록색 초점 보조", isOn: $model.focusAssistEnabled)
                 Text("정규화된 렌즈 위치이며 거리(m)가 아닙니다.").font(.caption).foregroundStyle(.secondary)
             }
+            if caps.automaticFocus && !model.settings.focus.manual && !model.settings.focus.locked {
+                Picker("AF 동작", selection: $model.settings.focus.drive) {
+                    Text("AF-C").tag(AutoFocusDrive.continuous)
+                    if caps.singleAutoFocus { Text("AF-S").tag(AutoFocusDrive.single) }
+                }.pickerStyle(.segmented).onChange(of: model.settings.focus.drive) { _, value in
+                    if value == .single { model.settings.focus.subjectTracking = false }; apply()
+                }
+                if caps.focusRangeRestriction {
+                    Picker("AF 거리 제한", selection: $model.settings.focus.range) {
+                        ForEach(FocusRange.allCases) { Text($0.title).tag($0) }
+                    }.onChange(of: model.settings.focus.range) { _, _ in apply() }
+                }
+                if caps.smoothAutoFocus {
+                    Toggle("부드러운 AF", isOn: $model.settings.focus.smooth).onChange(of: model.settings.focus.smooth) { _, _ in apply() }
+                }
+                if caps.focusRectangle {
+                    Picker("AF 영역", selection: $model.settings.focus.area) { ForEach(FocusArea.allCases) { Text($0.title).tag($0) } }
+                        .onChange(of: model.settings.focus.area) { _, _ in apply() }
+                }
+                if caps.nativeSubjectTracking && model.settings.focus.drive == .continuous {
+                    Toggle("네이티브 피사체 추적", isOn: $model.settings.focus.subjectTracking)
+                        .disabled(model.depthEnabled)
+                        .onChange(of: model.settings.focus.subjectTracking) { _, _ in apply() }
+                }
+            }
+            Picker("화면 터치", selection: $model.meteringScope) { ForEach(MeteringScope.allCases) { Text($0.title).tag($0) } }
+                .pickerStyle(.segmented).accessibilityIdentifier("camera.focus.scope")
+            Button("AF-ON · 중앙에서 다시 초점") { Task { await model.autofocusOn() } }
+                .disabled(!caps.automaticFocus).accessibilityIdentifier("camera.focus.afon")
+            Picker("MF 확인 확대", selection: $model.focusMagnification) {
+                Text("1×").tag(1.0); Text("3×").tag(3.0); Text("5×").tag(5.0)
+            }.pickerStyle(.segmented).disabled(!model.settings.focus.manual)
+            if model.settings.focus.manual && model.focusMagnification > 1 {
+                CameraPreview(session: model.previewSession,
+                    mirrored: model.snapshot.lenses.first(where: { $0.id == model.snapshot.selectedLens })?.isFront == true,
+                    lensID: model.snapshot.selectedLens, fill: true, onMeter: { _, _, _ in })
+                    .frame(height: 100).scaleEffect(model.focusMagnification).frame(height: 100).clipped().allowsHitTesting(false)
+                    .accessibilityIdentifier("camera.focus.magnifier")
+                Text("중앙 무보정 영상의 디지털 확대입니다. 촬영 화각·파일은 바꾸지 않습니다.").font(.caption2)
+            }
+            Text(model.focusPhase.title + " · 안정/피킹 표시는 정확한 초점 보증이 아닙니다.").font(.caption)
+            Text("화면 터치는 MF·AF/AE 잠금을 유지합니다. AF-ON은 초점만 다시 잡고 노출 잠금은 바꾸지 않습니다.").font(.caption2).foregroundStyle(.secondary)
         } else { unavailable }
     }
     @ViewBuilder private var format: some View {
@@ -197,17 +245,26 @@ struct CameraQuickControls: View {
     }
     private var depth: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
+                .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
             Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
-                .disabled(!model.depthEnabled && (model.snapshot.capabilities?.depthAvailable != true || !model.depthModeAllowed))
+                .disabled(!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true)))
                 .accessibilityIdentifier("camera.depth.toggle")
             CameraValueSlider(title: "심도 f값", value: $model.depthAperture, range: 1.4...16,
                               display: { String(format: "f/%.1f", $0) }, onCommit: {})
                 .disabled(!model.depthEnabled).accessibilityIdentifier("camera.depth.aperture")
-            Text("작은 f값은 배경 흐림을 강하게, 큰 f값은 약하게 적용합니다. 실제 렌즈 조리개가 아닌 깊이 데이터 기반 소프트웨어 효과이며 촬영 결과에 적용합니다.")
+            Text("Natural 원형 보케는 최대12.6MP입니다. 더 큰 사진은 ‘사진 깊이만’의 기존 기본 심도 또는 심도 끄기를 사용하세요. 자동 축소하지 않습니다. f값은 실제 조리개가 아닌 촬영 후 가상 심도입니다.")
                 .font(.caption).foregroundStyle(.secondary)
-            if !model.depthModeAllowed { Text("심도는 PRO의 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상과 동시 사용하지 않습니다.").font(.caption) }
-            else if model.snapshot.capabilities?.depthAvailable != true { Text("현재 카메라에서 사진 깊이 데이터를 제공하지 않습니다. 지원되는 듀얼/TrueDepth 카메라가 필요합니다.").font(.caption) }
+            if let option = model.snapshot.capabilities?.photoResolutions.filter({ SoftwareDepthPolicy.supports(width: Int($0.width), height: Int($0.height)) }).max(by: { $0.pixels < $1.pixels }) {
+                Button("Natural용 \(option.title) 선택") { model.photoResolution = option }
+                    .disabled(model.busy).accessibilityIdentifier("camera.depth.resolution")
+            }
+            if !model.depthModeAllowed { Text("심도는 PRO의 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상·네이티브 피사체 추적과 현재 동시 사용하지 않습니다.").font(.caption) }
+            else if model.snapshot.capabilities?.depthAvailable != true { Text("사진 깊이가 없으면 내장된 Depth Anything V2 Small을 기기 내에서 사용합니다. AI 결과는 상대 깊이이며 m 단위 측정이 아닙니다.").font(.caption) }
             Text("심도 카메라로 전환하면 렌즈의 노출·초점 지원 범위가 바뀔 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
+            Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
+                .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
+            Text("저장된 깊이·촬영 당시 초점/룩을 사용해 새 결과를 만듭니다. 화면의 현재 장면으로 다시 추론하지 않습니다.").font(.caption2).foregroundStyle(.secondary)
         }
     }
     private var videoPreviewNotice: some View {

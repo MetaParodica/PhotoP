@@ -38,7 +38,7 @@ enum CompositionRuleDrawing {
         case .video:
             line(0, 0.12, 1, 0.12); line(0, 0.88, 1, 0.88); line(1 / 3, 0.12, 1 / 3, 0.88); line(2 / 3, 0.12, 2 / 3, 0.88)
         default:
-            let divisions: [CGFloat] = rule == .golden ? [0.381966, 0.618034] : [1 / 3, 2 / 3]
+            let divisions: [CGFloat] = rule == .golden ? [0.381966, 0.618034] : [CGFloat(1) / 3, CGFloat(2) / 3]
             for d in divisions { line(d, 0, d, 1); line(0, d, 1, d) }
         }
         return path
