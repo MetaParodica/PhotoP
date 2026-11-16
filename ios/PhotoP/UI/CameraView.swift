@@ -88,6 +88,7 @@ struct CameraView: View {
                 if arguments.contains("--review-guide") { drawer = .composition; model.selectCompositionPreset("portrait-two-thirds") }
                 if arguments.contains("--review-looks") { drawer = .looks }
                 if arguments.contains("--review-video") { tool = .video }
+                if arguments.contains("--review-depth") { tool = .aperture; model.proMode = true; model.depthSource = .ai }
                 if arguments.contains("--review-person") { model.personGuide = PersonGuide(framing: .full, position: .left); model.framing = .square }
             } else { resume() }
         }

@@ -2,6 +2,22 @@ import XCTest
 import UIKit
 
 final class CameraInteractionTests: XCTestCase {
+    @MainActor func testDepthLibraryOpensFromBottomPanelWithoutInventingCameraSupport() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review", "--review-depth"]
+        app.launch()
+        let panel = app.otherElements["camera.panel.aperture"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+        let library = app.buttons["camera.depth.library"]
+        reveal(library, in: panel)
+        library.tap()
+        XCTAssertTrue(app.navigationBars["심도 보관함"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["저장된 심도 사진이 없습니다."].waitForExistence(timeout: 5))
+        app.buttons["닫기"].tap()
+        XCTAssertTrue(app.buttons["camera.shutter"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+    }
     @MainActor func testIntelligentLibraryAppliesManualRuleWithoutFakeDetections() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
