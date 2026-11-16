@@ -56,13 +56,25 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryAddUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
           /usr/libexec/PlistBuddy -c 'Print :NSMotionUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
-      - name: Test model validation on Simulator
+      - name: Select available iOS Simulator
         working-directory: ios
         shell: bash
         run: |
-          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for k,v in d["devices"].items() if "iOS" in k for x in v if "iPhone" in x["name"]))')
+          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; print(max(choices)[1])')
           echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$device_id" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+          xcrun simctl list devices available
+      - name: Build application and tests for Simulator
+        working-directory: ios
+        timeout-minutes: 10
+        run: xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO build-for-testing
+      - name: Run application and depth XCTest on Simulator
+        working-directory: ios
+        timeout-minutes: 12
+        run: xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult -only-testing:PhotoPTests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
+      - name: Run camera UI interactions on Simulator
+        working-directory: ios
+        timeout-minutes: 8
+        run: xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult -only-testing:PhotoPUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Verify LUT resources and provenance
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v
@@ -113,3 +125,4 @@ jobs:
           path: |
             ios/screenshots/
             ios/UIValidation.xcresult
+            ios/UnitValidation.xcresult
