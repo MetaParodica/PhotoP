@@ -88,6 +88,7 @@ final class CameraModel: ObservableObject {
     @Published private(set) var depthEnabled = false
     @Published var depthAperture = 2.8
     @Published var depthSource: SoftwareDepthSource = .automatic
+    @Published var depthProfile: DepthLensProfile = .natural
     @Published var meteringScope: MeteringScope = .both
     @Published var focusMagnification = 1.0
     @Published private(set) var latestRendered: URL?
@@ -368,7 +369,7 @@ final class CameraModel: ObservableObject {
         busy = true; pausePhotoReview()
         defer { busy = false }
         do {
-            let result = try await CaptureResultProcessor.shared.reprocess(result: previous, original: original, aperture: depthAperture)
+            let result = try await CaptureResultProcessor.shared.reprocess(result: previous, original: original, aperture: depthAperture, profile: depthProfile)
             latestRenderedSources[result] = original; latestDepthResult = result; latestRendered = result
             latestRenderedSeries = [result]; savedToPhotos = false
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(result, maxPixel: 240) }.value
@@ -961,6 +962,7 @@ final class CameraModel: ObservableObject {
         let look = rawMode == .processed ? liveLookForRestoration : nil
         let aperture = depthEnabled ? depthAperture : nil
         let capturedDepthSource = depthSource
+        let capturedDepthProfile = depthProfile
         let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
         let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
         busy = true
@@ -988,7 +990,7 @@ final class CameraModel: ObservableObject {
             let center = urls[urls.count / 2]
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
-            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource)
+            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource, profile: capturedDepthProfile)
             try await PhotoStore.addToPhotos(urls + latestRenderedSeries)
             savedToPhotos = true
             message = "원본 \(urls.count)장과 사진 보관함에 저장했습니다."
@@ -996,12 +998,12 @@ final class CameraModel: ObservableObject {
     }
 
     private func renderCaptureResults(_ urls: [URL], look: ImportedLUT?, aperture: Double?, focus: CGPoint,
-                                      depthSource: SoftwareDepthSource = .measured) async {
+                                      depthSource: SoftwareDepthSource = .measured, profile: DepthLensProfile = .natural) async {
         guard look != nil || aperture != nil else { return }
         for (index, url) in urls.enumerated() {
             do {
                 let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus,
-                    depthSource: depthSource)
+                    depthSource: depthSource, profile: profile)
                 latestRenderedSeries.append(rendered)
                 latestRenderedSources[rendered] = url
                 if aperture != nil, FileManager.default.fileExists(atPath: rendered.deletingLastPathComponent().appendingPathComponent("depth.f32").path) {

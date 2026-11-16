@@ -247,6 +247,8 @@ struct CameraQuickControls: View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
                 .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
+            Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+            Text(model.depthProfile.explanation + " · PhotoP 가상 프로필, 실측 상용 렌즈 아님").font(.caption2)
             Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
                 .disabled(!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true)))
                 .accessibilityIdentifier("camera.depth.toggle")

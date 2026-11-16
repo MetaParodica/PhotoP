@@ -8,19 +8,19 @@ on:
       xcode:
         description: 'Installed Xcode to validate (27 requires a runner image that contains Xcode 27)'
         type: choice
-        options: ['26.6', '27']
-        default: '26.6'
+        options: ['26.3', '26.6', '27']
+        default: '26.3'
 permissions:
   contents: read
 jobs:
   ios:
-    runs-on: macos-26
+    runs-on: ${{ (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - name: Select and report SDK (never infer support from documentation alone)
         env:
-          REQUESTED_XCODE: ${{ inputs.xcode || '26.6' }}
+          REQUESTED_XCODE: ${{ inputs.xcode || '26.3' }}
         run: |
           developer_dir="/Applications/Xcode_${REQUESTED_XCODE}.app/Contents/Developer"
           if [ ! -d "$developer_dir" ]; then

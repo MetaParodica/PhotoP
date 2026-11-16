@@ -42,7 +42,7 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: input.photo), before)
         let folder = result.deletingLastPathComponent()
         let recipe = try JSONDecoder().decode(CaptureResultRecipe.self, from: Data(contentsOf: folder.appendingPathComponent("recipe.json")))
-        XCTAssertEqual(recipe.version, 2); XCTAssertEqual(recipe.depthUnits, "relativeInverse")
+        XCTAssertEqual(recipe.version, 3); XCTAssertEqual(recipe.depthUnits, "relativeInverse")
         XCTAssertNil(recipe.focusDistanceMetres)
         let map = try Data(contentsOf: folder.appendingPathComponent("depth.f32"))
         XCTAssertEqual(map.count, 16 * 12 * 4); XCTAssertEqual(recipe.depthMapSHA256, LUTPhotoEditor.hash(map))

@@ -12,6 +12,8 @@ struct HighResolutionResult: Sendable {
     var depthField: SoftwareDepthField? = nil
     var depthSource: String? = nil
     var matteUsed = false
+    var matte: DepthMatteSurface? = nil
+    var fusionError: Double? = nil
 }
 
 // File-backed full-size RGBA, with bounded CPU/GPU tile buffers. ImageIO may
@@ -85,7 +87,8 @@ actor HighResolutionPhotoProcessor {
     private var rendering = false
     func renderJPEG(original: URL, destination: URL, lut: CubeLUT?, settings: ProcessingLookSettings,
                     aperture: Double? = nil, focus: CGPoint = CGPoint(x: 0.5, y: 0.5), credit: String? = nil,
-                    depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil) async throws -> HighResolutionResult {
+                    depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil,
+                    profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil) async throws -> HighResolutionResult {
         guard !rendering else { throw CameraError.busy }
         rendering = true; defer { rendering = false; context.clearCaches() }
         try Task.checkCancellation(); try settings.validate()
@@ -125,7 +128,8 @@ actor HighResolutionPhotoProcessor {
                 color = depth.image; distance = depth.focus; absolute = depth.absolute
             } else {
                 let depth = try depthEngine.render(original: original, color: color, width: width, height: height,
-                    aperture: aperture, focus: focus, source: depthSource, override: depthOverride)
+                    aperture: aperture, focus: focus, source: depthSource, override: depthOverride,
+                    profile: profile, savedMatte: savedMatte, includeMatte: depthOverride == nil)
                 renderedDepth = depth; color = depth.image; absolute = depth.field.units == .inverseMetres
                 distance = absolute ? 1 / depth.focusInverse : depth.focusInverse
             }
@@ -164,6 +168,6 @@ actor HighResolutionPhotoProcessor {
         } catch { try? FileManager.default.removeItem(at: destination); throw error }
         return HighResolutionResult(width: width, height: height, focusDepth: distance, absoluteDepth: absolute,
             depthField: renderedDepth?.field, depthSource: renderedDepth?.source ?? (aperture == nil ? nil : "measured-baseline-highres"),
-            matteUsed: renderedDepth?.matteUsed ?? false)
+            matteUsed: renderedDepth?.matteUsed ?? false, matte: renderedDepth?.matte, fusionError: renderedDepth?.fusionError)
     }
 }

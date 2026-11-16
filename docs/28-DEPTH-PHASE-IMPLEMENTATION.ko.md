@@ -27,3 +27,9 @@
 - [main 실행40045643158](https://github.com/MetaParodica/PhotoP/actions/runs/40045643158), job120726611625의 실제 SDK 로그를 조회했다.
 - `IntelligentCompositionViews.swift`의 `[CGFloat]` 삼분할 배열에서 `[1 / 3, 2 / 3]`이 Int로 추론되어 exit65가 발생했다. 명시적 CGFloat 나눗셈으로 수정했다.
 - 이 실패는 앞선 Linux97개 통과가 앱 SDK 빌드 성공을 뜻하지 않는 사례다. 이번 새 CI 결과를 확인한 후 다음 상태를 기록한다.
+
+## Phase1~4: 첫 반복
+
+- `2587c02`를 검증 브랜치에 게시했다. 새 실행43903880619는 macOS26 대기열 상태로, 성공/실패 로그가 아직 없다. 공식 macOS15 설치표의 Xcode26.3을 확인하여 기본 CI를 해당 조합으로 변경한다.26.6/27은 수동 선택을 유지한다.
+- 공통 코어에 정규화·대칭 PSF/CPU 참조, 강건 affine 깊이 보정과 측정값 보존·빈 영역 융합, RGB 유도 알파·전경색 복원, 세대/움직임/만료 기반 시간 상태를 추가했다. 관련 테스트8개를 추가하여 portable105개 통과.
+- 사진 파이프라인에 선택 인스턴스/포함된 인물 매트, 보수적 경계색 복원, 보정된 AI hole fill, Natural/Portrait/Classic의 공유 PSF 커널을 연결했다. recipe v3는 렌즈·원본 깊이 출처·매트와 hash를 보관하여 재처리 때 다시 추론하지 않도록 했다. SDK/실제 사진 인수는 아직 대기다.

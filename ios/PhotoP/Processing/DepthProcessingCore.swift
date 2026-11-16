@@ -1,0 +1,244 @@
+import Foundation
+
+enum DepthLensProfile: String, Codable, CaseIterable, Identifiable, Sendable {
+    case natural, portrait, classic
+    var id: String { rawValue }
+    var title: String { self == .natural ? "Natural" : self == .portrait ? "Portrait" : "Classic" }
+    var explanation: String {
+        switch self {
+        case .natural: return "중립 원형·균일 광량"
+        case .portrait: return "부드러운 중심 가중·완만한 전이"
+        case .classic: return "가상 6날 조리개·주변부 캣아이"
+        }
+    }
+}
+
+struct DepthBokehTap: Sendable {
+    let x: Double
+    let y: Double
+    let weight: Double
+}
+
+enum DepthLensKernel {
+    // One center + symmetric pairs. CPU reference and GPU shader generation use
+    // the very same normalized PSF, not unrelated test-only approximations.
+    static func taps(profile: DepthLensProfile, aperture: Double, pairs: Int = 16) -> [DepthBokehTap] {
+        let n = min(24, max(4, pairs))
+        let f = aperture.isFinite ? min(16, max(1.4, aperture)) : 2.8
+        var values = [DepthBokehTap(x: 0, y: 0, weight: 1)]
+        for i in 0..<n {
+            let r = sqrt((Double(i) + 0.5) / Double(n)), angle = Double(i) * 2.399963229728653
+            var shape = 1.0
+            if profile == .classic {
+                let sector = Double.pi / 3
+                let local = (angle + sector / 2).truncatingRemainder(dividingBy: sector) - sector / 2
+                let polygon = cos(Double.pi / 6) / cos(local)
+                shape = 1 + (polygon - 1) * min(1, (f - 1.4) / 6.6)
+            }
+            let weight = profile == .portrait ? pow(max(0.02, 1 - r * r), 1.5) : 1
+            let x = cos(angle) * r * shape, y = sin(angle) * r * shape
+            values.append(.init(x: x, y: y, weight: weight)); values.append(.init(x: -x, y: -y, weight: weight))
+        }
+        let total = values.reduce(0) { $0 + $1.weight }
+        return values.map { .init(x: $0.x, y: $0.y, weight: $0.weight / total) }
+    }
+    static func reference(_ image: [SIMD3<Float>], width: Int, height: Int, radius: Double,
+                          profile: DepthLensProfile, aperture: Double = 2.8) -> [SIMD3<Float>]? {
+        guard width > 0, height > 0, width <= 1024, height <= 1024, width * height == image.count,
+              radius.isFinite, (0...128).contains(radius), image.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else { return nil }
+        let taps = taps(profile: profile, aperture: aperture)
+        return (0..<image.count).map { index in
+            let x = index % width, y = index / width
+            var result = SIMD3<Float>.zero
+            for t in taps {
+                result += DepthGrid.sample(image, width: width, height: height,
+                    x: Double(x) + t.x * radius, y: Double(y) + t.y * radius) * Float(t.weight)
+            }
+            return result
+        }
+    }
+}
+
+enum DepthGrid {
+    static func sample(_ values: [Float], width: Int, height: Int, x: Double, y: Double) -> Float {
+        let px = min(Double(width - 1), max(0, x)), py = min(Double(height - 1), max(0, y))
+        let ix = Int(px), iy = Int(py), jx = min(width - 1, ix + 1), jy = min(height - 1, iy + 1)
+        let dx = Float(px - Double(ix)), dy = Float(py - Double(iy))
+        return (values[iy * width + ix] * (1 - dx) + values[iy * width + jx] * dx) * (1 - dy)
+             + (values[jy * width + ix] * (1 - dx) + values[jy * width + jx] * dx) * dy
+    }
+    static func sample(_ values: [SIMD3<Float>], width: Int, height: Int, x: Double, y: Double) -> SIMD3<Float> {
+        let px = min(Double(width - 1), max(0, x)), py = min(Double(height - 1), max(0, y))
+        let ix = Int(px), iy = Int(py), jx = min(width - 1, ix + 1), jy = min(height - 1, iy + 1)
+        let dx = Float(px - Double(ix)), dy = Float(py - Double(iy))
+        let a = values[iy * width + ix] * (1 - dx) + values[iy * width + jx] * dx
+        let b = values[jy * width + ix] * (1 - dx) + values[jy * width + jx] * dx
+        return a * (1 - dy) + b * dy
+    }
+    static func resized(_ field: SoftwareDepthField, width: Int, height: Int) -> SoftwareDepthField? {
+        guard width >= 3, height >= 3, width <= 1024, height <= 1024 else { return nil }
+        if field.width == width && field.height == height { return field }
+        let data = (0..<(width * height)).map { index -> Float in
+            let x = (Double(index % width) + 0.5) * Double(field.width) / Double(width) - 0.5
+            let y = (Double(index / width) + 0.5) * Double(field.height) / Double(height) - 0.5
+            // Do not interpolate invalid depth as a real distance.
+            let px = min(field.width - 1, max(0, Int(x.rounded()))), py = min(field.height - 1, max(0, Int(y.rounded())))
+            return field.inverseDepth[py * field.width + px]
+        }
+        return SoftwareDepthField(width: width, height: height, inverseDepth: data, units: field.units)
+    }
+}
+
+struct DepthAffineCalibration: Sendable {
+    let scale: Double
+    let offset: Double
+    let normalizedError: Double
+    let support: Int
+}
+
+enum DepthFusionCore {
+    static func calibrate(predicted: [Float], measured: [Float]) -> DepthAffineCalibration? {
+        guard predicted.count == measured.count, predicted.count >= 32 else { return nil }
+        let stride = max(1, predicted.count / 2048)
+        var pairs: [(Double, Double)] = []
+        for i in Swift.stride(from: 0, to: predicted.count, by: stride) {
+            let p = predicted[i], m = measured[i]
+            if p.isFinite, m.isFinite, p > 0, m > 0 { pairs.append((Double(p), Double(m))) }
+        }
+        guard pairs.count >= 32 else { return nil }
+        func fit(_ points: [(Double, Double)]) -> (Double, Double)? {
+            let n = Double(points.count)
+            let x = points.reduce(0) { $0 + $1.0 } / n, y = points.reduce(0) { $0 + $1.1 } / n
+            let variance = points.reduce(0) { $0 + pow($1.0 - x, 2) }
+            let covariance = points.reduce(0) { $0 + ($1.0 - x) * ($1.1 - y) }
+            guard variance > 0.00000001 else { return nil }
+            let a = covariance / variance, b = y - a * x
+            return a.isFinite && b.isFinite && a > 0 ? (a, b) : nil
+        }
+        guard let initial = fit(pairs) else { return nil }
+        let residuals = pairs.map { abs($0.1 - (initial.0 * $0.0 + initial.1)) }.sorted()
+        let cutoff = max(0.00001, residuals[Int(Double(residuals.count - 1) * 0.8)])
+        pairs = pairs.filter { abs($0.1 - (initial.0 * $0.0 + initial.1)) <= cutoff }
+        guard pairs.count >= 32, let result = fit(pairs) else { return nil }
+        let targets = pairs.map(\.1).sorted(), span = targets.last! - targets.first!
+        guard span > 0.00001 else { return nil }
+        let error = pairs.reduce(0) { $0 + abs($1.1 - (result.0 * $1.0 + result.1)) } / Double(pairs.count) / span
+        guard error <= 0.08 else { return nil }
+        return .init(scale: result.0, offset: result.1, normalizedError: error, support: pairs.count)
+    }
+    static func fuse(measured: SoftwareDepthField, predicted: SoftwareDepthField) -> (field: SoftwareDepthField, calibration: DepthAffineCalibration?, filled: Int) {
+        guard let prediction = DepthGrid.resized(predicted, width: measured.width, height: measured.height),
+              let calibration = calibrate(predicted: prediction.inverseDepth, measured: measured.inverseDepth) else { return (measured, nil, 0) }
+        let valid = measured.inverseDepth.filter { $0 > 0 }, ceiling = Double(valid.max() ?? 1) * 3
+        var data = measured.inverseDepth, filled = 0
+        for i in data.indices where data[i] == 0 && prediction.inverseDepth[i] > 0 {
+            let value = calibration.scale * Double(prediction.inverseDepth[i]) + calibration.offset
+            if value.isFinite, value > 0, value <= ceiling { data[i] = Float(value); filled += 1 }
+        }
+        guard let field = SoftwareDepthField(width: measured.width, height: measured.height, inverseDepth: data, units: measured.units) else { return (measured, nil, 0) }
+        return (field, calibration, filled)
+    }
+}
+
+struct DepthMatteSurface: Sendable {
+    let width: Int
+    let height: Int
+    let alpha: [Float]
+    let foreground: [SIMD3<Float>]
+    let background: [SIMD3<Float>]
+
+    func encoded() -> Data {
+        var words: [UInt32] = []; words.reserveCapacity(width * height * 7)
+        for i in alpha.indices {
+            for v in [alpha[i], foreground[i].x, foreground[i].y, foreground[i].z,
+                      background[i].x, background[i].y, background[i].z] { words.append(v.bitPattern.littleEndian) }
+        }
+        return words.withUnsafeBytes { Data($0) }
+    }
+    static func decode(_ data: Data, width: Int, height: Int) -> Self? {
+        guard width >= 3, height >= 3, width <= 512, height <= 512, data.count == width * height * 28 else { return nil }
+        let values: [Float] = data.withUnsafeBytes { raw in
+            (0..<(width * height * 7)).map { Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 4, as: UInt32.self))) }
+        }
+        guard values.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { return nil }
+        var alpha: [Float] = [], f: [SIMD3<Float>] = [], b: [SIMD3<Float>] = []
+        for i in 0..<(width * height) {
+            let o = i * 7; alpha.append(values[o]); f.append(SIMD3(values[o + 1], values[o + 2], values[o + 3])); b.append(SIMD3(values[o + 4], values[o + 5], values[o + 6]))
+        }
+        return .init(width: width, height: height, alpha: alpha, foreground: f, background: b)
+    }
+}
+
+enum DepthMatteCore {
+    static func clamp(_ c: SIMD3<Float>) -> SIMD3<Float> { SIMD3(min(1, max(0, c.x)), min(1, max(0, c.y)), min(1, max(0, c.z))) }
+    static func unmix(image: SIMD3<Float>, background: SIMD3<Float>, alpha: Float) -> SIMD3<Float> {
+        guard alpha.isFinite, alpha > 0.05, alpha < 0.98 else { return clamp(image) }
+        return clamp((image - background * (1 - alpha)) / alpha)
+    }
+    static func refine(alpha: [Float], color: [SIMD3<Float>], width: Int, height: Int) -> DepthMatteSurface? {
+        guard width >= 3, height >= 3, width <= 1024, height <= 1024, width * height == alpha.count,
+              alpha.count == color.count, alpha.allSatisfy(\.isFinite),
+              color.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else { return nil }
+        let a = alpha.map { min(1, max(0, $0)) }
+        var refined = a, foreground = color, background = color
+        for y in 0..<height { for x in 0..<width {
+            let i = y * width + x
+            var sum: Float = 0, weight: Float = 0
+            for dy in -1...1 { for dx in -1...1 {
+                let px = min(width - 1, max(0, x + dx)), py = min(height - 1, max(0, y + dy)), j = py * width + px
+                let d = color[j] - color[i], distance = d.x * d.x + d.y * d.y + d.z * d.z
+                let w = exp(-distance / 0.025 - Float(dx * dx + dy * dy) / 3)
+                sum += a[j] * w; weight += w
+            } }
+            refined[i] = min(1, max(0, a[i] * 0.5 + sum / max(0.0001, weight) * 0.5))
+            guard refined[i] > 0.03, refined[i] < 0.97 else { continue }
+            var bg = SIMD3<Float>.zero, bgWeight: Float = 0
+            for dy in -4...4 { for dx in -4...4 {
+                let px = min(width - 1, max(0, x + dx)), py = min(height - 1, max(0, y + dy)), j = py * width + px
+                if a[j] < 0.08 {
+                    let w = 1 / Float(1 + dx * dx + dy * dy)
+                    bg += color[j] * w; bgWeight += w
+                }
+            } }
+            if bgWeight > 0 {
+                bg /= bgWeight; background[i] = bg
+                foreground[i] = color[i] * 0.25 + unmix(image: color[i], background: bg, alpha: refined[i]) * 0.75
+            }
+        } }
+        return .init(width: width, height: height, alpha: refined, foreground: foreground, background: background)
+    }
+}
+
+struct DepthTemporalState: Sendable {
+    private var field: SoftwareDepthField?
+    private var luma: [Float] = []
+    private var time = -Double.infinity
+    private var generation: UInt64 = 0
+    mutating func reset() { field = nil; luma = []; time = -Double.infinity }
+    mutating func update(_ next: SoftwareDepthField, luma nextLuma: [Float], time nextTime: Double, generation: UInt64) -> SoftwareDepthField? {
+        guard nextTime.isFinite, nextLuma.count == next.inverseDepth.count, nextLuma.allSatisfy(\.isFinite) else { return nil }
+        if generation == self.generation, let previous = field, previous.width == next.width, previous.height == next.height,
+           previous.units == next.units, nextTime >= time, nextTime - time <= 1, luma.count == nextLuma.count {
+            var old = previous.inverseDepth
+            if next.units == .relativeInverse,
+               let fit = DepthFusionCore.calibrate(predicted: old, measured: next.inverseDepth) {
+                old = old.map { $0 > 0 ? Float(fit.scale * Double($0) + fit.offset) : 0 }
+            }
+            var data = next.inverseDepth
+            for i in data.indices where abs(nextLuma[i] - luma[i]) < 0.035 && data[i] > 0 && old[i] > 0 {
+                data[i] = data[i] * 0.7 + old[i] * 0.3
+            }
+            field = SoftwareDepthField(width: next.width, height: next.height, inverseDepth: data, units: next.units)
+        } else { field = next }
+        luma = nextLuma; time = nextTime; self.generation = generation
+        return field
+    }
+    func current(luma current: [Float], time now: Double, generation: UInt64, maximumAge: Double = 0.75) -> SoftwareDepthField? {
+        guard let field, now.isFinite, now >= time, now - time <= maximumAge, generation == self.generation,
+              current.count == luma.count, current.allSatisfy(\.isFinite) else { return nil }
+        var data = field.inverseDepth, changed = 0
+        for i in data.indices where abs(current[i] - luma[i]) > 0.06 { data[i] = 0; changed += 1 }
+        guard changed * 3 < data.count else { return nil }
+        return SoftwareDepthField(width: field.width, height: field.height, inverseDepth: data, units: field.units)
+    }
+}

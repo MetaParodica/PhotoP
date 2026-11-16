@@ -10,6 +10,8 @@ struct NaturalDepthResult {
     let focusInverse: Float
     let source: String
     let matteUsed: Bool
+    var matte: DepthMatteSurface? = nil
+    var fusionError: Double? = nil
 }
 
 // Initial Natural renderer: bounded inverse-depth layers, disk PSF, far-to-near
@@ -18,20 +20,25 @@ struct NaturalDepthResult {
 // Owned only by the high-resolution processing actor.
 final class NaturalDepthEngine {
     private let estimator = ExternalDepthEstimator()
+    private let matteRefiner = DepthMatteRefiner()
+    private let lensFilter = DepthLensFilter()
     private var sliceKernel: CIColorKernel?
     private var backgroundKernel: CIColorKernel?
     private var planeKernel: CIColorKernel?
 
     func render(original: URL, color: CIImage, width: Int, height: Int, aperture: Double,
-                focus: CGPoint, source: SoftwareDepthSource, override: SoftwareDepthField? = nil) throws -> NaturalDepthResult {
+                focus: CGPoint, source: SoftwareDepthSource, override: SoftwareDepthField? = nil,
+                profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil,
+                qualityPairs: Int = 16, includeMatte: Bool = true) throws -> NaturalDepthResult {
         guard SoftwareDepthPolicy.supports(width: width, height: height),
               aperture.isFinite, (1.4...16).contains(aperture) else {
             throw ImageEditingError.invalid("Natural 심도는 최대12.6MP 일반 사진에서 지원합니다. 해상도를 낮춰 다시 촬영하세요. 원본은 보존됩니다.")
         }
         try Task.checkCancellation()
         let measured = source == .ai || override != nil ? nil : try Self.measured(original)
-        let field: SoftwareDepthField
-        let origin: String
+        var field: SoftwareDepthField
+        var origin: String
+        var fusionError: Double?
         if let override { field = override; origin = "saved-depth" }
         else if let measured { field = measured; origin = "photo-depth" }
         else {
@@ -40,7 +47,12 @@ final class NaturalDepthEngine {
             }
             field = try estimator.estimate(color); origin = SoftwareDepthPolicy.modelID
         }
-        if origin == "photo-depth", abs((Double(field.width) / Double(field.height)) / (Double(width) / Double(height)) - 1) >= 0.02 {
+        if override == nil, source == .automatic, measured != nil,
+           field.inverseDepth.contains(0), let prediction = try? estimator.estimate(color) {
+            let fusion = DepthFusionCore.fuse(measured: field, predicted: prediction)
+            if fusion.filled > 0 { field = fusion.field; origin = "photo-depth+calibrated-ai"; fusionError = fusion.calibration?.normalizedError }
+        }
+        if origin.hasPrefix("photo-depth"), abs((Double(field.width) / Double(field.height)) / (Double(width) / Double(height)) - 1) >= 0.02 {
             throw ImageEditingError.invalid("사진과 센서 깊이 좌표 비율이 다릅니다. 원본은 보존됩니다.")
         }
         guard let focusValue = field.focusValue(x: Double(focus.x), y: Double(focus.y)), let bounds = field.bounds else {
@@ -50,13 +62,27 @@ final class NaturalDepthEngine {
         let normalized = field.inverseDepth.map { $0 > 0 ? UInt8((min(1, max(0, ($0 - bounds.lower) / span)) * 255).rounded()) : 0 }
         let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }
         let extent = color.extent
+        let embedded = try Self.portraitMatte(original, extent: extent)
+        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded) : nil)
+        let matteImages = try matte.map { try DepthMatteRefiner.images($0, extent: extent) }
+        var sourceColor = color
+        if let matteImages {
+            let edge = CIColorKernel(source: """
+            kernel vec4 photopEdgeColor(__sample c, __sample f, __sample a) {
+                float w=4.0*a.r*(1.0-a.r); return mix(c,f,w);
+            }
+            """).flatMap { $0.apply(extent: extent, arguments: [color, matteImages.foreground, matteImages.alpha]) }
+            if let edge { sourceColor = edge }
+        }
         let map = try Self.mask(normalized, width: field.width, height: field.height, extent: extent)
         let valid = try Self.mask(validity, width: field.width, height: field.height, extent: extent)
         let focusNormalized = Double(min(1, max(0, (focusValue - bounds.lower) / span)))
         let slice = try Self.kernel(&sliceKernel, source: """
-        kernel vec4 photopDepthSlice(__sample c, __sample d, __sample valid, float lo, float center, float hi) {
+        kernel vec4 photopDepthSlice(__sample c, __sample d, __sample valid, __sample alpha, float lo, float center, float hi, float focus) {
             float w = d.r <= center ? (d.r-lo)/max(0.00001,center-lo) : (hi-d.r)/max(0.00001,hi-center);
-            return c * clamp(w,0.0,1.0) * valid.r;
+            float edge=4.0*alpha.r*(1.0-alpha.r);
+            float target=1.0-smoothstep(0.05,0.18,abs(d.r-focus));
+            return c * clamp(w,0.0,1.0) * valid.r * mix(1.0,alpha.r,edge*target);
         }
         """)
         let fill = try Self.kernel(&backgroundKernel, source: """
@@ -84,9 +110,11 @@ final class NaturalDepthEngine {
             let inverse = Double(bounds.lower) + center * Double(span)
             guard let signedRadius = SoftwareDepthPolicy.radius(inverse: inverse, focus: Double(focusValue), span: Double(span),
                 absolute: field.units == .inverseMetres, aperture: aperture, longEdge: max(width, height)),
-                  var layer = slice.apply(extent: extent, arguments: [color, map, valid, lo, center, hi]) else { throw CameraError.configuration }
+                  var layer = slice.apply(extent: extent, arguments: [sourceColor, map, valid,
+                    matteImages?.alpha ?? CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: extent),
+                    lo, center, hi, focusNormalized]) else { throw CameraError.configuration }
             let radius = abs(signedRadius)
-            if radius > 0.3 { layer = layer.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: radius]).cropped(to: extent) }
+            if radius > 0.3 { layer = try lensFilter.blur(layer, radius: radius, profile: profile, aperture: aperture, pairs: qualityPairs) }
             if i == 0 {
                 // Extend only background samples into the occluded boundary.
                 // Keep known sharp background intact; filling must not simply
@@ -102,17 +130,16 @@ final class NaturalDepthEngine {
         guard var sharp = plane.apply(extent: extent, arguments: [map, valid, focusNormalized]) else { throw CameraError.configuration }
         // An embedded portrait matte is a boundary aid, not metric depth. Use
         // only around the focal plane rather than flattening the entire person.
-        var matteUsed = false
-        if let matte = try Self.portraitMatte(original, extent: extent) {
-            sharp = sharp.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: matte])
-            matteUsed = true
+        if let alpha = matteImages?.alpha ?? embedded {
+            sharp = sharp.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: alpha])
         }
         result = color.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: result, kCIInputMaskImageKey: sharp])
         // Foreground bokeh must spread over a sharp background. Restoring the
         // focus plane AFTER this step would erase that physically important spill.
         result = foreground.composited(over: result)
         result = result.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: color, kCIInputMaskImageKey: valid]).cropped(to: extent)
-        return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: origin, matteUsed: matteUsed)
+        return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: origin,
+            matteUsed: matteImages != nil || embedded != nil, matte: matte, fusionError: fusionError)
     }
 
     private static func kernel(_ cache: inout CIColorKernel?, source: String) throws -> CIColorKernel {
