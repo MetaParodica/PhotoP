@@ -19,7 +19,14 @@ final class ExternalDepthEstimator {
             guard let url = Bundle.main.url(forResource: "DepthAnythingV2SmallF16", withExtension: "mlmodelc") else {
                 throw ImageEditingError.invalid("AI 깊이 모델이 앱에 없습니다. 원본은 보존됩니다.")
             }
-            let configuration = MLModelConfiguration(); configuration.computeUnits = .all
+            let configuration = MLModelConfiguration()
+            #if targetEnvironment(simulator)
+            // Deterministic contract validation; Simulator hardware is not an
+            // iPhone Neural Engine performance measurement.
+            configuration.computeUnits = .cpuOnly
+            #else
+            configuration.computeUnits = .all
+            #endif
             model = try MLModel(contentsOf: url, configuration: configuration)
             guard let input = model.modelDescription.inputDescriptionsByName["image"]?.imageConstraint,
                   input.pixelsWide == 518, input.pixelsHigh == 392,

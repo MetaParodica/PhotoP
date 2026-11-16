@@ -88,4 +88,28 @@ final class DepthPhaseTests: XCTestCase {
         let output = try XCTUnwrap(state.update(b, luma: luma, time: 1.1, generation: 1))
         XCTAssertEqual(output.inverseDepth, b.inverseDepth)
     }
+    func testBackwardFlowAlignsDepthAndInvalidatesRevealedBorderWithoutExtendingAge() throws {
+        let w = 12, h = 8
+        let values = (0..<(w * h)).map { Float($0 % w + 1) }
+        let luma = (0..<(w * h)).map { Float($0 % w) / Float(w) }
+        let field = try XCTUnwrap(SoftwareDepthField(width: w, height: h, inverseDepth: values, units: .inverseMetres))
+        var current = luma
+        for y in 0..<h { for x in 0..<w { current[y * w + x] = x < 2 ? 0.9 : luma[y * w + x - 2] } }
+        var state = DepthTemporalState(); _ = state.update(field, luma: luma, time: 1, generation: 5)
+        XCTAssertTrue(state.alignHistory(backwardFlow: Array(repeating: SIMD2(-2, 0), count: w * h), currentLuma: current))
+        let warped = try XCTUnwrap(state.current(luma: current, time: 1.1, generation: 5))
+        XCTAssertEqual(warped.inverseDepth[4 * w], 0)
+        XCTAssertEqual(warped.inverseDepth[4 * w + 7], values[4 * w + 5])
+        XCTAssertNil(state.current(luma: current, time: 2, generation: 5))
+    }
+    func testWrongFlowAndSameColorDepthJumpCannotCreateGhostHistory() throws {
+        var state = DepthTemporalState()
+        let a = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: Array(repeating: 1, count: 100), units: .inverseMetres))
+        let b = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: Array(repeating: 2, count: 100), units: .inverseMetres))
+        let luma = [Float](repeating: 0.5, count: 100)
+        _ = state.update(a, luma: luma, time: 1, generation: 1)
+        XCTAssertFalse(state.alignHistory(backwardFlow: Array(repeating: SIMD2(Float.nan, 0), count: 100), currentLuma: luma))
+        let value = try XCTUnwrap(state.update(b, luma: luma, time: 1.1, generation: 1))
+        XCTAssertEqual(value.inverseDepth, b.inverseDepth)
+    }
 }

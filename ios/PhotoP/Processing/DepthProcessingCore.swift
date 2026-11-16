@@ -215,6 +215,33 @@ struct DepthTemporalState: Sendable {
     private var time = -Double.infinity
     private var generation: UInt64 = 0
     mutating func reset() { field = nil; luma = []; time = -Double.infinity }
+    // Backward pixel flow: each CURRENT pixel points into the PREVIOUS image.
+    // Out-of-view/newly occluded or photometrically inconsistent pixels get no
+    // history. Warping never creates metric information or extends its age.
+    mutating func alignHistory(backwardFlow: [SIMD2<Float>], currentLuma: [Float]) -> Bool {
+        guard let previous = field, backwardFlow.count == previous.inverseDepth.count,
+              luma.count == backwardFlow.count, currentLuma.count == luma.count,
+              currentLuma.allSatisfy(\.isFinite) else { return false }
+        let w = previous.width, h = previous.height
+        var data = [Float](repeating: 0, count: luma.count), alignedLuma = currentLuma
+        var accepted = 0
+        for i in data.indices {
+            let flow = backwardFlow[i]
+            guard flow.x.isFinite, flow.y.isFinite else { continue }
+            let x = Double(i % w) + Double(flow.x), y = Double(i / w) + Double(flow.y)
+            guard x >= 0, y >= 0, x <= Double(w - 1), y <= Double(h - 1),
+                  abs(DepthGrid.sample(luma, width: w, height: h, x: x, y: y) - currentLuma[i]) <= 0.06 else { continue }
+            let j = min(h - 1, Int(y.rounded())) * w + min(w - 1, Int(x.rounded()))
+            guard previous.inverseDepth[j] > 0 else { continue }
+            data[i] = previous.inverseDepth[j]
+            alignedLuma[i] = DepthGrid.sample(luma, width: w, height: h, x: x, y: y)
+            accepted += 1
+        }
+        guard accepted * 3 >= data.count * 2,
+              let aligned = SoftwareDepthField(width: w, height: h, inverseDepth: data, units: previous.units) else { return false }
+        field = aligned; luma = alignedLuma
+        return true
+    }
     mutating func update(_ next: SoftwareDepthField, luma nextLuma: [Float], time nextTime: Double, generation: UInt64) -> SoftwareDepthField? {
         guard nextTime.isFinite, nextLuma.count == next.inverseDepth.count, nextLuma.allSatisfy(\.isFinite) else { return nil }
         if generation == self.generation, let previous = field, previous.width == next.width, previous.height == next.height,
@@ -230,7 +257,9 @@ struct DepthTemporalState: Sendable {
                 }
             }
             var data = next.inverseDepth
-            for i in data.indices where abs(nextLuma[i] - luma[i]) < 0.035 && data[i] > 0 && old[i] > 0 {
+            let span = next.bounds.map { $0.upper - $0.lower } ?? 0
+            let tolerance = max(0.001, span * 0.1)
+            for i in data.indices where abs(nextLuma[i] - luma[i]) < 0.035 && data[i] > 0 && old[i] > 0 && abs(data[i] - old[i]) <= tolerance {
                 data[i] = data[i] * 0.7 + old[i] * 0.3
             }
             field = SoftwareDepthField(width: next.width, height: next.height, inverseDepth: data, units: next.units)

@@ -4,6 +4,7 @@ import CoreImage
 import Metal
 import ImageIO
 import UniformTypeIdentifiers
+import Vision
 @testable import PhotoP
 
 final class NaturalDepthTests: XCTestCase {
@@ -172,6 +173,35 @@ final class NaturalDepthTests: XCTestCase {
         let red = stride(from: 0, to: pixels.count, by: 4).map { pixels[$0] }
         XCTAssertGreaterThan(red.filter { $0 > 0.00001 }.count, 250, "Large highlights must fill the aperture rather than expose isolated PSF taps")
         XCTAssertEqual(red.reduce(0, +), 1, accuracy: 0.3)
+    }
+    func testVisionBackwardFlowDirectionOnAsymmetricTranslatedRGB() throws {
+        let w = 128, h = 96
+        var previous = [UInt8](repeating: 255, count: w * h * 4)
+        for y in 0..<h { for x in 0..<w {
+            let i = (y * w + x) * 4, px = Double(x), py = Double(y)
+            previous[i] = UInt8(127 + 50 * sin(px * 0.15) + 30 * cos(py * 0.19))
+            previous[i + 1] = UInt8(127 + 60 * sin((px + py) * 0.12))
+            previous[i + 2] = UInt8(127 + 45 * cos(px * 0.37 - py * 0.13))
+        } }
+        var current = [UInt8](repeating: 128, count: previous.count)
+        for y in 0..<h { for x in 0..<w {
+            current[(y * w + x) * 4 + 3] = 255
+            if x >= 3, y >= 2 {
+                for c in 0..<3 { current[(y * w + x) * 4 + c] = previous[((y - 2) * w + x - 3) * 4 + c] }
+            }
+        } }
+        let a = try SDRImage(rgba: Data(previous), width: w, height: h).cgImage()
+        let b = try SDRImage(rgba: Data(current), width: w, height: h).cgImage()
+        let flow: [SIMD2<Float>]
+        do { flow = try DepthMotionEstimator().backwardFlow(current: b, previous: a) }
+        catch let error as NSError where error.domain == VNErrorDomain {
+            throw XCTSkip("Vision optical-flow runtime unavailable: \(error.localizedDescription); production uses motion-gated fallback")
+        }
+        var xValues: [Float] = [], yValues: [Float] = []
+        for y in 24..<72 { for x in 32..<96 { xValues.append(flow[y * w + x].x); yValues.append(flow[y * w + x].y) } }
+        xValues.sort(); yValues.sort()
+        XCTAssertEqual(xValues[xValues.count / 2], -3, accuracy: 1)
+        XCTAssertEqual(yValues[yValues.count / 2], -2, accuracy: 1)
     }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true

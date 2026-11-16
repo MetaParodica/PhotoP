@@ -23,6 +23,11 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
     private let analysisQueue = DispatchQueue(label: "com.photop.depth-analysis", qos: .userInitiated)
     private let estimator = ExternalDepthEstimator()
     private let matteRefiner = DepthMatteRefiner()
+    private let motionEstimator = DepthMotionEstimator()
+    // Analysis queue only; generation rejects old orientation/lens canvases.
+    private var previousImage: CGImage?
+    private var previousEpoch: UInt64?
+    private var previousTime = -Double.infinity
     private let analysisContext = CIContext(options: [.cacheIntermediates: false])
     private let motionContext = CIContext(options: [.cacheIntermediates: false]) // frameQueue only
     private var settings = LiveDepthSettings()
@@ -70,14 +75,23 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
                     let w = max(3, Int(image.extent.width * scale)), h = max(3, Int(image.extent.height * scale))
                     guard let field = DepthGrid.resized(prediction, width: w, height: h) else { return }
                     let luma = try Self.luminance(image, width: w, height: h, context: analysisContext)
+                    let currentImage = try motionEstimator.image(image, width: w, height: h)
+                    let flow: [SIMD2<Float>]?
+                    if previousEpoch == epoch, now - previousTime <= 1, let previousImage,
+                       previousImage.width == w, previousImage.height == h {
+                        flow = try? motionEstimator.backwardFlow(current: currentImage, previous: previousImage)
+                    } else { flow = nil }
                     let refined = try? matteRefiner.refine(color: image, focus: config.focus, embedded: nil, maximumDimension: 160)
-                    lock.withLock {
-                        guard running, settings.enabled, generation == epoch else { return }
+                    let accepted = lock.withLock { () -> Bool in
+                        guard running, settings.enabled, generation == epoch else { return false }
+                        if let flow { _ = temporal.alignHistory(backwardFlow: flow, currentLuma: luma) }
                         _ = temporal.update(field, luma: luma, time: now, generation: epoch)
                         if settings.focus == config.focus { matte = refined }
                         size = CGSize(width: w, height: h)
                         lastError = nil
+                        return true
                     }
+                    if accepted { previousImage = currentImage; previousEpoch = epoch; previousTime = now }
                 } catch {
                     lock.withLock { if generation == epoch { temporal.reset(); matte = nil; lastError = error.localizedDescription } }
                 }
