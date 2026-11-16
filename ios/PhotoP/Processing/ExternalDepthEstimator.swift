@@ -3,7 +3,7 @@
 import CoreVideo
 import Foundation
 
-// Confined to HighResolutionPhotoProcessor's executor; never called on MainActor.
+// Each instance has one processing/analysis executor; never called on MainActor.
 // No downloads, image upload, or third-party runtime. Core ML normalization is
 // already embedded in this exact pinned model: do not normalize a second time.
 final class ExternalDepthEstimator {

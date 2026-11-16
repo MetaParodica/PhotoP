@@ -15,7 +15,8 @@ final class LivePreviewImageProcessor {
     private let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
 
     init(lut: CubeLUT, device: MTLDevice) throws {
-        context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false])
+        context = CIContext(mtlDevice: device, options: [.cacheIntermediates: false,
+            .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
         renderer = try MetalLUTTextureRenderer(lut: lut, device: device)
     }
 

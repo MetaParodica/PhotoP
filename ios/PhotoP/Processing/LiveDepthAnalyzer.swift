@@ -88,7 +88,9 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
         guard snapshot.0, snapshot.1.enabled, !snapshot.1.comparingOriginal, snapshot.5.width >= 3,
               abs((image.extent.width / image.extent.height) / (snapshot.5.width / snapshot.5.height) - 1) < 0.025,
               let luma = try? Self.luminance(image, width: Int(snapshot.5.width), height: Int(snapshot.5.height), context: motionContext),
-              let field = snapshot.3.current(luma: luma, time: ProcessInfo.processInfo.systemUptime, generation: snapshot.2) else { return nil }
+              let field = snapshot.3.current(luma: luma, time: ProcessInfo.processInfo.systemUptime, generation: snapshot.2),
+              field.bounds != nil,
+              field.focusValue(x: Double(snapshot.1.focus.x), y: Double(snapshot.1.focus.y)) != nil else { return nil }
         return .init(field: field, matte: snapshot.4, settings: snapshot.1)
     }
     private static func luminance(_ image: CIImage, width: Int, height: Int, context: CIContext) throws -> [Float] {

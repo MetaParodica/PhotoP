@@ -11,6 +11,9 @@ final class DepthMatteRefiner {
 
     func refine(color: CIImage, focus: CGPoint, embedded: CIImage?, maximumDimension: Int = 384) throws -> DepthMatteSurface? {
         try Task.checkCancellation()
+        guard focus.x.isFinite, focus.y.isFinite, (0...1).contains(focus.x), (0...1).contains(focus.y),
+              color.extent.width.isFinite, color.extent.height.isFinite,
+              color.extent.width >= 3, color.extent.height >= 3 else { throw CameraError.invalidSettings }
         let scale = min(1, CGFloat(min(512, max(32, maximumDimension))) / max(color.extent.width, color.extent.height))
         let small = color.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         guard let cg = context.createCGImage(small, from: small.extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) else { throw CameraError.invalidPhotoData }

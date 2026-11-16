@@ -127,6 +127,25 @@ final class NaturalDepthTests: XCTestCase {
             }
         }
     }
+    func testDepthLayerROIsMatchFullFrameAcrossTileBoundary() throws {
+        let extent = CGRect(x: 0, y: 0, width: 1056, height: 96)
+        let color = CIImage(color: CIColor(red: 0.2, green: 0.3, blue: 0.5)).cropped(to: extent)
+        let foreground = CIImage(color: CIColor(red: 0.9, green: 0.1, blue: 0.2))
+            .cropped(to: CGRect(x: 0, y: 0, width: 520, height: 96)).composited(over: color)
+        let values: [Float] = (0..<(33 * 3)).map { $0 % 33 < 16 ? 2 : 1 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 33, height: 3, inverseDepth: values, units: .relativeInverse))
+        let graph = try NaturalDepthEngine().renderField(color: foreground, field: field, aperture: 1.4,
+            focus: CGPoint(x: 0.25, y: 0.5), profile: .classic, qualityPairs: 8).image
+        let context = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
+        let space = CGColorSpace(name: CGColorSpace.sRGB)!
+        let full = try SDRImage.rasterize(XCTUnwrap(context.createCGImage(graph, from: extent, format: .RGBA8, colorSpace: space)))
+        for rect in [CGRect(x: 0, y: 0, width: 512, height: 96), CGRect(x: 512, y: 0, width: 544, height: 96)] {
+            let tile = try SDRImage.rasterize(XCTUnwrap(context.createCGImage(graph, from: rect, format: .RGBA8, colorSpace: space)))
+            for y in 0..<96 { for x in 0..<tile.width { for c in 0..<4 {
+                XCTAssertEqual(Double(tile.rgba[(y * tile.width + x) * 4 + c]), Double(full.rgba[(y * full.width + Int(rect.minX) + x) * 4 + c]), accuracy: 2)
+            } } }
+        }
+    }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true
         let before = model.settings
