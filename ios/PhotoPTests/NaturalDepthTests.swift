@@ -158,6 +158,21 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertTrue(first.matteUsed); XCTAssertFalse(second.matteUsed)
         XCTAssertEqual(second.matte?.alpha, alpha, "Keep the immutable original matte for a future focus change back")
     }
+    func testLargeCoCHighlightHasContinuousCoverageAndBoundedEnergy() throws {
+        let extent = CGRect(x: 0, y: 0, width: 65, height: 65)
+        let black = CIImage(color: .black).cropped(to: extent)
+        let point = CIImage(color: .white).cropped(to: CGRect(x: 32, y: 32, width: 1, height: 1)).composited(over: black)
+        let output = try DepthLensFilter().blur(point, radius: 20, profile: .natural, aperture: 2.8)
+        let context = CIContext(options: [.workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
+        var pixels = [Float](repeating: 0, count: 65 * 65 * 4)
+        pixels.withUnsafeMutableBytes { bytes in
+            context.render(output, toBitmap: bytes.baseAddress!, rowBytes: 65 * 16, bounds: extent, format: .RGBAf,
+                colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!)
+        }
+        let red = stride(from: 0, to: pixels.count, by: 4).map { pixels[$0] }
+        XCTAssertGreaterThan(red.filter { $0 > 0.00001 }.count, 250, "Large highlights must fill the aperture rather than expose isolated PSF taps")
+        XCTAssertEqual(red.reduce(0, +), 1, accuracy: 0.3)
+    }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true
         let before = model.settings

@@ -193,6 +193,7 @@ final class CameraModel: ObservableObject {
         updateMotion()
         if !active {
             photoEffectTask?.cancel()
+            liveDepthHasFrame = false
             focusMagnification = 1
             cancelCountdown(); liveHasFrame = false; histogram = nil; resetComposition(); sceneSample = nil
             livePreview?.setSampleDelivery(false)
@@ -311,7 +312,7 @@ final class CameraModel: ObservableObject {
 
     func setLiveDepthPreview(_ enabled: Bool) {
         guard !enabled || (depthEnabled && depthModeAllowed && depthSource == .ai) else { return }
-        liveDepthPreviewEnabled = enabled; liveDepthHasFrame = false
+        liveDepthPreviewEnabled = enabled; liveDepthHasFrame = false; liveDepthError = nil
         updateDepthPreview(); monitoringChanged()
     }
     func updateDepthPreview() {
@@ -517,6 +518,7 @@ final class CameraModel: ObservableObject {
         livePreview?.setRunning(false)
         livePreview = nil
         liveHasFrame = false
+        liveDepthHasFrame = false
         previewImageSize = nil
         histogram = nil
         resetComposition()
