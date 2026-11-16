@@ -11,6 +11,7 @@ final class ExternalDepthEstimator {
     private let context = CIContext(options: [.cacheIntermediates: false])
 
     func estimate(_ image: CIImage) throws -> SoftwareDepthField {
+        OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }
         try Task.checkCancellation()
         let model: MLModel
         if let loaded = self.model { model = loaded }

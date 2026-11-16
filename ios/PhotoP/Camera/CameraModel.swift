@@ -126,6 +126,7 @@ final class CameraModel: ObservableObject {
     private var countdownTask: Task<Void, Never>?
     private var longJobID: UUID?
     private var longReprocessTask: Task<URL, Error>?
+    private var photoEffectTask: Task<URL, Error>?
     private var importedLiveLUT: ImportedLUT?
     init() {
         coachLearningEnabled = UserDefaults.standard.bool(forKey: "coach.learning.enabled")
@@ -191,6 +192,7 @@ final class CameraModel: ObservableObject {
         self.active = active
         updateMotion()
         if !active {
+            photoEffectTask?.cancel()
             focusMagnification = 1
             cancelCountdown(); liveHasFrame = false; histogram = nil; resetComposition(); sceneSample = nil
             livePreview?.setSampleDelivery(false)
@@ -1027,9 +1029,18 @@ final class CameraModel: ObservableObject {
                                       depthSource: SoftwareDepthSource = .measured, profile: DepthLensProfile = .natural) async {
         guard look != nil || aperture != nil else { return }
         for (index, url) in urls.enumerated() {
+            guard active, !Task.isCancelled else {
+                latestRenderErrors[url] = "앱 비활성화 또는 취소로 효과 처리를 중단했습니다. 원본은 보존됩니다."
+                break
+            }
             do {
-                let rendered = try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus,
-                    depthSource: depthSource, profile: profile)
+                let task = Task {
+                    try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus,
+                        depthSource: depthSource, profile: profile)
+                }
+                photoEffectTask = task
+                let rendered = try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() })
+                photoEffectTask = nil
                 latestRenderedSeries.append(rendered)
                 latestRenderedSources[rendered] = url
                 if aperture != nil, FileManager.default.fileExists(atPath: rendered.deletingLastPathComponent().appendingPathComponent("depth.f32").path) {
@@ -1040,7 +1051,12 @@ final class CameraModel: ObservableObject {
                     latestRendered = rendered
                     latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(rendered, maxPixel: 240) }.value
                 }
+            } catch is CancellationError {
+                photoEffectTask = nil
+                latestRenderErrors[url] = "효과 처리를 취소했습니다. 원본은 보존됩니다."
+                break
             } catch {
+                photoEffectTask = nil
                 latestRenderErrors[url] = error.localizedDescription
                 report(ImageEditingError.invalid("원본은 보존했습니다. 효과 결과 처리 실패: \(error.localizedDescription)"))
             }

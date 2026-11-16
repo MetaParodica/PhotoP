@@ -19,6 +19,8 @@ final class DepthMatteRefiner {
         if let embedded {
             mask = embedded.transformed(by: CGAffineTransform(scaleX: CGFloat(w) / embedded.extent.width, y: CGFloat(h) / embedded.extent.height))
         } else {
+            OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }
+            try Task.checkCancellation()
             let request = VNGenerateForegroundInstanceMaskRequest()
             let handler = VNImageRequestHandler(cgImage: cg, orientation: .up, options: [:])
             try handler.perform([request])

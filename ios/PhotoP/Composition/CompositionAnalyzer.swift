@@ -13,7 +13,7 @@ private struct ImmutableVisionFrame: @unchecked Sendable { let buffer: CVPixelBu
 final class CompositionAnalyzer: @unchecked Sendable {
     // Live/review clients share one inference gate, including a live batch that
     // was already running when the UI paused it for post-capture review.
-    private static let inferenceLock = NSLock()
+    private static let inferenceLock = OnDeviceInferenceGate.lock
     private let queue = DispatchQueue(label: "com.photop.composition", qos: .utility)
     private let lock = NSLock()
     private var scene: GuideScene = .general
