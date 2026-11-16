@@ -61,10 +61,10 @@ final class BundledFilmLibraryTests: XCTestCase {
         let folder = root.appendingPathComponent("favorites"), favorites = LUTLibrary(folder: folder)
         var uncredited = imported; uncredited.provenance = nil
         _ = try await favorites.save(uncredited)
-        _ = try await favorites.save(imported)
-        let restored = try await LUTLibrary(folder: folder).load(entry.sha256)
+        let credited = try await favorites.save(imported)
+        let restored = try await LUTLibrary(folder: folder).load(credited.id)
         XCTAssertEqual(restored.provenance, imported.provenance)
-        XCTAssertNil(restored.preset)
+        XCTAssertEqual(restored.preset, imported.preset)
         let presets = FilterPresetLibrary(folder: root.appendingPathComponent("presets"))
         try await presets.save(restored, settings: .init(intensity: 0.6), name: "Attributed")
         let entries = try await presets.entries(), id = try XCTUnwrap(entries.first?.id)

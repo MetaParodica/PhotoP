@@ -10,6 +10,11 @@ on:
         type: choice
         options: ['26.3', '26.6', '27']
         default: '26.3'
+      test_scope:
+        description: 'Depth isolates the numerical/optical-flow/render tests for an iteration; all is the full regression gate'
+        type: choice
+        options: ['all', 'depth']
+        default: 'all'
 permissions:
   contents: read
 jobs:
@@ -70,8 +75,18 @@ jobs:
       - name: Run application and depth XCTest on Simulator
         working-directory: ios
         timeout-minutes: 12
-        run: xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult -only-testing:PhotoPTests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
+        shell: bash
+        env:
+          TEST_SCOPE: ${{ inputs.test_scope || 'all' }}
+        run: |
+          if [ "$TEST_SCOPE" = depth ]; then
+            test_flags=(-only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests)
+          else
+            test_flags=(-only-testing:PhotoPTests)
+          fi
+          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult "${test_flags[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Run camera UI interactions on Simulator
+        if: inputs.test_scope != 'depth'
         working-directory: ios
         timeout-minutes: 8
         run: xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult -only-testing:PhotoPUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
@@ -88,7 +103,8 @@ jobs:
           cmp assets/company-luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts/manifest.json
           python3 scripts/check_company_luts.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts
       - name: Capture implemented camera UI on Simulator
-        if: always() && env.PHOTOP_SIMULATOR != ''
+        if: always() && env.PHOTOP_SIMULATOR != '' && inputs.test_scope != 'depth'
+        timeout-minutes: 3
         working-directory: ios
         run: |
           mkdir -p screenshots

@@ -19,7 +19,7 @@ final class HighResolutionPolicyTests: XCTestCase {
             XCTAssertNil(HighResolutionPlan(width: w, height: h))
         }
         XCTAssertNil(HighResolutionPlan(width: 2, height: 2, halo: -1))
-        XCTAssertNil(HighResolutionPlan(width: 2, height: 2, halo: 513))
+        XCTAssertNil(HighResolutionPlan(width: 2, height: 2, halo: 1537))
     }
     func testOutputTilesCoverEveryPixelExactlyOnceIncludingOddEdges() throws {
         let plan = try XCTUnwrap(HighResolutionPlan(width: 2053, height: 1031, halo: 37))
@@ -57,5 +57,13 @@ final class HighResolutionPolicyTests: XCTestCase {
         XCTAssertEqual(last.output, ImagePixelRegion(x: 1024, y: 1024, width: 176, height: 76))
         XCTAssertEqual(last.input, ImagePixelRegion(x: 1008, y: 1008, width: 192, height: 92))
         XCTAssertEqual(plan.height - last.input.maxY, 0, "CI crop bottom edge; output memory still starts at top")
+    }
+    func testCombinedDepthAndFilmHaloStaysWithinTileRendererBudget() throws {
+        let depth = try XCTUnwrap(SoftwareDepthPolicy.halo(width: 16384, height: 3906, fieldWidth: 518, fieldHeight: 123,
+            matteWidth: 384, matteHeight: 91))
+        let film = try XCTUnwrap(HighResolutionPlan.halo(longEdge: 16384, neighbours: true, chromaticAberration: 1, streak: true))
+        let plan = try XCTUnwrap(HighResolutionPlan(width: 16384, height: 3906, halo: depth + film))
+        for tile in plan.tiles { XCTAssertLessThanOrEqual(tile.input.width * tile.input.height, 12_600_000) }
+        XCTAssertGreaterThan(depth, 48 * 4)
     }
 }

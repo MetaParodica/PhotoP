@@ -260,7 +260,7 @@ struct CameraQuickControls: View {
                 Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
             }
             Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
-                .disabled(!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true)))
+                .disabled(model.snapshot.state != .running || (!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true))))
                 .accessibilityIdentifier("camera.depth.toggle")
             CameraValueSlider(title: "심도 f값", value: $model.depthAperture, range: 1.4...16,
                               display: { String(format: "f/%.1f", $0) }, onCommit: {})

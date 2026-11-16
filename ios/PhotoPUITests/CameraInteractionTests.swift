@@ -236,7 +236,7 @@ final class CameraInteractionTests: XCTestCase {
         let field = app.textFields["camera.long.duration.input"]
         XCTAssertTrue(field.waitForExistence(timeout: 3))
         field.tap()
-        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: (field.value as? String ?? "").count))
+        app.buttons["camera.long.duration.clear"].tap()
         field.typeText("12")
         if app.buttons["완료"].exists { app.buttons["완료"].tap() }
         app.buttons["camera.panel.close"].tap()
@@ -245,8 +245,10 @@ final class CameraInteractionTests: XCTestCase {
     }
 
     @MainActor private func reveal(_ element: XCUIElement, in panel: XCUIElement) {
+        let scroll = panel.descendants(matching: .scrollView).matching(identifier: panel.identifier.replacingOccurrences(of: "camera.panel.", with: "camera.panel.scroll.")).firstMatch
         for _ in 0..<8 {
             if element.isHittable { return }
+            if scroll.exists { scroll.swipeUp(); continue }
             let start = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.9))
             let end = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.35))
             start.press(forDuration: 0.05, thenDragTo: end)

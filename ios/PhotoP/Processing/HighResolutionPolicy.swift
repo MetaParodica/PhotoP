@@ -15,6 +15,7 @@ struct HighResolutionPlan: Sendable {
     static let maximumPixels = 64_000_000
     static let maximumDimension = 16_384
     static let tileSide = 1024
+    static let maximumHalo = 1536
     struct Tile: Equatable, Sendable {
         let output: ImagePixelRegion
         let input: ImagePixelRegion // includes neighbour samples, clipped to image
@@ -26,14 +27,17 @@ struct HighResolutionPlan: Sendable {
     var minimumFreeBytes: Int64 { Int64(byteCount) + 64 * 1024 * 1024 }
     init?(width: Int, height: Int, halo: Int = 0) {
         guard width > 0, height > 0, width <= Self.maximumDimension, height <= Self.maximumDimension,
-              height <= Self.maximumPixels / width, (0...512).contains(halo) else { return nil }
+              height <= Self.maximumPixels / width, (0...Self.maximumHalo).contains(halo) else { return nil }
         self.width = width; self.height = height; self.halo = halo
     }
     var tiles: [Tile] {
         var result: [Tile] = []
-        for y in stride(from: 0, to: height, by: Self.tileSide) {
-            for x in stride(from: 0, to: width, by: Self.tileSide) {
-                let right = min(width, x + Self.tileSide), bottom = min(height, y + Self.tileSide)
+        // Combined depth + film halos may be larger than the old LUT halo.
+        // Keep every Metal work item below its 12.6MP memory contract.
+        let side = min(Self.tileSide, 3500 - 2 * halo)
+        for y in stride(from: 0, to: height, by: side) {
+            for x in stride(from: 0, to: width, by: side) {
+                let right = min(width, x + side), bottom = min(height, y + side)
                 let left = max(0, x - halo), top = max(0, y - halo)
                 result.append(Tile(output: .init(x: x, y: y, width: right - x, height: bottom - y),
                     input: .init(x: left, y: top, width: min(width, right + halo) - left, height: min(height, bottom + halo) - top)))

@@ -116,7 +116,6 @@ actor HighResolutionPhotoProcessor {
         guard let halo = HighResolutionPlan.halo(longEdge: max(width, height),
                 neighbours: effects.bloom > 0 || effects.halation > 0 || effects.softFocus > 0,
                 chromaticAberration: effects.chromaticAberration, streak: effects.streak > 0),
-              let plan = HighResolutionPlan(width: width, height: height, halo: halo),
               (width == rawWidth && height == rawHeight) || (width == rawHeight && height == rawWidth) else { throw CameraError.invalidPhotoData }
         var distance: Float?, absolute = false
         var renderedDepth: NaturalDepthResult?
@@ -134,6 +133,18 @@ actor HighResolutionPhotoProcessor {
                 renderedDepth = depth; color = depth.image; absolute = depth.field.units == .inverseMetres
                 distance = absolute ? 1 / depth.focusInverse : depth.focusInverse
             }
+        }
+        var combinedHalo = halo
+        if let depth = renderedDepth {
+            guard let depthHalo = SoftwareDepthPolicy.halo(width: width, height: height,
+                fieldWidth: depth.field.width, fieldHeight: depth.field.height,
+                matteWidth: depth.matte?.width, matteHeight: depth.matte?.height) else {
+                throw ImageEditingError.invalid("심도 지도의 해상도에 비해 필요한 여유 영역이 처리 예산을 넘었습니다. 원본은 보존됩니다.")
+            }
+            combinedHalo += depthHalo
+        }
+        guard let plan = HighResolutionPlan(width: width, height: height, halo: combinedHalo) else {
+            throw ImageEditingError.invalid("심도·룩 조합의 타일 여유 영역이 처리 예산을 넘었습니다. 원본은 보존됩니다.")
         }
         let renderer: MetalLUTRenderer?
         if let lut { renderer = try MetalLUTRenderer(lut: lut) } else { renderer = nil }

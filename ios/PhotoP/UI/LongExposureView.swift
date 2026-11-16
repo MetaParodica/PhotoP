@@ -52,6 +52,10 @@ struct LongExposureDurationControl: View {
                     .focused($editing).submitLabel(.done).onSubmit { editing = false }
                     .accessibilityLabel("장노출 시간 초 입력").accessibilityIdentifier("camera.long.duration.input")
                     .textFieldStyle(.roundedBorder)
+                if editing && !text.isEmpty {
+                    Button { text = ""; editing = true } label: { Image(systemName: "xmark.circle.fill") }
+                        .accessibilityLabel("노출 시간 입력 지우기").accessibilityIdentifier("camera.long.duration.clear")
+                }
             }
             CameraChoice(title: "빠른 선택", selection: $duration, values: [1.0, 2, 4, 8, 15, 30, 60, 120, 300],
                          identifier: "camera.long.duration", label: { CaptureWorkflowPolicy.durationLabel($0) })

@@ -130,23 +130,32 @@ final class NaturalDepthTests: XCTestCase {
         }
     }
     func testDepthLayerROIsMatchFullFrameAcrossTileBoundary() throws {
-        let extent = CGRect(x: 0, y: 0, width: 1056, height: 96)
+        let extent = CGRect(x: 0, y: 0, width: 2112, height: 192)
         let color = CIImage(color: CIColor(red: 0.2, green: 0.3, blue: 0.5)).cropped(to: extent)
         let foreground = CIImage(color: CIColor(red: 0.9, green: 0.1, blue: 0.2))
-            .cropped(to: CGRect(x: 0, y: 0, width: 520, height: 96)).composited(over: color)
-        let values: [Float] = (0..<(33 * 3)).map { $0 % 33 < 16 ? 2 : 1 }
-        let field = try XCTUnwrap(SoftwareDepthField(width: 33, height: 3, inverseDepth: values, units: .relativeInverse))
+            .cropped(to: CGRect(x: 0, y: 0, width: 1040, height: 192)).composited(over: color)
+        let values: [Float] = (0..<(66 * 6)).map { $0 % 66 < 32 ? 2 : 1 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 66, height: 6, inverseDepth: values, units: .relativeInverse))
         let graph = try NaturalDepthEngine().renderField(color: foreground, field: field, aperture: 1.4,
             focus: CGPoint(x: 0.25, y: 0.5), profile: .classic, qualityPairs: 8).image
         let context = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
         let space = CGColorSpace(name: CGColorSpace.sRGB)!
         let full = try SDRImage.rasterize(XCTUnwrap(context.createCGImage(graph, from: extent, format: .RGBA8, colorSpace: space)))
-        for rect in [CGRect(x: 0, y: 0, width: 512, height: 96), CGRect(x: 512, y: 0, width: 544, height: 96)] {
+        let halo = try XCTUnwrap(SoftwareDepthPolicy.halo(width: 2112, height: 192, fieldWidth: 66, fieldHeight: 6))
+        let plan = try XCTUnwrap(HighResolutionPlan(width: 2112, height: 192, halo: halo))
+        var maximumError = 0, firstMismatch = ""
+        for region in plan.tiles {
+            let rect = CGRect(x: region.input.x, y: plan.height - region.input.maxY, width: region.input.width, height: region.input.height)
             let tile = try SDRImage.rasterize(XCTUnwrap(context.createCGImage(graph, from: rect, format: .RGBA8, colorSpace: space)))
-            for y in 0..<96 { for x in 0..<tile.width { for c in 0..<4 {
-                XCTAssertEqual(Double(tile.rgba[(y * tile.width + x) * 4 + c]), Double(full.rgba[(y * full.width + Int(rect.minX) + x) * 4 + c]), accuracy: 2)
+            for y in 0..<region.output.height { for x in 0..<region.output.width { for c in 0..<4 {
+                let source = ((y + region.output.y - region.input.y) * tile.width + x + region.output.x - region.input.x) * 4 + c
+                let destination = ((y + region.output.y) * full.width + x + region.output.x) * 4 + c
+                let error = abs(Int(tile.rgba[source]) - Int(full.rgba[destination]))
+                if error > 2 && firstMismatch.isEmpty { firstMismatch = "x=\(x + region.output.x),y=\(y + region.output.y),channel=\(c)" }
+                maximumError = max(maximumError, error)
             } } }
         }
+        XCTAssertLessThanOrEqual(maximumError, 2, "Depth halo/core crop must match full render. First mismatch: \(firstMismatch)")
     }
     func testRefocusOutsideStoredInstanceDoesNotKeepOldSubjectMask() throws {
         let input = try fixture(), image = try XCTUnwrap(CIImage(contentsOf: input.photo))

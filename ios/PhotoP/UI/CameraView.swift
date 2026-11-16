@@ -443,6 +443,7 @@ struct CameraView: View {
                                     openDepthLibrary: { open(.depthHistory) })
                     .padding(.bottom, 8)
             }.frame(maxHeight: max(32, availableHeight - 60))
+                .accessibilityIdentifier("camera.panel.scroll.\(selected.rawValue)")
         }.padding(.horizontal, 16).padding(.bottom, 8).cameraGlass(radius: 24)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("camera.panel.\(selected.rawValue)")

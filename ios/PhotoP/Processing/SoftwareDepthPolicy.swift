@@ -48,6 +48,20 @@ enum SoftwareDepthPolicy {
     static func supports(width: Int, height: Int) -> Bool {
         width >= 3 && height >= 3 && width <= 16384 && height <= 16384 && width * height <= maximumPixels
     }
+    static func halo(width: Int, height: Int, fieldWidth: Int, fieldHeight: Int,
+                     matteWidth: Int? = nil, matteHeight: Int? = nil) -> Int? {
+        guard supports(width: width, height: height), fieldWidth >= 3, fieldHeight >= 3 else { return nil }
+        let edge = Double(max(width, height)), scale = edge / 4032
+        var cell = max(Double(width) / Double(fieldWidth), Double(height) / Double(fieldHeight))
+        if let mw = matteWidth, let mh = matteHeight, mw >= 3, mh >= 3 {
+            cell = max(cell, Double(width) / Double(mw), Double(height) / Double(mh))
+        }
+        // PSF pyramid prefilter/reconstruction + local background extension +
+        // interpolated map/matte support. Crop only AFTER evaluating this halo.
+        let value = ceil(240 * scale + 2 * cell + 8)
+        guard value <= Double(HighResolutionPlan.maximumHalo) else { return nil }
+        return Int(value)
+    }
     // Signed RADIUS in output pixels; negative=near foreground, positive=far.
     // Absolute input uses a virtual 50mm lens / 36mm long edge, not phone aperture.
     static func radius(inverse: Double, focus: Double, span: Double, absolute: Bool,
