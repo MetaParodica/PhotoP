@@ -16,6 +16,11 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     let frameQueue = DispatchQueue(label: "com.photop.live-lut", qos: .userInteractive)
     private let commandQueue: MTLCommandQueue
     private var composition: CompositionAnalyzer!
+    private let depthAnalyzer = LiveDepthAnalyzer()
+    private var depthApplied = false
+    private var depthSettings = LiveDepthSettings()
+    var depthHasFrame: Bool { lock.withLock { depthApplied } }
+    var depthError: String? { depthAnalyzer.errorDescription }
     private var processor: LivePreviewImageProcessor
     // Processor is encoded only on frameQueue. A completion retains the exact
     // immutable frame owner until its GPU/readback work has finished.
@@ -78,6 +83,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     }
     func setRunning(_ running: Bool) {
         composition.setRunning(running)
+        depthAnalyzer.setRunning(running)
         let event: Event? = lock.withLock {
             state.setRunning(running); announcedGeneration = nil
             return running ? nil : makeEvent(.waiting)
@@ -87,6 +93,17 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     func invalidateFrames() {
         lock.withLock { state.invalidate(); announcedGeneration = nil; imageSize = nil; latestSampleID = nil }
         composition.invalidate()
+        depthAnalyzer.invalidate()
+    }
+    func setDepthPreview(_ settings: LiveDepthSettings) {
+        depthAnalyzer.configure(settings)
+        let event: Event? = lock.withLock {
+            defer { depthSettings = settings }
+            guard depthSettings.enabled != settings.enabled || depthSettings.comparingOriginal != settings.comparingOriginal else { return nil }
+            depthApplied = false; state.invalidate(); announcedGeneration = nil
+            return makeEvent(.waiting)
+        }
+        if let event { onEvent(id, event) }
     }
     func setSampleDelivery(_ enabled: Bool) { lock.withLock { samplesWanted = enabled; if !enabled { latestSampleID = nil } } }
     func isCurrentSample(_ id: UUID) -> Bool { lock.withLock { latestSampleID == id && samplesWanted && state.running } }
@@ -154,6 +171,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
         applyPendingLook()
+        depthAnalyzer.offer(buffer, minimumInterval: budget.compositionInterval)
         if lock.withLock({ samplesWanted }), now - lastSampleTime >= 1 {
             let generation = lock.withLock { state.generation }
             lastSampleTime = now
@@ -197,7 +215,9 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
-                let image = try owner.processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command)
+                let source = CIImage(cvPixelBuffer: buffer)
+                let depth = depthAnalyzer.current(for: source)
+                let image = try owner.processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command, depth: depth)
                 try display.encode(image: image, destination: drawable.texture, command: command, fill: fill)
                 command.present(drawable)
                 command.addCompletedHandler { [self, buffer, owner] completed in
@@ -207,6 +227,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                     let histogram = completed.status == .completed && monitorSettings.histogram ? owner.processor.histogram() : nil
                     let event: Event? = lock.withLock {
                         guard state.complete(ticket) else { return nil }
+                        depthApplied = depth != nil && completed.status == .completed
                         if completed.status != .completed {
                             state.setRunning(false)
                             return makeEvent(.failed(completed.error?.localizedDescription ?? "GPU 프리뷰가 중단됐습니다."))

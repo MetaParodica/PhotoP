@@ -2,8 +2,8 @@ import Foundation
 
 enum LiveLookPolicy {
     static func gradesFrame(selected: Bool, comparingOriginal: Bool) -> Bool { selected && !comparingOriginal }
-    static func needsOutput(selected: Bool, monitoring: Bool, guide: Bool, focusAssist: Bool, samples: Bool) -> Bool {
-        selected || monitoring || guide || focusAssist || samples
+    static func needsOutput(selected: Bool, monitoring: Bool, guide: Bool, focusAssist: Bool, samples: Bool, depth: Bool = false) -> Bool {
+        selected || monitoring || guide || focusAssist || samples || depth
     }
 }
 

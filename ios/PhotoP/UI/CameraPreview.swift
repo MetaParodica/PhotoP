@@ -95,7 +95,7 @@ struct CameraPreview: UIViewRepresentable {
             // Official AVFoundation image rect accounts for rotation, mirroring,
             // letterboxing and aspect-fill. Delivered Vision pixels are already
             // rotated/mirrored too: DO NOT mirror the subject point a second time.
-            if !locked, let imagePoint = GuideGeometry.normalizedPoint(location, in: imageRect) {
+            if let imagePoint = GuideGeometry.normalizedPoint(location, in: imageRect) {
                 parent.onSubjectTap(imagePoint)
             }
             let point = view.previewLayer.captureDevicePointConverted(fromLayerPoint: location)

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 enum AutoFocusDrive: String, Codable, CaseIterable, Identifiable, Sendable {
     case continuous, single

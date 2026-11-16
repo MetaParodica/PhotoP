@@ -106,7 +106,7 @@ actor CaptureResultProcessor {
                 destination: pending.appendingPathComponent("photo.jpg"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),
                 aperture: aperture, focus: focus, credit: credit, depthSource: depthSource, depthOverride: depthOverride,
                 profile: profile, savedMatte: savedMatte)
-            let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space Natural disk layers (max12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
+            let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space lens depth layers (max64MP; reduced sample count above12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
             var recipe = CaptureResultRecipe(version: 3, originalFilename: original.lastPathComponent,
                 originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
                 focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth ? result.focusDepth : nil,

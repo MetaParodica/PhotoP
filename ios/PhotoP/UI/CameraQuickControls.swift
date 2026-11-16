@@ -249,13 +249,22 @@ struct CameraQuickControls: View {
                 .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
             Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
             Text(model.depthProfile.explanation + " · PhotoP 가상 프로필, 실측 상용 렌즈 아님").font(.caption2)
+            Toggle("실시간 AI 심도 프리뷰", isOn: Binding(get: { model.liveDepthPreviewEnabled }, set: { model.setLiveDepthPreview($0) }))
+                .disabled(!model.depthEnabled || model.depthSource != .ai)
+                .accessibilityIdentifier("camera.depth.live")
+            if model.liveDepthPreviewEnabled {
+                if let error = model.liveDepthError { Text("AI 심도 오류: \(error)").font(.caption).foregroundStyle(.orange) }
+                Text(model.liveDepthHasFrame ? "AI 심도 표시 중 · 사진과 동일한 렌즈/초점 계산" : "AI 심도 대기/움직임 감지 · 원본/룩 프리뷰 유지")
+                    .font(.caption).foregroundStyle(.secondary)
+                Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
+            }
             Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
                 .disabled(!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true)))
                 .accessibilityIdentifier("camera.depth.toggle")
             CameraValueSlider(title: "심도 f값", value: $model.depthAperture, range: 1.4...16,
                               display: { String(format: "f/%.1f", $0) }, onCommit: {})
                 .disabled(!model.depthEnabled).accessibilityIdentifier("camera.depth.aperture")
-            Text("Natural 원형 보케는 최대12.6MP입니다. 더 큰 사진은 ‘사진 깊이만’의 기존 기본 심도 또는 심도 끄기를 사용하세요. 자동 축소하지 않습니다. f값은 실제 조리개가 아닌 촬영 후 가상 심도입니다.")
+            Text("최대64MP 원래 해상도로 합성합니다.12.6MP 초과는 처리 샘플 수를 줄이며 더 오래 걸릴 수 있습니다. 깊이 디테일 자체가64MP인 것은 아닙니다. f값은 실제 렌즈 조리개가 아닙니다.")
                 .font(.caption).foregroundStyle(.secondary)
             if let option = model.snapshot.capabilities?.photoResolutions.filter({ SoftwareDepthPolicy.supports(width: Int($0.width), height: Int($0.height)) }).max(by: { $0.pixels < $1.pixels }) {
                 Button("Natural용 \(option.title) 선택") { model.photoResolution = option }
@@ -267,7 +276,8 @@ struct CameraQuickControls: View {
             Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
                 .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
             Text("저장된 깊이·촬영 당시 초점/룩을 사용해 새 결과를 만듭니다. 화면의 현재 장면으로 다시 추론하지 않습니다.").font(.caption2).foregroundStyle(.secondary)
-        }
+        }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
+            .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
     }
     private var videoPreviewNotice: some View {
         Text("영상은 원본 색상으로 녹화합니다. 장치가 녹화·분석 스트림 동시 사용을 허용하면 사진 모드에서 선택한 룩을 뷰파인더에만 표시합니다. 룩 변경은 사진 모드에서 하세요. 영상에 LUT를 굽지는 않습니다.")

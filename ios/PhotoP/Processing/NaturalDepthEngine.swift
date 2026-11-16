@@ -32,7 +32,7 @@ final class NaturalDepthEngine {
                 qualityPairs: Int = 16, includeMatte: Bool = true) throws -> NaturalDepthResult {
         guard SoftwareDepthPolicy.supports(width: width, height: height),
               aperture.isFinite, (1.4...16).contains(aperture) else {
-            throw ImageEditingError.invalid("Natural 심도는 최대12.6MP 일반 사진에서 지원합니다. 해상도를 낮춰 다시 촬영하세요. 원본은 보존됩니다.")
+            throw ImageEditingError.invalid("심도 처리는 최대64MP·긴 변16384px 일반 사진에서 지원합니다. 원본은 보존됩니다.")
         }
         try Task.checkCancellation()
         let measured = source == .ai || override != nil ? nil : try Self.measured(original)
@@ -55,6 +55,20 @@ final class NaturalDepthEngine {
         if origin.hasPrefix("photo-depth"), abs((Double(field.width) / Double(field.height)) / (Double(width) / Double(height)) - 1) >= 0.02 {
             throw ImageEditingError.invalid("사진과 센서 깊이 좌표 비율이 다릅니다. 원본은 보존됩니다.")
         }
+        let embedded = try Self.portraitMatte(original, extent: color.extent)
+        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded) : nil)
+        return try renderField(color: color, field: field, aperture: aperture, focus: focus, profile: profile,
+            matte: matte, embedded: embedded, source: origin, fusionError: fusionError, qualityPairs: qualityPairs)
+    }
+
+    func renderField(color: CIImage, field: SoftwareDepthField, aperture: Double, focus: CGPoint,
+                     profile: DepthLensProfile = .natural, matte: DepthMatteSurface? = nil, embedded: CIImage? = nil,
+                     source: String = "live-ai", fusionError: Double? = nil, qualityPairs: Int = 16) throws -> NaturalDepthResult {
+        guard color.extent.width.isFinite, color.extent.height.isFinite,
+              color.extent.width > 0, color.extent.height > 0,
+              color.extent.width <= 16384, color.extent.height <= 16384 else { throw CameraError.invalidPhotoData }
+        let width = Int(color.extent.width), height = Int(color.extent.height)
+        guard SoftwareDepthPolicy.supports(width: width, height: height), aperture.isFinite, (1.4...16).contains(aperture) else { throw CameraError.invalidSettings }
         guard let focusValue = field.focusValue(x: Double(focus.x), y: Double(focus.y)), let bounds = field.bounds else {
             throw ImageEditingError.invalid("초점 위치 또는 깊이 대비가 불확실합니다. 다른 위치를 선택하세요. 원본은 보존됩니다.")
         }
@@ -62,8 +76,6 @@ final class NaturalDepthEngine {
         let normalized = field.inverseDepth.map { $0 > 0 ? UInt8((min(1, max(0, ($0 - bounds.lower) / span)) * 255).rounded()) : 0 }
         let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }
         let extent = color.extent
-        let embedded = try Self.portraitMatte(original, extent: extent)
-        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded) : nil)
         let matteImages = try matte.map { try DepthMatteRefiner.images($0, extent: extent) }
         var sourceColor = color
         if let matteImages {
@@ -96,13 +108,15 @@ final class NaturalDepthEngine {
             return vec4(w,w,w,1.0);
         }
         """)
-        var centers = (0...16).map { Double($0) / 16 }
+        let layers = qualityPairs <= 8 ? 8 : 16
+        var centers = (0...layers).map { Double($0) / Double(layers) }
         centers.append(focusNormalized)
         centers.sort()
         centers = centers.enumerated().filter { $0.offset == 0 || $0.element - centers[$0.offset - 1] > 0.0001 }.map(\.element)
         // The fill only estimates occluded background; never claim it recovers
         // unseen detail. Foreground layers subsequently overwrite it by depth.
-        var result = color.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 24]).cropped(to: extent)
+        let effectScale = Double(max(width, height)) / 4032
+        var result = color.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 24 * effectScale]).cropped(to: extent)
         var foreground = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
         for i in centers.indices {
             try Task.checkCancellation()
@@ -119,7 +133,7 @@ final class NaturalDepthEngine {
                 // Extend only background samples into the occluded boundary.
                 // Keep known sharp background intact; filling must not simply
                 // blur foreground colors into the newly revealed background.
-                let extended = layer.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 48]).cropped(to: extent)
+                let extended = layer.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 48 * effectScale]).cropped(to: extent)
                 guard let localFill = fill.apply(extent: extent, arguments: [extended, result]),
                       let background = fill.apply(extent: extent, arguments: [layer, localFill]) else { throw CameraError.configuration }
                 result = background
@@ -138,7 +152,7 @@ final class NaturalDepthEngine {
         // focus plane AFTER this step would erase that physically important spill.
         result = foreground.composited(over: result)
         result = result.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: color, kCIInputMaskImageKey: valid]).cropped(to: extent)
-        return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: origin,
+        return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: source,
             matteUsed: matteImages != nil || embedded != nil, matte: matte, fusionError: fusionError)
     }
 

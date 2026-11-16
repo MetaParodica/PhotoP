@@ -43,10 +43,10 @@ struct SoftwareDepthField: Sendable {
 }
 
 enum SoftwareDepthPolicy {
-    static let maximumPixels = 12_600_000
+    static let maximumPixels = 64_000_000
     static let modelID = "apple-depth-anything-v2-small-f16-cfef6f6"
     static func supports(width: Int, height: Int) -> Bool {
-        width >= 3 && height >= 3 && width <= 8192 && height <= 8192 && width * height <= maximumPixels
+        width >= 3 && height >= 3 && width <= 16384 && height <= 16384 && width * height <= maximumPixels
     }
     // Signed RADIUS in output pixels; negative=near foreground, positive=far.
     // Absolute input uses a virtual 50mm lens / 36mm long edge, not phone aperture.
@@ -62,7 +62,8 @@ enum SoftwareDepthPolicy {
         } else {
             value = (focus - inverse) / span * Double(longEdge) / 120 * (2.8 / aperture)
         }
-        return min(48, max(-48, value))
+        let limit = 48 * Double(longEdge) / 4032
+        return min(limit, max(-limit, value))
     }
 }
 

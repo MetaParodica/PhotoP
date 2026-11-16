@@ -71,4 +71,12 @@ final class DepthPhaseTests: XCTestCase {
         XCTAssertNil(state.current(luma: Array(repeating: 1, count: 100), time: 1.2, generation: 7))
         state.reset(); XCTAssertNil(state.current(luma: luma, time: 1.2, generation: 7))
     }
+    func testMovingFreshDepthDoesNotBlendWithAnOldPlane() throws {
+        var state = DepthTemporalState()
+        let a = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: Array(repeating: 1, count: 100), units: .inverseMetres))
+        let b = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: Array(repeating: 2, count: 100), units: .inverseMetres))
+        _ = state.update(a, luma: Array(repeating: 0, count: 100), time: 1, generation: 1)
+        let result = try XCTUnwrap(state.update(b, luma: Array(repeating: 1, count: 100), time: 1.1, generation: 1))
+        XCTAssertEqual(result.inverseDepth, b.inverseDepth)
+    }
 }

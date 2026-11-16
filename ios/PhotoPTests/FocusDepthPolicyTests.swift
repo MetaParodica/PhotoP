@@ -75,13 +75,14 @@ final class FocusDepthPolicyTests: XCTestCase {
     }
     func testRelativeDepthHasSeparateContractAndBoundedBlur() throws {
         let radius = try XCTUnwrap(SoftwareDepthPolicy.radius(inverse: 100, focus: 1, span: 1, absolute: false, aperture: 1.4, longEdge: 4000))
-        XCTAssertEqual(radius, -48)
+        XCTAssertEqual(radius, -48 * 4000 / 4032, accuracy: 0.0001)
         XCTAssertNil(SoftwareDepthPolicy.radius(inverse: .nan, focus: 1, span: 1, absolute: false, aperture: 2.8, longEdge: 4000))
         XCTAssertNil(SoftwareDepthPolicy.radius(inverse: 1, focus: 1, span: 0, absolute: false, aperture: 2.8, longEdge: 4000))
     }
     func testNaturalBudgetNeverSilentlyDownscales() {
         XCTAssertTrue(SoftwareDepthPolicy.supports(width: 4032, height: 3024))
-        XCTAssertFalse(SoftwareDepthPolicy.supports(width: 8064, height: 6048))
+        XCTAssertTrue(SoftwareDepthPolicy.supports(width: 8064, height: 6048))
+        XCTAssertFalse(SoftwareDepthPolicy.supports(width: 8192, height: 8192))
         XCTAssertFalse(SoftwareDepthPolicy.supports(width: Int.max, height: 3))
         XCTAssertFalse(SoftwareDepthPolicy.supports(width: -1, height: 100))
     }

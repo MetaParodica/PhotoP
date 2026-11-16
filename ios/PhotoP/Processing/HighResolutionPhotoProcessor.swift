@@ -129,7 +129,8 @@ actor HighResolutionPhotoProcessor {
             } else {
                 let depth = try depthEngine.render(original: original, color: color, width: width, height: height,
                     aperture: aperture, focus: focus, source: depthSource, override: depthOverride,
-                    profile: profile, savedMatte: savedMatte, includeMatte: depthOverride == nil)
+                    profile: profile, savedMatte: savedMatte, qualityPairs: width * height > 12_600_000 ? 8 : 16,
+                    includeMatte: depthOverride == nil)
                 renderedDepth = depth; color = depth.image; absolute = depth.field.units == .inverseMetres
                 distance = absolute ? 1 / depth.focusInverse : depth.focusInverse
             }

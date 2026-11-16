@@ -89,6 +89,9 @@ final class CameraModel: ObservableObject {
     @Published var depthAperture = 2.8
     @Published var depthSource: SoftwareDepthSource = .automatic
     @Published var depthProfile: DepthLensProfile = .natural
+    @Published private(set) var liveDepthPreviewEnabled = false
+    @Published private(set) var liveDepthHasFrame = false
+    @Published private(set) var liveDepthError: String?
     @Published var meteringScope: MeteringScope = .both
     @Published var focusMagnification = 1.0
     @Published private(set) var latestRendered: URL?
@@ -265,7 +268,7 @@ final class CameraModel: ObservableObject {
 
     func validateDepthMode() {
         guard depthEnabled, !depthModeAllowed else { return }
-        depthEnabled = false; depthReturnLens = nil
+        depthEnabled = false; depthReturnLens = nil; liveDepthPreviewEnabled = false; updateDepthPreview()
         Task { await service.disablePhotoDepth() }
     }
 
@@ -273,9 +276,10 @@ final class CameraModel: ObservableObject {
         guard !busy, !switchingMode, snapshot.state == .running, !recordingRequested else { return }
         guard !enabled || depthModeAllowed else { return }
         guard enabled != depthEnabled else { return }
+        if !enabled { liveDepthPreviewEnabled = false; updateDepthPreview() }
         if enabled, depthSource == .ai || (depthSource == .automatic && snapshot.capabilities?.depthAvailable != true) {
             depthEnabled = true
-            message = "AI 상대 깊이로 촬영 후 처리합니다. Natural은 최대12.6MP이며 실제 거리 측정이 아닙니다."
+            message = "AI 상대 깊이로 촬영 후 처리합니다. 최대64MP이며 실제 거리 측정이 아닙니다. 고해상도는 축소 추론 후 원래 해상도로 합성합니다."
             return
         }
         await settingsTask?.value
@@ -301,6 +305,18 @@ final class CameraModel: ObservableObject {
             if let originalLens { try? await service.selectLens(originalLens) }
             report(error)
         }
+    }
+
+    func setLiveDepthPreview(_ enabled: Bool) {
+        guard !enabled || (depthEnabled && depthModeAllowed && depthSource == .ai) else { return }
+        liveDepthPreviewEnabled = enabled; liveDepthHasFrame = false
+        updateDepthPreview(); monitoringChanged()
+    }
+    func updateDepthPreview() {
+        let enabled = liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource == .ai && !busy && !compositionCaptureSuspended
+        livePreview?.setDepthPreview(.init(enabled: enabled, aperture: depthAperture, focus: depthFocusPoint,
+            profile: depthProfile, comparingOriginal: liveCompareOriginal))
+        if !enabled { liveDepthHasFrame = false }
     }
 
     func applySettings() async {
@@ -360,6 +376,7 @@ final class CameraModel: ObservableObject {
                 scope: .focus, explicitAFOn: true, drive: settings.focus.drive, area: settings.focus.area)
             guard actions.focus else { throw CameraError.invalidSettings }
             settings.focus.manual = false; settings.focus.locked = false
+            depthFocusPoint = CGPoint(x: 0.5, y: 0.5); updateDepthPreview()
             focusMagnification = 1; monitoringChanged()
         } catch { report(error) }
     }
@@ -502,7 +519,7 @@ final class CameraModel: ObservableObject {
     func disableLiveLUT() {
         // This action disables analysis tools, not the independently selected
         // viewfinder look. Use "룩 적용 해제" to return to an ungraded image.
-        if liveUsesLUT {
+        if liveUsesLUT || liveDepthPreviewEnabled {
             monitoring = MonitoringSettings(); focusAssistEnabled = false; guideAIEnabled = false
             updateMonitoring(); updateComposition(); monitoringChanged()
             return
@@ -520,6 +537,7 @@ final class CameraModel: ObservableObject {
     }
 
     func updateLiveIntensity() {
+        updateDepthPreview()
         if LiveLookPolicy.gradesFrame(selected: liveUsesLUT, comparingOriginal: liveCompareOriginal) {
             livePreview?.setIntensity(liveIntensity, grain: .init(amount: liveGrain, seed: liveGrainSeed), effects: liveFinish)
         } else { livePreview?.setIntensity(0) }
@@ -553,10 +571,12 @@ final class CameraModel: ObservableObject {
 
     private var needsAnalysis: Bool {
         LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
-                                   focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted)
+                                   focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted,
+                                   depth: liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource == .ai)
     }
 
     func monitoringChanged() {
+        updateDepthPreview()
         updateMonitoring()
         if needsAnalysis { Task { await enableMonitoring() } }
         else if livePreview != nil { tearDownLivePreview() }
@@ -606,6 +626,7 @@ final class CameraModel: ObservableObject {
     }
 
     func updateComposition() {
+        updateDepthPreview()
         resetComposition()
         updateMotion()
         livePreview?.setComposition(enabled: guideAIEnabled && active && !compositionCaptureSuspended && reviewingURL == nil, scene: guideScene)
@@ -714,7 +735,9 @@ final class CameraModel: ObservableObject {
     }
 
     func selectCompositionSubject(at imagePoint: CGPoint) {
+        guard meteringScope.focuses else { return }
         depthFocusPoint = imagePoint
+        updateDepthPreview()
         guard guideAIEnabled, let guide = aiComposition,
               guide.isFresh(at: ProcessInfo.processInfo.systemUptime),
               let id = CompositionSubjectTracker.subject(at: imagePoint, in: guide.subjects) else { return }
@@ -726,9 +749,11 @@ final class CameraModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, let preview = self.livePreview, preview.id == id, preview.isCurrentEvent(event) else { return }
                 switch event.kind {
-                case .waiting: self.liveHasFrame = false; self.histogram = nil
+                case .waiting: self.liveHasFrame = false; self.histogram = nil; self.liveDepthHasFrame = false
                 case .ready(let histogram):
                     self.liveHasFrame = true
+                    self.liveDepthHasFrame = preview.depthHasFrame
+                    self.liveDepthError = preview.depthError
                     self.previewImageSize = preview.sourceImageSize
                     if self.monitoring.histogram, let histogram { self.histogram = histogram }
                 case .failed(let reason):
@@ -967,6 +992,7 @@ final class CameraModel: ObservableObject {
         let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
         busy = true
         compositionCaptureSuspended = true
+        updateDepthPreview()
         livePreview?.setComposition(enabled: false, scene: guideScene); cameraCoach = nil
         if (rawMode != .processed || bracketEnabled) && livePreview != nil { tearDownLivePreview() }
         defer {

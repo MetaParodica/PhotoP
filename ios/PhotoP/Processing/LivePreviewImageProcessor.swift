@@ -5,6 +5,8 @@ import Metal
 
 // Frame queue owns this object. Two reusable 1024px textures; no CPU pixel copy.
 final class LivePreviewImageProcessor {
+    private let depthEngine = NaturalDepthEngine()
+    private var depthTexture: MTLTexture?
     private let context: CIContext
     private let renderer: MetalLUTTextureRenderer
     private var source: MTLTexture?
@@ -65,7 +67,7 @@ final class LivePreviewImageProcessor {
         return space
     }
 
-    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), monitoring: MonitoringSettings = MonitoringSettings(), maximumDimension: Int = 1024, command: MTLCommandBuffer) throws -> MTLTexture {
+    func encode(_ buffer: CVPixelBuffer, intensity: Double, grain: GrainSettings = GrainSettings(), effects: FilmFinishSettings = FilmFinishSettings(), monitoring: MonitoringSettings = MonitoringSettings(), maximumDimension: Int = 1024, command: MTLCommandBuffer, depth: LiveDepthFrame? = nil) throws -> MTLTexture {
         guard [480, 720, 1024].contains(maximumDimension), intensity.isFinite, (0...1).contains(intensity) else { throw CameraError.invalidSettings }
         try grain.validate(); try effects.validate()
         let needsGrade = intensity != 0 || grain.amount != 0 || effects.enabled
@@ -81,7 +83,7 @@ final class LivePreviewImageProcessor {
             descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]
             descriptor.storageMode = .private
             source = renderer.device.makeTexture(descriptor: descriptor)
-            processed = nil
+            processed = nil; depthTexture = nil
         }
         if needsGrade && processed == nil, let source {
             let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: source.width, height: source.height, mipmapped: false)
@@ -95,11 +97,26 @@ final class LivePreviewImageProcessor {
         let upright = scaled.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
         context.render(upright, to: source, commandBuffer: command,
                        bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
+        var gradeInput = source
+        if let depth {
+            if depthTexture == nil {
+                let descriptor = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .rgba8Unorm, width: width, height: height, mipmapped: false)
+                descriptor.usage = [.shaderRead, .shaderWrite, .renderTarget]; descriptor.storageMode = .private
+                depthTexture = renderer.device.makeTexture(descriptor: descriptor)
+            }
+            guard let target = depthTexture else { throw MetalLUTError.unavailable }
+            let result = try depthEngine.renderField(color: scaled, field: depth.field, aperture: depth.settings.aperture,
+                focus: depth.settings.focus, profile: depth.settings.profile, matte: depth.matte, qualityPairs: 8)
+            let displayed = result.image.transformed(by: CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: Double(height)))
+            context.render(displayed, to: target, commandBuffer: command,
+                bounds: CGRect(x: 0, y: 0, width: width, height: height), colorSpace: srgb)
+            gradeInput = target
+        } else { depthTexture = nil }
         let graded: MTLTexture
         if needsGrade, let processed {
-            try renderer.encode(source: source, destination: processed, intensity: intensity, grain: grain, effects: effects, command: command)
+            try renderer.encode(source: gradeInput, destination: processed, intensity: intensity, grain: grain, effects: effects, command: command)
             graded = processed
-        } else { graded = source }
+        } else { graded = gradeInput }
         if monitoring.enabled {
             if monitor == nil { monitor = try MetalPreviewMonitor(device: renderer.device) }
             return try monitor!.encode(source: source, graded: graded, settings: monitoring, command: command)
