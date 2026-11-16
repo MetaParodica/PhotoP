@@ -35,6 +35,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 
 ## 현재 상태 (2026-11)
 
+- 2026-11-16 후속 심도 Phase 구현/테스트는 `docs/28-DEPTH-PHASE-IMPLEMENTATION.ko.md`를 최우선한다. 측정/AI affine 융합, 선택 인스턴스 매트·보수적 알파/색 복원, Natural/Portrait/Classic, 선택적 AI 실시간 심도·세대/움직임/만료 안전 복귀, 최대64MP·저장 사진 터치 재초점/프로필/f값 보관함, 취소/중단 복구를 구현했다. `OnDeviceInferenceGate`는 구도/리뷰/AI/매트 추론 실행을 직렬화한다. 공통 로직107/Python28 통과와 iOS SDK/Simulator/실기기 결과는 구분한다. 실제 macOS CI 오류를 조회해 수정 중이며 전용 `codex/depth-phases-20261116`만 게시했다. main은 `dc75be6`. `scripts/check_depth_acceptance.py`는 실제100장/기기 trace/블라인드/권리 인수가 없으면 exit2이다. `--validate-only`를 화질 통과로 인용하지 않는다. optical-flow 이동 정합·실측 PSF·눈 AF/전체 DSLR 목록·iOS27 실기기 인수는 미완료다. 다음 문단의1차 제약은 당시 기록이다.
+
 - 2026-11-16 외부 모델·AF/심도1차 구현은 `docs/27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md`를 우선한다. `assets/depth-model`에 Apple Core ML Depth Anything V2 Small FP16을 고정 revision/Apache2 LICENSE·NOTICE·hash로 포함한다. `scripts/check_depth_model.py`를 실행한다. 센서 우선/AI 상대 깊이·최대12.6MP Natural disk layers·깊이 f32/recipe v2 저장과 f값 재처리, AF-S/C·독립 터치·AF-ON·MF 하단 확대를 추가했다. SDK26/27 조건부 어댑터는 availability+포맷 지원 검사도 요구한다. iOS27 native metadata/Auto ISO·iOS26 rect 분기는 SDK/실기기 미검증이다. 기존64MP LUT/고해상도 센서 기본 심도는 유지하며 새 Natural의 실시간 프리뷰·눈 AF·전체 DSLR 로드맵 완료를 주장하지 않는다. portable97/Python23·Swift142 구문 검사와 iOS SDK/CI/기기 품질 결과를 혼동하지 않는다.
 
 - 2026-11-16 추가 조사·계획은 `docs/24-SOFTWARE-DEPTH-DEVELOPMENT-PLAN.ko.md`, `docs/25-AF-DSLR-FEATURE-RESEARCH.ko.md`, `docs/26-IOS17-27-CAPABILITY-RESEARCH.ko.md`를 참조한다. 원격 main `dc75be6` 기준으로 Leica·Apple·Sony·Nikon 공식 문서 및 일부 공개 소스를 직접 검토하고 조회 hash를 `docs/research/2026-11-16-official-camera-sources.json`에 기록했다. iOS27 native tracking·auto exposure sentinel,26 rect/cinematic 제약을 구분한다. 이는 문서 변경일 뿐 새 AF/심도 기능이나27 SDK·실기기 검증이 완료된 것이 아니다. 앱 최소 배포17은 유지한다.

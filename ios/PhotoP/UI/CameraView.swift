@@ -32,7 +32,7 @@ struct CameraView: View {
     }
     private var locked: Bool { model.busy || model.switchingMode }
     private var isVideo: Bool { model.snapshot.video.isVideoMode }
-    var body: some View {
+    private var cameraLayout: some View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height
             let dockHeight = min(landscape ? (tool != nil ? 154.0 : drawer != nil ? 110.0 : 96.0) : (tool != nil ? 290.0 : drawer != nil ? 200.0 : 240.0), geometry.size.height * 0.48)
@@ -57,6 +57,9 @@ struct CameraView: View {
                 }.frame(width: geometry.size.width, height: geometry.size.height)
             }.frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
         }
+    }
+    private var cameraPresentation: some View {
+        cameraLayout
         .background(Color(red: 0.025, green: 0.025, blue: 0.035).ignoresSafeArea())
         .foregroundStyle(.white).tint(accent)
         .sheet(isPresented: $showLiveControls) { LiveLUTControls(model: model) }
@@ -75,6 +78,9 @@ struct CameraView: View {
             case .depthHistory: DepthResultLibraryView()
             }
         }
+    }
+    private var cameraReactions: some View {
+        cameraPresentation
         .onAppear {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
@@ -100,6 +106,9 @@ struct CameraView: View {
         .onChange(of: model.cameraCoachEnabled) { _, _ in model.intelligentOptionsChanged() }
         .onChange(of: model.coachLearningEnabled) { _, _ in model.learningChanged() }
         .onChange(of: model.photoReviewEnabled) { _, _ in model.photoReviewSettingChanged() }
+    }
+    var body: some View {
+        cameraReactions
         .onChange(of: model.framing) { _, _ in model.intelligentOptionsChanged() }
         .sensoryFeedback(.success, trigger: model.compositionHapticID)
         .onChange(of: model.liveIntensity) { _, _ in model.updateLiveIntensity() }

@@ -1,6 +1,8 @@
-> **최신 검증:** 사진 중심 촬영 화면(전폭 뷰파인더·인물/주석형 구도 가이드·하단 카드 선택·줌/플래시/타이머·최근 촬영 확인)과 영상 오디오·손떨림 보정을 반영했습니다. [CI 39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835): iPhone SDK·Swift186·UI5·Python17·자산 검사·화면 캡처 성공. 실제 iPhone 품질 검증은 대기입니다. [현재 보고](docs/07-IMPLEMENTATION-REPORT.ko.md) · [기본 화면](docs/screenshots/camera.jpg) · [구도 카드](docs/screenshots/guide.jpg) · [룩 카드](docs/screenshots/looks.jpg) · [인물 실루엣](docs/screenshots/person.jpg)
+> **검증 기록:** 아래 [CI 39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835)의 성공과 화면은 과거 기준 코드의 결과입니다. 현재 심도 변경의 SDK 결과·실기기 인수는 [최신 Phase 기록](docs/28-DEPTH-PHASE-IMPLEMENTATION.ko.md)을 확인하세요. [기본 화면](docs/screenshots/camera.jpg) · [구도 카드](docs/screenshots/guide.jpg) · [룩 카드](docs/screenshots/looks.jpg) · [인물 실루엣](docs/screenshots/person.jpg)
 
 # PhotoP
+
+2026-11-16 후속 Phase 개발: [심도 Phase0~7 구현·반복 검증·남은 인수](docs/28-DEPTH-PHASE-IMPLEMENTATION.ko.md). 측정/AI 보정 융합, 선택 인스턴스 매트·경계색 복원, Natural/Portrait/Classic, 선택적 실시간 AI 심도와 안전 복귀, 최대64MP 사진 경로 및 저장 사진의 터치 재초점·보관함·취소/복구를 추가했다. 공통 로직107개/Python28개 통과와 실제 iOS SDK/실기기 검증을 구분한다. [화질 인수 도구](docs/depth-acceptance/README.ko.md)는 실제 평가 증거가 없는 현재 **인수 불가**를 반환한다. 아래 1차 구현의12.6MP/실시간 미구현 설명은 당시 기록이다.
 
 2026-11-16 1차 구현: [외부 모델 확정·AF 제어·Natural 정지 사진 심도·검증/제약](docs/27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md). Apache-2.0의 Apple Core ML Depth Anything V2 Small FP16을 고정 버전으로 포함하고, 센서 깊이/AI 대체·최대12.6MP 원형 보케·저장 깊이 f값 재처리, AF-C/AF-S·독립 AF/AE·AF-ON·MF 확대를 연결했다. iOS26 영역/27 추적·Auto ISO는 SDK 및 기기 지원 검사로 분리한다. 기존64MP LUT/센서 기본 심도는 유지한다. **실시간 심도·눈 AF·경쟁 품질·iOS SDK/실기기 인수 완료는 아니다.** Swift97/Python23은 Linux 핵심/자산 검증이며 iOS 테스트 성공과 다르다.
 

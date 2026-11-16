@@ -117,13 +117,14 @@ final class NaturalDepthTests: XCTestCase {
         let extent = CGRect(x: 0, y: 0, width: 24, height: 24)
         let input = CIImage(color: CIColor(red: 0.3, green: 0.5, blue: 0.7)).cropped(to: extent)
         let filter = DepthLensFilter()
+        let expectedCG = try XCTUnwrap(context.createCGImage(input, from: extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
+        let expected = try SDRImage.rasterize(expectedCG)
         for profile in DepthLensProfile.allCases {
             for aperture in [1.4, 8.0, 16.0] {
                 let output = try filter.blur(input, radius: 4, profile: profile, aperture: aperture)
                 let cg = try XCTUnwrap(context.createCGImage(output, from: extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
                 let pixels = try SDRImage.rasterize(cg)
-                XCTAssertGreaterThan(pixels.rgba[0], 30); XCTAssertEqual(Double(pixels.rgba[1]), 128, accuracy: 3)
-                XCTAssertEqual(Double(pixels.rgba[2]), 179, accuracy: 3)
+                for c in 0..<4 { XCTAssertEqual(Double(pixels.rgba[c]), Double(expected.rgba[c]), accuracy: 1) }
             }
         }
     }

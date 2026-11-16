@@ -205,7 +205,7 @@ final class CameraModel: ObservableObject {
         guard id != snapshot.selectedLens else { return }
         zoomAdviceSuppressedUntil = ProcessInfo.processInfo.systemUptime + 8; cameraCoach = nil
         let hadDepth = depthEnabled
-        depthEnabled = false; depthReturnLens = nil
+        depthEnabled = false; depthReturnLens = nil; liveDepthPreviewEnabled = false; liveDepthHasFrame = false; liveDepthError = nil
         let previous = liveLookForRestoration
         let restorationRequest = lookRequestID
         if livePreview != nil { tearDownLivePreview() }
@@ -352,6 +352,7 @@ final class CameraModel: ObservableObject {
         orientation = value; sceneSample = nil; resetComposition(); meteringTarget = nil; previewImageSize = nil
         motionMonitor.orientation = value.rawValue; cameraTilt = nil
         depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
+        updateDepthPreview()
         videoPreviewFill = value == .portrait
         service.setOrientation(value)
     }
@@ -386,14 +387,18 @@ final class CameraModel: ObservableObject {
     func reprocessLatestDepth() async {
         guard !busy, let previous = latestDepthResult, let original = latestRenderedSources[previous] else { return }
         busy = true; pausePhotoReview()
-        defer { busy = false }
+        defer { busy = false; photoEffectTask = nil }
         do {
-            let result = try await CaptureResultProcessor.shared.reprocess(result: previous, original: original, aperture: depthAperture, profile: depthProfile)
+            let aperture = depthAperture, profile = depthProfile
+            let task = Task { try await CaptureResultProcessor.shared.reprocess(result: previous, original: original, aperture: aperture, profile: profile) }
+            photoEffectTask = task
+            let result = try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() })
             latestRenderedSources[result] = original; latestDepthResult = result; latestRendered = result
             latestRenderedSeries = [result]; savedToPhotos = false
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(result, maxPixel: 240) }.value
             try await PhotoStore.addToPhotos([result]); savedToPhotos = true
-        } catch { report(error) }
+        } catch is CancellationError { message = "재처리를 취소했습니다. 원본과 이전 결과는 보존됩니다." }
+        catch { report(error) }
     }
 
     func importLiveLUT(_ url: URL) async {
@@ -737,9 +742,7 @@ final class CameraModel: ObservableObject {
     }
 
     func selectCompositionSubject(at imagePoint: CGPoint) {
-        guard meteringScope.focuses else { return }
-        depthFocusPoint = imagePoint
-        updateDepthPreview()
+        if meteringScope.focuses { depthFocusPoint = imagePoint; updateDepthPreview() }
         guard guideAIEnabled, let guide = aiComposition,
               guide.isFresh(at: ProcessInfo.processInfo.systemUptime),
               let id = CompositionSubjectTracker.subject(at: imagePoint, in: guide.subjects) else { return }

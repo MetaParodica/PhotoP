@@ -18,6 +18,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var composition: CompositionAnalyzer!
     private let depthAnalyzer = LiveDepthAnalyzer()
     private var depthApplied = false
+    private var announcedDepthError: String?
     private var depthSettings = LiveDepthSettings()
     var depthHasFrame: Bool { lock.withLock { depthApplied } }
     var depthError: String? { depthAnalyzer.errorDescription }
@@ -225,15 +226,18 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                     withExtendedLifetime(buffer) {}
                     // Copy only 1 KiB of histogram counts before freeing this frame's resources.
                     let histogram = completed.status == .completed && monitorSettings.histogram ? owner.processor.histogram() : nil
+                    let depthError = depthAnalyzer.errorDescription
                     let event: Event? = lock.withLock {
                         guard state.complete(ticket) else { return nil }
+                        let previousDepth = depthApplied
                         depthApplied = depth != nil && completed.status == .completed
                         if completed.status != .completed {
                             state.setRunning(false)
                             return makeEvent(.failed(completed.error?.localizedDescription ?? "GPU 프리뷰가 중단됐습니다."))
                         }
-                        guard announcedGeneration != ticket.generation || histogram != nil else { return nil }
+                        guard announcedGeneration != ticket.generation || histogram != nil || previousDepth != depthApplied || announcedDepthError != depthError else { return nil }
                         announcedGeneration = ticket.generation
+                        announcedDepthError = depthError
                         return makeEvent(.ready(histogram))
                     }
                     if let event { onEvent(id, event) }

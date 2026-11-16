@@ -310,3 +310,10 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - CI를 공식 설치표의 macos-26/Xcode26.6 기본으로 변경하고27 수동 선택은 실제 설치가 없으면 실패하도록 했다. 모델 컴파일/번들 고지를 검사한다. 미푸시라 새 CI 결과는 없다. iOS27 문서/API 존재를 이번 코드의 컴파일/실기기 성공으로 인용하지 않는다.
 - 눈 AF·범용 대상 재획득·정밀 머리카락 색 복원·실시간 심도·48MP Natural·전체 DSLR 조사 목록은 완료가 아니다. 이 변경은 미커밋·미푸시다.
 
+## 42. 심도 Phase별 구현·반복 검사
+
+- 2026-11-16 KST, main `dc75be6`을 기준으로 전용 `codex/depth-phases-20261116`에1차 미커밋 작업과 후속 Phase를 게시했다. main은 변경하지 않았다. 상세 변화·제한은 [28 기록](28-DEPTH-PHASE-IMPLEMENTATION.ko.md)을 따른다.
+- `2587c02` 기준 확립, `9e1fc2a` 융합/매트/3종 PSF, `07d1958` 실시간/고해상도, `5048940` 저장 사진 터치 재초점·보관함/복구, `0452e2d` 인수 게이트, `6d22293` 추론 직렬화/비활성화 취소, `c73222d` 안전 복귀·선형 작업 공간/검증 기록.
+- main CI40045643158의 CGFloat 배열 오류를 확인·수정했다. 새 macOS CI43906209605는 Foundation/CoreGraphics import,43909758982는 Swift 타입 추론 시간 초과로 실패해 실제 로그에 맞게 수정했다. Linux 통과를 SDK 빌드 성공으로 대체하지 않는다. 후속 CI 결과를 별도 기록한다.
+- 현재 portable Swift107·Python28·모델3파일·LUT5+25 무결성 통과. 실제 모델 추론/렌즈 kernel/저장 depth hash/초점 변경/복구/ROI 타일 검사 XCTest를 추가했고 SDK 실행을 진행 중이다. `docs/depth-acceptance`의 실제 평가 입력은0건이며 게이트는 eligible=false이다. 실기기 성능/열·머리카락/안경/점광원·100장 경쟁/블라인드·iOS27 인수는 대기다.
+

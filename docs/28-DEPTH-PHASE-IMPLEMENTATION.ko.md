@@ -51,6 +51,6 @@
 
 ## Phase7: 출시 인수 도구
 
-- [평가 입력 계약](depth-acceptance/README.ko.md), [빈 manifest](depth-acceptance/manifest.json), `scripts/check_depth_acceptance.py`를 추가했다. Python27개, portable107개가 현재 통과한다.
+- [평가 입력 계약](depth-acceptance/README.ko.md), [빈 manifest](depth-acceptance/manifest.json), `scripts/check_depth_acceptance.py`를 추가했다. Python28개, portable107개가 현재 통과한다.
 - 실제100장·범주/동의·원본/PhotoP/경쟁 결과/평가 보고서의 hash, 세 종류 기기10분 trace·원시 지연 샘플 p95, 취소/원본/열 동작, 독립3인 블라인드 및 최종 권리/화질 승인을 요구한다. 샘플 없는 현재 게이트는 eligible=false/exit2이며 출시 인수는 대기다. CI의 validate-only는 입력 무결성 검사일 뿐 화질 통과가 아니다.
 - 업계 최고/Leica 동급, 투명체 복원·정밀 머리카락 정답, 이동 정합/광학 흐름·실제 렌즈 PSF 실측·iOS27 SDK/실기기 성공을 주장하지 않는다. 센서 metric 보정과 AI 상대 깊이·추정 배경은 UI/recipe에서 구분한다. 기기별 성능 예산·영상/HDR/RAW 심도·눈 AF·포커스 스태킹/전체 DSLR 조사 목록은 별도 후속 과제다.

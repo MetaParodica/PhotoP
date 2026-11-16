@@ -49,9 +49,12 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
     func invalidate() { lock.withLock { generation &+= 1; temporal.reset(); matte = nil; size = .zero } }
 
     func offer(_ buffer: CVPixelBuffer, minimumInterval: Double) {
+        // Critical thermal budgets use infinity to suspend analysis. In the
+        // first frame, infinity - (-infinity) would otherwise admit one job.
+        guard minimumInterval.isFinite, minimumInterval >= 0.2 else { return }
         let now = ProcessInfo.processInfo.systemUptime
         let job: (UInt64, LiveDepthSettings)? = lock.withLock {
-            guard running, settings.enabled, !busy, now - lastOffer >= max(0.35, minimumInterval) else { return nil }
+            guard running, settings.enabled, !settings.comparingOriginal, !busy, now - lastOffer >= max(0.35, minimumInterval) else { return nil }
             busy = true; lastOffer = now; return (generation, settings)
         }
         guard let (epoch, config) = job else { return }
@@ -98,6 +101,13 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
         guard let cg = context.createCGImage(small, from: CGRect(x: 0, y: 0, width: width, height: height), format: .RGBA8,
             colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) else { throw CameraError.invalidPhotoData }
         let pixels = try SDRImage.rasterize(cg)
-        return (0..<(width * height)).map { (Float(pixels.rgba[$0 * 4]) * 0.2126 + Float(pixels.rgba[$0 * 4 + 1]) * 0.7152 + Float(pixels.rgba[$0 * 4 + 2]) * 0.0722) / 255 }
+        var result = [Float](repeating: 0, count: width * height)
+        for i in result.indices {
+            let red = Float(pixels.rgba[i * 4]) * Float(0.2126)
+            let green = Float(pixels.rgba[i * 4 + 1]) * Float(0.7152)
+            let blue = Float(pixels.rgba[i * 4 + 2]) * Float(0.0722)
+            result[i] = (red + green + blue) / 255
+        }
+        return result
     }
 }

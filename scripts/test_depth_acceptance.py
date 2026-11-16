@@ -31,6 +31,14 @@ class DepthAcceptanceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 percentile(invalid, 0.95)
 
+    def test_evidence_root_can_use_system_temp_directory_alias(self):
+        with tempfile.TemporaryDirectory() as folder:
+            real = Path(folder) / "evidence"; real.mkdir()
+            alias = Path(folder) / "system-temp-alias"; alias.symlink_to(real, target_is_directory=True)
+            (real / "trace").write_bytes(b"trace")
+            record = {"path": "trace", "sha256": hashlib.sha256(b"trace").hexdigest()}
+            self.assertEqual(artifact(alias, record), alias / "trace")
+
     def test_synthetic_claim_and_duplicate_scenes_fail_closed(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder); (root / "image").write_bytes(b"fixture")

@@ -20,8 +20,11 @@ def artifact(root, record):
     if relative.is_absolute() or ".." in relative.parts or not relative.parts:
         raise ValueError("Artifact path must stay within the evidence directory")
     path = root / relative
-    if any(p.is_symlink() for p in [path, *path.parents] if p != root.parent):
-        raise ValueError("Symlink evidence is not accepted")
+    current = root
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError("Symlink evidence is not accepted")
     if not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
         raise ValueError("Evidence artifact is missing or outside the evidence directory")
     digest = hashlib.sha256()
@@ -68,6 +71,8 @@ def evaluate(data, root):
         if trace_path.stat().st_size > 16 * 1024 * 1024:
             raise ValueError("Device trace exceeds 16MiB")
         trace = json.loads(trace_path.read_text())
+        if not isinstance(trace, dict):
+            raise ValueError("Device trace must be a JSON object")
         if run.get("physicalDevice") is not True or not run.get("model") or not run.get("os"):
             pending.append("Physical device identity missing")
         seconds = trace.get("durationSeconds", 0)

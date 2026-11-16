@@ -76,7 +76,15 @@ final class NaturalDepthEngine {
         let normalized = field.inverseDepth.map { $0 > 0 ? UInt8((min(1, max(0, ($0 - bounds.lower) / span)) * 255).rounded()) : 0 }
         let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }
         let extent = color.extent
-        let matteImages = try matte.map { try DepthMatteRefiner.images($0, extent: extent) }
+        // A stored instance matte belongs to the original subject. Refocusing
+        // on another object must not pin the new sharp plane to that old mask.
+        let selectedMatte = matte.flatMap { surface -> DepthMatteSurface? in
+            let x = min(surface.width - 1, max(0, Int(focus.x * CGFloat(surface.width))))
+            let y = min(surface.height - 1, max(0, Int(focus.y * CGFloat(surface.height))))
+            return surface.alpha[y * surface.width + x] > 0.5 ? surface : nil
+        }
+        let effectiveEmbedded = matte == nil ? embedded : nil
+        let matteImages = try selectedMatte.map { try DepthMatteRefiner.images($0, extent: extent) }
         var sourceColor = color
         if let matteImages {
             let edge = CIColorKernel(source: """
@@ -144,7 +152,7 @@ final class NaturalDepthEngine {
         guard var sharp = plane.apply(extent: extent, arguments: [map, valid, focusNormalized]) else { throw CameraError.configuration }
         // An embedded portrait matte is a boundary aid, not metric depth. Use
         // only around the focal plane rather than flattening the entire person.
-        if let alpha = matteImages?.alpha ?? embedded {
+        if let alpha = matteImages?.alpha ?? effectiveEmbedded {
             sharp = sharp.applyingFilter("CIMultiplyCompositing", parameters: [kCIInputBackgroundImageKey: alpha])
         }
         result = color.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: result, kCIInputMaskImageKey: sharp])
@@ -153,7 +161,7 @@ final class NaturalDepthEngine {
         result = foreground.composited(over: result)
         result = result.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: color, kCIInputMaskImageKey: valid]).cropped(to: extent)
         return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: source,
-            matteUsed: matteImages != nil || embedded != nil, matte: matte, fusionError: fusionError)
+            matteUsed: matteImages != nil || effectiveEmbedded != nil, matte: matte, fusionError: fusionError)
     }
 
     private static func kernel(_ cache: inout CIColorKernel?, source: String) throws -> CIColorKernel {
