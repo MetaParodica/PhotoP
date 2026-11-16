@@ -111,7 +111,6 @@ final class NaturalDepthTests: XCTestCase {
         _ = try await CaptureResultProcessor.shared.list(documents: input.root)
         XCTAssertFalse(FileManager.default.fileExists(atPath: old.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: recent.path)); XCTAssertTrue(FileManager.default.fileExists(atPath: unknown.path))
-        XCTAssertEqual(try Data(contentsOf: input.photo), try Data(contentsOf: input.photo))
     }
     func testAllLensKernelsExecuteAndKeepConstantColor() throws {
         let context = CIContext(options: [.useSoftwareRenderer: false])

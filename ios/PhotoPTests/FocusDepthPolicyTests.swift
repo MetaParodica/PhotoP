@@ -70,7 +70,8 @@ final class FocusDepthPolicyTests: XCTestCase {
             try XCTUnwrap(SoftwareDepthPolicy.radius(inverse: 0.4, focus: 0.5, span: 1, absolute: true, aperture: aperture, longEdge: edge))
         }
         XCTAssertEqual(try r(2.8, 2000), try r(5.6, 4000), accuracy: 0.00001)
-        let expected = 0.05 * 0.05 * 2 / (2.8 * 1.95) * 0.1 * 4000 / 0.036 / 2
+        let lensFactor: Double = (0.05 * 0.05 * 2.0) / (2.8 * 1.95)
+        let expected: Double = lensFactor * 0.1 * 4000.0 / 0.036 / 2.0
         XCTAssertEqual(try r(2.8, 4000), expected, accuracy: 0.00001)
     }
     func testRelativeDepthHasSeparateContractAndBoundedBlur() throws {

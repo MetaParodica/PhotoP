@@ -31,7 +31,9 @@ jobs:
           DEVELOPER_DIR="$developer_dir" xcodebuild -version
           DEVELOPER_DIR="$developer_dir" xcrun --sdk iphoneos --show-sdk-version
       - name: Verify pinned offline depth model
-        run: python3 scripts/check_depth_model.py
+        run: |
+          python3 scripts/check_depth_model.py
+          python3 scripts/check_depth_acceptance.py docs/depth-acceptance/manifest.json --validate-only
       - name: Test portable composition and capture policies
         run: swift test
       - name: Install project generator
