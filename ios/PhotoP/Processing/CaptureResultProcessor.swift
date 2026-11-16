@@ -4,7 +4,7 @@ import CoreVideo
 import ImageIO
 import Foundation
 
-struct CaptureResultRecipe: Codable {
+struct CaptureResultRecipe: Codable, Sendable {
     let version: Int
     let originalFilename: String
     let originalSHA256: String
@@ -34,12 +34,61 @@ struct CaptureResultRecipe: Codable {
     var fusionNormalizedError: Double? = nil
 }
 
+struct DepthEditSession: Identifiable, Sendable {
+    let result: URL
+    let original: URL
+    let recipe: CaptureResultRecipe
+    let field: SoftwareDepthField
+    let matte: DepthMatteSurface?
+    let look: ImportedLUT?
+    var id: URL { result }
+}
+
+struct DepthResultSummary: Identifiable, Sendable {
+    let result: URL
+    let original: URL
+    let date: Date
+    let aperture: Double
+    var id: URL { result }
+}
+
 // No camera/display resources: only runs AFTER original bytes are preserved.
 actor CaptureResultProcessor {
     static let shared = CaptureResultProcessor()
+    private var activePending: Set<URL> = []
 
     func reprocess(result: URL, original: URL, aperture: Double, documents: URL? = nil,
                    focus: CGPoint? = nil, profile: DepthLensProfile? = nil) async throws -> URL {
+        let session = try loadSession(result: result, original: original, documents: documents)
+        let recipe = session.recipe
+        return try await render(original: original, look: session.look, aperture: aperture,
+            focus: focus ?? CGPoint(x: recipe.focusX, y: recipe.focusY), documents: documents, depthOverride: session.field,
+            profile: profile ?? recipe.lensProfile ?? .natural, savedMatte: session.matte, depthOrigin: recipe.depthSource)
+    }
+
+    func list(documents: URL? = nil) throws -> [DepthResultSummary] {
+        let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let folder = root.appendingPathComponent("CaptureResults", isDirectory: true)
+        guard FileManager.default.fileExists(atPath: folder.path) else { return [] }
+        try recoverInterruptedResults(in: folder)
+        return try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.creationDateKey, .isSymbolicLinkKey])
+            .compactMap { entry -> DepthResultSummary? in
+                guard UUID(uuidString: entry.lastPathComponent) != nil,
+                      (try? entry.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false,
+                      let data = try? bounded(entry.appendingPathComponent("recipe.json"), limit: 131_072),
+                      let recipe = try? JSONDecoder().decode(CaptureResultRecipe.self, from: data),
+                      [2, 3].contains(recipe.version), recipe.depthMapFilename == "depth.f32", let aperture = recipe.aperture,
+                      recipe.originalFilename == (recipe.originalFilename as NSString).lastPathComponent,
+                      !recipe.originalFilename.isEmpty, !recipe.originalFilename.hasPrefix("."),
+                      FileManager.default.fileExists(atPath: entry.appendingPathComponent("photo.jpg").path) else { return nil }
+                return .init(result: entry.appendingPathComponent("photo.jpg"),
+                    original: root.appendingPathComponent("Originals").appendingPathComponent(recipe.originalFilename),
+                    date: (try? entry.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast, aperture: aperture)
+            }.sorted { $0.date > $1.date }
+    }
+
+    func loadSession(result: URL, original: URL, documents: URL? = nil) throws -> DepthEditSession {
+        try Task.checkCancellation()
         let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let folder = result.deletingLastPathComponent()
         guard result.lastPathComponent == "photo.jpg",
@@ -47,7 +96,9 @@ actor CaptureResultProcessor {
             throw ImageEditingError.invalid("심도 결과 경로가 유효하지 않습니다.")
         }
         let recipe = try JSONDecoder().decode(CaptureResultRecipe.self, from: bounded(folder.appendingPathComponent("recipe.json"), limit: 131_072))
+        let sourceInfo = try original.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey])
         guard [2, 3].contains(recipe.version), recipe.originalFilename == original.lastPathComponent,
+              sourceInfo.isSymbolicLink != true, sourceInfo.isRegularFile == true,
               recipe.originalSHA256 == (try LUTPhotoEditor.hashFile(original)),
               recipe.depthMapFilename == "depth.f32", let hash = recipe.depthMapSHA256,
               let w = recipe.depthWidth, let h = recipe.depthHeight,
@@ -74,9 +125,8 @@ actor CaptureResultProcessor {
             guard LUTPhotoEditor.hash(data) == expected, let text = String(data: data, encoding: .utf8) else { throw CameraError.invalidPhotoData }
             look = ImportedLUT(data: data, lut: try CubeLUT.parse(text), displayName: "촬영 당시 룩", preset: recipe.look, provenance: recipe.provenance)
         } else if recipe.look != nil { throw CameraError.invalidPhotoData }
-        return try await render(original: original, look: look, aperture: aperture,
-            focus: focus ?? CGPoint(x: recipe.focusX, y: recipe.focusY), documents: root, depthOverride: field,
-            profile: profile ?? recipe.lensProfile ?? .natural, savedMatte: matte, depthOrigin: recipe.depthSource)
+        try Task.checkCancellation()
+        return DepthEditSession(result: result, original: original, recipe: recipe, field: field, matte: matte, look: look)
     }
 
     private func bounded(_ url: URL, limit: Int) throws -> Data {
@@ -84,6 +134,20 @@ actor CaptureResultProcessor {
         guard info.isSymbolicLink != true, info.isRegularFile == true, let size = info.fileSize, size > 0, size <= limit else { throw CameraError.invalidPhotoData }
         let bytes = try Data(contentsOf: url)
         guard bytes.count <= limit else { throw CameraError.invalidPhotoData }; return bytes
+    }
+
+    // Only our abandoned transaction folders are disposable. Never remove a
+    // committed UUID bundle, an original, a symlink, or an active transaction.
+    private func recoverInterruptedResults(in folder: URL) throws {
+        for entry in try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey, .isDirectoryKey, .isSymbolicLinkKey]) {
+            guard entry.lastPathComponent.hasPrefix(".pending-"),
+                  UUID(uuidString: String(entry.lastPathComponent.dropFirst(9))) != nil,
+                  !activePending.contains(entry) else { continue }
+            let info = try entry.resourceValues(forKeys: [.contentModificationDateKey, .isDirectoryKey, .isSymbolicLinkKey])
+            guard info.isDirectory == true, info.isSymbolicLink != true,
+                  let date = info.contentModificationDate, Date().timeIntervalSince(date) > 86400 else { continue }
+            try FileManager.default.removeItem(at: entry)
+        }
     }
 
     func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil,
@@ -99,6 +163,7 @@ actor CaptureResultProcessor {
         let pending = folder.appendingPathComponent(".pending-" + id, isDirectory: true)
         let final = folder.appendingPathComponent(id, isDirectory: true)
         try FileManager.default.createDirectory(at: pending, withIntermediateDirectories: false)
+        activePending.insert(pending); defer { activePending.remove(pending) }
         do {
             let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             let credit = look?.provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }

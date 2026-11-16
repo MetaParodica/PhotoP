@@ -79,6 +79,55 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertThrowsError(try NaturalDepthEngine().render(original: input.photo, color: image, width: 256, height: 192,
             aperture: 2.8, focus: CGPoint(x: 0.5, y: 0.5), source: .ai, override: field))
     }
+    func testSavedSessionReopensAndRefocusProducesNewRecipeWithoutAI() async throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
+        let input = try fixture(), before = try Data(contentsOf: input.photo)
+        let originals = input.root.appendingPathComponent("Originals")
+        try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: true)
+        let original = originals.appendingPathComponent(input.photo.lastPathComponent)
+        try FileManager.default.copyItem(at: input.photo, to: original)
+        let result = try await CaptureResultProcessor.shared.render(original: original, look: nil, aperture: 2.8,
+            focus: CGPoint(x: 0.25, y: 0.5), documents: input.root, depthOverride: input.field)
+        let entries = try await CaptureResultProcessor.shared.list(documents: input.root)
+        XCTAssertEqual(entries.count, 1); XCTAssertEqual(entries.first?.original, original)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: result, original: original, documents: input.root)
+        XCTAssertEqual(session.field.inverseDepth, input.field.inverseDepth)
+        let edited = try await CaptureResultProcessor.shared.reprocess(result: result, original: original, aperture: 8,
+            documents: input.root, focus: CGPoint(x: 0.75, y: 0.5), profile: .classic)
+        let reopened = try await CaptureResultProcessor.shared.loadSession(result: edited, original: original, documents: input.root)
+        XCTAssertEqual(reopened.recipe.focusX, 0.75); XCTAssertEqual(reopened.recipe.lensProfile, .classic)
+        XCTAssertEqual(reopened.recipe.aperture, 8); XCTAssertEqual(reopened.field.inverseDepth, input.field.inverseDepth)
+        XCTAssertEqual(try Data(contentsOf: original), before)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: result.path))
+    }
+    func testInterruptedTransactionRecoveryKeepsRecentAndUnknownFolders() async throws {
+        let input = try fixture(), root = input.root.appendingPathComponent("CaptureResults")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let old = root.appendingPathComponent(".pending-" + UUID().uuidString)
+        let recent = root.appendingPathComponent(".pending-" + UUID().uuidString)
+        let unknown = root.appendingPathComponent(".pending-user-files")
+        for url in [old, recent, unknown] { try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false) }
+        for url in [old, unknown] { try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-172800)], ofItemAtPath: url.path) }
+        _ = try await CaptureResultProcessor.shared.list(documents: input.root)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: old.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recent.path)); XCTAssertTrue(FileManager.default.fileExists(atPath: unknown.path))
+        XCTAssertEqual(try Data(contentsOf: input.photo), try Data(contentsOf: input.photo))
+    }
+    func testAllLensKernelsExecuteAndKeepConstantColor() throws {
+        let context = CIContext(options: [.useSoftwareRenderer: false])
+        let extent = CGRect(x: 0, y: 0, width: 24, height: 24)
+        let input = CIImage(color: CIColor(red: 0.3, green: 0.5, blue: 0.7)).cropped(to: extent)
+        let filter = DepthLensFilter()
+        for profile in DepthLensProfile.allCases {
+            for aperture in [1.4, 8.0, 16.0] {
+                let output = try filter.blur(input, radius: 4, profile: profile, aperture: aperture)
+                let cg = try XCTUnwrap(context.createCGImage(output, from: extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!))
+                let pixels = try SDRImage.rasterize(cg)
+                XCTAssertGreaterThan(pixels.rgba[0], 30); XCTAssertEqual(Double(pixels.rgba[1]), 128, accuracy: 3)
+                XCTAssertEqual(Double(pixels.rgba[2]), 179, accuracy: 3)
+            }
+        }
+    }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true
         let before = model.settings

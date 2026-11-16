@@ -220,9 +220,14 @@ struct DepthTemporalState: Sendable {
         if generation == self.generation, let previous = field, previous.width == next.width, previous.height == next.height,
            previous.units == next.units, nextTime >= time, nextTime - time <= 1, luma.count == nextLuma.count {
             var old = previous.inverseDepth
-            if next.units == .relativeInverse,
-               let fit = DepthFusionCore.calibrate(predicted: old, measured: next.inverseDepth) {
-                old = old.map { $0 > 0 ? Float(fit.scale * Double($0) + fit.offset) : 0 }
+            if next.units == .relativeInverse {
+                if let fit = DepthFusionCore.calibrate(predicted: old, measured: next.inverseDepth) {
+                    old = old.map { $0 > 0 ? Float(fit.scale * Double($0) + fit.offset) : 0 }
+                } else {
+                    // Relative predictions have no stable scale. A failed fit
+                    // must discard history instead of mixing unrelated planes.
+                    old = Array(repeating: 0, count: old.count)
+                }
             }
             var data = next.inverseDepth
             for i in data.indices where abs(nextLuma[i] - luma[i]) < 0.035 && data[i] > 0 && old[i] > 0 {

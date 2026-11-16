@@ -79,4 +79,13 @@ final class DepthPhaseTests: XCTestCase {
         let result = try XCTUnwrap(state.update(b, luma: Array(repeating: 1, count: 100), time: 1.1, generation: 1))
         XCTAssertEqual(result.inverseDepth, b.inverseDepth)
     }
+    func testUncalibratedRelativeHistoryIsDiscardedEvenWhenColorIsStable() throws {
+        var state = DepthTemporalState()
+        let a = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: (0..<100).map { Float($0 + 1) }, units: .relativeInverse))
+        let b = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: (0..<100).map { Float(101 - $0) }, units: .relativeInverse))
+        let luma = [Float](repeating: 0.5, count: 100)
+        _ = state.update(a, luma: luma, time: 1, generation: 1)
+        let output = try XCTUnwrap(state.update(b, luma: luma, time: 1.1, generation: 1))
+        XCTAssertEqual(output.inverseDepth, b.inverseDepth)
+    }
 }

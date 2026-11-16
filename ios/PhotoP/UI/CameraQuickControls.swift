@@ -7,6 +7,7 @@ struct CameraQuickControls: View {
     let openStyles: () -> Void
     let openImports: () -> Void
     let openLongExposure: () -> Void
+    var openDepthLibrary: () -> Void = {}
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             switch tool {
@@ -275,6 +276,8 @@ struct CameraQuickControls: View {
             Text("심도 카메라로 전환하면 렌즈의 노출·초점 지원 범위가 바뀔 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
             Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
                 .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
+            Button("심도 보관함 · 사진 재초점", action: openDepthLibrary)
+                .accessibilityIdentifier("camera.depth.library")
             Text("저장된 깊이·촬영 당시 초점/룩을 사용해 새 결과를 만듭니다. 화면의 현재 장면으로 다시 추론하지 않습니다.").font(.caption2).foregroundStyle(.secondary)
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }

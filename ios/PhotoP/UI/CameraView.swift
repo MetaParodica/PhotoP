@@ -5,7 +5,7 @@ enum CameraDrawer: String {
 }
 
 enum CameraScreen: String, Identifiable {
-    case review, editor, history, videos
+    case review, editor, history, videos, depthHistory
     var id: String { rawValue }
 }
 
@@ -72,6 +72,7 @@ struct CameraView: View {
                 else { CaptureReviewView(model: model) { next in open(next) } }
             case .history: SavedEditsView()
             case .videos: VideoLibraryView()
+            case .depthHistory: DepthResultLibraryView()
             }
         }
         .onAppear {
@@ -428,7 +429,8 @@ struct CameraView: View {
             }
             ScrollView {
                 CameraQuickControls(model: model, tool: selected, openStyles: { showStyles = true },
-                                    openImports: { showLiveControls = true }, openLongExposure: { showLongExposure = true })
+                                    openImports: { showLiveControls = true }, openLongExposure: { showLongExposure = true },
+                                    openDepthLibrary: { open(.depthHistory) })
                     .padding(.bottom, 8)
             }.frame(maxHeight: max(32, availableHeight - 60))
         }.padding(.horizontal, 16).padding(.bottom, 8).cameraGlass(radius: 24)
