@@ -147,6 +147,17 @@ final class NaturalDepthTests: XCTestCase {
             } } }
         }
     }
+    func testRefocusOutsideStoredInstanceDoesNotKeepOldSubjectMask() throws {
+        let input = try fixture(), image = try XCTUnwrap(CIImage(contentsOf: input.photo))
+        let alpha: [Float] = (0..<81).map { $0 % 9 < 4 ? 1 : 0 }
+        let colors = [SIMD3<Float>](repeating: SIMD3(0.2, 0.3, 0.4), count: 81)
+        let matte = DepthMatteSurface(width: 9, height: 9, alpha: alpha, foreground: colors, background: colors)
+        let engine = NaturalDepthEngine()
+        let first = try engine.renderField(color: image, field: input.field, aperture: 2.8, focus: CGPoint(x: 0.25, y: 0.5), matte: matte)
+        let second = try engine.renderField(color: image, field: input.field, aperture: 2.8, focus: CGPoint(x: 0.75, y: 0.5), matte: matte)
+        XCTAssertTrue(first.matteUsed); XCTAssertFalse(second.matteUsed)
+        XCTAssertEqual(second.matte?.alpha, alpha, "Keep the immutable original matte for a future focus change back")
+    }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true
         let before = model.settings

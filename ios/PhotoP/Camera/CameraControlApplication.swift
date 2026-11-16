@@ -3,7 +3,7 @@ import Foundation
 // Completion callbacks may arrive out of order, twice, or after interruption.
 // An application ID keeps an old callback from completing a newer operation.
 struct CameraControlApplication {
-    enum Step: Hashable { case exposure, focus, whiteBalance }
+    enum Step: Hashable, Sendable { case exposure, focus, whiteBalance }
 
     private(set) var id: UUID?
     private var pending: Set<Step> = []

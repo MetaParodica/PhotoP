@@ -558,7 +558,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
         publish()
     }
 
-    private func controlCompletion(_ step: CameraControlApplication.Step, id: UUID) -> (CMTime) -> Void {
+    private func controlCompletion(_ step: CameraControlApplication.Step, id: UUID) -> @Sendable (CMTime) -> Void {
         { [weak self] _ in
             guard let self else { return }
             self.queue.async {

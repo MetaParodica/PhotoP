@@ -4,5 +4,5 @@
   "deviceRuns": [],
   "blindReviews": [],
   "qualityApproval": null,
-  "legalReview": null
+  "legalReview": {"path": "rights-review.ko.md", "sha256": "de5054819f268d3a3b47e1a032d9da60411e4ff3fbd93d4d76202301058b4473", "accepted": true}
 }

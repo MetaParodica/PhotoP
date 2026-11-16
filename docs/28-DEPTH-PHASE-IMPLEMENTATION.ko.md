@@ -47,7 +47,9 @@
 
 - 실행43906209605/job133435626156: macOS의 portable 대상에서 Foundation만 가져온 `CGRect` initializer가 해석되지 않았다. `FocusControlPolicy`에 조건부 CoreGraphics import를 추가했다.
 - 실행43909758982/job133448140758: Swift6.2 계열에서 테스트의 긴 숫자 식 타입 추론이 시간 초과했다. 렌즈 계수/예상 반경을 명시적 Double로 분리했다. `0452e2d`에 반영했다.
+- 실행43910963114(Xcode26.3)/43911330157(Xcode26.6)는 macOS portable 검사를 통과한 뒤 실제 iPhone SDK 빌드에서 CameraView 전체 modifier 식/실시간 luminance map 식의 타입 검사 시간 초과를 드러냈다. `13567b2`에서 화면 layout/presentation/reactions를 분리하고 luminance를 명시적 Float 단계로 변경했다. 수정본의 SDK 검사도 이어간다.
 - 최신 SDK 빌드/Simulator 결과는 아래 후속 기록을 확인한다. 위 실패를 숨기거나 Linux 통과를 SDK 성공으로 대체하지 않는다.
+- `13567b2`의 [실행43912801297](https://github.com/MetaParodica/PhotoP/actions/runs/43912801297)은 Xcode26.3/실제 iPhone SDK26.2 빌드에 성공했다. 현재 Simulator XCTest를 진행 중이다.26.6/SDK26.5는 별도 실행43912927523에서 검증한다.27 SDK의 성공으로 확대 해석하지 않는다.
 
 ## Phase7: 출시 인수 도구
 

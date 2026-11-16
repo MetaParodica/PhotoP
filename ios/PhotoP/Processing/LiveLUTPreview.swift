@@ -25,7 +25,11 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var processor: LivePreviewImageProcessor
     // Processor is encoded only on frameQueue. A completion retains the exact
     // immutable frame owner until its GPU/readback work has finished.
-    private struct FrameOwner: @unchecked Sendable { let processor: LivePreviewImageProcessor }
+    private struct FrameOwner: @unchecked Sendable {
+        let processor: LivePreviewImageProcessor
+        // Retained immutable capture pixels, shared only for GPU reads.
+        let buffer: CVPixelBuffer
+    }
     private var lookGeneration = PreviewLookGeneration()
     private var pendingLUT: (version: UInt64, lut: CubeLUT)?
     private let display: MetalPreviewDisplay
@@ -211,7 +215,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         }
         guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings, fill) = request else { return }
         var submitted = false
-        let owner = FrameOwner(processor: processor)
+        let owner = FrameOwner(processor: processor, buffer: buffer)
         defer { if !submitted { _ = lock.withLock { state.complete(ticket) } } }
         autoreleasepool {
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
@@ -221,9 +225,9 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                 let image = try owner.processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command, depth: depth)
                 try display.encode(image: image, destination: drawable.texture, command: command, fill: fill)
                 command.present(drawable)
-                command.addCompletedHandler { [self, buffer, owner] completed in
+                command.addCompletedHandler { [self, owner] completed in
                     // Retain the capture buffer until all CI and Metal reads finish.
-                    withExtendedLifetime(buffer) {}
+                    withExtendedLifetime(owner.buffer) {}
                     // Copy only 1 KiB of histogram counts before freeing this frame's resources.
                     let histogram = completed.status == .completed && monitorSettings.histogram ? owner.processor.histogram() : nil
                     let depthError = depthAnalyzer.errorDescription
