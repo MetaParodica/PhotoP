@@ -18,6 +18,9 @@ settings:
     GENERATE_INFOPLIST_FILE: NO
     TARGETED_DEVICE_FAMILY: '1'
     CODE_SIGN_STYLE: Automatic
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG $(PHOTOP_CAMERA_SDK_FLAGS)"
 targets:
   PhotoP:
     type: application

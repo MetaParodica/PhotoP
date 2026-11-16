@@ -46,6 +46,23 @@ jobs:
       - name: Generate Xcode project
         working-directory: ios
         run: xcodegen generate
+      - name: Verify Swift Debug and SDK conditions
+        working-directory: ios
+        run: |
+          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -configuration Debug -sdk iphonesimulator -showBuildSettings -json > /tmp/photop-build-settings.json
+          python3 - <<'PYFLAGS'
+          import json
+          targets = json.load(open('/tmp/photop-build-settings.json'))
+          settings = next(t['buildSettings'] for t in targets if t['target'] == 'PhotoP')
+          flags = settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'].split()
+          assert 'DEBUG' in flags, 'Swift DEBUG must enable Simulator review mode'
+          sdk = settings['SDK_NAME']
+          if '26.' in sdk or '27.' in sdk:
+              assert 'PHOTOP_CAMERA_SDK26' in flags, 'SDK26 adapter must compile'
+          if '27.' in sdk:
+              assert 'PHOTOP_CAMERA_SDK27' in flags, 'SDK27 adapter must compile'
+          print('Swift conditions:', flags, 'SDK:', sdk)
+          PYFLAGS
       - name: Verify generated permission descriptions
         working-directory: ios
         run: |
