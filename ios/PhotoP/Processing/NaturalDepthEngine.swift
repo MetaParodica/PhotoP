@@ -25,6 +25,8 @@ final class NaturalDepthEngine {
     private var sliceKernel: CIColorKernel?
     private var backgroundKernel: CIColorKernel?
     private var planeKernel: CIColorKernel?
+    private var edgeKernel: CIColorKernel?
+    private var matteCache: (id: UUID, extent: CGRect, images: (alpha: CIImage, foreground: CIImage, background: CIImage))?
 
     func render(original: URL, color: CIImage, width: Int, height: Int, aperture: Double,
                 focus: CGPoint, source: SoftwareDepthSource, override: SoftwareDepthField? = nil,
@@ -84,14 +86,20 @@ final class NaturalDepthEngine {
             return surface.alpha[y * surface.width + x] > 0.5 ? surface : nil
         }
         let effectiveEmbedded = matte == nil ? embedded : nil
-        let matteImages = try selectedMatte.map { try DepthMatteRefiner.images($0, extent: extent) }
+        let matteImages = try selectedMatte.map { surface in
+            if let cached = matteCache, cached.id == surface.id, cached.extent == extent { return cached.images }
+            let images = try DepthMatteRefiner.images(surface, extent: extent)
+            matteCache = (surface.id, extent, images)
+            return images
+        }
         var sourceColor = color
         if let matteImages {
-            let edge = CIColorKernel(source: """
+            let kernel = try Self.kernel(&edgeKernel, source: """
             kernel vec4 photopEdgeColor(__sample c, __sample f, __sample a) {
                 float w=4.0*a.r*(1.0-a.r); return mix(c,f,w);
             }
-            """).flatMap { $0.apply(extent: extent, arguments: [color, matteImages.foreground, matteImages.alpha]) }
+            """)
+            let edge = kernel.apply(extent: extent, arguments: [color, matteImages.foreground, matteImages.alpha])
             if let edge { sourceColor = edge }
         }
         let map = try Self.mask(normalized, width: field.width, height: field.height, extent: extent)

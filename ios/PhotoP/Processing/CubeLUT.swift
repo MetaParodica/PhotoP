@@ -10,8 +10,14 @@ struct CubeLUT: Sendable {
     // 1D stores channel curves by row; 3D red varies fastest, then green, blue.
     let values: [SIMD3<Double>]
 
-    private init(title: String?, dimension: Int, domainMin: SIMD3<Double>,
-                 domainMax: SIMD3<Double>, values: [SIMD3<Double>], isOneDimensional: Bool) {
+    init(title: String?, dimension: Int, domainMin: SIMD3<Double>,
+         domainMax: SIMD3<Double>, values: [SIMD3<Double>], isOneDimensional: Bool) throws {
+        guard (2...(isOneDimensional ? 65536 : 65)).contains(dimension),
+              values.count == (isOneDimensional ? dimension : dimension * dimension * dimension),
+              values.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite && Float($0.x).isFinite && Float($0.y).isFinite && Float($0.z).isFinite }),
+              (0..<3).allSatisfy({ domainMin[$0].isFinite && domainMax[$0].isFinite && Float(domainMin[$0]).isFinite && Float(domainMax[$0]).isFinite && domainMax[$0] > domainMin[$0] && Float(domainMax[$0]) > Float(domainMin[$0]) }) else {
+            throw CubeLUTError.invalid("LUT 테이블 또는 입력 범위가 유효하지 않습니다.")
+        }
         self.title = title
         self.dimension = dimension
         self.isOneDimensional = isOneDimensional
@@ -69,7 +75,7 @@ struct CubeLUT: Sendable {
             guard maximum[channel] > minimum[channel], Float(maximum[channel]) > Float(minimum[channel])
             else { throw CubeLUTError.invalid("DOMAIN_MAX는 각 채널에서 DOMAIN_MIN보다 커야 합니다.") }
         }
-        return CubeLUT(title: title, dimension: size, domainMin: minimum, domainMax: maximum, values: values, isOneDimensional: oneDimensional)
+        return try CubeLUT(title: title, dimension: size, domainMin: minimum, domainMax: maximum, values: values, isOneDimensional: oneDimensional)
     }
 
     private static func vector(_ tokens: [Substring], line: Int) throws -> SIMD3<Double> {

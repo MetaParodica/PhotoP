@@ -15,11 +15,24 @@ struct SoftwareDepthField: Sendable {
     // Top-left rows. Larger means nearer. Zero means invalid, not infinity.
     let inverseDepth: [Float]
     let units: Units
+    let bounds: (lower: Float, upper: Float)?
     init?(width: Int, height: Int, inverseDepth: [Float], units: Units) {
         guard width >= 3, height >= 3, width <= 4096, height <= 4096, width * height <= 2_097_152,
               width * height == inverseDepth.count, inverseDepth.contains(where: { $0.isFinite && $0 > 0 }) else { return nil }
         self.width = width; self.height = height; self.units = units
         self.inverseDepth = inverseDepth.map { $0.isFinite && $0 > 0 ? $0 : 0 }
+        self.bounds = Self.normalizationBounds(self.inverseDepth)
+    }
+    private init(width: Int, height: Int, validDepth: [Float], units: Units, bounds: (lower: Float, upper: Float)?) {
+        self.width = width; self.height = height; self.inverseDepth = validDepth; self.units = units; self.bounds = bounds
+    }
+    // Current-frame motion invalidation must not re-sort/re-normalize a model
+    // frame. Removing a foreground pixel cannot stretch the background blur.
+    func invalidating(where invalid: (Int) -> Bool) -> Self? {
+        var data = inverseDepth
+        for i in data.indices where invalid(i) { data[i] = 0 }
+        guard data.contains(where: { $0 > 0 }) else { return nil }
+        return Self(width: width, height: height, validDepth: data, units: units, bounds: bounds)
     }
     func focusValue(x: Double, y: Double) -> Float? {
         guard x.isFinite, y.isFinite, (0...1).contains(x), (0...1).contains(y) else { return nil }
@@ -32,8 +45,8 @@ struct SoftwareDepthField: Sendable {
         }
         values.sort(); return values.count >= 3 ? values[values.count / 2] : nil
     }
-    var bounds: (lower: Float, upper: Float)? {
-        let valid = inverseDepth.filter { $0 > 0 }.sorted()
+    private static func normalizationBounds(_ depth: [Float]) -> (lower: Float, upper: Float)? {
+        let valid = depth.filter { $0 > 0 }.sorted()
         guard valid.count >= 9 else { return nil }
         let lo = valid[Int(Double(valid.count - 1) * 0.02)]
         let hi = valid[Int(Double(valid.count - 1) * 0.98)]

@@ -6,6 +6,20 @@ import XCTest
 #endif
 
 final class DepthPhaseTests: XCTestCase {
+    func testMotionMaskPreservesModelNormalizationWithoutReexpandingBackground() throws {
+        let values: [Float] = (0..<100).map { $0 >= 70 ? 4 : ($0 % 2 == 0 ? 1 : 2) }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: values, units: .relativeInverse))
+        var state = DepthTemporalState()
+        _ = state.update(field, luma: Array(repeating: 0.5, count: 100), time: 1, generation: 1)
+        let luma: [Float] = (0..<100).map { $0 >= 70 ? 1 : 0.5 }
+        let masked = try XCTUnwrap(state.current(luma: luma, time: 1.1, generation: 1))
+        XCTAssertEqual(masked.bounds?.lower, field.bounds?.lower)
+        XCTAssertEqual(masked.bounds?.upper, field.bounds?.upper)
+        XCTAssertEqual(masked.inverseDepth[75], 0)
+        XCTAssertEqual(masked.inverseDepth[1], 2)
+        let fresh = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: masked.inverseDepth, units: .relativeInverse))
+        XCTAssertEqual(fresh.bounds?.upper, 2, "A new prediction gets new normalization; masking a displayed frame does not")
+    }
     func testLensPSFConservesDCAndIsCentered() {
         for p in DepthLensProfile.allCases {
             let taps = DepthLensKernel.taps(profile: p, aperture: 8)

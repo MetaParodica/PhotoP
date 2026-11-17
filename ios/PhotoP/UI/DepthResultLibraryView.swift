@@ -98,15 +98,17 @@ struct DepthResultEditorView: View {
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("사진을 터치하여 재초점 · " + String(format: "f/%.1f", aperture))
-                    Slider(value: $aperture, in: 1.4...16)
-                    Picker("렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-                    Toggle("원본 비교", isOn: $compare)
+                    Group {
+                        Slider(value: $aperture, in: 1.4...16)
+                        Picker("렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                        Toggle("원본 비교", isOn: $compare)
+                    }.disabled(saving)
                     if rendering { ProgressView("미리보기 갱신 중") }
                     if let message { Text(message).font(.caption).foregroundStyle(.secondary) }
                     if saving { Button("저장 취소") { saveTask?.cancel() } }
                     else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent) }
                     Text("미리보기는 최대768px입니다. 재초점은 저장된 깊이의 정확도 범위에서 작동하며 최초 매트 밖의 피사체는 깊이만 사용합니다. 원본과 이전 결과는 보존합니다.").font(.caption2).foregroundStyle(.secondary)
-                }.disabled(saving && saveTask == nil).padding(.horizontal)
+                }.padding(.horizontal)
             }.padding(.bottom)
                 .navigationTitle("사진 재초점")
                 .toolbar { Button("닫기") { dismiss() }.disabled(saving) }

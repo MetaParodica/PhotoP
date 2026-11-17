@@ -8,6 +8,13 @@ struct ImportedLUT: Sendable {
     var provenance: LUTProvenance? = nil
 
     static func read(_ url: URL) throws -> ImportedLUT {
+        let data = try readData(url)
+        guard let text = String(data: data, encoding: .utf8) else { throw ImageEditingError.invalid("UTF-8 .cube 파일이어야 합니다.") }
+        let lut = try CubeLUT.parse(text)
+        return ImportedLUT(data: data, lut: lut, displayName: lut.title ?? url.deletingPathExtension().lastPathComponent)
+    }
+
+    static func readData(_ url: URL) throws -> Data {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         let handle = try FileHandle(forReadingFrom: url)
@@ -19,9 +26,8 @@ struct ImportedLUT: Sendable {
             data.append(chunk)
         }
         if url.pathExtension.lowercased() == "png" { data = try HaldLUT.convert(data) }
-        guard data.count <= CubeLUT.maximumFileBytes, let text = String(data: data, encoding: .utf8)
-        else { throw ImageEditingError.invalid("UTF-8 .cube 파일은 32MiB 이하여야 합니다.") }
-        let lut = try CubeLUT.parse(text)
-        return ImportedLUT(data: data, lut: lut, displayName: lut.title ?? url.deletingPathExtension().lastPathComponent)
+        guard data.count <= CubeLUT.maximumFileBytes
+        else { throw ImageEditingError.invalid("LUT 파일은 32MiB 이하여야 합니다.") }
+        return data
     }
 }

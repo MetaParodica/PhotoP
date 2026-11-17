@@ -49,19 +49,18 @@ struct FilmStyle: Identifiable, Sendable {
         return output
     }
     func imported() throws -> ImportedLUT {
+        try LUTTextEncoder.temporaryPool { try makeImported() }
+    }
+    private func makeImported() throws -> ImportedLUT {
         let n = cubeDimension
-        var lines = ["TITLE \"PhotoP \(name) v1\"", "LUT_3D_SIZE \(n)"]
-        for b in 0..<n { for g in 0..<n { for r in 0..<n {
-            let v = color(SIMD3(Double(r), Double(g), Double(b)) / Double(n - 1))
-            lines.append(String(format: "%.7f %.7f %.7f", locale: Locale(identifier: "en_US_POSIX"), v.x, v.y, v.z))
-        } } }
-        let text = lines.joined(separator: "\n"), data = Data(text.utf8)
+        let data = try LUTTextEncoder.encode(dimension: n, header: ["TITLE \"PhotoP \(name) v1\"", "LUT_3D_SIZE \(n)"],
+            decimalPlaces: 7, sample: color)
         let hash = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         let provenance = LUTProvenance(identifier: "photop.\(id).v1", name: name, creator: "PhotoP Project", source: "photop-style://\(id)/v1",
             kind: "original-procedural", license: "PhotoP-Style-Permission-1", commercialUseAllowed: true, redistributionAllowed: true,
             inputColorSpace: "sRGB", outputColorSpace: "sRGB", requiredCredit: "PhotoP Project", sourceSHA256: hash, renderLUTSHA256: hash,
             minimumIntensity: 0, maximumIntensity: 1, previewDescription: "Generated sRGB color patches; not a photographed film chart")
-        return ImportedLUT(data: data, lut: try CubeLUT.parse(text), displayName: name, preset: recommended, provenance: provenance)
+        return ImportedLUT(data: data, lut: try CubeLUT.parse(String(decoding: data, as: UTF8.self)), displayName: name, preset: recommended, provenance: provenance)
     }
     static let all: [FilmStyle] = [
         .init(id: "amber-portrait", name: "Amber Portrait", category: "인물", detail: "따뜻한 피부·부드러운 대비", saturation: 0.94, contrast: 0.95, gamma: 0.98, lift: 0.015, tint: .init(0.025, 0.006, -0.018)),

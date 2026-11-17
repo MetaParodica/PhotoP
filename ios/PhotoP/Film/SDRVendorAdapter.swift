@@ -22,15 +22,8 @@ enum SDRVendorAdapter {
     }
     static func bake(_ source: CubeLUT, dimension: Int = 65, sourceSHA256: String) throws -> Data {
         guard [17, 33, 65].contains(dimension), !source.isOneDimensional else { throw CameraError.invalidPhotoData }
-        var lines = ["TITLE \"PhotoP SDR vendor adaptation v1\"", "# Source SHA256: \(sourceSHA256)", "# \(version); display-referred approximation; Rec.709 gamma2.4 assumed", "LUT_3D_SIZE \(dimension)"]
-        lines.reserveCapacity(dimension * dimension * dimension + 4)
-        for b in 0..<dimension {
-            try Task.checkCancellation()
-            for g in 0..<dimension { for r in 0..<dimension {
-                let value = try sample(SIMD3(Double(r), Double(g), Double(b)) / Double(dimension - 1), source: source)
-                lines.append(String(format: "%.8f %.8f %.8f", locale: Locale(identifier: "en_US_POSIX"), value.x, value.y, value.z))
-            } }
-        }
-        return Data(lines.joined(separator: "\n").utf8)
+        return try LUTTextEncoder.encode(dimension: dimension,
+            header: ["TITLE \"PhotoP SDR vendor adaptation v1\"", "# Source SHA256: \(sourceSHA256)", "# \(version); display-referred approximation; Rec.709 gamma2.4 assumed", "LUT_3D_SIZE \(dimension)"],
+            decimalPlaces: 8) { try sample($0, source: source) }
     }
 }

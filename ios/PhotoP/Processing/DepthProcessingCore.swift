@@ -141,6 +141,7 @@ enum DepthFusionCore {
 }
 
 struct DepthMatteSurface: Sendable {
+    let id = UUID()
     let width: Int
     let height: Int
     let alpha: [Float]
@@ -270,9 +271,12 @@ struct DepthTemporalState: Sendable {
     func current(luma current: [Float], time now: Double, generation: UInt64, maximumAge: Double = 0.75) -> SoftwareDepthField? {
         guard let field, now.isFinite, now >= time, now - time <= maximumAge, generation == self.generation,
               current.count == luma.count, current.allSatisfy(\.isFinite) else { return nil }
-        var data = field.inverseDepth, changed = 0
-        for i in data.indices where abs(current[i] - luma[i]) > 0.06 { data[i] = 0; changed += 1 }
-        guard changed * 3 < data.count else { return nil }
-        return SoftwareDepthField(width: field.width, height: field.height, inverseDepth: data, units: field.units)
+        var changed = 0
+        let masked = field.invalidating { i in
+            if abs(current[i] - luma[i]) > 0.06 { changed += 1; return true }
+            return false
+        }
+        guard changed * 3 < current.count else { return nil }
+        return masked
     }
 }
