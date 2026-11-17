@@ -10,6 +10,8 @@ final class DepthMatteRefiner {
     private let context = CIContext(options: [.cacheIntermediates: false])
 
     func refine(color: CIImage, focus: CGPoint, embedded: CIImage?, maximumDimension: Int = 384) throws -> DepthMatteSurface? {
+        let span = ProcessingTrace.begin("Matte refinement")
+        defer { ProcessingTrace.end("Matte refinement", span) }
         try Task.checkCancellation()
         guard focus.x.isFinite, focus.y.isFinite, (0...1).contains(focus.x), (0...1).contains(focus.y),
               color.extent.width.isFinite, color.extent.height.isFinite,

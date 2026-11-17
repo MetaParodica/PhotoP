@@ -8,10 +8,15 @@ import Foundation
 // already embedded in this exact pinned model: do not normalize a second time.
 final class ExternalDepthEstimator {
     private var model: MLModel?
+    private var inputBuffer: CVPixelBuffer?
     private let context = CIContext(options: [.cacheIntermediates: false])
 
     func estimate(_ image: CIImage) throws -> SoftwareDepthField {
+        let wait = ProcessingTrace.begin("Depth inference wait")
         OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }
+        ProcessingTrace.end("Depth inference wait", wait)
+        let predictionSpan = ProcessingTrace.begin("Depth prediction")
+        defer { ProcessingTrace.end("Depth prediction", predictionSpan) }
         try Task.checkCancellation()
         let model: MLModel
         if let loaded = self.model { model = loaded }
@@ -37,10 +42,11 @@ final class ExternalDepthEstimator {
             }
             self.model = model
         }
-        var input: CVPixelBuffer?
-        guard CVPixelBufferCreate(kCFAllocatorDefault, 518, 392, kCVPixelFormatType_32BGRA,
-            [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary, &input) == kCVReturnSuccess,
-              let input else { throw CameraError.invalidPhotoData }
+        if inputBuffer == nil {
+            guard CVPixelBufferCreate(kCFAllocatorDefault, 518, 392, kCVPixelFormatType_32BGRA,
+                [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary, &inputBuffer) == kCVReturnSuccess else { throw CameraError.invalidPhotoData }
+        }
+        guard let input = inputBuffer else { throw CameraError.invalidPhotoData }
         let extent = image.extent
         guard extent.width.isFinite, extent.height.isFinite, extent.width > 0, extent.height > 0,
               extent.width <= 16384, extent.height <= 16384 else { throw CameraError.invalidPhotoData }
@@ -62,7 +68,7 @@ final class ExternalDepthEstimator {
               CVPixelBufferGetWidth(map) == 518, CVPixelBufferGetHeight(map) == 392,
               CVPixelBufferGetPixelFormatType(map) == kCVPixelFormatType_OneComponent16Half,
               CVPixelBufferLockBaseAddress(map, .readOnly) == kCVReturnSuccess else { throw CameraError.invalidPhotoData }
-        defer { CVPixelBufferUnlockBaseAddress(map, .readOnly); context.clearCaches() }
+        defer { CVPixelBufferUnlockBaseAddress(map, .readOnly) }
         guard let base = CVPixelBufferGetBaseAddress(map) else { throw CameraError.invalidPhotoData }
         let stride = CVPixelBufferGetBytesPerRow(map)
         guard stride >= 518 * 2 else { throw CameraError.invalidPhotoData }

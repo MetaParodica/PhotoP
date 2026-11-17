@@ -89,6 +89,8 @@ actor HighResolutionPhotoProcessor {
                     aperture: Double? = nil, focus: CGPoint = CGPoint(x: 0.5, y: 0.5), credit: String? = nil,
                     depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil,
                     profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil) async throws -> HighResolutionResult {
+        let span = ProcessingTrace.begin("High resolution export")
+        defer { ProcessingTrace.end("High resolution export", span) }
         guard !rendering else { throw CameraError.busy }
         rendering = true; defer { rendering = false; context.clearCaches() }
         try Task.checkCancellation(); try settings.validate()

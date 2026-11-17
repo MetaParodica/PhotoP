@@ -23,6 +23,7 @@ let excludedImageSources = try FileManager.default.contentsOfDirectory(atPath: i
 
 let package = Package(
     name: "PhotoPCompositionCore",
+    platforms: [.macOS(.v13)], // Portable test harness; iOS deployment remains in project.yml.
     products: [.library(name: "PhotoPCompositionCore", targets: ["PhotoPCompositionCore"])],
     targets: [
         .target(name: "PhotoPCompositionCore", path: "ios/PhotoP/Composition",

@@ -14,6 +14,8 @@ final class DepthMotionEstimator {
         return result
     }
     func backwardFlow(current: CGImage, previous: CGImage) throws -> [SIMD2<Float>] {
+        let span = ProcessingTrace.begin("Optical flow")
+        defer { ProcessingTrace.end("Optical flow", span) }
         guard current.width == previous.width, current.height == previous.height,
               current.width <= 512, current.height <= 512 else { throw CameraError.invalidSettings }
         OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }

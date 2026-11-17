@@ -65,7 +65,9 @@ actor CompanyLookCompiler {
     private struct Record: Codable { let version: String; let sourceSHA256: String; let renderSHA256: String; var runtimeSHA256: String? = nil }
     init(folder: URL) { self.folder = folder }
     func load(_ entry: CompanyFilmStyle, in root: URL) throws -> ImportedLUT {
-        try LUTTextEncoder.temporaryPool { try compile(entry, in: root) }
+        let span = ProcessingTrace.begin("Load company LUT")
+        defer { ProcessingTrace.end("Load company LUT", span) }
+        return try LUTTextEncoder.temporaryPool { try compile(entry, in: root) }
     }
     private func compile(_ entry: CompanyFilmStyle, in root: URL) throws -> ImportedLUT {
         guard entry.canApply else { throw ImageEditingError.invalid("이 기술 변환의 출력 프로파일이 확인되지 않아 원본만 제공합니다.") }
