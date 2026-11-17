@@ -15,10 +15,56 @@ on:
         type: choice
         options: ['all', 'depth']
         default: 'all'
+      diagnostic_run:
+        description: 'Existing run ID to inspect; leave empty for normal validation'
+        type: string
+        default: ''
 permissions:
   contents: read
 jobs:
+  diagnose:
+    if: inputs.diagnostic_run != ''
+    runs-on: macos-26
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 8
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_TO_DIAGNOSE: ${{ inputs.diagnostic_run }}
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Download and inspect retained XCTest result
+        shell: bash
+        run: |
+          [[ "$RUN_TO_DIAGNOSE" =~ ^[0-9]+$ ]]
+          gh run download "$RUN_TO_DIAGNOSE" --repo "$GITHUB_REPOSITORY" --name photop-native-ui --dir retained
+          mkdir -p diagnostics
+          xcrun xcresulttool get test-results summary --path retained/UnitValidation.xcresult > diagnostics/summary.json
+          cat diagnostics/summary.json
+          xcrun xcresulttool export diagnostics --path retained/UnitValidation.xcresult --output-path diagnostics/exported
+          python3 - <<'PYDIAG'
+          import pathlib,tarfile
+          needles=('Exception Type','Termination Reason','EXC_RESOURCE','EXC_BAD_ACCESS','SIGABRT','SIGKILL','Jetsam','testUniqueOriginalProfiles','memory limit','Test crashed')
+          for path in pathlib.Path('diagnostics/exported').rglob('*'):
+              if not path.is_file(): continue
+              if tarfile.is_tarfile(path):
+                  with tarfile.open(path) as archive:
+                      for member in archive.getmembers():
+                          if member.isfile() and member.size < 2000000 and member.name.endswith(('.ips','.crash','.log','.txt')):
+                              source=archive.extractfile(member)
+                              if source:
+                                  rows=source.read().decode('utf-8','replace').splitlines()
+                                  hits=[row for row in rows if any(n in row for n in needles)]
+                                  if hits: print(member.name, '\n'.join(hits[:15]))
+          PYDIAG
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: photop-retained-diagnostics
+          path: diagnostics/
   ios:
+    if: inputs.diagnostic_run == ''
     runs-on: ${{ (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}
     timeout-minutes: 35
     steps:
