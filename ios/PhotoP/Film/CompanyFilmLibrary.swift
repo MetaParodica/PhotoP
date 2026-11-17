@@ -74,7 +74,7 @@ actor CompanyLookCompiler {
         let sourceData = try ImportedLUT.readData(CompanyFilmLibrary.original(entry, in: root))
         guard LUTPhotoEditor.hash(sourceData) == entry.sha256 else { throw ImageEditingError.invalid("외부 LUT 원본 해시가 다릅니다.") }
         let data: Data, lut: CubeLUT
-        if entry.nativeInput == "srgb-assumed" { data = sourceData; lut = try CubeLUT.parse(String(decoding: sourceData, as: UTF8.self)) }
+        if entry.nativeInput == "srgb-assumed" { data = sourceData; lut = try nativeTable(sourceData, hash: entry.sha256) }
         else {
             let key = entry.sha256 + "-" + SDRVendorAdapter.version
             let file = folder.appendingPathComponent(key + ".cube"), record = folder.appendingPathComponent(key + ".json")
@@ -101,11 +101,32 @@ actor CompanyLookCompiler {
             sourceSHA256: entry.sha256, renderLUTSHA256: LUTPhotoEditor.hash(data), minimumIntensity: 0, maximumIntensity: 1, previewDescription: note)
         return ImportedLUT(data: data, lut: lut, displayName: entry.name + " · SDR 파생", preset: .init(), provenance: provenance)
     }
-    private func cached(file: URL, record: URL, binary: URL, source: String) throws -> ImportedLUT {
+    private func readRecord(_ record: URL) throws -> Record {
         let handle = try FileHandle(forReadingFrom: record); defer { try? handle.close() }
         let metadata = try handle.read(upToCount: 4097) ?? Data()
         guard metadata.count <= 4096 else { throw CameraError.invalidPhotoData }
-        var entry = try JSONDecoder().decode(Record.self, from: metadata)
+        return try JSONDecoder().decode(Record.self, from: metadata)
+    }
+    private func nativeTable(_ source: Data, hash: String) throws -> CubeLUT {
+        let version = "srgb-passthrough-v1", key = hash + "-native"
+        let binary = folder.appendingPathComponent(key + ".lut64"), record = folder.appendingPathComponent(key + ".json")
+        if let entry = try? readRecord(record), entry.version == version,
+           entry.sourceSHA256 == hash, entry.renderSHA256 == hash, let expected = entry.runtimeSHA256,
+           let bytes = try? ImportedLUT.readData(binary), LUTPhotoEditor.hash(bytes) == expected,
+           let table = try? LUTBinaryCodec.decode(bytes) { return table }
+        // The bundled source has already been hash-verified. It remains the
+        // export representation; no duplicate .cube is needed for passthrough.
+        let table = try CubeLUT.parse(String(decoding: source, as: UTF8.self))
+        let bytes = try LUTBinaryCodec.encode(table)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+        try bytes.write(to: binary, options: options)
+        try JSONEncoder().encode(Record(version: version, sourceSHA256: hash, renderSHA256: hash,
+            runtimeSHA256: LUTPhotoEditor.hash(bytes))).write(to: record, options: options)
+        return table
+    }
+    private func cached(file: URL, record: URL, binary: URL, source: String) throws -> ImportedLUT {
+        var entry = try readRecord(record)
         let data = try ImportedLUT.readData(file)
         guard entry.version == SDRVendorAdapter.version, entry.sourceSHA256 == source, LUTPhotoEditor.hash(data) == entry.renderSHA256 else { throw CameraError.invalidPhotoData }
         let lut: CubeLUT
