@@ -219,10 +219,13 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertEqual(yValues[yValues.count / 2], -2, accuracy: 1)
     }
     func testOnlyKnownSimulatorFlowBackendFailureCanSkipDirectionValidation() {
-        let unavailable = NSError(domain: VNErrorDomain, code: VNErrorCode.operationFailed.rawValue,
+        let unavailable = NSError(domain: VNErrorDomain, code: VNErrorCode.internalError.rawValue,
             userInfo: [NSLocalizedDescriptionKey: "Failed to create motion flow estimator"])
         XCTAssertTrue(DepthMotionEstimator.isUnavailableSimulatorBackend(unavailable, simulator: true))
         XCTAssertFalse(DepthMotionEstimator.isUnavailableSimulatorBackend(unavailable, simulator: false))
+        let differentFailure = NSError(domain: VNErrorDomain, code: VNErrorCode.operationFailed.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: "Failed to create motion flow estimator"])
+        XCTAssertFalse(DepthMotionEstimator.isUnavailableSimulatorBackend(differentFailure, simulator: true))
         let malformed = NSError(domain: VNErrorDomain, code: VNErrorCode.invalidFormat.rawValue, userInfo: [:])
         XCTAssertFalse(DepthMotionEstimator.isUnavailableSimulatorBackend(malformed, simulator: true))
     }

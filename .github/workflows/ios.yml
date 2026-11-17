@@ -150,6 +150,7 @@ jobs:
           set -o pipefail
           xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO build-for-testing 2>&1 | tee diagnostics/simulator-build.log
       - name: Run application and depth XCTest on Simulator
+        id: unit_tests
         working-directory: ios
         timeout-minutes: 12
         shell: bash
@@ -161,34 +162,46 @@ jobs:
           else
             test_flags=(-only-testing:PhotoPTests -skip-testing:PhotoPTests/CompanyFilmLibraryTests -skip-testing:PhotoPTests/FilmStyleLibraryTests)
           fi
-          set -o pipefail
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult "${test_flags[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/unit-tests.log
+          python3 ../scripts/run_test_process.py --timeout 660 --log diagnostics/unit-tests.log -- xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult "${test_flags[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Preserve unit log before remaining suites
         if: always() && steps.simulator_build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: photop-unit-log
           path: ios/diagnostics/unit-tests.log
+      - name: Reset selected Simulator after unit failure
+        if: always() && steps.simulator_build.outcome == 'success' && steps.unit_tests.outcome != 'success'
+        timeout-minutes: 2
+        run: |
+          xcrun simctl shutdown "$PHOTOP_SIMULATOR" || true
+          xcrun simctl boot "$PHOTOP_SIMULATOR"
+          xcrun simctl bootstatus "$PHOTOP_SIMULATOR" -b
       - name: Run LUT generation and cache regression
+        id: lut_tests
         if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
         working-directory: ios
         timeout-minutes: 8
         run: |
-          set -o pipefail
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath LUTValidation.xcresult -only-testing:PhotoPTests/CompanyFilmLibraryTests -only-testing:PhotoPTests/FilmStyleLibraryTests -testLanguage de -testRegion DE -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/lut-tests.log
+          python3 ../scripts/run_test_process.py --timeout 420 --log diagnostics/lut-tests.log -- xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath LUTValidation.xcresult -only-testing:PhotoPTests/CompanyFilmLibraryTests -only-testing:PhotoPTests/FilmStyleLibraryTests -testLanguage de -testRegion DE -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Preserve LUT log before UI tests
         if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
         uses: actions/upload-artifact@v4
         with:
           name: photop-lut-log
           path: ios/diagnostics/lut-tests.log
+      - name: Reset selected Simulator after LUT failure
+        if: always() && steps.simulator_build.outcome == 'success' && steps.lut_tests.outcome == 'failure'
+        timeout-minutes: 2
+        run: |
+          xcrun simctl shutdown "$PHOTOP_SIMULATOR" || true
+          xcrun simctl boot "$PHOTOP_SIMULATOR"
+          xcrun simctl bootstatus "$PHOTOP_SIMULATOR" -b
       - name: Run camera UI interactions on Simulator
         if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
         working-directory: ios
         timeout-minutes: 8
         run: |
-          set -o pipefail
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult -only-testing:PhotoPUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/ui-tests.log
+          python3 ../scripts/run_test_process.py --timeout 420 --log diagnostics/ui-tests.log -- xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UIValidation.xcresult -only-testing:PhotoPUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building
       - name: Verify LUT resources and provenance
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v

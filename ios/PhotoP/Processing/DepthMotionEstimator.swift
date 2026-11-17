@@ -7,7 +7,7 @@ import Foundation
 // oriented RGB canvas as the depth history. Failure leaves motion-gated fallback.
 final class DepthMotionEstimator {
     static func isUnavailableSimulatorBackend(_ error: NSError, simulator: Bool) -> Bool {
-        simulator && error.domain == VNErrorDomain && error.code == VNErrorCode.operationFailed.rawValue &&
+        simulator && error.domain == VNErrorDomain && error.code == VNErrorCode.internalError.rawValue &&
             error.localizedDescription == "Failed to create motion flow estimator"
     }
     private let context = CIContext(options: [.cacheIntermediates: false])
