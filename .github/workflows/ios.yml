@@ -39,13 +39,20 @@ jobs:
         run: |
           [[ "$RUN_TO_DIAGNOSE" =~ ^[0-9]+$ ]]
           gh run download "$RUN_TO_DIAGNOSE" --repo "$GITHUB_REPOSITORY" --name photop-native-ui --dir retained
-          if [ ! -d retained/UnitValidation.xcresult ] && [ -f retained/diagnostics/results/UnitValidation.xcresult.zip ]; then
-            ditto -x -k retained/diagnostics/results/UnitValidation.xcresult.zip retained
-          fi
-          mkdir -p diagnostics
-          xcrun xcresulttool get test-results summary --path retained/UnitValidation.xcresult > diagnostics/summary.json
-          cat diagnostics/summary.json
-          xcrun xcresulttool export diagnostics --path retained/UnitValidation.xcresult --output-path diagnostics/exported
+          mkdir -p diagnostics/exported
+          found=0
+          for bundle in UnitValidation LUTValidation UIValidation; do
+            if [ ! -d "retained/$bundle.xcresult" ] && [ -f "retained/diagnostics/results/$bundle.xcresult.zip" ]; then
+              ditto -x -k "retained/diagnostics/results/$bundle.xcresult.zip" retained
+            fi
+            if [ -d "retained/$bundle.xcresult" ]; then
+              found=1
+              xcrun xcresulttool get test-results summary --path "retained/$bundle.xcresult" > "diagnostics/$bundle-summary.json" 2> "diagnostics/$bundle-errors.log" || true
+              cat "diagnostics/$bundle-summary.json"
+              xcrun xcresulttool export diagnostics --path "retained/$bundle.xcresult" --output-path "diagnostics/exported/$bundle" 2>> "diagnostics/$bundle-errors.log" || true
+            fi
+          done
+          [ "$found" = 1 ]
           python3 - <<'PYDIAG'
           import pathlib,tarfile
           needles=('Exception Type','Termination Reason','EXC_RESOURCE','EXC_BAD_ACCESS','SIGABRT','SIGKILL','Jetsam','testUniqueOriginalProfiles','memory limit','Test crashed')
@@ -156,13 +163,25 @@ jobs:
           fi
           set -o pipefail
           xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath UnitValidation.xcresult "${test_flags[@]}" -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/unit-tests.log
+      - name: Preserve unit log before remaining suites
+        if: always() && steps.simulator_build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: photop-unit-log
+          path: ios/diagnostics/unit-tests.log
       - name: Run LUT generation and cache regression
         if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
         working-directory: ios
         timeout-minutes: 8
         run: |
           set -o pipefail
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath LUTValidation.xcresult -only-testing:PhotoPTests/CompanyFilmLibraryTests -only-testing:PhotoPTests/FilmStyleLibraryTests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/lut-tests.log
+          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -resultBundlePath LUTValidation.xcresult -only-testing:PhotoPTests/CompanyFilmLibraryTests -only-testing:PhotoPTests/FilmStyleLibraryTests -testLanguage de -testRegion DE -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance 180 CODE_SIGNING_ALLOWED=NO test-without-building 2>&1 | tee diagnostics/lut-tests.log
+      - name: Preserve LUT log before UI tests
+        if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
+        uses: actions/upload-artifact@v4
+        with:
+          name: photop-lut-log
+          path: ios/diagnostics/lut-tests.log
       - name: Run camera UI interactions on Simulator
         if: always() && steps.simulator_build.outcome == 'success' && inputs.test_scope != 'depth'
         working-directory: ios
