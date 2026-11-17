@@ -1,6 +1,6 @@
 # PhotoP 최적화 구현·회귀 검증
 
-2026-11-17. 기준 main `f6862b2`, 작업 브랜치 `codex/optimization-20261117`. [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)의 우선 과제 중 검증 복구·반복 계산·LUT 캐시·저장 UI를 구현했다. 보고서 전체의 화질/AF 로드맵 완료나 실기기 성능 인수를 뜻하지 않는다.
+2026-11-17. 기준 main `f6862b2`, 작업 브랜치 `codex/optimization-20261117`. [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)의 우선 과제 중 검증 복구·반복 계산·LUT 캐시·저장 UI를 구현했다. 최종 소스 `241c1be`에서 공통118·Python31·iOS 단위354통과/Flow1skip·UI11개 통과를 확인했다. 보고서 전체의 화질/AF 로드맵 완료나 실기기 성능 인수를 뜻하지 않는다.
 
 ## 1. 실패 원인 확인
 
@@ -9,6 +9,8 @@ main [CI44032147452](https://github.com/MetaParodica/PhotoP/actions/runs/4403214
 단위 테스트와 대량 LUT 회귀를 별도 xcodebuild 실행으로 나눴다. 테스트당 기본120초/최대180초 제한은 유지했다. 단위 테스트가 실패해도 LUT/UI 검사와 가능한 자료 수집은 실행한다. 원시 로그와 summary를 남기고 Simulator 종료 후 닫힌 xcresult를 압축해 업로드한다. 이전 artifact의 세 결과 번들을 읽는 수동 `diagnostic_run`도 추가했다.
 
 첫 분리 실행44041816799에서는 LUT 단계가08:07:56에 시간 초과로 끝난 뒤에도 해당 xcodebuild 로그가08:11까지 계속 기록됐고 UI 검사도 동시에 실행됐다. 결과에 나타난 `signal kill`을 메모리 부족으로 단정하지 않는다. 후속 진단44046104603에서도 이 실행/종료 흔적을 보존했다. `scripts/run_test_process.py`가 독립 프로세스 그룹을 만들어 기한·취소 때 자식까지 종료하며, 실패 후에는 선택한 Simulator만 재시작한다. 로그는 각 suite 직후에도 별도 artifact로 공개한다. 종료 코드/두 출력 스트림, 부모·자식 시간 제한, 취소 신호 전달을 실제 하위 프로세스로 검사했다.
+
+후속 UI 로그는 준비에 약4~5분, 실제 조작에 약4분을 사용했다.7분 watchdog은 전체 실행/결과 마무리에 부족해11분으로 조정했다(단계12분). 개별 테스트의120초 제한과 실패 반환 코드는 유지한다. Simulator 명시적 boot/bootstatus를 추가해 준비를 분리하고 수동 `ui` scope를 제공한다. 취소된 실행은 후속 suite/화면 수집을 시작하지 않는다. `reveal` 도우미는 대상 방향의 짧은 드래그로 바꿨으나, 중첩된 인물 선택 행에서는 여전히 위아래로 지나치는 현상이 재현됐다. 이 항목은 실제 로그에서 정상 동작한 XCTest의 자동 scroll-to-visible 탭을 사용하고 선택 상태를 명시적으로 확인한다. 위치/오버레이 검증도 유지한다.
 
 ## 2. 적용 내용
 
@@ -19,7 +21,7 @@ main [CI44032147452](https://github.com/MetaParodica/PhotoP/actions/runs/4403214
 | B01 일부 | 모델 프레임의 정규화 범위를 한 번 계산. 움직인 픽셀 무효화 때 기존 범위 유지. 동일 매트/출력 크기의 CI 이미지 하나 재사용 | 일부 전경 무효화로 남은 배경의 깊이가 재확대되지 않는 회귀 추가. 프리뷰 luma 생성은 기존 경로 |
 | B04 | Core ML 입력 CVPixelBuffer 재사용, 매회 CI 캐시 비우기 제거. 터치 위치의 instance label로 매트 하나만 생성 | label8 초과·행 stride·상하 좌표·배경/잘못된 좌표 검사. 실제 다중 피사체 화질/할당량은 기기 계측 필요 |
 | B04 | 실패하는 Flow에0.5~30초 지수 backoff, 성공/세대 전환 시 초기화 | 재시도 간격·상한·잘못된 시계값 공통 테스트. 기존 움직임/만료 안전 복귀 유지 |
-| B05 | hash/버전 검증된 packed Float64 런타임 캐시. 기술 LUT와 sRGB 룩 모두 재사용. 원본과 SDR 파생 `.cube` 보존 | CPU 표의 비트·도메인·출처·채널 순서 유지. 구형 캐시 업그레이드, binary/cube 손상 복구, 악성 크기·NaN 거부. sRGB는 원본 `.cube`를 중복 저장하지 않음 |
+| B05 | hash/버전 검증된 packed Float64 런타임 캐시. 기술 LUT와 sRGB 룩 모두 재사용. 원본과 SDR 파생 `.cube` 보존 | CPU 표의 비트·도메인·출처·채널 순서 유지. 구형 캐시 업그레이드, binary/cube 손상 복구, 악성 크기·NaN 거부. sRGB는 원본 `.cube`를 중복 저장하지 않음. 캐시 쓰기 실패는 검증된 룩 적용을 막지 않음 |
 | B05 | 파일용 비지역화 포맷 API, 청색 plane 단위 임시 객체 해제 | 기존7/8자리 텍스트·반올림 경계·음의0·hash 계약 유지. 실제 iPhone 생성 시간/메모리는 별도 측정 |
 | B08 | 저장 중 f값·프로필·원본 비교 제어 잠금, 초점 탭 거부 유지 | 저장 snapshot과 화면 값 일치. 저장 취소 버튼은 활성. 전용 저장 중 UI 자동화는 추가 과제 |
 | 계측 | LUT load·추론 대기/실행·Flow·매트·고해상도 export에 OSSignposter 구간 | Instruments 관측 지점이며 이미지/상시 사용자 로그를 기록하지 않음 |
@@ -58,9 +60,16 @@ swiftc -O -o /tmp/photop-processing-benchmark \
 - Linux Swift 공통 XCTest118개 통과. Python31개 통과, 모델3파일·기본 LUT5개·외부25개 무결성 통과.
 - `304bc91`의 [전체 CI44042167759](https://github.com/MetaParodica/PhotoP/actions/runs/44042167759): iPhone/Simulator 빌드 통과, 단위336개 중335통과/1실패. 실제 Flow 오류 코드를 처음에 잘못 지정한 문제를 확인해 `35d2ad6`에서 수정했다. 분리한 LUT 회귀도 앞선 실행44041816799에서 단계 제한에 도달했다.
 - `cbf0297`의 [전체 CI44044365082](https://github.com/MetaParodica/PhotoP/actions/runs/44044365082)는 알려진 Flow 분류 실패와 프로세스 중첩이 남아 후속 수정본으로 대체·중단했다. 성공으로 인용하지 않는다.
-- `35d2ad6`의 [전체 CI44046582315](https://github.com/MetaParodica/PhotoP/actions/runs/44046582315)는 iPhone/Simulator 빌드·단위337개 중336통과/1skip/실패0. LUT/UI는 진행 중이다.
-- `249e6c8`의 [전체 CI44046857607](https://github.com/MetaParodica/PhotoP/actions/runs/44046857607)는 sRGB 프리셋의 바이너리 캐시와 재시작/손상 복구 회귀까지 포함한 실행이다. iPhone/Simulator 빌드·단위337개 중336통과/1skip/실패0이며, 독일어 지역 설정 LUT17개와 UI11개는 진행 중이다.
+- `35d2ad6`의 [전체 CI44046582315](https://github.com/MetaParodica/PhotoP/actions/runs/44046582315)는 iPhone/Simulator 빌드·단위337개 중336통과/1skip/실패0. LUT는 실행 준비 중 기한에 도달했고 UI도 단계 제한으로 중단됐다.
+- `249e6c8`의 [전체 CI44046857607](https://github.com/MetaParodica/PhotoP/actions/runs/44046857607)는 iPhone/Simulator 빌드·단위337개 중336통과/1skip/실패0, 독일어 지역 설정 LUT17개 모두 통과했다(테스트 실행 합계37.203초). UI 로그에는10개 통과·인물 가이드 테스트 도우미1개 실패가 있으며 단계 제한으로 결과 수집이 중단됐다. 전체 CI 성공으로 인용하지 않는다.
+- 이전에120초를 넘긴65³ 캐시 회귀는17.381초에 통과했다. 바이너리/텍스트 손상 복구·재시작·색 일치·원본 bytes 보존 검사를 포함하며 테스트당 제한은 그대로다. 자체 룩 고유성/해시 회귀는5.449초에 통과했다. 이 시간은 Simulator의 해당 테스트 시간이며 실제 iPhone 지연이나 전체 CI 단계 시간은 아니다.
 - 앞선 CI에서 드러난 macOS 배포 버전과 Swift6.2 테스트 fixture 타입 추론 오류는 실제 로그를 확인해 수정했다. Linux 성공으로 Apple SDK 성공을 대체하지 않는다.
+- `c3ef74c`의 [UI 집중 CI44051155467](https://github.com/MetaParodica/PhotoP/actions/runs/44051155467)는 **성공**했다. iPhone/Simulator 빌드·공통118·UI11개 실패0·Python31·자산/실제 번들 검사·화면/결과 업로드가 통과했다. UI 조작 합계167.504초, UI 단계 전체 약236초이며 준비/결과 처리 시간을 포함한다. 이 실행은 네이티브 단위/LUT suite를 생략한 UI 집중 범위다.
+- 같은 `c3ef74c`의 [전체 CI44051065297](https://github.com/MetaParodica/PhotoP/actions/runs/44051065297)는 단위/LUT 통과, UI10개 통과/인물 선택 행의 사전 스크롤 판정1개 실패다. 실제 탭 뒤 선택/위치/오버레이 검사는 성공했으나 사용자 기능과 무관한 도우미의 중간 판정이 불안정했다. 전체 성공으로 인용하지 않는다.
+- `72df01b`의 [UI 집중 CI44054370318](https://github.com/MetaParodica/PhotoP/actions/runs/44054370318)는 **성공**했다. 인물 가이드의 자동 스크롤 탭/선택 상태/위치/오버레이를 포함한 UI11개 실패0, 공통118·Python31·SDK 빌드·자산/번들·화면/결과 수집이 통과했다. UI 조작 합계212.135초다.
+- 같은 `72df01b`의 [전체 CI44054275255](https://github.com/MetaParodica/PhotoP/actions/runs/44054275255)는 **성공**했다. 공통118·네이티브354개 중353통과/Flow1skip·UI11개 실패0·Python31·자산/번들·화면/닫힌 결과 업로드까지 통과했다. 이 시점의 앱 소스는 `249e6c8`과 같다.
+- 최종 `241c1be`의 [전체 CI44056942568](https://github.com/MetaParodica/PhotoP/actions/runs/44056942568)는 **성공**했다. 공통118·iPhone/Simulator 빌드·네이티브355개 중354통과/Flow1skip·UI11개 실패0·Python31·자산/실제 번들 검사 통과. 단위337개(336통과/1skip)와 독일어 지역 설정 LUT18개(모두 통과)를 분리했다. UI 조작 합계228.374초다. 업로드된 세 summary의 Passed/실패0을 직접 확인했으며 닫힌 xcresult 압축3개와 JPEG 화면6개를 확인했다.
+- 최종 추가 케이스는 캐시 경로가 기존 파일인 실제 조건에서도 검증된 sRGB 룩과 원본을 유지한다(0.881초 통과).65³ 캐시 회귀18.389초, LUT18개 합계40.969초 통과. 캐시 기록 실패만 보조 처리로 삼으며 원본 hash/프로파일/색 검증 오류는 계속 거부한다. 문서 후속 커밋은 앱 소스 변경이 아니다.
 
 ## 5. 남은 과제
 
