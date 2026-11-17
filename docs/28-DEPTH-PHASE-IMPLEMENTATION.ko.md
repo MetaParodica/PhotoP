@@ -1,5 +1,9 @@
 # 심도 Phase별 구현·테스트 반복 기록
 
+2026-11-17: 사용자 main 푸시 요청에 따라 기존 개발분과 [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)를 통합한다. 아래 “main 변경하지 않음/전용 브랜치” 원칙은 2026-11-16 개발 당시 기록이며, 최신 사용자 지시로 변경됐다. 전체 회귀 실패 및 실기기 인수 대기는 계속 추적한다.
+
+후속 조회 결과: `9f23cea` 심도 집중 CI43918075081은 성공(지정 XCTest39개·skip1·실패0)했으나 Optical Flow는 Simulator 실행 불가로 skip했다. 최신 `31daead` 전체 CI43918582758은 단위 테스트 프로세스 재시작/12분 시간 초과와 진단 자료 수집 실패로 종료했다. 이전의 “진행 중” 기록보다 이 결과를 우선하며, 개선 우선순위는 [29 최적화·고도화 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)에 정리했다.
+
 2026-11-16 KST. 기준 main `dc75be6`. 후속 사용자 요청에 따라 [24 계획](24-SOFTWARE-DEPTH-DEVELOPMENT-PLAN.ko.md)의 Phase0~7을 진행한다. 앞선1차 작업은 [27 보고서](27-AF-NATURAL-DEPTH-IMPLEMENTATION.ko.md)에 보존한다. 이 문서는 진행 기록이며 인수 전 완료를 선언하지 않는다.
 
 ## 원칙
@@ -18,7 +22,7 @@
 | 2 | 매트·알파·경계색·배경 보완 | 선택 인스턴스/포함 매트·RGB 유도 알파·보수적 전경색 복원·로컬 배경 확장 구현. 실제 머리카락/안경 인수 대기 |
 | 3 | AI/측정 깊이 융합·신뢰도·일반 사물 | 강건 affine 보정·측정값 보존·검증된 빈 영역 채움. 무보정 AI를 m로 해석하지 않음. 실기기 입력 대기 |
 | 4 | 렌즈 프로필·점광원 | Natural/Portrait/Classic 공유 PSF·대칭/광량 보존·CPU 참조 검사. 실제 점광원 비교 대기 |
-| 5 | 실시간 심도·시간 안정화·AF 연동 | AI 프리뷰·분석 단일 작업·공유 추론 게이트·시간 필터·움직임/만료 시 복귀·f값 즉시 반영 구현. optical flow 및 실기기 성능 인수 대기 |
+| 5 | 실시간 심도·시간 안정화·AF 연동 | AI 프리뷰·분석 단일 작업·공유 추론 게이트·시간 필터·Vision Optical Flow 이력 워프·움직임/만료 시 복귀·f값 즉시 반영 구현. SDK 방향 계약/실기기 성능 인수 대기 |
 | 6 | 고해상도·사진 재초점·보관함·취소/복구 | 최대64MP 경로·사진 터치 재초점·f/프로필 편집·재시작 보관함·hash 검증·취소/중단 정리 구현. SDK/48MP 실기기 인수 대기 |
 | 7 | 품질 평가·지속 사용·출시 게이트 | 증거 hash·실제100장·기기 trace p95·블라인드/법적 검토 게이트 구현. 실제 증거0건으로 **인수 불가** |
 
@@ -42,6 +46,9 @@
 - `5048940`: 앱 재시작 후 보관함을 열어 저장된 실제 사진을 터치하고 f/렌즈/원본 비교를 변경한다. 원본·depth/matte/LUT hash를 확인하며 저장은 새 UUID 번들이다. 처리 중 취소/비활성화는 타일 사이에서 감지하고 pending 파일을 정리한다. 하루 이상 지난 앱 소유 UUID pending 폴더만 복구 정리하며 정상 결과·원본·활성 작업·알 수 없는 폴더는 보존한다.
 - 최대64MP·긴 변16384px를 유지한다.12.6MP 초과는8 구간/8 PSF 쌍, 이하16 구간/16쌍으로 비용을 제한한다. 모델/매트의 세부 해상도가64MP라는 의미는 아니다. 이미지 디코더/인코더 peak memory 및48MP 처리 시간은 실측 전이다.
 - `6d22293`: 구도/사진 리뷰/AI 깊이/매트 추론을 공통 lock으로 직렬화하여 병렬 Vision/Core ML 경쟁을 제한했다. 캡처 원본을 보존한 후 앱이 비활성화되면 효과 처리를 취소한다.
+- `4c3513e`: 큰 CoC를 미리 대역 제한하고 축소 피라미드에서 PSF를 평가한 뒤 복원한다. 고해상도의 고립된 샘플 모양 점광원을 줄이기 위한 경로다. 상수 보존·점광원 면적/광량·전체/타일 ROI 비교 XCTest로 검사한다. 실제 점광원 사진 인수는 별개다.
+- `37fcbcb`: Apple 공식 [VNGenerateOpticalFlowRequest](https://developer.apple.com/documentation/vision/vngenerateopticalflowrequest)·[VNTargetedImageRequest](https://developer.apple.com/documentation/vision/vntargetedimagerequest)·[출력 포맷](https://developer.apple.com/documentation/vision/vngenerateopticalflowrequest/outputpixelformat) 본문을 직접 확인했다. 작은 동일 RGB 캔버스에 단일 flow 요청을 실행하여 이전 깊이 이력을 현재 좌표로 옮긴다. 영상 경계/새 가림·색상 불일치는 이력을 버리고 깊이 불일치도 혼합하지 않는다. 워프가 성공해도 원래 프레임 시각의 만료 기한을 늘리지 않는다. 실패/지원 불가는 기존 motion gate로 대체한다. 매트는 현재 분석에서 새로 추출하며 오래된 매트를 워프해 재사용하지 않는다.
+- 이동/가림/잘못된 flow/같은 색의 깊이 급변 회귀를 추가하여 portable109개 통과했다. Vision의 실제 벡터 방향은 비대칭 RGB를 가로3·세로2px 이동한 SDK XCTest로 검증한다. Vision 자체가 실행 불가하면 해당 검사를 명시적 skip으로 남긴다. 그 경우 실제 동작 성공으로 주장하지 않는다. CPU-only Simulator 모델 계약과 실제 iPhone의 all compute units 성능을 구분한다.
 
 ## SDK 실패를 실제 로그로 수정한 기록
 
@@ -53,6 +60,6 @@
 
 ## Phase7: 출시 인수 도구
 
-- [평가 입력 계약](depth-acceptance/README.ko.md), [빈 manifest](depth-acceptance/manifest.json), `scripts/check_depth_acceptance.py`를 추가했다. Python28개, portable107개가 현재 통과한다.
+- [평가 입력 계약](depth-acceptance/README.ko.md), [빈 manifest](depth-acceptance/manifest.json), `scripts/check_depth_acceptance.py`를 추가했다. Python28개, portable109개가 현재 통과한다.
 - 실제100장·범주/동의·원본/PhotoP/경쟁 결과/평가 보고서의 hash, 세 종류 기기10분 trace·원시 지연 샘플 p95, 취소/원본/열 동작, 독립3인 블라인드 및 최종 권리/화질 승인을 요구한다. 샘플 없는 현재 게이트는 eligible=false/exit2이며 출시 인수는 대기다. CI의 validate-only는 입력 무결성 검사일 뿐 화질 통과가 아니다.
 - 업계 최고/Leica 동급, 투명체 복원·정밀 머리카락 정답, 이동 정합/광학 흐름·실제 렌즈 PSF 실측·iOS27 SDK/실기기 성공을 주장하지 않는다. 센서 metric 보정과 AI 상대 깊이·추정 배경은 UI/recipe에서 구분한다. 기기별 성능 예산·영상/HDR/RAW 심도·눈 AF·포커스 스태킹/전체 DSLR 조사 목록은 별도 후속 과제다.

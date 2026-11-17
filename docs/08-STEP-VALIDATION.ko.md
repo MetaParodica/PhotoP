@@ -315,5 +315,16 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 2026-11-16 KST, main `dc75be6`을 기준으로 전용 `codex/depth-phases-20261116`에1차 미커밋 작업과 후속 Phase를 게시했다. main은 변경하지 않았다. 상세 변화·제한은 [28 기록](28-DEPTH-PHASE-IMPLEMENTATION.ko.md)을 따른다.
 - `2587c02` 기준 확립, `9e1fc2a` 융합/매트/3종 PSF, `07d1958` 실시간/고해상도, `5048940` 저장 사진 터치 재초점·보관함/복구, `0452e2d` 인수 게이트, `6d22293` 추론 직렬화/비활성화 취소, `c73222d` 안전 복귀·선형 작업 공간/검증 기록.
 - main CI40045643158의 CGFloat 배열 오류를 확인·수정했다. 새 macOS CI43906209605는 Foundation/CoreGraphics import,43909758982는 Swift 타입 추론 시간 초과로 실패해 실제 로그에 맞게 수정했다. Linux 통과를 SDK 빌드 성공으로 대체하지 않는다. 후속 CI 결과를 별도 기록한다.
-- 현재 portable Swift107·Python28·모델3파일·LUT5+25 무결성 통과. 실제 모델 추론/렌즈 kernel/저장 depth hash/초점 변경/복구/ROI 타일 검사 XCTest를 추가했고 SDK 실행을 진행 중이다. `docs/depth-acceptance`의 실제 평가 입력은0건이며 게이트는 eligible=false이다. 실기기 성능/열·머리카락/안경/점광원·100장 경쟁/블라인드·iOS27 인수는 대기다.
+- 현재 portable Swift109·Python28·모델3파일·LUT5+25 무결성 통과. 실제 모델 추론/렌즈 kernel/저장 depth hash/초점 변경/복구/ROI 타일 검사 XCTest를 추가했고 SDK 실행을 진행 중이다. `docs/depth-acceptance`의 실제 평가 입력은0건이며 게이트는 eligible=false이다. 실기기 성능/열·머리카락/안경/점광원·100장 경쟁/블라인드·iOS27 인수는 대기다.
+
+## 43. 최적화·고도화 조사
+
+- `31daead` 소스와 실제 Actions 로그를 대조하고 [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)를 저장했다. main은 `dc75be6`이며 앱 소스는 변경하지 않았다. 기존 미커밋 문서 작업을 보존했다.
+- 심도 집중43918075081은 성공: portable110, 지정 SDK XCTest39개 중38개 통과·Optical Flow1개 skip, Python28/자산 검사 성공. 타일 halo·큰 CoC·모델 추론/재편집 검사를 확인했다. 최신 전체43918582758은 빌드/Swift DEBUG 검사 이후 단위 테스트 프로세스 재시작·12분 단계 제한 초과로 실패했으며 UI/후속 자산 검사는 미실행, 화면/업로드 수집도 실패했다. 재시작 후301개 집계를 전체 회귀 성공으로 인용하지 않는다.
+- 반복 프레임 CPU 변환/깊이 정렬, 단일 추론 lock, 입력/매트 할당, LUT bake/파싱, 동기 GPU 타일, 촬영 후처리 busy, 저장 중 편집 값 불일치 가능성을 근거 위치와 함께 정리했다. 화질·AF·보관함·구조 개선과 계측/인수 기준을 제안했으며 실기기 개선율을 측정한 것은 아니다.
+
+## 44. main 통합
+
+- 2026-11-17 사용자 요청으로 심도·AF 개발 이력과 최적화·고도화 보고서를 main 반영 범위에 포함했다. 기존 원격 main `dc75be6`의 이력을 보존하는 fast-forward 방식으로 진행한다.
+- portable110/Python28 및 심도 집중 SDK38개 통과/1개 skip의 기존 결과, 최신 전체 CI43918582758의 시간 초과 실패를 함께 기록한다. 이번 문서 정리로 전체 회귀·실기기·iOS27 인수가 통과한 것은 아니다.
 
