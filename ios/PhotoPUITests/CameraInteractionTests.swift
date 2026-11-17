@@ -248,11 +248,16 @@ final class CameraInteractionTests: XCTestCase {
         let scroll = panel.descendants(matching: .scrollView).matching(identifier: panel.identifier.replacingOccurrences(of: "camera.panel.", with: "camera.panel.scroll.")).firstMatch
         for _ in 0..<8 {
             if element.isHittable { return }
-            if scroll.exists { scroll.swipeUp(); continue }
-            let start = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.9))
-            let end = panel.coordinate(withNormalizedOffset: CGVector(dx: 0.08, dy: 0.35))
+            // A full swipe can pass a short choice row and then keep moving
+            // away from it. Use the target's current position and short drags
+            // at the vertical panel edge, outside nested horizontal choices.
+            let container = scroll.exists ? scroll : panel
+            let viewport = container.frame.intersection(panel.frame)
+            let below = element.frame.midY > viewport.midY
+            let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: below ? 0.82 : 0.25))
+            let end = container.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: below ? 0.42 : 0.65))
             start.press(forDuration: 0.05, thenDragTo: end)
         }
-        XCTAssertTrue(element.isHittable)
+        XCTAssertTrue(element.isHittable, "Control must be reachable in its bottom panel: \(element.identifier)")
     }
 }
