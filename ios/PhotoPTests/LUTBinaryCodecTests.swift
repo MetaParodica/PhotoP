@@ -9,7 +9,14 @@ final class LUTBinaryCodecTests: XCTestCase {
     func testRuntimeCachePreserves1DAnd3DTablesAndSampledColorExactly() throws {
         for one in [true, false] {
             let n = 3, count = one ? n : n * n * n
-            let table = (0..<count).map { SIMD3<Double>(Double($0) / 31, -Double($0) / 23, $0 == 0 ? -0.0 : Double($0) / 17) }
+            var table: [SIMD3<Double>] = []
+            for i in 0..<count {
+                let value = Double(i)
+                let red: Double = value / 31.0
+                let green: Double = -value / 23.0
+                let blue: Double = i == 0 ? -0.0 : value / 17.0
+                table.append(SIMD3(red, green, blue))
+            }
             let original = try CubeLUT(title: "색 · runtime", dimension: n, domainMin: SIMD3(-1, 0.25, -0.0), domainMax: SIMD3(2, 1.25, 3), values: table, isOneDimensional: one)
             let data = try LUTBinaryCodec.encode(original)
             let restored = try LUTBinaryCodec.decode(data)
