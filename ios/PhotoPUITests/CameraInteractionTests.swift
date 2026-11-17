@@ -142,8 +142,10 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
         let person = app.buttons["camera.guide.person.full"]
         XCTAssertTrue(person.waitForExistence(timeout: 3))
-        reveal(person, in: app.otherElements["camera.panel.guide"])
+        // XCTest scrolls this nested choice into view before synthesizing its
+        // tap. Checking a custom scroll helper first can oscillate past it.
         person.tap()
+        XCTAssertTrue(person.isSelected)
         XCTAssertTrue(app.segmentedControls["camera.guide.person.position"].waitForExistence(timeout: 3))
         reveal(app.segmentedControls["camera.guide.person.position"], in: app.otherElements["camera.panel.guide"])
         app.segmentedControls["camera.guide.person.position"].buttons["왼쪽 1/3"].tap()
