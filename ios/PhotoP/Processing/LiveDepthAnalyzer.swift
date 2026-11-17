@@ -28,6 +28,7 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
     private var previousImage: CGImage?
     private var previousEpoch: UInt64?
     private var previousTime = -Double.infinity
+    private var flowRetry = InferenceRetryBackoff()
     private let analysisContext = CIContext(options: [.cacheIntermediates: false])
     private let motionContext = CIContext(options: [.cacheIntermediates: false]) // frameQueue only
     private var settings = LiveDepthSettings()
@@ -76,11 +77,15 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
                     guard let field = DepthGrid.resized(prediction, width: w, height: h) else { return }
                     let luma = try Self.luminance(image, width: w, height: h, context: analysisContext)
                     let currentImage = try motionEstimator.image(image, width: w, height: h)
-                    let flow: [SIMD2<Float>]?
+                    if previousEpoch != epoch { flowRetry.reset() }
+                    var flow: [SIMD2<Float>]?
                     if previousEpoch == epoch, now - previousTime <= 1, let previousImage,
-                       previousImage.width == w, previousImage.height == h {
-                        flow = try? motionEstimator.backwardFlow(current: currentImage, previous: previousImage)
-                    } else { flow = nil }
+                       previousImage.width == w, previousImage.height == h, flowRetry.canAttempt(at: now) {
+                        do {
+                            flow = try motionEstimator.backwardFlow(current: currentImage, previous: previousImage)
+                            flowRetry.reset()
+                        } catch { flowRetry.failed(at: ProcessInfo.processInfo.systemUptime) }
+                    }
                     let refined = try? matteRefiner.refine(color: image, focus: config.focus, embedded: nil, maximumDimension: 160)
                     let accepted = lock.withLock { () -> Bool in
                         guard running, settings.enabled, generation == epoch else { return false }

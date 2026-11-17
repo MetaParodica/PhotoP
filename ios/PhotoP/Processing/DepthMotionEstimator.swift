@@ -6,6 +6,10 @@ import Foundation
 // One request at a time, analysis executor only. Flow uses the same small,
 // oriented RGB canvas as the depth history. Failure leaves motion-gated fallback.
 final class DepthMotionEstimator {
+    static func isUnavailableSimulatorBackend(_ error: NSError, simulator: Bool) -> Bool {
+        simulator && error.domain == VNErrorDomain && error.code == VNErrorCode.operationFailed.rawValue &&
+            error.localizedDescription == "Failed to create motion flow estimator"
+    }
     private let context = CIContext(options: [.cacheIntermediates: false])
     func image(_ color: CIImage, width: Int, height: Int) throws -> CGImage {
         let small = color.transformed(by: CGAffineTransform(scaleX: CGFloat(width) / color.extent.width, y: CGFloat(height) / color.extent.height))

@@ -6,6 +6,18 @@ import XCTest
 #endif
 
 final class DepthPhaseTests: XCTestCase {
+    func testOptionalInferenceFailureBacksOffAndRecoversAfterReset() {
+        var retry = InferenceRetryBackoff()
+        XCTAssertTrue(retry.canAttempt(at: 1))
+        retry.failed(at: 1)
+        XCTAssertFalse(retry.canAttempt(at: 1.4)); XCTAssertTrue(retry.canAttempt(at: 1.5))
+        retry.failed(at: 1.5)
+        XCTAssertFalse(retry.canAttempt(at: 2)); XCTAssertTrue(retry.canAttempt(at: 2.5))
+        for _ in 0..<20 { retry.failed(at: 10) }
+        XCTAssertEqual(retry.retryAfter, 40)
+        retry.reset(); XCTAssertTrue(retry.canAttempt(at: 10))
+        XCTAssertFalse(retry.canAttempt(at: .nan))
+    }
     func testMotionMaskPreservesModelNormalizationWithoutReexpandingBackground() throws {
         let values: [Float] = (0..<100).map { $0 >= 70 ? 4 : ($0 % 2 == 0 ? 1 : 2) }
         let field = try XCTUnwrap(SoftwareDepthField(width: 10, height: 10, inverseDepth: values, units: .relativeInverse))

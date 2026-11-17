@@ -32,15 +32,10 @@ final class DepthMatteRefiner {
             guard let observation = request.results?.first else { return nil }
             // Select the instance under the actual focal point, not all people
             // in the image. A far person's matte must not erase background.
-            var selected: CIImage?
-            for instance in observation.allInstances.prefix(8) {
-                let buffer = try observation.generateScaledMaskForImage(forInstances: IndexSet(integer: instance), from: handler)
-                let candidate = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: NSNull()])
-                let a = try Self.alpha(candidate, width: w, height: h, context: context)
-                let x = min(w - 1, max(0, Int(focus.x * CGFloat(w)))), y = min(h - 1, max(0, Int(focus.y * CGFloat(h))))
-                if a[y * w + x] > 0.5 { selected = candidate; break }
-            }
-            guard let selected else { return nil }; mask = selected
+            guard let instance = Self.instance(at: focus, mask: observation.instanceMask),
+                  observation.allInstances.contains(instance) else { return nil }
+            let buffer = try observation.generateScaledMaskForImage(forInstances: IndexSet(integer: instance), from: handler)
+            mask = CIImage(cvPixelBuffer: buffer, options: [.colorSpace: NSNull()])
         }
         let alpha = try Self.alpha(mask, width: w, height: h, context: context)
         let x = min(w - 1, max(0, Int(focus.x * CGFloat(w)))), y = min(h - 1, max(0, Int(focus.y * CGFloat(h))))
@@ -51,6 +46,18 @@ final class DepthMatteRefiner {
         let rgb = (0..<(w * h)).map { i in SIMD3(linear(raster.rgba[i * 4]), linear(raster.rgba[i * 4 + 1]), linear(raster.rgba[i * 4 + 2])) }
         try Task.checkCancellation()
         return DepthMatteCore.refine(alpha: alpha, color: rgb, width: w, height: h)
+    }
+
+    static func instance(at point: CGPoint, mask: CVPixelBuffer) -> Int? {
+        guard point.x.isFinite, point.y.isFinite, (0...1).contains(point.x), (0...1).contains(point.y),
+              CVPixelBufferGetPixelFormatType(mask) == kCVPixelFormatType_OneComponent8,
+              CVPixelBufferLockBaseAddress(mask, .readOnly) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(mask, .readOnly) }
+        let w = CVPixelBufferGetWidth(mask), h = CVPixelBufferGetHeight(mask), stride = CVPixelBufferGetBytesPerRow(mask)
+        guard w > 0, h > 0, stride >= w, let base = CVPixelBufferGetBaseAddress(mask) else { return nil }
+        let x = min(w - 1, Int(point.x * CGFloat(w))), y = min(h - 1, Int(point.y * CGFloat(h)))
+        let label = Int(base.advanced(by: y * stride).assumingMemoryBound(to: UInt8.self)[x])
+        return label > 0 ? label : nil
     }
 
     static func alpha(_ image: CIImage, width: Int, height: Int, context: CIContext) throws -> [Float] {

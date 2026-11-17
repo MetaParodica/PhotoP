@@ -5,6 +5,7 @@ import Metal
 import ImageIO
 import UniformTypeIdentifiers
 import Vision
+import CoreVideo
 @testable import PhotoP
 
 final class NaturalDepthTests: XCTestCase {
@@ -203,14 +204,45 @@ final class NaturalDepthTests: XCTestCase {
         let b = try SDRImage(rgba: Data(current), width: w, height: h).cgImage()
         let flow: [SIMD2<Float>]
         do { flow = try DepthMotionEstimator().backwardFlow(current: b, previous: a) }
-        catch let error as NSError where error.domain == VNErrorDomain {
+        catch let error as NSError {
+            #if targetEnvironment(simulator)
+            guard DepthMotionEstimator.isUnavailableSimulatorBackend(error, simulator: true) else { throw error }
             throw XCTSkip("Vision optical-flow runtime unavailable: \(error.localizedDescription); production uses motion-gated fallback")
+            #else
+            throw error
+            #endif
         }
         var xValues: [Float] = [], yValues: [Float] = []
         for y in 24..<72 { for x in 32..<96 { xValues.append(flow[y * w + x].x); yValues.append(flow[y * w + x].y) } }
         xValues.sort(); yValues.sort()
         XCTAssertEqual(xValues[xValues.count / 2], -3, accuracy: 1)
         XCTAssertEqual(yValues[yValues.count / 2], -2, accuracy: 1)
+    }
+    func testOnlyKnownSimulatorFlowBackendFailureCanSkipDirectionValidation() {
+        let unavailable = NSError(domain: VNErrorDomain, code: VNErrorCode.operationFailed.rawValue,
+            userInfo: [NSLocalizedDescriptionKey: "Failed to create motion flow estimator"])
+        XCTAssertTrue(DepthMotionEstimator.isUnavailableSimulatorBackend(unavailable, simulator: true))
+        XCTAssertFalse(DepthMotionEstimator.isUnavailableSimulatorBackend(unavailable, simulator: false))
+        let malformed = NSError(domain: VNErrorDomain, code: VNErrorCode.invalidFormat.rawValue, userInfo: [:])
+        XCTAssertFalse(DepthMotionEstimator.isUnavailableSimulatorBackend(malformed, simulator: true))
+    }
+    func testMatteInstanceSelectionHandlesPaddedRowsAndLabelsBeyondEight() throws {
+        var buffer: CVPixelBuffer?
+        XCTAssertEqual(CVPixelBufferCreate(kCFAllocatorDefault, 7, 5, kCVPixelFormatType_OneComponent8,
+            [kCVPixelBufferBytesPerRowAlignmentKey: 64] as CFDictionary, &buffer), kCVReturnSuccess)
+        let mask = try XCTUnwrap(buffer)
+        XCTAssertEqual(CVPixelBufferLockBaseAddress(mask, []), kCVReturnSuccess)
+        let base = try XCTUnwrap(CVPixelBufferGetBaseAddress(mask))
+        let stride = CVPixelBufferGetBytesPerRow(mask)
+        base.initializeMemory(as: UInt8.self, repeating: 0, count: stride * 5)
+        base.advanced(by: 3 * stride + 5).storeBytes(of: UInt8(12), as: UInt8.self)
+        base.advanced(by: 5).storeBytes(of: UInt8(3), as: UInt8.self)
+        base.advanced(by: 4 * stride + 6).storeBytes(of: UInt8(20), as: UInt8.self)
+        CVPixelBufferUnlockBaseAddress(mask, [])
+        XCTAssertEqual(DepthMatteRefiner.instance(at: CGPoint(x: 0.8, y: 0.7), mask: mask), 12)
+        XCTAssertEqual(DepthMatteRefiner.instance(at: CGPoint(x: 1, y: 1), mask: mask), 20)
+        XCTAssertNil(DepthMatteRefiner.instance(at: .zero, mask: mask))
+        XCTAssertNil(DepthMatteRefiner.instance(at: CGPoint(x: CGFloat.nan, y: 0), mask: mask))
     }
     @MainActor func testOfflineManualAndExposureLocksAreNotChangedByAFOn() async {
         let model = CameraModel(); model.settings.focus.manual = true; model.settings.exposure.locked = true
