@@ -29,6 +29,17 @@ final class LUTTextEncoderTests: XCTestCase {
         XCTAssertThrowsError(try LUTTextEncoder.encode(dimension: 2, header: [], decimalPlaces: 8) { $0 })
         XCTAssertThrowsError(try LUTTextEncoder.encode(dimension: 2, header: ["LUT_3D_SIZE 2"], decimalPlaces: 8) { _ in SIMD3(repeating: .nan) })
     }
+    func testFixedFormatMatchesPOSIXAtRoundingBoundariesAndNegativeZero() throws {
+        let values: [Double] = [-0.0, 0, 0.00000005, -0.00000005, 1.23456785, -1.23456785, 99.99999995, 0.123456789123]
+        for places in [7, 8] {
+            let headers = ["LUT_3D_SIZE 2"]
+            let rows = values.map { String(format: "%.\(places)f %.\(places)f %.\(places)f", locale: Locale(identifier: "en_US_POSIX"), $0, $0, $0) }
+            let output = try LUTTextEncoder.encode(dimension: 2, header: headers, decimalPlaces: places) { c in
+                SIMD3(repeating: values[Int(c.x) + Int(c.y) * 2 + Int(c.z) * 4])
+            }
+            XCTAssertEqual(output, Data((headers + rows).joined(separator: "\n").utf8))
+        }
+    }
     func testCancellationStopsBeforeGeneratingAnyPlane() async {
         let task = Task {
             withUnsafeCurrentTask { $0?.cancel() }

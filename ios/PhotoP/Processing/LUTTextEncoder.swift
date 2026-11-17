@@ -9,7 +9,6 @@ enum LUTTextEncoder {
               !header.isEmpty, header.count <= 32 else { throw CubeLUTError.invalid("LUT 생성 설정이 유효하지 않습니다.") }
         let text = header.joined(separator: "\n")
         guard text.utf8.count <= 65536 else { throw CubeLUTError.invalid("LUT 헤더가 너무 큽니다.") }
-        let locale = Locale(identifier: "en_US_POSIX")
         let format = "%.\(decimalPlaces)f"
         let rowFormat = "\(format) \(format) \(format)"
         let denominator = Double(dimension - 1)
@@ -25,7 +24,10 @@ enum LUTTextEncoder {
                           Float(value.x).isFinite, Float(value.y).isFinite, Float(value.z).isFinite else {
                         throw CubeLUTError.invalid("LUT 생성 결과가 유효하지 않습니다.")
                     }
-                    rows.append(String(format: rowFormat, locale: locale, value.x, value.y, value.z))
+                    // Foundation's nonlocalized format initializer is for
+                    // fixed-format files. Avoid its localized number formatter
+                    // while retaining the same POSIX decimal representation.
+                    rows.append(String(format: rowFormat, value.x, value.y, value.z))
                 } }
                 return Data(rows.joined(separator: "\n").utf8)
             }
