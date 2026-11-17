@@ -84,12 +84,16 @@ actor CompanyLookCompiler {
                 let source = try CubeLUT.parse(String(decoding: sourceData, as: UTF8.self))
                 data = try SDRVendorAdapter.bake(source, sourceSHA256: entry.sha256)
                 lut = try CubeLUT.parse(String(decoding: data, as: UTF8.self))
-                let runtime = try LUTBinaryCodec.encode(lut)
-                try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-                try data.write(to: file, options: options)
-                try runtime.write(to: binary, options: options)
-                try JSONEncoder().encode(Record(version: SDRVendorAdapter.version, sourceSHA256: entry.sha256, renderSHA256: LUTPhotoEditor.hash(data), runtimeSHA256: LUTPhotoEditor.hash(runtime))).write(to: record, options: options)
+                // A derived cache is optional. A valid, verified look remains
+                // usable if storage/protection prevents persisting its cache.
+                do {
+                    let runtime = try LUTBinaryCodec.encode(lut)
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+                    try data.write(to: file, options: options)
+                    try runtime.write(to: binary, options: options)
+                    try JSONEncoder().encode(Record(version: SDRVendorAdapter.version, sourceSHA256: entry.sha256, renderSHA256: LUTPhotoEditor.hash(data), runtimeSHA256: LUTPhotoEditor.hash(runtime))).write(to: record, options: options)
+                } catch { /* Keep the validated in-memory result. */ }
             }
         }
         let rights = entry.rightsConfirmed ? "permission confirmed by project owner, 2026-10-23; not an independent license audit" : "rights unverified"
@@ -117,12 +121,14 @@ actor CompanyLookCompiler {
         // The bundled source has already been hash-verified. It remains the
         // export representation; no duplicate .cube is needed for passthrough.
         let table = try CubeLUT.parse(String(decoding: source, as: UTF8.self))
-        let bytes = try LUTBinaryCodec.encode(table)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-        try bytes.write(to: binary, options: options)
-        try JSONEncoder().encode(Record(version: version, sourceSHA256: hash, renderSHA256: hash,
-            runtimeSHA256: LUTPhotoEditor.hash(bytes))).write(to: record, options: options)
+        do {
+            let bytes = try LUTBinaryCodec.encode(table)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+            try bytes.write(to: binary, options: options)
+            try JSONEncoder().encode(Record(version: version, sourceSHA256: hash, renderSHA256: hash,
+                runtimeSHA256: LUTPhotoEditor.hash(bytes))).write(to: record, options: options)
+        } catch { /* The original LUT is valid even without a writable cache. */ }
         return table
     }
     private func cached(file: URL, record: URL, binary: URL, source: String) throws -> ImportedLUT {
@@ -135,11 +141,13 @@ actor CompanyLookCompiler {
         else {
             // Upgrade a valid old text cache or repair only its derived binary.
             lut = try CubeLUT.parse(String(decoding: data, as: UTF8.self))
-            let runtime = try LUTBinaryCodec.encode(lut)
-            entry.runtimeSHA256 = LUTPhotoEditor.hash(runtime)
-            let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-            try runtime.write(to: binary, options: options)
-            try JSONEncoder().encode(entry).write(to: record, options: options)
+            do {
+                let runtime = try LUTBinaryCodec.encode(lut)
+                entry.runtimeSHA256 = LUTPhotoEditor.hash(runtime)
+                let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
+                try runtime.write(to: binary, options: options)
+                try JSONEncoder().encode(entry).write(to: record, options: options)
+            } catch { /* A verified text cache remains usable without upgrade. */ }
         }
         return ImportedLUT(data: data, lut: lut, displayName: "캐시된 룩")
     }

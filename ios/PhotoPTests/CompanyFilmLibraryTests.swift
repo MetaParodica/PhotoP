@@ -136,4 +136,16 @@ final class CompanyFilmLibraryTests: XCTestCase {
         try JSONSerialization.data(withJSONObject: official).write(to: destination)
         XCTAssertThrowsError(try CompanyFilmLibrary.entries(in: root))
     }
+    func testValidNativeLookDoesNotRequireWritableRuntimeCache() async throws {
+        let root = try CompanyFilmLibrary.root()
+        let entry = try XCTUnwrap(CompanyFilmLibrary.entries(in: root).first { $0.nativeInput == "srgb-assumed" })
+        let folder = try temporary().appendingPathComponent("occupied")
+        let occupied = Data("Existing file; must not be replaced by a cache directory".utf8)
+        try occupied.write(to: folder)
+        let original = try ImportedLUT.read(CompanyFilmLibrary.original(entry, in: root))
+        let look = try await CompanyLookCompiler(folder: folder).load(entry, in: root)
+        XCTAssertEqual(look.data, original.data)
+        XCTAssertEqual(look.lut.values, original.lut.values)
+        XCTAssertEqual(try Data(contentsOf: folder), occupied)
+    }
 }
