@@ -22,26 +22,6 @@ on:
 permissions:
   contents: read
 jobs:
-  inspect-ui-lock-log:
-    if: github.ref == 'refs/heads/codex/ios18-bracket-scopes-20261118' && contains(github.event.head_commit.message, '[inspect-ui-lock]')
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-    timeout-minutes: 3
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Read retained UI failure source locations
-        run: |
-          gh run download 44232594256 --repo "$GITHUB_REPOSITORY" --name photop-ui-log --dir retained-ui
-          python3 - <<'PYLOCK'
-          from pathlib import Path
-          for path in Path('retained-ui').rglob('*.log'):
-              for line in path.read_text(errors='replace').splitlines():
-                  if ': error:' in line:
-                      print('::error::'+line.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
-          PYLOCK
   diagnose:
     if: inputs.diagnostic_run != ''
     runs-on: macos-26

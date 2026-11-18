@@ -24,7 +24,9 @@ final class DepthEditorInteractionTests: XCTestCase {
         let cancelSave = app.buttons["editor.depth.cancel"]
         XCTAssertTrue(cancelSave.waitForExistence(timeout: 5))
         XCTAssertFalse(aperture.isEnabled, "saving: aperture must be disabled")
-        for button in profile.buttons.allElementsBoundByIndex { XCTAssertFalse(button.isEnabled, "saving: profile segment \(button.label) must be disabled") }
+        // Per-segment flags are independent of UISegmentedControl.isEnabled.
+        // Assert the enclosing control, then physically try to change selection.
+        XCTAssertFalse(profile.isEnabled, "saving: profile control must be disabled")
         XCTAssertFalse(app.switches["editor.depth.compare"].isEnabled, "saving: comparison must be disabled")
         // Physical touches exercise the disabled controls without XCTest refusing
         // the action because their accessibility state correctly says disabled.
@@ -41,7 +43,7 @@ final class DepthEditorInteractionTests: XCTestCase {
         let completed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", expected), object: message)
         XCTAssertEqual(XCTWaiter.wait(for: [completed], timeout: 30), .completed)
         XCTAssertTrue(aperture.isEnabled)
-        XCTAssertTrue(profile.buttons["Classic"].isEnabled)
+        XCTAssertTrue(profile.isEnabled)
         XCTAssertEqual(app.staticTexts["editor.depth.apertureValue"].label, value)
         XCTAssertTrue(profile.buttons["Portrait"].isSelected)
     }
