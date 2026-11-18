@@ -235,6 +235,19 @@ jobs:
         with:
           name: photop-ui-log
           path: ios/diagnostics/ui-tests.log
+      - name: Annotate native test failures with source locations
+        if: always() && !cancelled() && steps.simulator_build.outcome == 'success'
+        working-directory: ios
+        run: |
+          python3 - <<'PYFAILURES'
+          from pathlib import Path
+          for name in ('unit-tests','lut-tests','ui-tests'):
+              path=Path('diagnostics')/(name+'.log')
+              if not path.is_file(): continue
+              lines=[line for line in path.read_text(errors='replace').splitlines() if ': error:' in line]
+              for line in lines[:20]:
+                  print('::error::'+line.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PYFAILURES
       - name: Verify LUT resources and provenance
         run: |
           python3 -m unittest discover -s scripts -p 'test_*.py' -v

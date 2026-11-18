@@ -50,7 +50,7 @@ Linux 정책5개를 포함한 portable123개 통과는 iOS/Metal 성공이 아�
 | 진단 `805ee0b` | 44229876030 | fixture 타입 검사 시간 초과; Simulator26.2 확인 |
 | F1 `c150e81` | 44230231729 | iPhone 빌드 실패 |
 | F2 `7f2e7f5` | 44230947442 | F1 휘도 생성식 타입 검사 시간 초과 |
-| 타입 검사 수정 `f0ce456` | 44231101040 | 진행 중 |
+| 타입 검사 수정 `f0ce456` | 44231101040 | Simulator 테스트 RGBA 배열 타입 추론 오류 |
 | 요약·상태 정리 `067173e` | 44231466026 | Simulator 테스트의 RGBA 배열 타입 추론 오류 |
 
 전체 CI 성공 전 V07/F1/F2를 완료 처리하거나 main에 반영하지 않는다. 실기기 인수는 전 항목 미수행이다.
@@ -75,3 +75,5 @@ F12는 이번 우선순위 뒤의 선택 과제다. 공식 Apple API 문서 접�
 관련 구현은 CameraService의 AVCapturePhotoCaptureDelegate/AVCaptureFileOutputRecordingDelegate와 PhotoStore이며, LONG·ARKit 경로의 생성 시점/지원 범위도 별도로 확인해야 한다. 후보 이름만으로 사진·DNG·영상 모두 GPS 태깅된다고 표시하지 않는다. 첫 촬영 대기/취소·권한 거부·오래된 위치·카메라 queue로의 Sendable 스냅샷 전달과 Photos 경로의 검증이 필요하다. 현재 위치 권한 요청·새 데이터 수집은 추가하지 않았다.
 
 - 원본 픽셀 정밀 보정 정책2개를 포함한 Linux portable129개가 통과했다. 대형 Float 이미지3장을 추가로 만들지 않고 이미 확보한 Metal 입력 버퍼에서 읽는다. 레시피는 초기/원본 픽셀 정렬 결과를 모두 보존한다. GPU 통합은 무이동과 좌우 이동 fixture를 모두 검사한다. 이 보완의 새 iOS CI는 별도로 확인한다.
+
+- `e7fdda0` 전체 CI44232594256은 iOS 단위350통과/1skip·LUT18통과·UI12통과/2실패다. 실패는 저장 잠금 UI 검사이며 원인 식별용 assertion 메시지와 로그 annotation을 추가했다. 전체 성공이나 main 반영으로 처리하지 않는다.

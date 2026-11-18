@@ -23,9 +23,9 @@ final class DepthEditorInteractionTests: XCTestCase {
         app.buttons["editor.depth.save"].tap()
         let cancelSave = app.buttons["editor.depth.cancel"]
         XCTAssertTrue(cancelSave.waitForExistence(timeout: 5))
-        XCTAssertFalse(aperture.isEnabled)
-        for button in profile.buttons.allElementsBoundByIndex { XCTAssertFalse(button.isEnabled) }
-        XCTAssertFalse(app.switches["editor.depth.compare"].isEnabled)
+        XCTAssertFalse(aperture.isEnabled, "saving: aperture must be disabled")
+        for button in profile.buttons.allElementsBoundByIndex { XCTAssertFalse(button.isEnabled, "saving: profile segment \(button.label) must be disabled") }
+        XCTAssertFalse(app.switches["editor.depth.compare"].isEnabled, "saving: comparison must be disabled")
         // Physical touches exercise the disabled controls without XCTest refusing
         // the action because their accessibility state correctly says disabled.
         profile.buttons["Classic"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
@@ -33,7 +33,7 @@ final class DepthEditorInteractionTests: XCTestCase {
             .press(forDuration: 0.1, thenDragTo: aperture.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5)))
         XCTAssertEqual(app.staticTexts["editor.depth.apertureValue"].label, value)
         XCTAssertTrue(profile.buttons["Portrait"].isSelected)
-        XCTAssertFalse(profile.buttons["Classic"].isSelected)
+        XCTAssertFalse(profile.buttons["Classic"].isSelected, "disabled profile must ignore physical touch")
         if cancel { cancelSave.tap() }
         else { app.buttons["editor.review.releaseSave"].tap() }
         let message = app.staticTexts["editor.depth.message"]
