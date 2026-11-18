@@ -90,7 +90,7 @@ final class PreviewMonitoringTests: XCTestCase {
     }
     func testFalseColorPaletteUsesPreLUTSDRAndOverridesOtherAssistOverlays() throws {
         let values: [UInt8] = [0, 10, 51, 128, 179, 240, 255]
-        let colors = values.flatMap { [$0, $0, $0, 255] }
+        let colors: [UInt8] = values.flatMap { value -> [UInt8] in [value, value, value, 255] }
         let graded = values.flatMap { _ -> [UInt8] in [0, 0, 0, 255] }
         let (output, _) = try run(colors, width: values.count, height: 1,
             settings: .init(zebra: true, peaking: true, falseColor: true), graded: graded)
