@@ -23,7 +23,7 @@
 
 | ID | 과제 | 완료 기준 | 필요한 것 | 출처 |
 |---|---|---|---|---|
-| T00 | **최소 iOS 18 상향**(2026-11-18 결정) | `ios/project.yml` `deploymentTarget` 17.0→18.0, `CameraService.swift`의 `#available(iOS 18.0, *)` 분기 2곳(셔터음 억제) 정리, `CLAUDE.md`·README 표기 갱신. 전체 CI 성공 | CI(macos-15 Simulator 런타임이 iOS 18 이상인지 확인) | 7절 |
+| T00 | **최소 iOS 18 상향**(구현, 새 전체 CI 대기) | `ios/project.yml` `deploymentTarget` 17.0→18.0, `CameraService.swift`의 `#available(iOS 18.0, *)` 분기 2곳(셔터음 억제) 정리, `CLAUDE.md`·README 표기 갱신. 전체 CI 성공 | CI(macos-15 Simulator 런타임이 iOS 18 이상인지 확인) | 7절 |
 | V01 | 기기별 성능 기준선 | 최소 지원급·중간급·LiDAR Pro에서 프리뷰 p50/p95, 프레임 드롭, peak memory, 10분 열·전력을 `OSSignposter` 구간으로 기록 | 실기기 3종 이상, Instruments | 29 §6, 30 §5 |
 | V02 | Optical Flow 방향·가림 | 가로/세로 이동, 전면 미러, 가로 화면에서 skip 없이 방향 fixture 통과 | 지원 실기기 | 29 A02, 30 §5 |
 | V03 | 심도 화질 인수 | 동의 받은 100장, 블라인드 평가, 기기 trace, 권리 기록으로 `check_depth_acceptance.py` 통과 | 촬영 세트·평가자 | 28, `depth-acceptance` |
@@ -105,3 +105,8 @@
 6. **F5** 포커스 스태킹, 이후 V02~V06 결과에 따라 C 묶음과 B03·B06 범위 확정.
 
 각 단계는 이전 관례대로 `docs/08-STEP-VALIDATION.ko.md`에 커밋·CI 실행 번호를 기록하고, 실기기 검증 전에는 완료로 표기하지 않는다.
+
+## 9. 2026-11-18 진행 기록
+
+- 기준 main `d977858`. `codex/ios18-bracket-scopes-20261118`에서 T00 설정·문서·CI 최소 런타임 검사를 구현했다. 커밋·CI 번호는08 문서의46절 및 후속 기록을 따른다. 전체 CI 성공 전 T00을 완료로 판정하지 않는다.
+- V07 → F1 → F2 순서로 진행하며 실제 iPhone 검증은 별도 대기로 유지한다. 원격 정리 후보 브랜치는 삭제하지 않는다.

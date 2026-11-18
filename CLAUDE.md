@@ -1,6 +1,13 @@
 # PhotoP — 작업 가이드
 
-iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 언어 모드, `SWIFT_STRICT_CONCURRENCY: complete`. Android는 이후 단계.
+iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 언어 모드, `SWIFT_STRICT_CONCURRENCY: complete`. Android는 이후 단계.
+
+## 2026-11-18 사용자 결정 — 최우선
+
+- HDR 출력·게인맵 생성/보존·Log/HDR 영상·C2PA는 도입하지 않는다. 파생물과 영상은 SDR이다.
+- 최소 iOS는 18이다. 위치 태깅은 기본 활성화하며 거부 시 위치 없이 촬영한다.
+- AI 생성 결과 표기는 미결정이므로 하드코딩하지 않는다.
+- 이번 작업은 T00 → V07 → F1 → F2, 여유가 있으면 F12 순서다. 단계별 커밋/CI와 미검증 기기를 08·32 문서에 기록한다.
 
 ## 빌드·검증
 
@@ -35,7 +42,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 
 ## 현재 상태 (2026-11)
 
-- 2026-11-18 사용자 결정(`docs/32-NEXT-TASK-BACKLOG.ko.md` 7절): HDR 출력(게인맵 생성·보존, Log/HDR 영상)은 도입하지 않는다. 서명·출처 증명(C2PA)은 제거한다. 최소 iOS를 18로 올린다(과제 T00, 아직 `project.yml`은 17.0). 위치 태깅은 기본 활성화한다(과제 F12, 권한 거부 시 태깅 없이 촬영). AI 생성 결과 표기는 추후 결정. 남은 과제 목록은 32 문서를 따른다.
+- 2026-11-18 사용자 결정(`docs/32-NEXT-TASK-BACKLOG.ko.md` 7절): 위 최우선 절을 따른다. T00에서 배포 설정과 셔터음 지원 분기를 iOS 18 기준으로 정리했다. 새 CI와 기기 검증 상태는 08·32 문서를 따른다.
 
 - 2026-11-17 최적화 구현은 `docs/30-OPTIMIZATION-IMPLEMENTATION.ko.md`를 최우선한다. 기준 main `f6862b2`, 작업 `codex/optimization-20261117`. 비지역화 LUT 포맷·기술/sRGB Float64 캐시·캐시 쓰기 실패 시 유효 룩 유지·정규화/매트/입력 재사용·단일 선택 매트·Flow backoff/Code9 Simulator 오류만 skip·저장 중 편집 잠금·signpost·회귀 분리/프로세스 종료/자료 보존을 추가했다. 소스 `241c1be` 전체 CI44056942568에서 공통118/Python31, iPhone/Simulator 빌드, 네이티브355개 중354통과/Flow1skip, UI11개 통과를 확인했다. 앞선 `72df01b` 전체 CI44054275255와 UI 집중44054370318도 성공했다. 이번 후속 문서 정리는 앱 코드 변경이 아니다. 실기기 성능/화질·iOS27 인수와29 보고서의 나머지 과제는 미완료다.
 

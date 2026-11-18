@@ -315,8 +315,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
     private func capabilities() -> CameraCapabilities? {
         guard let d = input?.device else { return nil }
         let format = d.activeFormat
-        var silent = false
-        if #available(iOS 18.0, *) { silent = output.isShutterSoundSuppressionSupported }
+        let silent = output.isShutterSoundSuppressionSupported
         return CameraCapabilities(
             lensID: d.uniqueID, iso: Double(format.minISO)...Double(format.maxISO),
             shutterSeconds: (videoConfiguration.flatMap { try? VideoCapturePolicy.shutterLimit(sensor: format.minExposureDuration.seconds...format.maxExposureDuration.seconds, fps: $0.framesPerSecond) }) ?? (format.minExposureDuration.seconds...format.maxExposureDuration.seconds),
@@ -856,7 +855,7 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                         settings.embedsPortraitEffectsMatteInPhoto = true
                     }
                 }
-                if #available(iOS 18.0, *), output.isShutterSoundSuppressionSupported {
+                if output.isShutterSoundSuppressionSupported {
                     settings.isShutterSoundSuppressionEnabled = true
                 }
                 if let connection = output.connection(with: .video) {

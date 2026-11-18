@@ -110,6 +110,7 @@ jobs:
           import json
           targets = json.load(open('/tmp/photop-build-settings.json'))
           settings = next(t['buildSettings'] for t in targets if t['target'] == 'PhotoP')
+          assert settings['IPHONEOS_DEPLOYMENT_TARGET'] == '18.0', 'T00 requires iOS 18 deployment'
           flags = settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'].split()
           assert 'DEBUG' in flags, 'Swift DEBUG must enable Simulator review mode'
           sdk = settings['SDK_NAME']
@@ -139,7 +140,9 @@ jobs:
         timeout-minutes: 5
         shell: bash
         run: |
-          device_id=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; print(max(choices)[1])')
+          selection=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; choices=[x for x in choices if x[0]>=(18,0)]; assert choices,"No available iPhone Simulator with iOS >=18.0"; version,udid=max(choices); print(".".join(map(str,version)),udid)')
+          read -r runtime_version device_id <<< "$selection"
+          echo "Selected iOS Simulator runtime: $runtime_version (minimum 18.0)"
           echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
           xcrun simctl list devices available
           state=$(xcrun simctl list devices -j | python3 -c 'import json,sys; target=sys.argv[1]; print(next(d["state"] for v in json.load(sys.stdin)["devices"].values() for d in v if d["udid"] == target))' "$device_id")

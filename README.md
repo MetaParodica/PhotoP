@@ -59,9 +59,9 @@ xcodegen generate
 open PhotoP.xcodeproj
 ```
 
-Select a unique bundle ID and your signing team in Xcode; choose a physical iPhone running iOS 17 or later. The Simulator can run model tests but cannot validate the camera. No Apple account secrets belong in this repository.
+Select a unique bundle ID and your signing team in Xcode; choose a physical iPhone running iOS 18 or later. The Simulator can run model tests but cannot validate the camera. No Apple account secrets belong in this repository.
 
-The baseline is iOS 17, built in Swift 5 language mode with complete concurrency diagnostics. A serial queue owns AVFoundation state. Strict Swift 6 migration is a later, separately validated change.
+The baseline is iOS 18, built in Swift 5 language mode with complete concurrency diagnostics. A serial queue owns AVFoundation state. Strict Swift 6 migration is a later, separately validated change.
 
 Original HEIF/JPEG bytes are retained in the app's Documents/Originals directory before Photos export. Deleting the app also deletes those app-local originals. A successful Photos export creates a separate Photos asset.
 
