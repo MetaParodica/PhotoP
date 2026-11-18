@@ -35,6 +35,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 17+, Swift 5 �
 
 ## 현재 상태 (2026-11)
 
+- 2026-11-18 사용자 결정(`docs/32-NEXT-TASK-BACKLOG.ko.md` 7절): HDR 출력(게인맵 생성·보존, Log/HDR 영상)은 도입하지 않는다. 서명·출처 증명(C2PA)은 제거한다. 최소 iOS를 18로 올린다(과제 T00, 아직 `project.yml`은 17.0). 위치 태깅은 기본 활성화한다(과제 F12, 권한 거부 시 태깅 없이 촬영). AI 생성 결과 표기는 추후 결정. 남은 과제 목록은 32 문서를 따른다.
+
 - 2026-11-17 최적화 구현은 `docs/30-OPTIMIZATION-IMPLEMENTATION.ko.md`를 최우선한다. 기준 main `f6862b2`, 작업 `codex/optimization-20261117`. 비지역화 LUT 포맷·기술/sRGB Float64 캐시·캐시 쓰기 실패 시 유효 룩 유지·정규화/매트/입력 재사용·단일 선택 매트·Flow backoff/Code9 Simulator 오류만 skip·저장 중 편집 잠금·signpost·회귀 분리/프로세스 종료/자료 보존을 추가했다. 소스 `241c1be` 전체 CI44056942568에서 공통118/Python31, iPhone/Simulator 빌드, 네이티브355개 중354통과/Flow1skip, UI11개 통과를 확인했다. 앞선 `72df01b` 전체 CI44054275255와 UI 집중44054370318도 성공했다. 이번 후속 문서 정리는 앱 코드 변경이 아니다. 실기기 성능/화질·iOS27 인수와29 보고서의 나머지 과제는 미완료다.
 
 - 2026-11-16 후속 심도 Phase 구현/테스트는 `docs/28-DEPTH-PHASE-IMPLEMENTATION.ko.md`를 최우선한다. 측정/AI affine 융합, 선택 인스턴스 매트·보수적 알파/색 복원, Natural/Portrait/Classic, 선택적 AI 실시간 심도·세대/움직임/만료 안전 복귀, 최대64MP·저장 사진 터치 재초점/프로필/f값 보관함, 취소/중단 복구를 구현했다. `OnDeviceInferenceGate`는 구도/리뷰/AI/매트 추론 실행을 직렬화한다. 공통 로직110/Python28 통과와 iOS SDK/Simulator/실기기 결과는 구분한다. 2026-11-17 사용자 요청으로 기존 개발분과 `docs/29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md`를 main에 통합한다. 기준 main은 `dc75be6`이었다. 심도 집중 CI43918075081은 성공(38개 통과/Optical Flow1개 skip), 전체 CI43918582758은 테스트 재시작·시간 초과로 실패했으므로 전체 회귀 성공으로 표시하지 않는다. `scripts/check_depth_acceptance.py`는 실제100장/기기 trace/블라인드/권리 인수가 없으면 exit2이다. `--validate-only`를 화질 통과로 인용하지 않는다. Optical Flow 실기기 방향 검증·실측 PSF·눈 AF/전체 DSLR 목록·iOS27 실기기 인수는 미완료다. 다음 문단의1차 제약은 당시 기록이다.
