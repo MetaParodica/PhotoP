@@ -7,6 +7,7 @@ struct ExposureFusionManifest: Codable {
     let frames: [Frame]
     let registrations: [ExposureFusionRegistration]
     let weights: ExposureFusionWeights
+    let policy: ExposureFusionPolicy?
     let width: Int
     let height: Int
     let analysisWidth: Int
@@ -62,7 +63,7 @@ actor ExposureFusionProcessor {
         try pixels.jpeg().write(to: pending.appendingPathComponent("photo.jpg"), options: options)
         let manifest = ExposureFusionManifest(version: 1, frames: originals.indices.map {
             .init(filename: originals[$0].lastPathComponent, sha256: hashes[$0], requestedEV: biases[$0])
-        }, registrations: registrations, weights: policy.weights, width: pixels.width, height: pixels.height,
+        }, registrations: registrations, weights: policy.weights, policy: policy, width: pixels.width, height: pixels.height,
             analysisWidth: w, analysisHeight: h,
             contract: "SDR encoded-sRGB; translation-only; smoothed quality weights, single scale; center-only uncovered borders; no HDR/gain map/LUT; originals preserved")
         try JSONEncoder().encode(manifest).write(to: pending.appendingPathComponent("recipe.json"), options: options)

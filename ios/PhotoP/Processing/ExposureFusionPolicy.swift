@@ -32,13 +32,14 @@ struct ExposureFusionRegistration: Codable, Equatable, Sendable {
 
 /// Conservative translation-only, exposure-normalized registration. These are
 /// provisional SDR thresholds, not calibrated camera/quality guarantees.
-struct ExposureFusionPolicy: Sendable {
+struct ExposureFusionPolicy: Codable, Equatable, Sendable {
     var searchRadius = 6
     var maximumResidual = 0.18 // RMS log2 encoded-luma difference after offset removal
     var ghostThreshold = 0.45
     var maximumGhostFraction = 0.035
     var minimumUsableFraction = 0.35
     var minimumTexture = 0.025
+    var minimumAlignmentSeparation = 0.01
     var weights = ExposureFusionWeights()
 
     func validateBiases(_ biases: [Double]) throws {
@@ -53,7 +54,8 @@ struct ExposureFusionPolicy: Sendable {
               maximumResidual.isFinite, maximumResidual > 0, ghostThreshold.isFinite, ghostThreshold > 0,
               maximumGhostFraction.isFinite, (0...1).contains(maximumGhostFraction),
               minimumUsableFraction.isFinite, (0.1...1).contains(minimumUsableFraction),
-              minimumTexture.isFinite, minimumTexture > 0 else { throw ExposureFusionFailure.invalidInput }
+              minimumTexture.isFinite, minimumTexture > 0,
+              minimumAlignmentSeparation.isFinite, minimumAlignmentSeparation > 0 else { throw ExposureFusionFailure.invalidInput }
         let a = reference.map { log2(max(0.001, Double($0))) }
         let b = candidate.map { log2(max(0.001, Double($0))) }
         let margin = searchRadius + 1
@@ -63,6 +65,7 @@ struct ExposureFusionPolicy: Sendable {
         let texture = sqrt(a.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(a.count))
         guard texture >= minimumTexture else { throw ExposureFusionFailure.insufficientDetail }
         var best: ExposureFusionRegistration?
+        var choices: [ExposureFusionRegistration] = []
         for dy in -searchRadius...searchRadius { for dx in -searchRadius...searchRadius {
             var count = 0, sum = 0.0, squares = 0.0
             for y in margin..<(height - margin) { for x in margin..<(width - margin) {
@@ -75,14 +78,20 @@ struct ExposureFusionPolicy: Sendable {
             guard fraction >= minimumUsableFraction else { continue }
             let offset = sum / Double(count)
             let residual = sqrt(max(0, squares / Double(count) - offset * offset))
+            let choice = ExposureFusionRegistration(x: dx, y: dy, logExposureOffset: offset, residual: residual, ghostFraction: 0, usableFraction: fraction)
+            choices.append(choice)
             let score = residual + Double(dx * dx + dy * dy) * 1e-7
             let previous = best.map { $0.residual + Double($0.x * $0.x + $0.y * $0.y) * 1e-7 } ?? .infinity
             if score < previous {
-                best = .init(x: dx, y: dy, logExposureOffset: offset, residual: residual, ghostFraction: 0, usableFraction: fraction)
+                best = choice
             }
         } }
         guard let best else { throw ExposureFusionFailure.insufficientDetail }
         guard abs(best.x) < searchRadius, abs(best.y) < searchRadius else { throw ExposureFusionFailure.alignment }
+        // Repeating textures and smooth ramps can have a low residual at many
+        // different shifts. A low residual alone must not invent confidence.
+        let alternate = choices.filter { abs($0.x - best.x) + abs($0.y - best.y) > 1 }.map(\.residual).min()
+        guard let alternate, alternate - best.residual >= minimumAlignmentSeparation else { throw ExposureFusionFailure.insufficientDetail }
         var count = 0, ghosts = 0
         for y in margin..<(height - margin) { for x in margin..<(width - margin) {
             let i = y * width + x, j = (y + best.y) * width + x + best.x

@@ -6,7 +6,7 @@
 
 | 항목 | 상태 | 근거 |
 |---|---|---|
-| main 헤드 | `004d869`(문서 커밋). 앱 소스는 `241c1be`와 같고 문서 4개만 다름 | `git diff 241c1be 004d869` |
+| 세션 시작 main | `d977858`(사용자 결정 문서 포함). 앱 소스 기준은 `241c1be` | 2026-11-18 checkout/fetch |
 | 자동 회귀 | `241c1be` 전체 CI 44056942568 성공: 공통 118, iPhone·Simulator 빌드, 네이티브 355개 중 354 통과·Flow 1 skip, UI 11, Python 31, 자산·번들 검사 | [30 보고서 4절](30-OPTIMIZATION-IMPLEMENTATION.ko.md) |
 | main 헤드 CI | `004d869` 실행 44060529564 `success`(상태만 확인, 세부 집계는 열지 않음) | GitHub Actions |
 | 실기기 인수 | 없음. 심도 인수 데이터(100장·기기 trace·블라인드·권리)가 비어 `check_depth_acceptance.py`가 exit 2 | `docs/depth-acceptance/` |
@@ -23,7 +23,7 @@
 
 | ID | 과제 | 완료 기준 | 필요한 것 | 출처 |
 |---|---|---|---|---|
-| T00 | **최소 iOS 18 상향**(구현, 새 전체 CI 대기) | `ios/project.yml` `deploymentTarget` 17.0→18.0, `CameraService.swift`의 `#available(iOS 18.0, *)` 분기 2곳(셔터음 억제) 정리, `CLAUDE.md`·README 표기 갱신. 전체 CI 성공 | CI(macos-15 Simulator 런타임이 iOS 18 이상인지 확인) | 7절 |
+| T00 | **최소 iOS 18 상향**(전체 CI 성공, 기기 동작 별도) | `ios/project.yml` `deploymentTarget` 17.0→18.0, `CameraService.swift`의 `#available(iOS 18.0, *)` 분기 2곳(셔터음 억제) 정리, `CLAUDE.md`·README 표기 갱신. 전체 CI 성공 | CI(macos-15 Simulator 런타임이 iOS 18 이상인지 확인) | 7절 |
 | V01 | 기기별 성능 기준선 | 최소 지원급·중간급·LiDAR Pro에서 프리뷰 p50/p95, 프레임 드롭, peak memory, 10분 열·전력을 `OSSignposter` 구간으로 기록 | 실기기 3종 이상, Instruments | 29 §6, 30 §5 |
 | V02 | Optical Flow 방향·가림 | 가로/세로 이동, 전면 미러, 가로 화면에서 skip 없이 방향 fixture 통과 | 지원 실기기 | 29 A02, 30 §5 |
 | V03 | 심도 화질 인수 | 동의 받은 100장, 블라인드 평가, 기기 trace, 권리 기록으로 `check_depth_acceptance.py` 통과 | 촬영 세트·평가자 | 28, `depth-acceptance` |
@@ -116,3 +116,5 @@
 - F1은33 문서 범위로 구현했다. Linux 정책 검증은 통과했으나 Metal/원본 보존의 새 iOS 통합과 실제 브래킷 인수 전 완료로 표기하지 않는다.
 
 - F2는33 문서 범위로 구현했으며 새로운 GPU/상호작용 CI와 실제 프리뷰 p95·메모리·가독성 인수는 대기다. F12는 공식 Apple 문서 접근을 확인하기 전 구현하지 않는다(현재 developer.apple.com proxy403).
+
+- T00 `4bc0a24` 전체 [CI44228552924](https://github.com/MetaParodica/PhotoP/actions/runs/44228552924) **success** 확인. macos-15 후속 실행의 Simulator26.2 notice도 확인했다. T00의 CI 완료 기준은 충족했으며 셔터음·실기기 동작 검증과 혼동하지 않는다. V07/F1/F2는 통합 최신 소스 `067173e`의 전체 CI44231466026 결과 대기다.

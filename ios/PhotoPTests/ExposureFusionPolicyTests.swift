@@ -7,7 +7,17 @@ import XCTest
 
 final class ExposureFusionPolicyTests: XCTestCase {
     private func pattern(_ w: Int = 48) -> [Float] {
-        (0..<(w * w)).map { i in Float(0.12 + Double((i * 37 + i / w * 19) % 97) / 180) }
+        var seed: UInt32 = 1967
+        return (0..<(w * w)).map { _ in
+            seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5
+            return Float(0.12 + Double(seed % 97) / 180)
+        }
+    }
+    func testAmbiguousRepeatingTextureCannotClaimConfidentRegistration() {
+        let stripes = (0..<(48 * 48)).map { Float($0 % 2 == 0 ? 0.2 : 0.7) }
+        XCTAssertThrowsError(try ExposureFusionPolicy().register(reference: stripes, candidate: stripes, width: 48, height: 48)) {
+            XCTAssertEqual($0 as? ExposureFusionFailure, .insufficientDetail)
+        }
     }
     func testRegistrationNormalizesExposureAndFindsTranslation() throws {
         let w = 48, reference = pattern()
@@ -52,5 +62,6 @@ final class ExposureFusionPolicyTests: XCTestCase {
         XCTAssertThrowsError(try bad.register(reference: pattern(), candidate: pattern(), width: 48, height: 48))
         bad = policy; bad.maximumGhostFraction = .nan
         XCTAssertThrowsError(try bad.register(reference: pattern(), candidate: pattern(), width: 48, height: 48))
+        XCTAssertEqual(try JSONDecoder().decode(ExposureFusionPolicy.self, from: JSONEncoder().encode(policy)), policy)
     }
 }

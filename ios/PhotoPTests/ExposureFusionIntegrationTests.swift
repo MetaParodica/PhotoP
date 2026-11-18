@@ -9,9 +9,15 @@ final class ExposureFusionIntegrationTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: root) }
         let urls = try [0.7, 1.0, 1.3].enumerated().map { index, gain -> URL in
-            let bytes = (0..<(48 * 48)).flatMap { i -> [UInt8] in
-                let v = Double(45 + (i % 48) * 2 + (i / 48) % 9 * 3)
-                return [UInt8(v * gain), UInt8((v + 10) * gain), UInt8((v - 10) * gain), 255]
+            var bytes = [UInt8](); bytes.reserveCapacity(48 * 48 * 4)
+            var seed: UInt32 = 1967
+            for _ in 0..<(48 * 48) {
+                // Nonperiodic local detail disambiguates translation; a smooth
+                // ramp cannot independently establish an image registration.
+                seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5
+                let v = Double(45 + seed % 97)
+                bytes.append(UInt8(v * gain)); bytes.append(UInt8((v + 10) * gain))
+                bytes.append(UInt8((v - 10) * gain)); bytes.append(255)
             }
             let url = root.appendingPathComponent("frame\(index).jpg")
             try SDRImage(rgba: Data(bytes), width: 48, height: 48).jpeg().write(to: url)
@@ -26,6 +32,7 @@ final class ExposureFusionIntegrationTests: XCTestCase {
         let result = try await ExposureFusionProcessor.shared.fuse(originals: urls, biases: [-1, 0, 1], documents: root, policy: policy)
         let recipe = try JSONDecoder().decode(ExposureFusionManifest.self, from: Data(contentsOf: result.deletingLastPathComponent().appendingPathComponent("recipe.json")))
         XCTAssertEqual(recipe.width, 48); XCTAssertEqual(recipe.height, 48)
+        XCTAssertEqual(recipe.policy, policy)
         XCTAssertEqual(recipe.frames.map(\.sha256), originals.map { LUTPhotoEditor.hash($0) })
         XCTAssertEqual(try urls.map { try Data(contentsOf: $0) }, originals)
         let output = try SDRImage.decode(result)

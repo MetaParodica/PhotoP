@@ -289,6 +289,9 @@ jobs:
               summary={key:data[key] for key in keys if key in data}
               text=json.dumps(summary,ensure_ascii=False)
               print('::notice::'+sys.argv[1]+' XCTest summary: '+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+              if data.get('testFailures'):
+                  failures=json.dumps(data['testFailures'],ensure_ascii=False)[:6000]
+                  print('::error::'+sys.argv[1]+' XCTest failures: '+failures.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
           except (OSError,ValueError):
               print('::notice::'+sys.argv[1]+' XCTest summary unavailable; inspect retained result')
           PYSUMMARY
