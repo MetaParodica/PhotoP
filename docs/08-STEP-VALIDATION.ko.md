@@ -366,3 +366,5 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - Linux portable126개, Python31개·모델/LUT 검사·Swift 구문·CI 셸/YAML·diff 검사를 수행한다. 새 GPU3개·UI1개는 push 후 전체 CI 판정 대상이다. 소스 커밋·실행 번호/결과는 후속 기록한다. 기기 성능/화질·영상 동시 출력은 미검증이다.
 
 - 수정/추적: `805ee0b` CI44229876030의 공개 annotation에서 실제 Simulator 런타임 **26.2**(macos-15, 최소18.0 통과)를 확인했다. 전체 CI는 검토 fixture42행의 Swift 타입 검사 시간 초과와 후속 추론 오류로 실패했다. 생성 픽셀식을 명시적 UInt8 루프로 분리했다. F1의 휘도 생성식도 작은 typed 루프로 분리하여 네이티브 추론 부담을 줄였다. F2 `7f2e7f5` 전체 CI44230947442는 진행 중이다.
+
+- F2 `7f2e7f5` 전체 CI44230947442는 F1 휘도 생성식의 Swift 타입 검사 시간 초과로 실패했다(공개 오류 annotation 확인). `f0ce456`은 해당 식과 V07 fixture를 분리했으며 전체 CI44231101040 진행 중이다. 후속 CI에서 XCTest 집계도 notice로 보존한다. LONG/재합성 시 이전 융합 상태가 남지 않도록 정리했다.

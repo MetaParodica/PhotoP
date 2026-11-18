@@ -281,6 +281,17 @@ jobs:
           for bundle in UnitValidation LUTValidation UIValidation; do
             if [ -d "$bundle.xcresult" ]; then
               xcrun xcresulttool get test-results summary --path "$bundle.xcresult" > "diagnostics/$bundle-summary.json" 2> "diagnostics/$bundle-errors.log" || true
+              python3 - "$bundle" "diagnostics/$bundle-summary.json" <<'PYSUMMARY'
+          import json,sys
+          try:
+              data=json.load(open(sys.argv[2]))
+              keys=('result','totalTestCount','passedTests','failedTests','skippedTests','expectedFailures')
+              summary={key:data[key] for key in keys if key in data}
+              text=json.dumps(summary,ensure_ascii=False)
+              print('::notice::'+sys.argv[1]+' XCTest summary: '+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          except (OSError,ValueError):
+              print('::notice::'+sys.argv[1]+' XCTest summary unavailable; inspect retained result')
+          PYSUMMARY
               ditto -c -k --keepParent "$bundle.xcresult" "diagnostics/results/$bundle.xcresult.zip" || true
             fi
           done

@@ -845,6 +845,7 @@ final class CameraModel: ObservableObject {
             completed = true; compositeSavedToPhotos = false
             latestOriginal = url; latestOriginals = [url]; latestPhotoResolution = nil; savedToPhotos = false
             latestCaptureLook = restoreLook; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
+            latestFusion = nil; latestFusionFailure = nil
             reviewReferences = [:]; reviewReferences[url] = reference
             recordCoachPreference()
             latestRendered = nil; latestRenderedSeries = []; latestDepthResult = nil
@@ -868,6 +869,7 @@ final class CameraModel: ObservableObject {
             if latestOriginal == result {
                 latestOriginal = url; latestOriginals = [url]; savedToPhotos = false
                 latestCaptureLook = nil; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
+                latestFusion = nil; latestFusionFailure = nil
                 latestRendered = nil; latestRenderedSeries = []
                 latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(url, maxPixel: 240) }.value
             }
