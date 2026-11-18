@@ -36,10 +36,15 @@ actor ExposureFusionProcessor {
         let previews = try originals.map { try SDRImage.decode($0, previewMaxDimension: 192) }
         let w = previews[1].width, h = previews[1].height
         guard previews.allSatisfy({ $0.width == w && $0.height == h }) else { throw ExposureFusionFailure.invalidInput }
-        let lumas = previews.map { image in image.rgba.withUnsafeBytes { raw -> [Float] in
-            let bytes = raw.bindMemory(to: UInt8.self)
-            return (0..<(w * h)).map { i in (Float(bytes[i * 4]) * 54 + Float(bytes[i * 4 + 1]) * 183 + Float(bytes[i * 4 + 2]) * 19) / (256 * 255) }
-        } }
+        let lumas: [[Float]] = previews.map { image in
+            let bytes = [UInt8](image.rgba)
+            var result = [Float](); result.reserveCapacity(w * h)
+            for i in 0..<(w * h) {
+                let r = Float(bytes[i * 4]), g = Float(bytes[i * 4 + 1]), b = Float(bytes[i * 4 + 2])
+                result.append((r * 54.0 + g * 183.0 + b * 19.0) / 65_280.0)
+            }
+            return result
+        }
         let registrations = try [policy.register(reference: lumas[1], candidate: lumas[0], width: w, height: h),
                                  .reference, policy.register(reference: lumas[1], candidate: lumas[2], width: w, height: h)]
         try Task.checkCancellation()

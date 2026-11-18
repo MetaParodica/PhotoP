@@ -364,3 +364,5 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - F1 소스 `c150e81` 전체 CI44230231729는 iPhone 빌드 exit65로 실패했다. 상세 로그 API가 차단된 상태이므로 다음 실행에 iPhone 컴파일 오류 annotation도 추가한다. 성공 판정이나 main 반영은 하지 않는다.
 - 파형·RGB 퍼레이드·벡터스코프·False color를 기존 Metal 모니터/예산/완료 콜백에 연결했다. SDR 프리뷰 분석·LUT 전 입력·원본 불변 계약과 범례를 UI에 유지한다. 외부 소스 복사 없음.33 문서에 배열/예산·한계를 기록했다.
 - Linux portable126개, Python31개·모델/LUT 검사·Swift 구문·CI 셸/YAML·diff 검사를 수행한다. 새 GPU3개·UI1개는 push 후 전체 CI 판정 대상이다. 소스 커밋·실행 번호/결과는 후속 기록한다. 기기 성능/화질·영상 동시 출력은 미검증이다.
+
+- 수정/추적: `805ee0b` CI44229876030의 공개 annotation에서 실제 Simulator 런타임 **26.2**(macos-15, 최소18.0 통과)를 확인했다. 전체 CI는 검토 fixture42행의 Swift 타입 검사 시간 초과와 후속 추론 오류로 실패했다. 생성 픽셀식을 명시적 UInt8 루프로 분리했다. F1의 휘도 생성식도 작은 typed 루프로 분리하여 네이티브 추론 부담을 줄였다. F2 `7f2e7f5` 전체 CI44230947442는 진행 중이다.

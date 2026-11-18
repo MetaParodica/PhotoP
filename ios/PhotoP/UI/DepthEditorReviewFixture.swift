@@ -39,13 +39,16 @@ struct DepthEditorReviewFixture: View {
         try FileManager.default.createDirectory(at: originals, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let original = originals.appendingPathComponent("ui-review-depth-" + UUID().uuidString + ".jpg")
-        let bytes = Data((0..<(64 * 64)).flatMap { i -> [UInt8] in
-            [UInt8(30 + i % 64 * 3), UInt8(40 + i / 64 * 2), 110, 255]
-        })
-        let jpeg = try SDRImage(rgba: bytes, width: 64, height: 64).jpeg()
-        try jpeg.write(to: original, options: .atomic)
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(64 * 64 * 4)
+        for y in 0..<64 { for x in 0..<64 {
+            bytes.append(UInt8(30 + x * 3)); bytes.append(UInt8(40 + y * 2))
+            bytes.append(110); bytes.append(255)
+        } }
+        let jpeg: Data = try SDRImage(rgba: Data(bytes), width: 64, height: 64).jpeg()
+        try jpeg.write(to: original, options: Data.WritingOptions.atomic)
         let result = folder.appendingPathComponent("photo.jpg")
-        try jpeg.write(to: result, options: .atomic)
+        try jpeg.write(to: result, options: Data.WritingOptions.atomic)
         let values = (0..<81).map { Float(1 + $0 % 9) }
         var depth = Data()
         for value in values {
@@ -59,7 +62,7 @@ struct DepthEditorReviewFixture: View {
             look: nil, lutSHA256: nil, provenance: nil, pipeline: "Simulator UI fixture; SDR; original preserved")
         recipe.depthMapFilename = "depth.f32"; recipe.depthMapSHA256 = LUTPhotoEditor.hash(depth)
         recipe.depthWidth = 9; recipe.depthHeight = 9; recipe.depthUnits = SoftwareDepthField.Units.relativeInverse.rawValue
-        recipe.lensProfile = .natural
+        recipe.lensProfile = DepthLensProfile.natural
         try JSONEncoder().encode(recipe).write(to: folder.appendingPathComponent("recipe.json"), options: .atomic)
         return try await CaptureResultProcessor.shared.loadSession(result: result, original: original)
     }
