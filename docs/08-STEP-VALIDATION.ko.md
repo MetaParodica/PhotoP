@@ -358,3 +358,9 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - T00 `4bc0a24` CI44228552924 진행 중, V07 `f29653a` CI44228983998 실패. 진단 보완 `805ee0b` CI44229876030 진행 중. main 반영 없음.
 - 기존3장 원본을 보존한 뒤 Metal 가중 융합·별도 SDR JPEG/레시피·전후 hash 검사·정렬/고스트 거부 이유 표시를 연결했다. 판단은 ExposureFusionPolicy/Weights로 분리했다. 같은 크기 최대12.6MP, 평행이동과 단일 스케일 가중 합성이라는 한계는33 문서에 기록했다.
 - Linux portable123개(새 정책5개 포함) 통과, Swift 구문·YAML·diff 검사 통과. 새 iOS GPU/저장 통합2개는 미실행이며 전체 CI 결과를 후속 기록한다. 실제30세트·메모리·지연·화질은 미검증이다.
+
+## 49. F2 — 스코프 확장 (2026-11-18)
+
+- F1 소스 `c150e81` 전체 CI44230231729는 iPhone 빌드 exit65로 실패했다. 상세 로그 API가 차단된 상태이므로 다음 실행에 iPhone 컴파일 오류 annotation도 추가한다. 성공 판정이나 main 반영은 하지 않는다.
+- 파형·RGB 퍼레이드·벡터스코프·False color를 기존 Metal 모니터/예산/완료 콜백에 연결했다. SDR 프리뷰 분석·LUT 전 입력·원본 불변 계약과 범례를 UI에 유지한다. 외부 소스 복사 없음.33 문서에 배열/예산·한계를 기록했다.
+- Linux portable126개, Python31개·모델/LUT 검사·Swift 구문·CI 셸/YAML·diff 검사를 수행한다. 새 GPU3개·UI1개는 push 후 전체 CI 판정 대상이다. 소스 커밋·실행 번호/결과는 후속 기록한다. 기기 성능/화질·영상 동시 출력은 미검증이다.

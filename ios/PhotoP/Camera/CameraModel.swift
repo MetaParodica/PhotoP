@@ -575,7 +575,7 @@ final class CameraModel: ObservableObject {
 
     func updateMonitoring() {
         livePreview?.setViewfinderFill(viewfinderFill)
-        if !monitoring.histogram { histogram = nil }
+        if !monitoring.needsStatistics { histogram = nil }
         var effective = monitoring
         if settings.focus.manual && focusAssistEnabled { effective.peaking = true; if !monitoring.peaking { effective.peakingThreshold = 0.08 } }
         livePreview?.setMonitoring(effective)
@@ -765,7 +765,7 @@ final class CameraModel: ObservableObject {
                     self.liveDepthHasFrame = preview.depthHasFrame
                     self.liveDepthError = preview.depthError
                     self.previewImageSize = preview.sourceImageSize
-                    if self.monitoring.histogram, let histogram { self.histogram = histogram }
+                    if self.monitoring.needsStatistics, let histogram { self.histogram = histogram }
                 case .failed(let reason):
                     // Keep the user's look/analysis choices so Retry can restore them.
                     self.tearDownLivePreview()

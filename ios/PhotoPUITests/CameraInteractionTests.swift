@@ -2,6 +2,22 @@ import XCTest
 import UIKit
 
 final class CameraInteractionTests: XCTestCase {
+    @MainActor func testScopeChoicesKeepSDRContractWithoutFabricatingSimulatorSamples() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review"]
+        app.launch()
+        XCTAssertTrue(app.buttons["camera.monitor"].waitForExistence(timeout: 10))
+        app.buttons["camera.monitor"].tap()
+        XCTAssertTrue(app.staticTexts["SDR 프리뷰 분석 · LUT 적용 전"].waitForExistence(timeout: 5))
+        for id in ["waveform", "parade", "vectorscope", "falseColor"] {
+            let toggle = app.switches["camera.monitor." + id]
+            XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+            toggle.tap()
+            XCTAssertEqual(toggle.value as? String, "1")
+        }
+        XCTAssertFalse(app.descendants(matching: .any)["camera.monitor.readouts"].exists)
+        XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
+    }
     @MainActor func testDepthLibraryOpensFromBottomPanelWithoutInventingCameraSupport() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review", "--review-depth"]

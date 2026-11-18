@@ -210,7 +210,7 @@ struct CameraView: View {
                 HStack(alignment: .top) {
                     previewBadge
                     Spacer()
-                    if let histogram = model.histogram, model.liveHasFrame { PreviewHistogramView(histogram: histogram) }
+                    if let histogram = model.histogram, model.liveHasFrame { PreviewMonitoringReadouts(statistics: histogram, settings: model.monitoring) }
                 }
                 if model.liveUsesLUT {
                     Text(model.captureLookNotice).font(.caption2).lineLimit(2)

@@ -73,4 +73,39 @@ final class PreviewMonitoringTests: XCTestCase {
         XCTAssertThrowsError(try MonitoringSettings(zebraThreshold: .nan).validate())
         XCTAssertThrowsError(try MonitoringSettings(peakingThreshold: 0).validate())
     }
+    func testScopesUseUnmodifiedInputAndRespectSpatialColumnsAndChromaAxes() throws {
+        let colors: [UInt8] = [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 128, 128, 128, 255]
+        let settings = MonitoringSettings(histogram: true, waveform: true, rgbParade: true, vectorscope: true)
+        let (_, statistics) = try run(colors, width: 4, height: 1, settings: settings, graded: Array(repeating: 0, count: 16))
+        let scopes = try XCTUnwrap(statistics.scopes)
+        let waveform = try XCTUnwrap(scopes.waveform), parade = try XCTUnwrap(scopes.parade), vector = try XCTUnwrap(scopes.vectorscope)
+        XCTAssertEqual(waveform.reduce(0, +), 4); XCTAssertEqual(parade.reduce(0, +), 12); XCTAssertEqual(vector.reduce(0, +), 4)
+        let luma = [13, 45, 4, 32]
+        for x in 0..<4 { XCTAssertEqual(waveform[x * 16 * 64 + luma[x]], 1) }
+        for c in 0..<3 { for x in 0..<4 {
+            let bin = min(Int(colors[x * 4 + c]) * 64 / 255, 63)
+            XCTAssertEqual(parade[c * 4096 + x * 16 * 64 + bin], 1)
+        } }
+        for (x, y) in [(24, 63), (7, 2), (63, 28), (32, 32)] { XCTAssertEqual(vector[y * 64 + x], 1) }
+    }
+    func testFalseColorPaletteUsesPreLUTSDRAndOverridesOtherAssistOverlays() throws {
+        let values: [UInt8] = [0, 10, 51, 128, 179, 240, 255]
+        let colors = values.flatMap { [$0, $0, $0, 255] }
+        let graded = values.flatMap { _ -> [UInt8] in [0, 0, 0, 255] }
+        let (output, _) = try run(colors, width: values.count, height: 1,
+            settings: .init(zebra: true, peaking: true, falseColor: true), graded: graded)
+        let palette: [[UInt8]] = [[106, 53, 167], [36, 95, 240], [89, 89, 89], [50, 176, 90], [184, 184, 184], [244, 207, 69], [234, 68, 59]]
+        for i in 0..<values.count { XCTAssertEqual(Array(output[i * 4..<i * 4 + 3]), palette[i]) }
+    }
+    func testScopeOnlyDemandAndStatisticsThrottlePreservePerFrameFalseColor() throws {
+        var settings = MonitoringSettings(waveform: true, rgbParade: true, vectorscope: true, falseColor: true)
+        XCTAssertTrue(settings.enabled); XCTAssertTrue(settings.needsStatistics)
+        settings.disableStatistics()
+        XCTAssertFalse(settings.needsStatistics); XCTAssertTrue(settings.falseColor); XCTAssertTrue(settings.enabled)
+        let (_, statistics) = try run([0, 0, 0, 0], width: 1, height: 1,
+            settings: .init(waveform: true, rgbParade: true, vectorscope: true))
+        XCTAssertEqual(statistics.scopes?.waveform?.reduce(0, +), 0)
+        XCTAssertEqual(statistics.scopes?.parade?.reduce(0, +), 0)
+        XCTAssertEqual(statistics.scopes?.vectorscope?.reduce(0, +), 0)
+    }
 }

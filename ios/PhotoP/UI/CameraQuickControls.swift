@@ -181,6 +181,7 @@ struct CameraQuickControls: View {
     private var monitoring: some View {
         VStack(spacing: 12) {
             Toggle("RGB 히스토그램", isOn: $model.monitoring.histogram)
+            ScopeControls(settings: $model.monitoring)
             Toggle("Zebra", isOn: $model.monitoring.zebra)
             if model.monitoring.zebra {
                 Slider(value: $model.monitoring.zebraThreshold, in: 0.5...1) { Text("Zebra 임계값") }

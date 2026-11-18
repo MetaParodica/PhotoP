@@ -2,6 +2,8 @@
 
 # PhotoP
 
+2026-11-18 사용자 결정: 최소 iOS18, 파생 사진·영상은 SDR이다. HDR/게인맵·Log 영상·C2PA는 도입하지 않는다. 새 브래킷 융합과 스코프의 구현·CI·기기 인수 상태는 [33 기록](docs/33-IOS18-FUSION-SCOPES.ko.md)을 따른다.
+
 2026-11-17 1차 최적화: [구현·회귀 보고서](docs/30-OPTIMIZATION-IMPLEMENTATION.ko.md). LUT 고정 형식 생성/바이너리 캐시, 깊이 통계/매트/입력 재사용, Flow 재시도 제한, 저장 UI 잠금과 실패 진단을 개선했다. [전체 CI44056942568](https://github.com/MetaParodica/PhotoP/actions/runs/44056942568)에서 공통118·Python31·iOS 단위354개 통과/Flow1개 skip·UI11개 통과. 실기기 화질·성능 인수와 후속 GPU/추론 스케줄러 과제는 별도다.
 
 2026-11-17 main 통합 범위: 기존 심도·AF 개발분과 [최적화·고도화 개선 보고서](docs/29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md)를 함께 반영한다. portable110·Python28, 심도 집중 SDK 검사38개 통과/1개 skip 기록이 있으며 최신 전체 회귀는 시간 초과로 실패했다. 개선 보고서의 제안과 실기기·iOS27 인수는 후속 작업이다. 검증 상태는 [단계별 기록](docs/08-STEP-VALIDATION.ko.md)을 확인한다.

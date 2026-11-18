@@ -209,8 +209,8 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
             imageSize = CGSize(width: CGFloat(CVPixelBufferGetWidth(buffer)), height: CGFloat(CVPixelBufferGetHeight(buffer)))
             var sampleSettings = monitoring
             let now = ProcessInfo.processInfo.systemUptime
-            if sampleSettings.histogram && now - lastHistogramTime >= budget.histogramInterval { lastHistogramTime = now }
-            else { sampleSettings.histogram = false }
+            if sampleSettings.needsStatistics && now - lastHistogramTime >= budget.histogramInterval { lastHistogramTime = now }
+            else { sampleSettings.disableStatistics() }
             return (layer, ticket, intensity, grain, effects, sampleSettings, fillsViewfinder)
         }
         guard let (surface, ticket, strength, grainSettings, finishSettings, monitorSettings, fill) = request else { return }
@@ -228,8 +228,8 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
                 command.addCompletedHandler { [self, owner] completed in
                     // Retain the capture buffer until all CI and Metal reads finish.
                     withExtendedLifetime(owner.buffer) {}
-                    // Copy only 1 KiB of histogram counts before freeing this frame's resources.
-                    let histogram = completed.status == .completed && monitorSettings.histogram ? owner.processor.histogram() : nil
+                    // Copy aggregate counters only (up to 81 KiB), never image pixels.
+                    let histogram = completed.status == .completed && monitorSettings.needsStatistics ? owner.processor.histogram() : nil
                     let depthError = depthAnalyzer.errorDescription
                     let event: Event? = lock.withLock {
                         guard state.complete(ticket) else { return nil }
