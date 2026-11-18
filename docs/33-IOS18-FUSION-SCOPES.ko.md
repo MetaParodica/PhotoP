@@ -28,7 +28,7 @@ V07은 유효한 저장 사진 fixture와 실제 편집기의 저장/취소 경�
 Linux 정책5개를 포함한 portable123개 통과는 iOS/Metal 성공이 아니다.
 새 iOS 통합2개는 GPU 합산·별도 JPEG·원본 bytes/hash·게인맵 없음·거부/취소를 확인하도록 작성했다.
 전체 CI와 실제 역광·손떨림·회전·국소 움직임 약30세트,12MP 메모리/지연 측정은 대기다.
-현재 정렬·고스트 판단은 휴리스틱이다. 회전·롤링셔터·작은 국소 움직임·포화 영역을 완전히 검출한다고 주장하지 않는다.
+현재 정렬·고스트 판단은 휴리스틱이다.192px 분석은 초기 이동만 추정한다. 원본 픽셀의 최대32×32 표본 격자에서 초기 이동 주변을 다시 탐색하여 정수 픽셀 단위로 보정하고 잔차/고스트/후보 분리도를 재검사한다. 서브픽셀·회전 정렬과 실제 미세 손떨림 선명도 인수는 미완료다. 회전·롤링셔터·작은 국소 움직임·포화 영역을 완전히 검출한다고 주장하지 않는다.
 새 외부 코드·이미지·모델·라이브러리를 가져오지 않았다.
 
 ## F2 — SDR 프리뷰 스코프
@@ -59,3 +59,19 @@ F12는 이번 우선순위 뒤의 선택 과제다. 공식 Apple API 문서 접�
 - 후속 검토에서 반복 무늬/완만한 경사가 낮은 잔차만으로 잘못 정렬되지 않도록 후보 간 분리도 정책과 회귀1개를 추가했다. 정책 전체도 융합 레시피에 보존한다. GPU fixture는 명확한2D 윤곽을 가진 합성 입력으로 바꿨다. 최신 Linux portable127개 통과이며 실제 촬영 인수와 다르다.
 
 - `8b3cb40` 전체 CI44232322926은 진행 중이다. CI44231466026에서 확인한 False color 테스트의 혼합 배열 타입을 UInt8로 명시했다.
+
+## F12 사전 확인 목록 — 구현 보류
+
+공식 문서 본문을 확인하지 못했으므로 아래는 **확인할 API 후보**이며 채택/지원 판정이 아니다.
+
+| 경로 | 공식 문서에서 확인할 후보 | 원본 불변 조건 |
+| --- | --- | --- |
+| 권한·상태 | CLLocationManager의 사용 중 권한 요청/상태·정확도·위치 유효기간 | 최초 촬영 전 요청, 거부/오류는 위치 없이 촬영, 기본 켜기/설정 끄기 |
+| JPEG·HEIC | AVCapturePhotoSettings.metadata의 GPS 메타데이터 지원 | capturePhoto 요청 전에 촬영 시점 위치 전달; 저장 후 ImageIO 재인코딩 금지 |
+| DNG | 동일 metadata의 RAW/ProRAW 지원과 fileDataRepresentation 생성 계약 | DNG 생성 단계 지원을 확인하기 전 태깅 지원을 표시하지 않음 |
+| 영상 | AVCaptureMovieFileOutput.metadata/AVMetadataItem의 ISO6709 위치 | startRecording 전에 설정; 종료 후 AVAssetExportSession 등으로 원본 재작성 금지 |
+| Photos | PHAssetChangeRequest/PHAssetCreationRequest.location와 addResource | 생성 트랜잭션에서 자산 위치 설정; 앱 원본 bytes 재작성 금지 |
+
+관련 구현은 CameraService의 AVCapturePhotoCaptureDelegate/AVCaptureFileOutputRecordingDelegate와 PhotoStore이며, LONG·ARKit 경로의 생성 시점/지원 범위도 별도로 확인해야 한다. 후보 이름만으로 사진·DNG·영상 모두 GPS 태깅된다고 표시하지 않는다. 첫 촬영 대기/취소·권한 거부·오래된 위치·카메라 queue로의 Sendable 스냅샷 전달과 Photos 경로의 검증이 필요하다. 현재 위치 권한 요청·새 데이터 수집은 추가하지 않았다.
+
+- 원본 픽셀 정밀 보정 정책2개를 포함한 Linux portable129개가 통과했다. 대형 Float 이미지3장을 추가로 만들지 않고 이미 확보한 Metal 입력 버퍼에서 읽는다. 레시피는 초기/원본 픽셀 정렬 결과를 모두 보존한다. GPU 통합은 무이동과 좌우 이동 fixture를 모두 검사한다. 이 보완의 새 iOS CI는 별도로 확인한다.

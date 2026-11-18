@@ -19,6 +19,23 @@ final class ExposureFusionPolicyTests: XCTestCase {
             XCTAssertEqual($0 as? ExposureFusionFailure, .insufficientDetail)
         }
     }
+    func testOriginalPixelRefinementRecoversMotionSmallerThanThumbnailPixel() throws {
+        let w = 256, image = pattern(256)
+        let result = try ExposureFusionPolicy().refine(width: w, height: w, initialX: 0, initialY: 0, radius: 4,
+            reference: { x, y in image[y * w + x] },
+            candidate: { x, y in image[(y + 1) * w + x - 2] * 0.7 })
+        XCTAssertEqual(result.x, 2); XCTAssertEqual(result.y, -1)
+        XCTAssertLessThan(result.residual, 0.0001)
+    }
+    func testOriginalPixelRefinementRejectsGhostAndAmbiguousSamples() {
+        let w = 256, image = pattern(256), policy = ExposureFusionPolicy()
+        XCTAssertThrowsError(try policy.refine(width: w, height: w, initialX: 0, initialY: 0, radius: 4,
+            reference: { x, y in image[y * w + x] }, candidate: { x, y in x > 80 && x < 170 && y > 80 && y < 170 ? 0.9 : image[y * w + x] }))
+        XCTAssertThrowsError(try policy.refine(width: w, height: w, initialX: 0, initialY: 0, radius: 4,
+            reference: { _, _ in 0.5 }, candidate: { _, _ in 0.5 }))
+        XCTAssertThrowsError(try policy.refine(width: w, height: w, initialX: .min, initialY: 0, radius: 4,
+            reference: { _, _ in 0.5 }, candidate: { _, _ in 0.5 }))
+    }
     func testRegistrationNormalizesExposureAndFindsTranslation() throws {
         let w = 48, reference = pattern()
         var shifted = reference

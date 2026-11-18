@@ -42,6 +42,67 @@ struct ExposureFusionPolicy: Codable, Equatable, Sendable {
     var minimumAlignmentSeparation = 0.01
     var weights = ExposureFusionWeights()
 
+    /// Sparse samples read at ORIGINAL pixel coordinates refine the coarse
+    /// estimate without allocating three full-resolution Float images.
+    func refine(width: Int, height: Int, initialX: Int, initialY: Int, radius: Int,
+                reference: (Int, Int) -> Float, candidate: (Int, Int) -> Float) throws -> ExposureFusionRegistration {
+        guard (24...16384).contains(width), (24...16384).contains(height),
+              width * height <= 12_600_000, (1...32).contains(radius),
+              (-width / 4...width / 4).contains(initialX), (-height / 4...height / 4).contains(initialY), weights.valid,
+              maximumResidual.isFinite, maximumResidual > 0, ghostThreshold.isFinite, ghostThreshold > 0,
+              maximumGhostFraction.isFinite, (0...1).contains(maximumGhostFraction),
+              minimumUsableFraction.isFinite, (0.1...1).contains(minimumUsableFraction),
+              minimumAlignmentSeparation.isFinite, minimumAlignmentSeparation > 0 else { throw ExposureFusionFailure.invalidInput }
+        let margin = radius + max(abs(initialX), abs(initialY)) + 1
+        guard width > margin * 2, height > margin * 2 else { throw ExposureFusionFailure.insufficientDetail }
+        let step = max(1, (max(width, height) + 31) / 32)
+        var points: [(x: Int, y: Int, log: Double)] = []
+        for y in stride(from: margin, to: height - margin, by: step) {
+            for x in stride(from: margin, to: width - margin, by: step) {
+                let v = reference(x, y)
+                guard v.isFinite, (0.03...0.97).contains(v) else { continue }
+                points.append((x, y, log2(Double(v))))
+            }
+        }
+        guard points.count >= 64 else { throw ExposureFusionFailure.insufficientDetail }
+        var choices: [ExposureFusionRegistration] = []
+        for dy in -radius...radius { for dx in -radius...radius {
+            let x = initialX + dx, y = initialY + dy
+            var count = 0, sum = 0.0, squares = 0.0
+            for point in points {
+                let v = candidate(point.x + x, point.y + y)
+                guard v.isFinite, (0.03...0.97).contains(v) else { continue }
+                let delta = log2(Double(v)) - point.log
+                count += 1; sum += delta; squares += delta * delta
+            }
+            let fraction = Double(count) / Double(points.count)
+            guard fraction >= minimumUsableFraction else { continue }
+            let offset = sum / Double(count)
+            let residual = sqrt(max(0, squares / Double(count) - offset * offset))
+            choices.append(.init(x: x, y: y, logExposureOffset: offset, residual: residual,
+                                 ghostFraction: 0, usableFraction: fraction))
+        } }
+        guard let best = choices.min(by: {
+            $0.residual + Double(abs($0.x - initialX) + abs($0.y - initialY)) * 1e-7
+                < $1.residual + Double(abs($1.x - initialX) + abs($1.y - initialY)) * 1e-7
+        }) else { throw ExposureFusionFailure.insufficientDetail }
+        guard abs(best.x - initialX) < radius, abs(best.y - initialY) < radius else { throw ExposureFusionFailure.alignment }
+        let alternate = choices.filter { abs($0.x - best.x) + abs($0.y - best.y) > 1 }.map(\.residual).min()
+        guard let alternate, alternate - best.residual >= minimumAlignmentSeparation else { throw ExposureFusionFailure.insufficientDetail }
+        var count = 0, ghosts = 0
+        for point in points {
+            let v = candidate(point.x + best.x, point.y + best.y)
+            guard v.isFinite, (0.03...0.97).contains(v) else { continue }
+            count += 1
+            if abs(log2(Double(v)) - point.log - best.logExposureOffset) > ghostThreshold { ghosts += 1 }
+        }
+        let fraction = Double(ghosts) / Double(max(1, count))
+        if fraction > maximumGhostFraction { throw ExposureFusionFailure.ghost }
+        if best.residual > maximumResidual { throw ExposureFusionFailure.alignment }
+        return .init(x: best.x, y: best.y, logExposureOffset: best.logExposureOffset,
+                     residual: best.residual, ghostFraction: fraction, usableFraction: best.usableFraction)
+    }
+
     func validateBiases(_ biases: [Double]) throws {
         guard biases.count == 3, biases.allSatisfy(\.isFinite), biases[0] < biases[1], biases[1] < biases[2],
               biases[2] - biases[0] <= 4.001 else { throw ExposureFusionFailure.invalidInput }

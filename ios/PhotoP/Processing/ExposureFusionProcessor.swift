@@ -6,6 +6,7 @@ struct ExposureFusionManifest: Codable {
     let version: Int
     let frames: [Frame]
     let registrations: [ExposureFusionRegistration]
+    let fullResolutionRegistrations: [ExposureFusionRegistration]?
     let weights: ExposureFusionWeights
     let policy: ExposureFusionPolicy?
     let width: Int
@@ -49,7 +50,7 @@ actor ExposureFusionProcessor {
         let registrations = try [policy.register(reference: lumas[1], candidate: lumas[0], width: w, height: h),
                                  .reference, policy.register(reference: lumas[1], candidate: lumas[2], width: w, height: h)]
         try Task.checkCancellation()
-        let pixels = try render(originals: originals, registrations: registrations, analysisWidth: w, analysisHeight: h, weights: policy.weights)
+        let (pixels, refined) = try render(originals: originals, registrations: registrations, analysisWidth: w, analysisHeight: h, policy: policy)
         let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let folder = root.appendingPathComponent("FusionResults")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -63,9 +64,9 @@ actor ExposureFusionProcessor {
         try pixels.jpeg().write(to: pending.appendingPathComponent("photo.jpg"), options: options)
         let manifest = ExposureFusionManifest(version: 1, frames: originals.indices.map {
             .init(filename: originals[$0].lastPathComponent, sha256: hashes[$0], requestedEV: biases[$0])
-        }, registrations: registrations, weights: policy.weights, policy: policy, width: pixels.width, height: pixels.height,
+        }, registrations: registrations, fullResolutionRegistrations: refined, weights: policy.weights, policy: policy, width: pixels.width, height: pixels.height,
             analysisWidth: w, analysisHeight: h,
-            contract: "SDR encoded-sRGB; translation-only; smoothed quality weights, single scale; center-only uncovered borders; no HDR/gain map/LUT; originals preserved")
+            contract: "SDR encoded-sRGB; translation-only with original-pixel sparse refinement; smoothed quality weights, single scale; center-only uncovered borders; no HDR/gain map/LUT; originals preserved")
         try JSONEncoder().encode(manifest).write(to: pending.appendingPathComponent("recipe.json"), options: options)
         guard try originals.map({ try LUTPhotoEditor.hashFile($0) }) == hashes else { throw ExposureFusionFailure.originalsChanged }
         try Task.checkCancellation()
@@ -73,7 +74,7 @@ actor ExposureFusionProcessor {
         return final.appendingPathComponent("photo.jpg")
     }
     private func render(originals: [URL], registrations: [ExposureFusionRegistration], analysisWidth: Int, analysisHeight: Int,
-                        weights: ExposureFusionWeights) throws -> SDRImage {
+                        policy: ExposureFusionPolicy) throws -> (SDRImage, [ExposureFusionRegistration]) {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue() else { throw MetalLUTError.unavailable }
         let pipeline = try MetalPipelineCache.shared.compute("photoPExposureFusion", device: device)
         var buffers: [MTLBuffer] = [], width = 0, height = 0
@@ -89,13 +90,28 @@ actor ExposureFusionProcessor {
             }
             buffers.append(buffer)
         }
+        let pointers = buffers.map { $0.contents().bindMemory(to: UInt8.self, capacity: width * height * 4) }
+        func luma(_ frame: Int, _ x: Int, _ y: Int) -> Float {
+            let i = (y * width + x) * 4, bytes = pointers[frame]
+            let r = Float(bytes[i]), g = Float(bytes[i + 1]), b = Float(bytes[i + 2])
+            return (r * 54.0 + g * 183.0 + b * 19.0) / 65_280.0
+        }
+        let scale = max(Double(width) / Double(analysisWidth), Double(height) / Double(analysisHeight))
+        let radius = Int(ceil(scale / 2)) + 1
+        var refined: [ExposureFusionRegistration] = []
+        for i in 0..<3 {
+            try Task.checkCancellation()
+            if i == 1 { refined.append(.reference); continue }
+            let x = Int((Double(registrations[i].x) * Double(width) / Double(analysisWidth)).rounded())
+            let y = Int((Double(registrations[i].y) * Double(height) / Double(analysisHeight)).rounded())
+            refined.append(try policy.refine(width: width, height: height, initialX: x, initialY: y, radius: radius,
+                reference: { luma(1, $0, $1) }, candidate: { luma(i, $0, $1) }))
+        }
         guard let output = device.makeBuffer(length: width * height * 4, options: .storageModeShared),
               let command = queue.makeCommandBuffer(), let encoder = command.makeComputeCommandEncoder() else { throw MetalLUTError.unavailable }
-        func shift(_ value: Int, _ full: Int, _ small: Int) -> Int32 { Int32((Double(value) * Double(full) / Double(small)).rounded()) }
         var p = Parameters(width: UInt32(width), height: UInt32(height),
-            x0: shift(registrations[0].x, width, analysisWidth), y0: shift(registrations[0].y, height, analysisHeight),
-            x2: shift(registrations[2].x, width, analysisWidth), y2: shift(registrations[2].y, height, analysisHeight),
-            contrast: Float(weights.contrast), saturation: Float(weights.saturation), exposure: Float(weights.wellExposedness))
+            x0: Int32(refined[0].x), y0: Int32(refined[0].y), x2: Int32(refined[2].x), y2: Int32(refined[2].y),
+            contrast: Float(policy.weights.contrast), saturation: Float(policy.weights.saturation), exposure: Float(policy.weights.wellExposedness))
         encoder.setComputePipelineState(pipeline)
         for i in 0..<3 { encoder.setBuffer(buffers[i], offset: 0, index: i) }
         encoder.setBuffer(output, offset: 0, index: 3)
@@ -105,6 +121,6 @@ actor ExposureFusionProcessor {
         encoder.endEncoding(); command.commit(); command.waitUntilCompleted()
         guard command.status == .completed else { throw MetalLUTError.failed(command.error?.localizedDescription ?? "노출 융합 GPU 실패") }
         try Task.checkCancellation()
-        return SDRImage(rgba: Data(bytes: output.contents(), count: width * height * 4), width: width, height: height)
+        return (SDRImage(rgba: Data(bytes: output.contents(), count: width * height * 4), width: width, height: height), refined)
     }
 }

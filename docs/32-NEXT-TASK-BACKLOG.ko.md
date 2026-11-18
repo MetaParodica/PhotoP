@@ -118,3 +118,5 @@
 - F2는33 문서 범위로 구현했으며 새로운 GPU/상호작용 CI와 실제 프리뷰 p95·메모리·가독성 인수는 대기다. F12는 공식 Apple 문서 접근을 확인하기 전 구현하지 않는다(현재 developer.apple.com proxy403).
 
 - T00 `4bc0a24` 전체 [CI44228552924](https://github.com/MetaParodica/PhotoP/actions/runs/44228552924) **success** 확인. macos-15 후속 실행의 Simulator26.2 notice도 확인했다. T00의 CI 완료 기준은 충족했으며 셔터음·실기기 동작 검증과 혼동하지 않는다. V07/F1/F2는 통합 최신 소스 `067173e`의 전체 CI44231466026 결과 대기다.
+
+- F1 후속은 원본 픽셀 정밀 이동 보정과 재거부 검사까지 포함한다. 정책8개를 포함한 portable129개 통과이며 새 네이티브 CI와 실제 브래킷 인수는 별도다.
