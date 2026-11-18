@@ -352,3 +352,9 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - Linux Swift 구문/diff 검사만 통과. 새 UI 테스트 실행은 push 후 전체 CI에서 확인한다. 이번 단계 소스 커밋·실행 번호/결과는 후속 기록에 추가한다. 기기 저장 안정성(V04)과 구분한다.
 
 - V07 소스 `f29653a`, 전체 CI [44228983998](https://github.com/MetaParodica/PhotoP/actions/runs/44228983998)는 Simulator build-for-testing exit65로 실패했다. 웹 공개 annotation에서 확인했으며 상세 로그 API는 환경 proxy에서 차단된다. 성공으로 처리하지 않는다. UI XCTest의 UIKit 의존을 명시하고, 다음 실패 시 실제 컴파일 오류가 공개 annotation에 남도록 CI 진단을 보완한다. 선택 런타임도 notice로 남긴다.
+
+## 48. F1 — SDR 브래킷 노출 융합 (2026-11-18)
+
+- T00 `4bc0a24` CI44228552924 진행 중, V07 `f29653a` CI44228983998 실패. 진단 보완 `805ee0b` CI44229876030 진행 중. main 반영 없음.
+- 기존3장 원본을 보존한 뒤 Metal 가중 융합·별도 SDR JPEG/레시피·전후 hash 검사·정렬/고스트 거부 이유 표시를 연결했다. 판단은 ExposureFusionPolicy/Weights로 분리했다. 같은 크기 최대12.6MP, 평행이동과 단일 스케일 가중 합성이라는 한계는33 문서에 기록했다.
+- Linux portable123개(새 정책5개 포함) 통과, Swift 구문·YAML·diff 검사 통과. 새 iOS GPU/저장 통합2개는 미실행이며 전체 CI 결과를 후속 기록한다. 실제30세트·메모리·지연·화질은 미검증이다.

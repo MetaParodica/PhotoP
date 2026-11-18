@@ -64,8 +64,9 @@ struct CaptureReviewView: View {
     private var facts: some View {
         VStack(spacing: 4) {
             if let current {
-                Text(model.latestRenderedSeries.contains(current) ? "효과 적용 결과 · \(model.latestCaptureLook?.displayName ?? "심도")" : "무보정 원본 · 룩 미적용")
+                Text(model.latestFusion == current ? "SDR 노출 융합 · LUT 미적용" : model.latestRenderedSeries.contains(current) ? "효과 적용 결과 · \(model.latestCaptureLook?.displayName ?? "심도")" : "무보정 원본 · 룩 미적용")
                     .font(.caption.weight(.semibold)).accessibilityIdentifier("camera.review.effectStatus")
+                if let failure = model.latestFusionFailure { Text("노출 융합 중단 · " + failure).font(.caption).foregroundStyle(.orange) }
                 if let failure = model.latestRenderErrors[current] {
                     Text("효과 결과 생성 실패 · 원본은 보존됨\n" + failure).font(.caption).foregroundStyle(.orange)
                 }

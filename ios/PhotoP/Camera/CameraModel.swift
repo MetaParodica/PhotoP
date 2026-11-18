@@ -20,6 +20,9 @@ final class CameraModel: ObservableObject {
     @Published private(set) var latestOriginals: [URL] = []
     @Published var bracketEnabled = false
     @Published var bracketStep = 1.0
+    @Published var bracketFusionEnabled = true
+    @Published private(set) var latestFusion: URL?
+    @Published private(set) var latestFusionFailure: String?
     @Published private(set) var savedToPhotos = false
     @Published var message: String?
     @Published var errorMessage: String?
@@ -995,6 +998,7 @@ final class CameraModel: ObservableObject {
         let aperture = depthEnabled ? depthAperture : nil
         let capturedDepthSource = depthSource
         let capturedDepthProfile = depthProfile
+        let fuseBracket = bracketEnabled && bracketFusionEnabled
         let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
         let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
         busy = true
@@ -1015,6 +1019,7 @@ final class CameraModel: ObservableObject {
             latestOriginals = urls
             latestOriginal = urls[urls.count / 2]
             latestCaptureLook = look; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil
+            latestFusion = nil; latestFusionFailure = nil
             capturedReviewURL = latestOriginal
             reviewReferences = [:]
             for url in urls { reviewReferences[url] = reference }
@@ -1024,9 +1029,22 @@ final class CameraModel: ObservableObject {
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
             await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource, profile: capturedDepthProfile)
+            if fuseBracket, let biases = series.requestedBiases {
+                do {
+                    guard active else { throw CancellationError() }
+                    let fused = try await ExposureFusionProcessor.shared.fuse(originals: urls, biases: biases)
+                    latestFusion = fused; latestRendered = fused; latestRenderedSeries.append(fused)
+                    latestRenderedSources[fused] = center; reviewReferences[fused] = reference
+                    latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(fused, maxPixel: 240) }.value
+                } catch {
+                    latestFusionFailure = error.localizedDescription
+                    latestRenderErrors[center] = "SDR 노출 융합 중단 · " + error.localizedDescription
+                }
+            }
             try await PhotoStore.addToPhotos(urls + latestRenderedSeries)
             savedToPhotos = true
             message = "원본 \(urls.count)장과 사진 보관함에 저장했습니다."
+                + (latestFusion != nil ? " SDR 노출 융합 결과도 별도 저장했습니다." : latestFusionFailure.map { " 융합 중단: " + $0 } ?? "")
         } catch { report(error) }
     }
 

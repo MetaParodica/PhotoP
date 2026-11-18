@@ -165,7 +165,10 @@ struct CameraQuickControls: View {
                 .disabled(model.rawMode != .processed || model.bracketEnabled)
             Toggle("노출 브래킷 · 원본 3장", isOn: $model.bracketEnabled).disabled(caps.maximumBracketCount < 3)
             if model.bracketEnabled {
+                Toggle("SDR 노출 융합 · 움직임 검사", isOn: $model.bracketFusionEnabled)
+                    .accessibilityIdentifier("camera.bracket.fusion")
                 Picker("EV 간격", selection: $model.bracketStep) { Text("±0.5").tag(0.5); Text("±1").tag(1.0); Text("±2").tag(2.0) }.pickerStyle(.segmented)
+                Text("3장 원본은 보존합니다. 같은 크기·최대12.6MP만 융합하며 정렬 실패·움직임 의심 시 이유와 함께 거부합니다. 융합 JPEG는 SDR이며 LUT를 굽지 않습니다.").font(.caption)
             }
             if let reason = model.rawUnavailableReason ?? model.bracketUnavailableReason { Text(reason).font(.caption) }
             Text(caps.shutterSoundSuppression ? "셔터음 억제 적용" : "이 기기·iOS에서는 앱의 셔터음 억제가 허용되지 않습니다.")
