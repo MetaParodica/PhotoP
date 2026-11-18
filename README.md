@@ -1,4 +1,4 @@
-> **검증 기록:** 아래 [CI 39614392835](https://github.com/MetaParodica/PhotoP/actions/runs/39614392835)의 성공과 화면은 과거 기준 코드의 결과입니다. 현재 심도 변경의 SDK 결과·실기기 인수는 [최신 Phase 기록](docs/28-DEPTH-PHASE-IMPLEMENTATION.ko.md)을 확인하세요. [기본 화면](docs/screenshots/camera.jpg) · [구도 카드](docs/screenshots/guide.jpg) · [룩 카드](docs/screenshots/looks.jpg) · [인물 실루엣](docs/screenshots/person.jpg)
+> **최신 검증:** T00·V07·F1·F2 소스 `cf94605`의 [전체 CI44235743796](https://github.com/MetaParodica/PhotoP/actions/runs/44235743796)가 성공했습니다. iOS 단위370통과/1skip·UI14통과. 실제 iPhone 화질·성능 인수는 대기이며 [33 기록](docs/33-IOS18-FUSION-SCOPES.ko.md)과 [단계별 검증](docs/08-STEP-VALIDATION.ko.md)을 확인하세요. 아래 기존 스크린샷과 과거 Phase 수치는 해당 당시 결과입니다.
 
 # PhotoP
 
