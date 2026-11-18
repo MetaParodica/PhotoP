@@ -6,6 +6,9 @@ enum CameraDrawer: String {
 
 enum CameraScreen: String, Identifiable {
     case review, editor, history, videos, depthHistory
+    #if DEBUG && targetEnvironment(simulator)
+    case depthEditorReview
+    #endif
     var id: String { rawValue }
 }
 
@@ -76,6 +79,9 @@ struct CameraView: View {
             case .history: SavedEditsView()
             case .videos: VideoLibraryView()
             case .depthHistory: DepthResultLibraryView()
+            #if DEBUG && targetEnvironment(simulator)
+            case .depthEditorReview: DepthEditorReviewFixture()
+            #endif
             }
         }
     }
@@ -84,11 +90,17 @@ struct CameraView: View {
         .onAppear {
             if model.showGrid { model.guideGrid = .thirds; model.showGrid = false }
             if reviewing {
+                #if DEBUG && targetEnvironment(simulator)
+                DepthEditorReviewFixture.removePriorFixtures()
+                #endif
                 let arguments = ProcessInfo.processInfo.arguments
                 if arguments.contains("--review-guide") { drawer = .composition; model.selectCompositionPreset("portrait-two-thirds") }
                 if arguments.contains("--review-looks") { drawer = .looks }
                 if arguments.contains("--review-video") { tool = .video }
                 if arguments.contains("--review-depth") { tool = .aperture; model.proMode = true; model.depthSource = .ai }
+                #if DEBUG && targetEnvironment(simulator)
+                if arguments.contains("--review-depth-editor") { screen = .depthEditorReview }
+                #endif
                 if arguments.contains("--review-person") { model.personGuide = PersonGuide(framing: .full, position: .left); model.framing = .square }
             } else { resume() }
         }

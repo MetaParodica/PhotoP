@@ -343,3 +343,10 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 기준 main `d977858`, 작업 브랜치 `codex/ios18-bracket-scopes-20261118`. 배포 타깃18.0, 셔터음 억제의 불필요한 iOS18 분기2곳 제거, CLAUDE/README 갱신. 실제 장치의 셔터음 지원 검사는 유지한다.
 - CI는 생성된 타깃18.0과 가용 iPhone Simulator18.0 이상을 강제하며 선택한 런타임을 로그에 출력한다. 실제 macos-15 런타임 버전은 새 CI 확인 전 미확인이다.
 - 로컬 Python31개 통과. Linux에는 Xcode가 없으므로 iOS 빌드·XCTest·UI 성공을 주장하지 않는다. 소스 커밋과 새 CI 번호/결과는 push 후 후속 기록에 추가한다. 현재 T00 완료 기준(전체 CI 성공)은 대기다.
+
+## 47. V07 — 저장 중 편집 잠금 UI 회귀 (2026-11-18)
+
+- T00 소스 `4bc0a24`, 전체 CI [44228552924](https://github.com/MetaParodica/PhotoP/actions/runs/44228552924) 진행 중. 완료로 판정하지 않는다.
+- 실제 DepthResultEditorView에 안정적인 접근성ID를 추가했다. DEBUG+Simulator 전용 검토 호스트는 유효한 SDR 원본/깊이 레시피를 만들고 실제 저장 앞에 취소 가능한 barrier를 제공한다. 기기/Release 빌드에는 호스트가 없다.
+- UI 테스트2개: 저장 중 f값·프로필·비교 잠금, disabled 컨트롤의 실제 좌표 터치 후 값 불변, 실제 저장 완료/취소 후 조작 복구. 검토 전용 파일만 다음 검토 실행 시 정리한다.
+- Linux Swift 구문/diff 검사만 통과. 새 UI 테스트 실행은 push 후 전체 CI에서 확인한다. 이번 단계 소스 커밋·실행 번호/결과는 후속 기록에 추가한다. 기기 저장 안정성(V04)과 구분한다.

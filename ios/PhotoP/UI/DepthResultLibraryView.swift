@@ -55,6 +55,7 @@ private struct DepthPreviewRequest: Hashable {
 struct DepthResultEditorView: View {
     let session: DepthEditSession
     private let editor: DepthPhotoEditor
+    private let beforeSave: (@Sendable () async throws -> Void)?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
     @State private var aperture: Double
@@ -67,8 +68,9 @@ struct DepthResultEditorView: View {
     @State private var rendering = false
     @State private var saveTask: Task<Void, Never>?
 
-    init(session: DepthEditSession) {
+    init(session: DepthEditSession, beforeSave: (@Sendable () async throws -> Void)? = nil) {
         self.session = session; editor = DepthPhotoEditor(session: session)
+        self.beforeSave = beforeSave
         _aperture = State(initialValue: session.recipe.aperture ?? 2.8)
         _focus = State(initialValue: CGPoint(x: session.recipe.focusX, y: session.recipe.focusY))
         _profile = State(initialValue: session.recipe.lensProfile ?? .natural)
@@ -98,15 +100,18 @@ struct DepthResultEditorView: View {
                 }
                 VStack(alignment: .leading, spacing: 10) {
                     Text("사진을 터치하여 재초점 · " + String(format: "f/%.1f", aperture))
+                        .accessibilityIdentifier("editor.depth.apertureValue")
                     Group {
                         Slider(value: $aperture, in: 1.4...16)
+                            .accessibilityIdentifier("editor.depth.aperture")
                         Picker("렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-                        Toggle("원본 비교", isOn: $compare)
+                            .accessibilityIdentifier("editor.depth.profile")
+                        Toggle("원본 비교", isOn: $compare).accessibilityIdentifier("editor.depth.compare")
                     }.disabled(saving)
                     if rendering { ProgressView("미리보기 갱신 중") }
-                    if let message { Text(message).font(.caption).foregroundStyle(.secondary) }
-                    if saving { Button("저장 취소") { saveTask?.cancel() } }
-                    else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent) }
+                    if let message { Text(message).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("editor.depth.message") }
+                    if saving { Button("저장 취소") { saveTask?.cancel() }.accessibilityIdentifier("editor.depth.cancel") }
+                    else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent).accessibilityIdentifier("editor.depth.save") }
                     Text("미리보기는 최대768px입니다. 재초점은 저장된 깊이의 정확도 범위에서 작동하며 최초 매트 밖의 피사체는 깊이만 사용합니다. 원본과 이전 결과는 보존합니다.").font(.caption2).foregroundStyle(.secondary)
                 }.padding(.horizontal)
             }.padding(.bottom)
@@ -132,6 +137,8 @@ struct DepthResultEditorView: View {
         saveTask = Task {
             defer { saving = false; saveTask = nil }
             do {
+                try await beforeSave?()
+                try Task.checkCancellation()
                 _ = try await editor.save(aperture: f, focus: point, profile: lens)
                 message = "새 심도 사진을 앱 보관함에 저장했습니다."
             } catch is CancellationError { message = "저장을 취소했습니다. 원본과 이전 결과는 보존됩니다." }
