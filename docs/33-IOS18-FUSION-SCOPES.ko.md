@@ -96,4 +96,3 @@ iOS 통합2개는 무이동/좌우 이동 GPU 합산, 별도 JPEG·레시피, �
 | Photos | PHAssetChangeRequest/PHAssetCreationRequest.location와 addResource | 생성 트랜잭션에서 자산 위치 설정; 앱 원본 bytes 재작성 금지 |
 
 관련 구현은 CameraService의 AVCapturePhotoCaptureDelegate/AVCaptureFileOutputRecordingDelegate와 PhotoStore이며, LONG·ARKit 경로의 생성 시점/지원 범위도 별도로 확인해야 한다. 후보 이름만으로 사진·DNG·영상 모두 GPS 태깅된다고 표시하지 않는다. 첫 촬영 대기/취소·권한 거부·오래된 위치·카메라 queue로의 Sendable 스냅샷 전달과 Photos 경로의 검증이 필요하다. 현재 위치 권한 요청·새 데이터 수집은 추가하지 않았다.
-
