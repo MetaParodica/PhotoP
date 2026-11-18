@@ -350,3 +350,5 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 실제 DepthResultEditorView에 안정적인 접근성ID를 추가했다. DEBUG+Simulator 전용 검토 호스트는 유효한 SDR 원본/깊이 레시피를 만들고 실제 저장 앞에 취소 가능한 barrier를 제공한다. 기기/Release 빌드에는 호스트가 없다.
 - UI 테스트2개: 저장 중 f값·프로필·비교 잠금, disabled 컨트롤의 실제 좌표 터치 후 값 불변, 실제 저장 완료/취소 후 조작 복구. 검토 전용 파일만 다음 검토 실행 시 정리한다.
 - Linux Swift 구문/diff 검사만 통과. 새 UI 테스트 실행은 push 후 전체 CI에서 확인한다. 이번 단계 소스 커밋·실행 번호/결과는 후속 기록에 추가한다. 기기 저장 안정성(V04)과 구분한다.
+
+- V07 소스 `f29653a`, 전체 CI [44228983998](https://github.com/MetaParodica/PhotoP/actions/runs/44228983998)는 Simulator build-for-testing exit65로 실패했다. 웹 공개 annotation에서 확인했으며 상세 로그 API는 환경 proxy에서 차단된다. 성공으로 처리하지 않는다. UI XCTest의 UIKit 의존을 명시하고, 다음 실패 시 실제 컴파일 오류가 공개 annotation에 남도록 CI 진단을 보완한다. 선택 런타임도 notice로 남긴다.

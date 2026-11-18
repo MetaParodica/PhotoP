@@ -142,7 +142,7 @@ jobs:
         run: |
           selection=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; choices=[x for x in choices if x[0]>=(18,0)]; assert choices,"No available iPhone Simulator with iOS >=18.0"; version,udid=max(choices); print(".".join(map(str,version)),udid)')
           read -r runtime_version device_id <<< "$selection"
-          echo "Selected iOS Simulator runtime: $runtime_version (minimum 18.0)"
+          echo "::notice::Selected iOS Simulator runtime: $runtime_version (minimum 18.0)"
           echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
           xcrun simctl list devices available
           state=$(xcrun simctl list devices -j | python3 -c 'import json,sys; target=sys.argv[1]; print(next(d["state"] for v in json.load(sys.stdin)["devices"].values() for d in v if d["udid"] == target))' "$device_id")
@@ -155,7 +155,16 @@ jobs:
         run: |
           mkdir -p diagnostics
           set -o pipefail
-          xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO build-for-testing 2>&1 | tee diagnostics/simulator-build.log
+          if xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO build-for-testing 2>&1 | tee diagnostics/simulator-build.log; then
+            exit 0
+          fi
+          python3 - <<'PYERRORS'
+          from pathlib import Path
+          errors = [line for line in Path('diagnostics/simulator-build.log').read_text(errors='replace').splitlines() if 'error:' in line]
+          for line in errors[:15]:
+              print('::error::' + line.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'))
+          PYERRORS
+          exit 1
       - name: Run application and depth XCTest on Simulator
         id: unit_tests
         if: inputs.test_scope != 'ui'

@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class DepthEditorInteractionTests: XCTestCase {
     @MainActor func testSavingLocksApertureAndProfileUntilRealSaveCompletes() {
