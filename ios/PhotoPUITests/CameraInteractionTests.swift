@@ -161,7 +161,9 @@ final class CameraInteractionTests: XCTestCase {
         person.tap()
         XCTAssertTrue(person.isSelected)
         XCTAssertTrue(app.segmentedControls["camera.guide.person.position"].waitForExistence(timeout: 3))
-        reveal(app.segmentedControls["camera.guide.person.position"], in: app.otherElements["camera.panel.guide"])
+        // The container's hit point can remain outside the clipped viewport
+        // even when its segments can be reached. Let XCTest scroll the actual
+        // button into view, then verify the resulting guide below.
         app.segmentedControls["camera.guide.person.position"].buttons["왼쪽 1/3"].tap()
         app.buttons["camera.panel.close"].tap()
         let overlay = app.descendants(matching: .any)["camera.person.guide"]
