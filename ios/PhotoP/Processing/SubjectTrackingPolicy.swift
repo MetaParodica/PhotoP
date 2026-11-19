@@ -50,7 +50,12 @@ struct SubjectTrackingSnapshot: Equatable, Sendable {
     let bounds: CGRect?
     let confidence: Float
     let time: Double
-    func isFresh(at now: Double) -> Bool { now.isFinite && time.isFinite && now >= time && now - time <= 0.45 }
+    var boundsTime: Double? = nil
+    func isFresh(at now: Double) -> Bool {
+        let observed = bounds == nil ? time : boundsTime ?? time
+        return now.isFinite && time.isFinite && observed.isFinite && now >= time && now >= observed &&
+            now - time <= 0.45 && now - observed <= 0.45
+    }
     func focus(at now: Double) -> CGPoint? {
         guard phase == .tracking, isFresh(at: now), let bounds else { return nil }
         return CGPoint(x: bounds.midX, y: bounds.midY)
@@ -137,6 +142,6 @@ struct SubjectTrackingState: Sendable {
     func snapshot(at now: Double) -> SubjectTrackingSnapshot {
         let stale = phase == .tracking && (!now.isFinite || now < lastTime || now - lastTime > 0.45)
         return .init(selectionID: selection?.id, generation: generation, phase: stale ? .uncertain : phase,
-                     bounds: box, confidence: confidence, time: lastTime)
+                     bounds: box, confidence: confidence, time: lastTime, boundsTime: lastGoodTime)
     }
 }

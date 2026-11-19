@@ -1388,7 +1388,7 @@
   "swift_port": {
     "path": "ios/PhotoP/Processing/SubjectTrackingPolicy.swift",
     "symbol": "SubjectAssociation.cost(overlap:confidence:)",
-    "sha256": "927763eb2a80e6d5b64e664d67547889f555a674da19bd6d28dedb33ae31ea80",
+    "sha256": "95c570ca2855bd65ce1277ac14e01b4546de4a88a4402f7961798ca3e89585a1",
     "origin": "FoundationVision/ByteTrack@d1bf0191adff59bc8fcfeaa0b33d3d1642552a99:yolox/tracker/matching.py:173-181",
     "scope": "Scalar score fusion only; not full ByteTrack tracker",
     "license_resources": [
