@@ -14,7 +14,7 @@ struct CameraQuickControls: View {
             case .iso, .shutter, .ev: exposure
             case .whiteBalance: whiteBalance
             case .focus: focus
-            case .aperture: depth
+            case .aperture: if model.snapshot.video.isVideoMode { videoDepth } else { depth }
             case .format: if model.snapshot.video.isVideoMode { video } else { format }
             case .monitor: monitoring
             case .guide: composition
@@ -283,6 +283,7 @@ struct CameraQuickControls: View {
                     .font(.caption2).foregroundStyle(.secondary)
                 if let error = model.liveDepthError { Text("미리보기: \(error)").font(.caption2).foregroundStyle(.orange) }
             }
+            subjectTracking
             DisclosureGroup("심도 고급 설정") {
                 VStack(alignment: .leading, spacing: 12) {
                     Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
@@ -302,6 +303,40 @@ struct CameraQuickControls: View {
                 }.padding(.top, 8)
             }.accessibilityIdentifier("camera.depth.advanced")
             if !model.depthModeAllowed { Text("PRO 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상·네이티브 추적과 동시 사용하지 않습니다.").font(.caption2) }
+        }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
+            .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
+    }
+    private var subjectTracking: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle("선택 피사체 추적", isOn: $model.depthTrackingEnabled)
+                .onChange(of: model.depthTrackingEnabled) { _, _ in model.depthTrackingChanged() }
+                .accessibilityIdentifier("camera.depth.tracking")
+            if model.depthTrackingEnabled {
+                Picker("추적 대상", selection: $model.depthTrackingMode) { ForEach(SubjectTrackingMode.allCases) { Text($0.title).tag($0) } }
+                    .pickerStyle(.segmented).onChange(of: model.depthTrackingMode) { _, _ in model.depthTrackingChanged() }
+                Text(model.depthTrackingSnapshot?.phase.title ?? "화면에서 피사체 선택").font(.caption)
+                Text("불확실하거나 놓친 대상에는 흐림을 적용하지 않습니다. 다시 터치해 대상을 선택하세요.").font(.caption2)
+            }
+        }
+    }
+    private var videoDepth: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle("영상 AI 심도", isOn: $model.videoDepthEnabled)
+                .disabled(model.recordingRequested).onChange(of: model.videoDepthEnabled) { _, _ in model.monitoringChanged() }
+                .accessibilityIdentifier("camera.video.depth")
+            CameraValueSlider(title: "영상 심도 f값", value: $model.depthAperture, range: 1.4...16,
+                display: { String(format: "f/%.1f", $0) }, onCommit: {})
+            Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+            subjectTracking
+            Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
+            Text("화면 터치로 선명한 위치 선택 · 녹화는 원본을 보존하고 종료 후 별도 AI 심도 영상을 만듭니다. 최대4K/60fps·10분, 오디오 유지. 처리 속도는 실시간보다 느릴 수 있습니다.").font(.caption)
+            if model.videoDepthEnabled { Text(model.liveDepthHasFrame ? "AI 심도 프리뷰 적용 중" : "프리뷰 준비/움직임 감지 · 원본 표시").font(.caption2) }
+            if let error = model.liveDepthError { Text(error).font(.caption2).foregroundStyle(.orange) }
+            if let progress = model.videoDepthProgress {
+                ProgressView(value: progress)
+                Button("영상 심도 처리 취소") { model.cancelVideoDepth() }.buttonStyle(.bordered)
+            }
+            if let message = model.videoDepthMessage { Text(message).font(.caption2).accessibilityIdentifier("camera.video.depth.status") }
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
     }

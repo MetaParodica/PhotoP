@@ -17,6 +17,8 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private let commandQueue: MTLCommandQueue
     private var composition: CompositionAnalyzer!
     private let depthAnalyzer = LiveDepthAnalyzer()
+    private let subjectTracker = SubjectTrackingAnalyzer()
+    private let onTracking: @Sendable (UUID, SubjectTrackingSnapshot) -> Void
     private var depthApplied = false
     private var announcedDepthError: String?
     private var depthSettings = LiveDepthSettings()
@@ -58,7 +60,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
     private var latestSampleID: UUID?
     private var recordingBudget = false
 
-    init(lut: CubeLUT, onSample: @escaping @Sendable (UUID, LookSceneSample) -> Void = { _, _ in }, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
+    init(lut: CubeLUT, onTracking: @escaping @Sendable (UUID, SubjectTrackingSnapshot) -> Void = { _, _ in }, onSample: @escaping @Sendable (UUID, LookSceneSample) -> Void = { _, _ in }, onGuide: @escaping @Sendable (UUID, CompositionSnapshot) -> Void = { _, _ in }, onEvent: @escaping @Sendable (UUID, Event) -> Void) throws {
         guard let device = MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue()
         else { throw MetalLUTError.unavailable }
         self.device = device
@@ -67,6 +69,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         display = try MetalPreviewDisplay(device: device)
         self.onEvent = onEvent
         self.onSample = onSample
+        self.onTracking = onTracking
         super.init()
         composition = CompositionAnalyzer { [weak self] snapshot in guard let self else { return }; onGuide(self.id, snapshot) }
     }
@@ -87,6 +90,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         if let event { onEvent(id, event) }
     }
     func setRunning(_ running: Bool) {
+        subjectTracker.setRunning(running)
         composition.setRunning(running)
         depthAnalyzer.setRunning(running)
         let event: Event? = lock.withLock {
@@ -99,7 +103,9 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         lock.withLock { state.invalidate(); announcedGeneration = nil; imageSize = nil; latestSampleID = nil }
         composition.invalidate()
         depthAnalyzer.invalidate()
+        subjectTracker.invalidate()
     }
+    func setSubjectTracking(enabled: Bool, selection: SubjectTrackingSelection?) { subjectTracker.configure(enabled: enabled, selection: selection) }
     func setDepthPreview(_ settings: LiveDepthSettings) {
         depthAnalyzer.configure(settings)
         let event: Event? = lock.withLock {
@@ -176,6 +182,9 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
         applyPendingLook()
+        subjectTracker.offer(buffer, interval: min(0.15, budget.compositionInterval)) { [weak self] value in
+            guard let self else { return }; onTracking(id, value)
+        }
         depthAnalyzer.offer(buffer, minimumInterval: budget.compositionInterval)
         if lock.withLock({ samplesWanted }), now - lastSampleTime >= 1 {
             let generation = lock.withLock { state.generation }
@@ -221,7 +230,14 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
                 let source = CIImage(cvPixelBuffer: buffer)
-                let depth = depthAnalyzer.current(for: source)
+                var depth = depthAnalyzer.current(for: source)
+                if subjectTracker.required {
+                    if let focus = subjectTracker.current()?.focus(at: ProcessInfo.processInfo.systemUptime), let frame = depth {
+                        var settings = frame.settings; settings.focus = focus
+                        // A matte for a previous location must not protect the wrong subject.
+                        depth = .init(field: frame.field, matte: settings.focus == frame.settings.focus ? frame.matte : nil, settings: settings)
+                    } else { depth = nil }
+                }
                 let image = try owner.processor.encode(buffer, intensity: strength, grain: grainSettings, effects: finishSettings, monitoring: monitorSettings, maximumDimension: budget.maximumDimension, command: command, depth: depth)
                 try display.encode(image: image, destination: drawable.texture, command: command, fill: fill)
                 command.present(drawable)

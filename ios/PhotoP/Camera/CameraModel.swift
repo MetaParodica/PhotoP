@@ -93,6 +93,15 @@ final class CameraModel: ObservableObject {
     @Published private(set) var latestThumbnail: PhotoThumbnailImage?
     @Published var longMode = false
     @Published private(set) var depthEnabled = false
+    @Published var videoDepthEnabled = false
+    @Published var depthTrackingEnabled = false
+    @Published var depthTrackingMode: SubjectTrackingMode = .object
+    @Published private(set) var depthTrackingSnapshot: SubjectTrackingSnapshot?
+    @Published private(set) var videoDepthProgress: Double?
+    @Published private(set) var videoDepthMessage: String?
+    private var depthSelection: SubjectTrackingSelection?
+    private var recordingDepthIntent: VideoDepthIntent?
+    private var videoDepthTask: Task<Void, Never>?
     @Published var depthAperture = 2.8
     @Published var depthSource: SoftwareDepthSource = .automatic
     @Published var depthProfile: DepthLensProfile = .natural
@@ -233,7 +242,7 @@ final class CameraModel: ObservableObject {
         guard value.revision > snapshot.revision else { return }
         let resetControls = value.selectedLens != snapshot.selectedLens || value.video.isVideoMode != snapshot.video.isVideoMode || value.video.configuration?.resolution != snapshot.video.configuration?.resolution
         let resuming = value.state == .running && snapshot.state != .running
-        if resetControls || value.state != .running { resetComposition() }
+        if resetControls || value.state != .running { resetComposition(); depthSelection = nil; depthTrackingSnapshot = nil; livePreview?.invalidateFrames() }
         if resetControls, let caps = value.capabilities {
             pendingSettings = PendingCameraSettings()
             settings = CameraSettings()
@@ -325,7 +334,9 @@ final class CameraModel: ObservableObject {
         updateDepthPreview(); monitoringChanged()
     }
     func updateDepthPreview() {
-        let enabled = liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured && !busy && !compositionCaptureSuspended
+        recordDepthParameters()
+        let enabled = (snapshot.video.isVideoMode ? videoDepthEnabled : liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured) && !busy && !compositionCaptureSuspended
+        livePreview?.setSubjectTracking(enabled: enabled && depthTrackingEnabled, selection: depthSelection)
         livePreview?.setDepthPreview(.init(enabled: enabled, aperture: depthAperture, focus: depthFocusPoint,
             profile: depthProfile, comparingOriginal: liveCompareOriginal))
         if !enabled { liveDepthHasFrame = false }
@@ -362,9 +373,20 @@ final class CameraModel: ObservableObject {
         orientation = value; sceneSample = nil; resetComposition(); meteringTarget = nil; previewImageSize = nil
         motionMonitor.orientation = value.rawValue; cameraTilt = nil
         depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
+        depthSelection = nil; depthTrackingSnapshot = nil; livePreview?.invalidateFrames()
         updateDepthPreview()
         videoPreviewFill = value == .portrait
         service.setOrientation(value)
+    }
+
+    func followDepthSubject(_ point: CameraMeteringPoint, lensID: String) async {
+        guard depthTrackingEnabled, depthTrackingSnapshot?.focus(at: ProcessInfo.processInfo.systemUptime) != nil,
+            (snapshot.video.isVideoMode ? videoDepthEnabled : depthEnabled),
+            snapshot.state == .running, !busy, !applyingSettings, !snapshot.isApplyingSettings,
+            !settings.focus.manual, !settings.focus.locked, settings.focus.drive == .continuous,
+            snapshot.readout?.focusLocked != true else { return }
+        do { _ = try await service.focusAndMeter(at: point, lensID: lensID, scope: .focus, drive: .continuous, area: settings.focus.area) }
+        catch { /* Tracking must not replace a capture error or alter exposure. */ }
     }
 
     func focusAndMeter(_ point: CameraMeteringPoint, lensID: String, locked: Bool = false) async {
@@ -590,7 +612,7 @@ final class CameraModel: ObservableObject {
     private var needsAnalysis: Bool {
         LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
                                    focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted,
-                                   depth: liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured)
+                                   depth: snapshot.video.isVideoMode ? videoDepthEnabled : liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured)
     }
 
     func monitoringChanged() {
@@ -755,7 +777,11 @@ final class CameraModel: ObservableObject {
     }
 
     func selectCompositionSubject(at imagePoint: CGPoint) {
-        if meteringScope.focuses { depthFocusPoint = imagePoint; updateDepthPreview() }
+        if meteringScope.focuses {
+            depthFocusPoint = imagePoint
+            if depthTrackingEnabled { depthSelection = .init(point: imagePoint, mode: depthTrackingMode); depthTrackingSnapshot = nil }
+            updateDepthPreview()
+        }
         guard guideAIEnabled, let guide = aiComposition,
               guide.isFresh(at: ProcessInfo.processInfo.systemUptime),
               let id = CompositionSubjectTracker.subject(at: imagePoint, in: guide.subjects) else { return }
@@ -812,7 +838,21 @@ final class CameraModel: ObservableObject {
                 self.sceneSample = sample
             }
         }
-        let preview = try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onSample: onSample, onGuide: onGuide, onEvent: onEvent) }.value
+        let onTracking: @Sendable (UUID, SubjectTrackingSnapshot) -> Void = { [weak self] id, tracked in
+            Task { @MainActor [weak self] in
+                guard let self, self.active, self.livePreview?.id == id, self.depthTrackingEnabled,
+                    self.depthSelection?.id == tracked.selectionID,
+                    (self.snapshot.video.isVideoMode ? self.videoDepthEnabled : self.depthEnabled && self.liveDepthPreviewEnabled) else { return }
+                self.depthTrackingSnapshot = tracked
+                if let focus = tracked.focus(at: ProcessInfo.processInfo.systemUptime) {
+                    self.depthFocusPoint = focus
+                    // Tracking updates are not user keyframes. Offline replay tracks the same seed.
+                    self.livePreview?.setDepthPreview(.init(enabled: true, aperture: self.depthAperture, focus: focus,
+                        profile: self.depthProfile, comparingOriginal: self.liveCompareOriginal))
+                }
+            }
+        }
+        let preview = try await Task.detached(priority: .userInitiated) { try LiveLUTPreview(lut: lut, onTracking: onTracking, onSample: onSample, onGuide: onGuide, onEvent: onEvent) }.value
         preview.setSampleDelivery(previewSamplesWanted)
         preview.setViewfinderFill(viewfinderFill)
         preview.setRecordingBudget(snapshot.video.phase.isActive)
@@ -937,19 +977,55 @@ final class CameraModel: ObservableObject {
     func recordVideo() async {
         guard canRecordVideo, let configuration = snapshot.video.configuration else { return }
         pausePhotoReview()
-        recordingRequested = true; defer { recordingRequested = false; busy = false }
+        recordingDepthIntent = videoDepthEnabled ? .init(keyframes: [currentDepthKeyframe(time: 0)]) : nil
+        recordingRequested = true; defer { recordingRequested = false; busy = false; recordingDepthIntent = nil }
         do {
             let pending = try await service.recordVideo()
             busy = true
             let original = try await VideoStore.finalize(pending, configuration: configuration)
             let sound = VideoCapturePolicy.audioLabel(configuration)
             latestVideo = original; videoSavedToPhotos = false
+            if let intent = recordingDepthIntent {
+                let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                try encoder.encode(intent).write(to: original.url.deletingLastPathComponent().appendingPathComponent("depth-intent.json"), options: .atomic)
+                startVideoDepth(original, intent: intent)
+            }
             message = "\(sound) SDR 영상 원본을 앱에 보관했습니다."
             try await VideoStore.addToPhotos(original.url)
             videoSavedToPhotos = true
             message = "\(sound) SDR 영상 원본과 사진 보관함에 저장했습니다."
         } catch { report(error) }
     }
+
+    private func currentDepthKeyframe(time: Double) -> VideoDepthKeyframe {
+        .init(time: time, focus: depthFocusPoint, aperture: depthAperture, profile: depthProfile,
+              selection: depthTrackingEnabled ? depthSelection : nil)
+    }
+    private func recordDepthParameters() {
+        guard snapshot.video.phase == .recording, recordingDepthIntent != nil else { return }
+        // AVMovieFileOutput's recordedDuration is the source timeline, not wall-clock request latency.
+        _ = recordingDepthIntent?.append(currentDepthKeyframe(time: snapshot.video.elapsedSeconds))
+    }
+    func depthTrackingChanged() {
+        depthSelection = nil; depthTrackingSnapshot = nil
+        updateDepthPreview(); monitoringChanged()
+    }
+    func startVideoDepth(_ original: VideoOriginal, intent: VideoDepthIntent) {
+        guard videoDepthTask == nil else { videoDepthMessage = "원본과 심도 설정을 보관했습니다. 현재 처리가 끝나면 보관함에서 편집하세요."; return }
+        videoDepthProgress = 0; videoDepthMessage = "AI 심도 영상 처리 중 · 원본 보존"
+        videoDepthTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.videoDepthTask = nil; self.videoDepthProgress = nil }
+            do {
+                let result = try await VideoDepthProcessor.shared.render(original, intent: intent) { [weak self] progress in
+                    Task { @MainActor [weak self] in self?.videoDepthProgress = progress }
+                }
+                self.videoDepthMessage = "AI 심도 영상 보관 완료 · 원본 유지 프레임 \(result.recipe.fallbackFrames)/\(result.recipe.frames) · 영상 보관함에서 재생"
+            } catch is CancellationError { self.videoDepthMessage = "심도 처리를 취소했습니다. 녹화 원본은 보존했습니다." }
+            catch { self.videoDepthMessage = "심도 처리: " + error.localizedDescription }
+        }
+    }
+    func cancelVideoDepth() { videoDepthTask?.cancel() }
 
     func stopVideo() { service.stopVideo() }
 
@@ -969,6 +1045,7 @@ final class CameraModel: ObservableObject {
         resetComposition()
         zoomAdviceSuppressedUntil = ProcessInfo.processInfo.systemUptime + 8
         depthFocusPoint = CGPoint(x: 0.5, y: 0.5)
+        depthSelection = nil; depthTrackingSnapshot = nil; livePreview?.invalidateFrames()
         service.setZoom(ZoomPolicy.clamp(factor, maxAvailable: snapshot.capabilities?.maxZoom ?? 1))
     }
 

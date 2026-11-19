@@ -39,11 +39,11 @@ final class CaptureWorkflowTests: XCTestCase {
             XCTAssertFalse(tools.contains(.aperture))
         }
     }
-    func testApertureIsOnlyInProAndNeverInventsAVideoDepthMode() {
+    func testApertureSupportsProAndSoftwareVideoDepth() {
         XCTAssertTrue(CaptureWorkflowPolicy.controls(pro: true, long: false, video: false).contains(.aperture))
         XCTAssertEqual(CaptureWorkflowPolicy.controls(pro: false, long: false, video: false), [.ev])
         let video = CaptureWorkflowPolicy.controls(pro: true, long: true, video: true)
-        XCTAssertFalse(video.contains(.aperture)); XCTAssertFalse(video.contains(.longExposure))
+        XCTAssertTrue(video.contains(.aperture)); XCTAssertFalse(video.contains(.longExposure))
         XCTAssertEqual(video.last, .video)
         XCTAssertEqual(Set(CameraTool.allCases.map(\.id)).count, 12)
     }

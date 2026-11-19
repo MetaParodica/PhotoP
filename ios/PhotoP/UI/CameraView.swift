@@ -172,7 +172,8 @@ struct CameraView: View {
                               zoom: model.snapshot.readout?.zoom ?? 1, onZoom: { model.setZoom($0) }, fill: model.viewfinderFill,
                               onOrientation: { value in Task { @MainActor in model.setOrientation(value) } },
                               onIndicator: { point, locked in model.showMeteringTarget(point, locked: locked) },
-                              onSubjectTap: { model.selectCompositionSubject(at: $0) }) { point, lensID, locked in
+                              onSubjectTap: { model.selectCompositionSubject(at: $0) }, tracking: model.depthTrackingSnapshot,
+                              onTrackingFocus: { point, lens in Task { await model.followDepthSubject(point, lensID: lens) } }) { point, lensID, locked in
                     Task { await model.focusAndMeter(point, lensID: lensID, locked: locked) }
                 }
                 if model.snapshot.state != .running { unavailableCamera }
@@ -180,6 +181,9 @@ struct CameraView: View {
             if let preview = model.livePreview {
                 LivePreviewSurface(preview: preview)
                     .opacity(model.liveHasFrame && model.snapshot.state == .running ? 1 : 0).allowsHitTesting(false)
+            }
+            if model.depthTrackingEnabled {
+                SubjectTrackingOverlay(snapshot: model.depthTrackingSnapshot, imageSize: overlayImageSize, fill: model.viewfinderFill)
             }
             if let target = model.meteringTarget {
                 VStack(spacing: 4) {
@@ -439,7 +443,7 @@ struct CameraView: View {
         case .ev: return r.map { String(format: "%+.1f EV", $0.exposureBias) } ?? "EV"
         case .whiteBalance: return r?.kelvin.map { "\(Int($0)) K" } ?? "WB"
         case .focus: return model.settings.focus.manual ? "MF" : model.settings.focus.drive.title
-        case .aperture: return model.depthEnabled ? String(format: "f/%.1f", model.depthAperture) : "f/—"
+        case .aperture: return (isVideo ? model.videoDepthEnabled : model.depthEnabled) ? String(format: "f/%.1f", model.depthAperture) : "f/—"
         case .longExposure: return CaptureWorkflowPolicy.durationLabel(model.longConfiguration.duration)
         default: return ""
         }

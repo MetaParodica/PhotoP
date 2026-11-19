@@ -107,8 +107,10 @@ private struct VerifiedVideoView: View {
                         }
                     }.buttonStyle(.borderedProminent).disabled(saving)
                 }
+                NavigationLink("AI 심도 편집 · 원본 보존") { VideoDepthEditorView(item: item) }
+                    .buttonStyle(.borderedProminent).accessibilityIdentifier("video.depth.editor")
                 if let message { Text(message).font(.caption) }
-                Text("해시를 확인한 SDR 무음 원본 · LUT 비굽기").font(.caption).foregroundStyle(.secondary)
+                Text("해시를 확인한 SDR 원본 · LUT 비굽기").font(.caption).foregroundStyle(.secondary)
             }.padding().navigationTitle("영상 원본").navigationBarTitleDisplayMode(.inline)
                 .onAppear { player.play() }.onDisappear { player.pause() }
         }.preferredColorScheme(.dark)

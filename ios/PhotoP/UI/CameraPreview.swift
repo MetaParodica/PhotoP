@@ -35,6 +35,8 @@ struct CameraPreview: UIViewRepresentable {
     var onOrientation: (CameraOrientation) -> Void = { _ in }
     var onIndicator: (CGPoint, Bool) -> Void = { _, _ in }
     var onSubjectTap: (CGPoint) -> Void = { _ in }
+    var tracking: SubjectTrackingSnapshot?
+    var onTrackingFocus: (CameraMeteringPoint, String) -> Void = { _, _ in }
     let onMeter: (CameraMeteringPoint, String, Bool) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -59,6 +61,13 @@ struct CameraPreview: UIViewRepresentable {
         view.onOrientation = onOrientation
         guard let connection = view.previewLayer.connection else { return }
         view.updateOrientation()
+        if let focus = tracking?.focus(at: ProcessInfo.processInfo.systemUptime), let lensID,
+            context.coordinator.canFollow(focus) {
+            let rect = view.previewLayer.layerRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1))
+            let location = CGPoint(x: rect.minX + focus.x * rect.width, y: rect.minY + focus.y * rect.height)
+            let device = view.previewLayer.captureDevicePointConverted(fromLayerPoint: location)
+            if let point = try? CameraMeteringPoint(x: device.x, y: device.y) { onTrackingFocus(point, lensID) }
+        }
         if connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false
             connection.isVideoMirrored = mirrored
@@ -68,6 +77,13 @@ struct CameraPreview: UIViewRepresentable {
     final class Coordinator: NSObject {
         var parent: CameraPreview
         private var pinchBase: Double?
+        private var lastFollow = -Double.infinity
+        private var lastFocus: CGPoint?
+        func canFollow(_ focus: CGPoint) -> Bool {
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastFollow >= 0.5, lastFocus.map({ hypot($0.x - focus.x, $0.y - focus.y) > 0.025 }) ?? true else { return false }
+            lastFollow = now; lastFocus = focus; return true
+        }
         init(_ parent: CameraPreview) { self.parent = parent }
 
         // Pinch scales the zoom current at gesture start; the service clamps to the device range.
@@ -121,5 +137,24 @@ struct ThirdsGrid: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+struct SubjectTrackingOverlay: View {
+    let snapshot: SubjectTrackingSnapshot?
+    let imageSize: CGSize
+    let fill: Bool
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.15)) { _ in
+            GeometryReader { proxy in
+                let now = ProcessInfo.processInfo.systemUptime
+                if let snapshot, snapshot.isFresh(at: now), let box = snapshot.bounds {
+                    let rect = GuideGeometry.imageRect(image: imageSize, viewport: proxy.size, fill: fill)
+                    Rectangle().stroke(snapshot.phase == .tracking ? .green : .yellow, lineWidth: 2)
+                        .frame(width: box.width * rect.width, height: box.height * rect.height)
+                        .position(x: rect.minX + box.midX * rect.width, y: rect.minY + box.midY * rect.height)
+                }
+            }
+        }.allowsHitTesting(false).accessibilityHidden(true)
     }
 }

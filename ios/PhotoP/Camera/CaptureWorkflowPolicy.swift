@@ -42,7 +42,7 @@ enum CaptureWorkflowPolicy {
     static let apertures: [Double] = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16]
     static func controls(pro: Bool, long: Bool, video: Bool) -> [CameraTool] {
         if long && !video { return [.longExposure, .iso, .shutter, .ev, .whiteBalance, .focus] }
-        if video { return [.iso, .shutter, .ev, .whiteBalance, .focus, .video] }
+        if video { return [.aperture, .iso, .shutter, .ev, .whiteBalance, .focus, .video] }
         return pro ? [.aperture, .iso, .shutter, .ev, .whiteBalance, .focus] : [.ev]
     }
     static func duration(from text: String) -> Double? {
