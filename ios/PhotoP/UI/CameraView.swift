@@ -7,7 +7,7 @@ enum CameraDrawer: String {
 enum CameraScreen: String, Identifiable {
     case review, editor, history, videos, depthHistory
     #if DEBUG && targetEnvironment(simulator)
-    case depthEditorReview
+    case depthEditorReview, videoDepthReview
     #endif
     var id: String { rawValue }
 }
@@ -85,6 +85,7 @@ struct CameraView: View {
             case .depthHistory: DepthResultLibraryView()
             #if DEBUG && targetEnvironment(simulator)
             case .depthEditorReview: DepthEditorReviewFixture()
+            case .videoDepthReview: VideoDepthReviewFixture()
             #endif
             }
         }
@@ -104,6 +105,7 @@ struct CameraView: View {
                 if arguments.contains("--review-depth") { tool = .aperture; model.proMode = true; model.depthSource = .ai }
                 #if DEBUG && targetEnvironment(simulator)
                 if arguments.contains("--review-depth-editor") { screen = .depthEditorReview }
+                if arguments.contains("--review-video-depth-editor") { screen = .videoDepthReview }
                 #endif
                 if arguments.contains("--review-person") { model.personGuide = PersonGuide(framing: .full, position: .left); model.framing = .square }
             } else { resume() }

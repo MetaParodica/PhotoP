@@ -76,6 +76,55 @@ final class VideoDepthTests: XCTestCase {
         let originalPixels = try SDRImage.rasterize(a), processedPixels = try SDRImage.rasterize(b)
         XCTAssertNotEqual(originalPixels.rgba, processedPixels.rgba)
     }
+    func testAudioPassthroughPreservesTrackAndSamples() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let silent = root.appendingPathComponent("silent.mov"); try await movie(silent, rotated: false)
+        // Actual PCM WAV -> composition MOV, not a mocked audio-track count.
+        let wave = root.appendingPathComponent("tone.wav")
+        var data = Data()
+        func word(_ value: UInt32, bytes: Int) { for index in 0..<bytes { data.append(UInt8((value >> (index * 8)) & 255)) } }
+        let samples = 12_000
+        data.append(Data("RIFF".utf8)); word(UInt32(36 + samples * 2), bytes: 4); data.append(Data("WAVEfmt ".utf8))
+        word(16, bytes: 4); word(1, bytes: 2); word(1, bytes: 2); word(48_000, bytes: 4); word(96_000, bytes: 4)
+        word(2, bytes: 2); word(16, bytes: 2); data.append(Data("data".utf8)); word(UInt32(samples * 2), bytes: 4)
+        for index in 0..<samples { word(UInt32(UInt16(bitPattern: Int16(sin(Double(index) * 0.06) * 8000))), bytes: 2) }
+        try data.write(to: wave)
+        let composition = AVMutableComposition()
+        let videoAsset = AVURLAsset(url: silent), audioAsset = AVURLAsset(url: wave)
+        let video = try await videoAsset.loadTracks(withMediaType: .video).first!
+        let audio = try await audioAsset.loadTracks(withMediaType: .audio).first!
+        let duration = try await videoAsset.load(.duration)
+        let range = CMTimeRange(start: .zero, duration: duration)
+        try composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)!.insertTimeRange(range, of: video, at: .zero)
+        try composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)!.insertTimeRange(range, of: audio, at: .zero)
+        let source = root.appendingPathComponent("audio.mov")
+        let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough)!
+        exporter.outputURL = source; exporter.outputFileType = .mov
+        await exporter.export()
+        guard exporter.status == .completed else { throw exporter.error ?? CameraError.invalidPhotoData }
+        let original = VideoOriginal(url: source, info: try await VideoStore.inspect(source))
+        XCTAssertEqual(original.info.audioTrackCount, 1)
+        let result = try await VideoDepthProcessor().render(original, intent: intent, destination: root) { image, _, _ in image }
+        XCTAssertEqual(result.recipe.result.audioTrackCount, 1)
+        let sourceAudio = try await audioBytes(source), resultAudio = try await audioBytes(result.url)
+        XCTAssertFalse(sourceAudio.isEmpty); XCTAssertEqual(sourceAudio, resultAudio)
+    }
+    private func audioBytes(_ url: URL) async throws -> Data {
+        let asset = AVURLAsset(url: url)
+        let reader = try AVAssetReader(asset: asset)
+        let track = try await asset.loadTracks(withMediaType: .audio).first!
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
+        reader.add(output); reader.startReading()
+        var result = Data()
+        while let sample = output.copyNextSampleBuffer(), let block = CMSampleBufferGetDataBuffer(sample) {
+            let count = CMBlockBufferGetDataLength(block)
+            var bytes = [UInt8](repeating: 0, count: count)
+            XCTAssertEqual(CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count, destination: &bytes), kCMBlockBufferNoErr)
+            result.append(contentsOf: bytes)
+        }
+        XCTAssertEqual(reader.status, .completed)
+        return result
+    }
     private func timestamps(_ url: URL) async throws -> [Double] {
         let asset = AVURLAsset(url: url)
         let reader = try AVAssetReader(asset: asset)

@@ -13,6 +13,8 @@ final class SubjectTrackingVisionEngine {
     private var state = SubjectTrackingState()
     func reset() { sequence = VNSequenceRequestHandler(); request = nil; selectionID = nil; state = SubjectTrackingState() }
     func update(_ image: CIImage, selection: SubjectTrackingSelection, time: Double, generation: UInt64 = 0) throws -> SubjectTrackingSnapshot {
+        let scale = min(1, 640 / max(image.extent.width, image.extent.height))
+        let image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         state.configure(enabled: true, selection: selection, generation: generation)
         if selectionID != selection.id || epoch != generation {
             epoch = generation

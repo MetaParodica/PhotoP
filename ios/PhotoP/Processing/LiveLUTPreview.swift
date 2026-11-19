@@ -182,7 +182,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
         applyPendingLook()
-        subjectTracker.offer(buffer, interval: min(0.15, budget.compositionInterval)) { [weak self] value in
+        subjectTracker.offer(buffer, interval: budget.compositionInterval.isFinite ? min(0.15, budget.compositionInterval) : .infinity) { [weak self] value in
             guard let self else { return }; onTracking(id, value)
         }
         depthAnalyzer.offer(buffer, minimumInterval: budget.compositionInterval)

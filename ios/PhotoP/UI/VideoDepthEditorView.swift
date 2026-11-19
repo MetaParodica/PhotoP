@@ -15,6 +15,7 @@ struct VideoDepthEditorView: View {
     @State private var selection: SubjectTrackingSelection?
     @State private var progress: Double?
     @State private var message: String?
+    @State private var jobID: UUID?
     @State private var task: Task<Void, Never>?
     @State private var results: [VideoDepthResult] = []
     @State private var selected: VideoDepthResult?
@@ -35,16 +36,16 @@ struct VideoDepthEditorView: View {
                                 guard progress == nil, let point = GuideGeometry.normalizedPoint(event.location, in: rect) else { return }
                                 focus = point; selection = tracking ? .init(point: point, mode: mode) : nil
                             })
-                    }.frame(height: 260).accessibilityIdentifier("video.depth.target")
+                    }.frame(height: 260).accessibilityElement(children: .contain).accessibilityIdentifier("video.depth.target")
                 } else { ProgressView("원본 화면 읽는 중…").frame(height: 160) }
                 CameraValueSlider(title: "심도 f값", value: $aperture, range: 1.4...16, display: { String(format: "f/%.1f", $0) }, onCommit: {})
                 Picker("보케 렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
                 Toggle("선택 피사체 추적", isOn: $tracking).onChange(of: tracking) { _, _ in selection = tracking ? .init(point: focus, mode: mode) : nil }
                 if tracking {
-                    Picker("추적 대상", selection: $mode) { ForEach(SubjectTrackingMode.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                    Picker("추적 대상", selection: $mode) { ForEach(SubjectTrackingMode.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).accessibilityIdentifier("video.depth.mode")
                         .onChange(of: mode) { _, _ in selection = .init(point: focus, mode: mode) }
                 }
-                Picker("출력 품질", selection: $quality) { ForEach(VideoDepthQuality.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                Picker("출력 품질", selection: $quality) { ForEach(VideoDepthQuality.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).accessibilityIdentifier("video.depth.quality")
                 if let progress {
                     ProgressView(value: progress).accessibilityIdentifier("video.depth.progress")
                     Button("처리 취소") { task?.cancel() }.buttonStyle(.bordered)
@@ -91,14 +92,15 @@ struct VideoDepthEditorView: View {
     private func render() {
         guard task == nil else { return }
         let intent = VideoDepthIntent(quality: quality, keyframes: [.init(time: 0, focus: focus, aperture: aperture, profile: profile, selection: tracking ? selection : nil)])
+        let token = UUID(); jobID = token
         progress = 0; message = "AI 심도 처리 중 · 녹화 원본 보존"
         task = Task {
-            defer { progress = nil; task = nil }
+            defer { progress = nil; task = nil; jobID = nil }
             do {
                 let original = try await VideoStore.verify(item)
-                let result = try await VideoDepthProcessor.shared.render(original, intent: intent) { value in
-                    Task { @MainActor in progress = value }
-                }
+                let result = try await VideoDepthProcessor.shared.render(original, intent: intent, progress: { value in
+                    Task { @MainActor in if jobID == token { progress = value } }
+                })
                 message = "심도 영상 보관 완료 · 적용 \(result.recipe.processedFrames)/\(result.recipe.frames)프레임"
                 reloadResults(); selected = result
             } catch is CancellationError { message = "취소했습니다. 원본은 보존했습니다." }

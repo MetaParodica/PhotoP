@@ -101,6 +101,7 @@ final class CameraModel: ObservableObject {
     @Published private(set) var videoDepthMessage: String?
     private var depthSelection: SubjectTrackingSelection?
     private var recordingDepthIntent: VideoDepthIntent?
+    private var videoDepthJob: UUID?
     private var videoDepthTask: Task<Void, Never>?
     @Published var depthAperture = 2.8
     @Published var depthSource: SoftwareDepthSource = .automatic
@@ -383,7 +384,7 @@ final class CameraModel: ObservableObject {
         guard depthTrackingEnabled, depthTrackingSnapshot?.focus(at: ProcessInfo.processInfo.systemUptime) != nil,
             (snapshot.video.isVideoMode ? videoDepthEnabled : depthEnabled),
             snapshot.state == .running, !busy, !applyingSettings, !snapshot.isApplyingSettings,
-            !settings.focus.manual, !settings.focus.locked, settings.focus.drive == .continuous,
+            !settings.focus.manual, !settings.focus.locked, !settings.focus.subjectTracking, settings.focus.drive == .continuous,
             snapshot.readout?.focusLocked != true else { return }
         do { _ = try await service.focusAndMeter(at: point, lensID: lensID, scope: .focus, drive: .continuous, area: settings.focus.area) }
         catch { /* Tracking must not replace a capture error or alter exposure. */ }
@@ -1012,14 +1013,15 @@ final class CameraModel: ObservableObject {
     }
     func startVideoDepth(_ original: VideoOriginal, intent: VideoDepthIntent) {
         guard videoDepthTask == nil else { videoDepthMessage = "원본과 심도 설정을 보관했습니다. 현재 처리가 끝나면 보관함에서 편집하세요."; return }
+        let token = UUID(); videoDepthJob = token
         videoDepthProgress = 0; videoDepthMessage = "AI 심도 영상 처리 중 · 원본 보존"
         videoDepthTask = Task { [weak self] in
             guard let self else { return }
-            defer { self.videoDepthTask = nil; self.videoDepthProgress = nil }
+            defer { self.videoDepthTask = nil; self.videoDepthProgress = nil; self.videoDepthJob = nil }
             do {
-                let result = try await VideoDepthProcessor.shared.render(original, intent: intent) { [weak self] progress in
-                    Task { @MainActor [weak self] in self?.videoDepthProgress = progress }
-                }
+                let result = try await VideoDepthProcessor.shared.render(original, intent: intent, progress: { [weak self] progress in
+                    Task { @MainActor [weak self] in if self?.videoDepthJob == token { self?.videoDepthProgress = progress } }
+                })
                 self.videoDepthMessage = "AI 심도 영상 보관 완료 · 원본 유지 프레임 \(result.recipe.fallbackFrames)/\(result.recipe.frames) · 영상 보관함에서 재생"
             } catch is CancellationError { self.videoDepthMessage = "심도 처리를 취소했습니다. 녹화 원본은 보존했습니다." }
             catch { self.videoDepthMessage = "심도 처리: " + error.localizedDescription }
