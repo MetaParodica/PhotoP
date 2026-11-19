@@ -162,6 +162,17 @@ final class VideoDepthTests: XCTestCase {
         let next = try engine.update(image, selection: second, time: 1.1, generation: 2)
         XCTAssertEqual(next.selectionID, second.id); XCTAssertEqual(next.generation, 2)
     }
+    func testPinnedCoreMLModelProcessesActualMovieWithoutInjectedField() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("source.mov"); try await movie(url, rotated: true)
+        var config = intent; config.quality = .balanced
+        let original = VideoOriginal(url: url, info: try await VideoStore.inspect(url))
+        let result = try await VideoDepthProcessor().render(original, intent: config, destination: root)
+        try await VideoDepthStore.verify(result)
+        XCTAssertGreaterThan(result.recipe.processedFrames, 0)
+        XCTAssertEqual(result.recipe.processedFrames + result.recipe.fallbackFrames, 6)
+        XCTAssertTrue(result.recipe.aiProcessing.contains("Depth Anything"))
+    }
     private func timestamps(_ url: URL) async throws -> [Double] {
         let asset = AVURLAsset(url: url)
         let reader = try AVAssetReader(asset: asset)

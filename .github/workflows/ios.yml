@@ -185,7 +185,7 @@ jobs:
           TEST_SCOPE: ${{ inputs.test_scope || 'all' }}
         run: |
           if [ "$TEST_SCOPE" = depth ]; then
-            test_flags=(-only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests)
+            test_flags=(-only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
           else
             test_flags=(-only-testing:PhotoPTests -skip-testing:PhotoPTests/CompanyFilmLibraryTests -skip-testing:PhotoPTests/FilmStyleLibraryTests)
           fi
@@ -256,6 +256,7 @@ jobs:
           python3 scripts/check_depth_model.py
           test -d ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/DepthAnythingV2SmallF16.mlmodelc
           test -f ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/legal/NOTICE.txt
+          cmp third-party/ByteTrack/LICENSE ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/ByteTrack-LICENSE.txt
           cmp assets/luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts/manifest.json
           python3 scripts/check_lut_bundle.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/luts
           cmp assets/company-luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts/manifest.json
