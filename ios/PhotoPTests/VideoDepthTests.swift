@@ -133,10 +133,16 @@ final class VideoDepthTests: XCTestCase {
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         reader.add(output); reader.startReading()
         var result = Data()
-        while let sample = output.copyNextSampleBuffer(), let block = CMSampleBufferGetDataBuffer(sample) {
+        while let sample = output.copyNextSampleBuffer() {
+            // Drain non-data marker buffers too; they are not EOF. Stopping at
+            // the first marker leaves AVAssetReader in .reading and truncates verification.
+            guard let block = CMSampleBufferGetDataBuffer(sample) else { continue }
             let count = CMBlockBufferGetDataLength(block)
             var bytes = [UInt8](repeating: 0, count: count)
-            XCTAssertEqual(CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count, destination: &bytes), kCMBlockBufferNoErr)
+            let status = bytes.withUnsafeMutableBytes { raw in
+                CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count, destination: raw.baseAddress!)
+            }
+            XCTAssertEqual(status, kCMBlockBufferNoErr)
             result.append(contentsOf: bytes)
         }
         XCTAssertEqual(reader.status, .completed)
