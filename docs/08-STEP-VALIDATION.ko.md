@@ -436,3 +436,11 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - Python31·기본 LUT5·외부25·모델3파일/NOTICE·실제 iPhone 번들 manifest/자원 검증도 모두 통과했다. UI 캡처/결과 archive 업로드까지 완료됐다. 첫 실행의 실패는56절에 보존했다.
 - 원격 main에 `ec01aab`와 `6b9b148`이 반영된 것을 확인했다. 후속 검증/게시 문서 변경은 앱/테스트·프로젝트·Package·CI·scripts·assets를 바꾸지 않는다. 문서 링크·형식과 diff를 확인한 뒤 main에 함께 게시한다.
 - **iPhone 15 Pro/iOS27.2 실기기 인수는 미수행**이다. Simulator의 Optical Flow1skip, 실제 중/원거리 심도 화질·48MP 메모리/열·저장 중단·영상·셔터음과 SDK27 경로를 이번 CI 성공으로 대체하지 않는다.
+
+## 58. 사진·영상 공통 심도/대상 추적 개발과 검증
+
+- 기준 main `37eb109`, 사전 조사/계획 커밋 `f6e0a44`, 구현 `02a1e33`→`49e310c`→`6681a46`. [39 조사](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md), [40 계획](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md), [41 구현/한계](41-VIDEO-DEPTH-IMPLEMENTATION.ko.md).
+- 직접 실행 Linux Swift6.0.3 공통138개→전면/방향 좌표 추가139개→추적 요구/미선택·초기 timeout 추가140개 통과. Python31개·LUT5개/외부25개 검증 통과. `swiftc -frontend -parse`는 구문 검사이며 iOS SDK 빌드가 아니다.
+- macOS26/Xcode26.6 첫 전체 CI44587096106(`49e310c`)은 공통138개 중 동일 bbox 추적의2개 assertion에서 실패했다. 실제 CoreGraphics intersection 반올림으로 IoU가1을 미세하게 초과하여 범위 검증이 거부했다. 계산 IoU만 clamp하고 외부 NaN/범위 거부는 유지했다. 재검증 CI44587628219(`6681a46`)의 공통139개와 iPhone 무서명 빌드는 통과한 단계까지 확인했으며 전체 결과는 아직 대기다.
+- 추가 회귀는 실제 MOV의 불규칙 PTS·해상도·세로 회전·원본 hash/AI metadata/GPS 미복사·취소/pending 정리·변조 거부·사진 엔진 흐림·PCM 오디오 sample passthrough·실제 Vision 시퀀스·미선택 추적 요구 시 원본 복귀, 보관 원본을 여는 실제 영상 편집 UI다. 합성 fixture와 실제 촬영/대형 시계열 모델 검증은 구분한다.
+- native 자동 검증 결과는 후속 절에 정확한 source SHA로 기록한다. iPhone15Pro/iOS27.2 실기기,4K 지속 부하/열/속도·중/원거리 전경/머리카락·빠른 팬/가림 화질과 SDK27 빌드는 미실행이다. 녹화 중 시간 설정은 서비스의 recordedDuration 표본 시각을 사용하며 하위 프레임 정확도의 하드웨어 타임코드 편집 기능이 아니다.

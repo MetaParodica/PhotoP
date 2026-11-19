@@ -33,6 +33,18 @@ final class SubjectVideoDepthPolicyTests: XCTestCase {
         XCTAssertEqual(SubjectAssociation.cost(overlap: 0.8, confidence: 0.5)!, 0.6, accuracy: 0.00001)
         XCTAssertNil(SubjectAssociation.cost(overlap: .nan, confidence: 1))
     }
+    func testTrackingRequirementAndAcquisitionTimeoutAreExplicit() {
+        var state = SubjectTrackingState()
+        state.configure(enabled: true, selection: .init(point: CGPoint(x: 0.5,y: 0.5)), generation: 1)
+        _ = state.observe(bounds: nil, confidence: 0, time: 1, generation: 1)
+        _ = state.observe(bounds: nil, confidence: 0, time: 2, generation: 1)
+        XCTAssertEqual(state.snapshot(at: 2).phase, .lost)
+        var intent = VideoDepthIntent(keyframes: [.init(time: 0, focus: CGPoint(x: 0.5,y: 0.5), aperture: 2.8, profile: .natural)])
+        XCTAssertTrue(intent.append(.init(time: 1, focus: CGPoint(x: 0.5,y: 0.5), aperture: 2.8, profile: .natural, requiresTracking: true)))
+        XCTAssertEqual(intent.keyframes.count, 2)
+        XCTAssertEqual(intent.parameters(at: 1)?.requiresTracking, true)
+        XCTAssertNil(intent.parameters(at: 1)?.selection)
+    }
     func testTimelineDoesNotAnticipateTapsOrCoalesceInitialState() throws {
         let initial = VideoDepthKeyframe(time: 0, focus: CGPoint(x: 0.5, y: 0.5), aperture: 2.8, profile: .natural)
         var intent = VideoDepthIntent(keyframes: [initial])

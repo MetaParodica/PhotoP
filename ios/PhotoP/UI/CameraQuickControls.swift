@@ -314,7 +314,11 @@ struct CameraQuickControls: View {
             if model.depthTrackingEnabled {
                 Picker("추적 대상", selection: $model.depthTrackingMode) { ForEach(SubjectTrackingMode.allCases) { Text($0.title).tag($0) } }
                     .pickerStyle(.segmented).onChange(of: model.depthTrackingMode) { _, _ in model.depthTrackingChanged() }
-                Text(model.depthTrackingSnapshot?.phase.title ?? "화면에서 피사체 선택").font(.caption)
+                TimelineView(.periodic(from: .now, by: 0.25)) { _ in
+                    let snapshot = model.depthTrackingSnapshot
+                    let stale = snapshot?.phase == .tracking && snapshot?.isFresh(at: ProcessInfo.processInfo.systemUptime) != true
+                    Text(stale ? SubjectTrackingPhase.uncertain.title : snapshot?.phase.title ?? "화면에서 피사체 선택").font(.caption)
+                }
                 Text("불확실하거나 놓친 대상에는 흐림을 적용하지 않습니다. 다시 터치해 대상을 선택하세요.").font(.caption2)
             }
         }

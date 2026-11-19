@@ -17,6 +17,7 @@ struct VideoDepthEditorView: View {
     @State private var message: String?
     @State private var jobID: UUID?
     @State private var task: Task<Void, Never>?
+    @State private var recordedIntent: VideoDepthIntent?
     @State private var results: [VideoDepthResult] = []
     @State private var selected: VideoDepthResult?
     var body: some View {
@@ -50,11 +51,14 @@ struct VideoDepthEditorView: View {
                     ProgressView(value: progress).accessibilityIdentifier("video.depth.progress")
                     Button("처리 취소") { task?.cancel() }.buttonStyle(.bordered)
                 } else {
-                    Button("별도 심도 영상 만들기") { render() }.buttonStyle(.borderedProminent).disabled(thumbnail == nil)
+                    Button("별도 심도 영상 만들기") { render(nil) }.buttonStyle(.borderedProminent).disabled(thumbnail == nil)
                         .accessibilityIdentifier("video.depth.render")
+                    if let recordedIntent {
+                        Button("촬영 당시 시간별 설정으로 만들기") { render(recordedIntent) }.buttonStyle(.bordered).disabled(thumbnail == nil)
+                    }
                 }
                 if let message { Text(message).font(.caption).accessibilityIdentifier("video.depth.message") }
-                Text("SDR·원본 해상도/프레임 시각/오디오 유지 · 공유 결과 위치 제거 · AI 처리 메타데이터 기록. 추적 불확실/깊이 추정 실패 프레임은 원본을 유지하며 결과에 개수를 알립니다. 최대4K/60fps·10분, 처리는 실시간보다 느릴 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
+                Text("현재 설정은 전체 영상에 적용됩니다. SDR·원본 해상도/프레임 시각/오디오 유지 · 공유 결과 위치 제거 · AI 처리 메타데이터 기록. 추적 불확실/깊이 추정 실패 프레임은 원본을 유지하며 결과에 개수를 알립니다. 최대4K/60fps·10분, 처리는 실시간보다 느릴 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
                 ForEach(results) { result in
                     Button { Task { do { try await VideoDepthStore.verify(result); selected = result } catch { message = error.localizedDescription } } } label: {
                         Label("심도 영상 재생 · 원본 유지 \(result.recipe.fallbackFrames)/\(result.recipe.frames)프레임", systemImage: "play.rectangle")
@@ -80,8 +84,9 @@ struct VideoDepthEditorView: View {
             if let size = try? sidecar.resourceValues(forKeys: [.fileSizeKey]).fileSize, size < 2_000_000,
                let data = try? Data(contentsOf: sidecar), let saved = try? JSONDecoder().decode(VideoDepthIntent.self, from: data), saved.valid,
                let first = saved.keyframes.first {
+                recordedIntent = saved
                 focus = first.focus; aperture = first.aperture; profile = first.profile; quality = saved.quality
-                selection = first.selection; tracking = first.selection != nil; mode = first.selection?.mode ?? .object
+                selection = first.selection; tracking = first.requiresTracking || first.selection != nil; mode = first.selection?.mode ?? .object
             }
             reloadResults()
         } catch { message = error.localizedDescription }
@@ -89,9 +94,9 @@ struct VideoDepthEditorView: View {
     private func reloadResults() {
         results = (try? VideoDepthStore.library().filter { $0.recipe.originalSHA256 == item.manifest.sha256 }) ?? []
     }
-    private func render() {
+    private func render(_ recorded: VideoDepthIntent?) {
         guard task == nil else { return }
-        let intent = VideoDepthIntent(quality: quality, keyframes: [.init(time: 0, focus: focus, aperture: aperture, profile: profile, selection: tracking ? selection : nil)])
+        let intent = recorded ?? VideoDepthIntent(quality: quality, keyframes: [.init(time: 0, focus: focus, aperture: aperture, profile: profile, selection: tracking ? selection : nil, requiresTracking: tracking)])
         let token = UUID(); jobID = token
         progress = 0; message = "AI 심도 처리 중 · 녹화 원본 보존"
         task = Task {

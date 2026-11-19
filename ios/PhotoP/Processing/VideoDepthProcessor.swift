@@ -53,6 +53,9 @@ actor VideoDepthProcessor {
         guard let values = VideoDepthPolicy.coreImageTransform(a: transform.a,b: transform.b,c: transform.c,d: transform.d,
             tx: transform.tx,ty: transform.ty,inputHeight: Double(info.encodedHeight),outputHeight: Double(info.displayHeight)) else { throw CameraError.invalidPhotoData }
         let upright = CGAffineTransform(a: values[0], b: values[1], c: values[2], d: values[3], tx: values[4], ty: values[5])
+        let canvas = CGRect(x: 0, y: 0, width: info.encodedWidth, height: info.encodedHeight).applying(upright)
+        guard abs(canvas.minX) < 1, abs(canvas.minY) < 1, abs(canvas.width - Double(info.displayWidth)) < 1,
+              abs(canvas.height - Double(info.displayHeight)) < 1 else { throw CameraError.invalidPhotoData }
         let reader = try AVAssetReader(asset: asset)
         let videoOutput = AVAssetReaderTrackOutput(track: video, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
         videoOutput.alwaysCopiesSampleData = false
@@ -124,7 +127,7 @@ actor VideoDepthProcessor {
                 if let frameRenderer { result = try frameRenderer(image, parameters, intent.quality) }
                 else {
                     var focus = parameters.focus
-                    var trusted = true
+                    var trusted = !parameters.requiresTracking || parameters.selection != nil
                     if let selection = parameters.selection {
                         // This synchronous batch runs off the capture/render queue.
                         let tracked = try OnDeviceInferenceGate.lock.withLock { try tracker.update(image, selection: selection, time: seconds) }
@@ -165,6 +168,7 @@ actor VideoDepthProcessor {
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(recipe).write(to: pending.appendingPathComponent("recipe.json"), options: .atomic)
         let final = root.appendingPathComponent(id.uuidString, isDirectory: true)
+        try Task.checkCancellation()
         try FileManager.default.moveItem(at: pending, to: final)
         completed = true; progress(1)
         return .init(id: id, url: final.appendingPathComponent("Depth.mov"), recipe: recipe)

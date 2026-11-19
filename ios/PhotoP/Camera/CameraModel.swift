@@ -842,7 +842,7 @@ final class CameraModel: ObservableObject {
         }
         let onTracking: @Sendable (UUID, SubjectTrackingSnapshot) -> Void = { [weak self] id, tracked in
             Task { @MainActor [weak self] in
-                guard let self, self.active, self.livePreview?.id == id, self.depthTrackingEnabled,
+                guard let self, self.active, !self.busy, !self.compositionCaptureSuspended, self.snapshot.state == .running, self.livePreview?.id == id, self.depthTrackingEnabled,
                     self.depthSelection?.id == tracked.selectionID,
                     (self.snapshot.video.isVideoMode ? self.videoDepthEnabled : self.depthEnabled && self.liveDepthPreviewEnabled) else { return }
                 self.depthTrackingSnapshot = tracked
@@ -1005,7 +1005,7 @@ final class CameraModel: ObservableObject {
         let preview = Int(orientation.rotationAngle), saved = Int(recordingDepthOrientation.rotationAngle)
         let focus = VideoDepthPolicy.recordedPoint(depthFocusPoint, mirrored: front, previewAngle: preview, recordingAngle: saved) ?? CGPoint(x: 0.5, y: 0.5)
         let selection = VideoDepthPolicy.recordedSelection(depthTrackingEnabled ? depthSelection : nil, mirrored: front, previewAngle: preview, recordingAngle: saved)
-        return .init(time: time, focus: focus, aperture: depthAperture, profile: depthProfile, selection: selection)
+        return .init(time: time, focus: focus, aperture: depthAperture, profile: depthProfile, selection: selection, requiresTracking: depthTrackingEnabled)
     }
     private func recordDepthParameters() {
         guard snapshot.video.phase == .recording, recordingDepthIntent != nil else { return }
@@ -1089,7 +1089,8 @@ final class CameraModel: ObservableObject {
         let reference = captureGuideReference()
         var capturedReviewURL: URL?
         let look = rawMode == .processed ? liveLookForRestoration : nil
-        let aperture = depthEnabled ? depthAperture : nil
+        let trackingTrusted = !depthTrackingEnabled || depthTrackingSnapshot?.focus(at: ProcessInfo.processInfo.systemUptime) != nil
+        let aperture = depthEnabled && trackingTrusted ? depthAperture : nil
         let capturedDepthSource = depthSource
         let capturedDepthProfile = depthProfile
         let fuseBracket = bracketEnabled && bracketFusionEnabled

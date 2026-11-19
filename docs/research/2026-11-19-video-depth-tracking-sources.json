@@ -1384,5 +1384,17 @@
       "license": "MIT",
       "usage": "reference snapshot and scalar Swift score-fusion port for subject-association gate; no Python dependency in app"
     }
-  ]
+  ],
+  "swift_port": {
+    "path": "ios/PhotoP/Processing/SubjectTrackingPolicy.swift",
+    "symbol": "SubjectAssociation.cost(overlap:confidence:)",
+    "sha256": "927763eb2a80e6d5b64e664d67547889f555a674da19bd6d28dedb33ae31ea80",
+    "origin": "FoundationVision/ByteTrack@d1bf0191adff59bc8fcfeaa0b33d3d1642552a99:yolox/tracker/matching.py:173-181",
+    "scope": "Scalar score fusion only; not full ByteTrack tracker",
+    "license_resources": [
+      "third-party/ByteTrack/LICENSE",
+      "third-party/ByteTrack/NOTICE.md",
+      "ios/PhotoP/Resources/ByteTrack-LICENSE.txt"
+    ]
+  }
 }

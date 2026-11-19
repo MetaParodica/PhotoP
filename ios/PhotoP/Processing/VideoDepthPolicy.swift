@@ -13,6 +13,7 @@ struct VideoDepthKeyframe: Codable, Equatable, Sendable {
     var aperture: Double
     var profile: DepthLensProfile
     var selection: SubjectTrackingSelection?
+    var requiresTracking = false
     var valid: Bool {
         time.isFinite && (0...600).contains(time) && SubjectTrackingSelection.valid(focus) &&
             aperture.isFinite && (1.4...16).contains(aperture) && (selection?.valid ?? true)
@@ -36,9 +37,9 @@ struct VideoDepthIntent: Codable, Equatable, Sendable {
     @discardableResult mutating func append(_ value: VideoDepthKeyframe) -> Bool {
         guard value.valid, let last = keyframes.last, value.time >= last.time else { return false }
         if value.time == last.time { keyframes[keyframes.count - 1] = value; return true }
-        if value.focus == last.focus && value.aperture == last.aperture && value.profile == last.profile && value.selection == last.selection { return true }
+        if value.focus == last.focus && value.aperture == last.aperture && value.profile == last.profile && value.selection == last.selection && value.requiresTracking == last.requiresTracking { return true }
         // Preserve the initial state and taps; coalesce only rapid dial changes.
-        if keyframes.count > 1, value.time - last.time < 0.1, value.selection == last.selection, value.focus == last.focus {
+        if keyframes.count > 1, value.time - last.time < 0.1, value.selection == last.selection, value.requiresTracking == last.requiresTracking, value.focus == last.focus {
             keyframes[keyframes.count - 1] = value; return true
         }
         guard keyframes.count < 4096 else { return false }
@@ -87,7 +88,8 @@ enum VideoDepthPolicy {
         guard [a,b,c,d,tx,ty,inputHeight,outputHeight].allSatisfy(\.isFinite), inputHeight > 0, outputHeight > 0,
               abs(abs(a * d - b * c) - 1) < 0.00001,
               abs(a * a + b * b - 1) < 0.00001, abs(c * c + d * d - 1) < 0.00001,
-              abs(a * c + b * d) < 0.00001 else { return nil }
+              abs(a * c + b * d) < 0.00001,
+              [a,b,c,d].allSatisfy({ min(abs($0), abs(abs($0) - 1)) < 0.00001 }) else { return nil }
         return [a, -b, -c, d, c * inputHeight + tx, outputHeight - d * inputHeight - ty]
     }
 }

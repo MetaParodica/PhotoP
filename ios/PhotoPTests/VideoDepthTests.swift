@@ -125,6 +125,26 @@ final class VideoDepthTests: XCTestCase {
         XCTAssertEqual(reader.status, .completed)
         return result
     }
+    func testMissingRequiredTargetNeverSilentlyUsesCenterDepth() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("source.mov"); try await movie(url, rotated: false)
+        var config = intent; config.keyframes[0].requiresTracking = true
+        do {
+            _ = try await VideoDepthProcessor().render(.init(url: url, info: try await VideoStore.inspect(url)), intent: config, destination: root)
+            XCTFail("missing target applied center blur")
+        } catch { XCTAssertTrue(error.localizedDescription.contains("원본")) }
+        XCTAssertTrue(try VideoDepthStore.library(in: root).isEmpty)
+    }
+    func testVisionSequenceRunsOnRealPixelsAndReselectionUsesNewID() throws {
+        let image = CIFilter(name: "CICheckerboardGenerator")!.outputImage!.cropped(to: CGRect(x: 0,y: 0,width: 320,height: 180))
+        let engine = SubjectTrackingVisionEngine()
+        let first = SubjectTrackingSelection(point: CGPoint(x: 0.5,y: 0.5))
+        let result = try engine.update(image, selection: first, time: 1)
+        XCTAssertEqual(result.selectionID, first.id); XCTAssertTrue(result.confidence.isFinite)
+        let second = SubjectTrackingSelection(point: CGPoint(x: 0.3,y: 0.3))
+        let next = try engine.update(image, selection: second, time: 1.1, generation: 2)
+        XCTAssertEqual(next.selectionID, second.id); XCTAssertEqual(next.generation, 2)
+    }
     private func timestamps(_ url: URL) async throws -> [Double] {
         let asset = AVURLAsset(url: url)
         let reader = try AVAssetReader(asset: asset)
