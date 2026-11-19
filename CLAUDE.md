@@ -18,6 +18,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 2026-11-18 사용자 결정 — 최우선
 
+- 후속 영상 심도 요청은 [39 조사](docs/39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md)·[40 계획](docs/40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md)을 따른다. 사진/영상 공통 대상 추적·실제 심도 영상 출력을 개발하며 AI 구도 추천은 계속 중지한다. 사용자가 라이선스 종류와 무관한 오픈소스 조사·필요시 복사를 명시했으므로 이전의 라이선스별 조사/복사 제외 권고보다 우선한다. 실제 복사·이식은 원문 조건/출처·고정 SHA·범위·용도를 일지/NOTICE에 기록하고 고지문을 유지한다.
 - 최신 촬영 UI 요청은 [37 구현 기록](docs/37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md)을 따른다. 뷰파인더를 설정과 겹치지 않는 박스로 배치하고 패널 높이1.5배·간편 f값/터치 초점·전경 CoC 합성을 반영했다. **AI 구도 추천/코치/자동 리뷰는 임시 중지**하며 수동 가이드와 심도 AI는 유지한다. Xcode26.3 전체 회귀는 통과했고 iPhone 15 Pro/iOS27.2 실제 기기 인수는 대기다.
 - HDR 출력·게인맵 생성/보존·Log/HDR 영상·C2PA는 도입하지 않는다. 파생물과 영상은 SDR이다.
 - 최소 iOS는 18이다. 위치 태깅은 기본 활성화하며 거부 시 위치 없이 촬영한다.
@@ -55,7 +56,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 - 지원하지 않는 장치/포맷 조합은 숨기거나 이유와 함께 명시적으로 거부한다. 가짜 기능(가짜 줌 등)을 만들지 않는다.
 - 비동기 장치 설정은 완료 콜백·작업 ID·timeout으로 관리하고 늦은 콜백이 새 작업을 완료시키지 않게 한다.
 - 색 처리는 SDR/encoded sRGB 계약 안에서만 주장한다. HDR/Log/RAW 현상은 미구현으로 표기한다.
-- 외부 LUT/자산은 출처·hash·license·profile을 manifest에 기록한다(`assets/*/manifest.json`, `scripts/check_*`). 외부 소스 코드는 복사하지 않고 검토 후 독립 구현한다.
+- 외부 LUT/자산은 출처·hash·license·profile을 manifest에 기록한다(`assets/*/manifest.json`, `scripts/check_*`). 후속 사용자의 명시 지시에 따라 외부 소스 검토/필요시 복사를 허용하며 원문 고지·출처/SHA·범위·수정·실제 앱 포함 여부를 보존한다. 코드와 가중치의 조건/기술 적합성을 구분하고 라이선스만을 이유로 조사 대상을 제외하지 않는다.
 - UI 문자열·문서는 한국어. 설계/보고서는 `docs/NN-*.ko.md`, 날짜별 작업은 `docs/development-log/YYYY-MM-DD.md`, 상세 단계별 검증은 `docs/08-STEP-VALIDATION.ko.md`에 기록하고 커밋·CI 번호를 연결한다. 실기기에서 검증하지 않은 항목을 완료로 표기하지 않는다.
 
 ## 현재 상태 (2026-11)

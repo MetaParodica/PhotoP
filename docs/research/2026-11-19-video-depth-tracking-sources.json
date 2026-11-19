@@ -1,0 +1,1388 @@
+{
+  "client_date": "2026-11-19",
+  "timezone": "Asia/Seoul",
+  "scope": "official API and pinned open-source README/LICENSE/source review; no competitor/model runtime benchmarks",
+  "repositories": [
+    {
+      "repository": "facebookresearch/sam2",
+      "retrieved_at_utc": "2026-11-19T17:53:41.241984+00:00",
+      "url": "https://github.com/facebookresearch/sam2",
+      "description": "The repository provides code for running inference with the Meta Segment Anything Model 2 (SAM 2), links for downloading the trained model checkpoints, and example notebooks that show how to use the model.",
+      "declared_license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "default_branch": "main",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "status": 200
+        },
+        {
+          "path": "LICENSE_cctorch",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/LICENSE_cctorch",
+          "sha256": "687d4f65ffe399358b170e22572564a16689e496f85a79dc5385fccf6bbc9558",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/README.md",
+          "sha256": "eea69ee1042fb30933c5ca5019fbf0f6f9366cec5e792109281b5023a4f1589c",
+          "status": 200
+        },
+        {
+          "path": "sav_dataset/LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/sav_dataset/LICENSE",
+          "sha256": "28b6f4b85d4f6867c99bcba442d3e0bffc4e6f1a6e04e210a4bb9c9a3b56306a",
+          "status": 200
+        },
+        {
+          "path": "sav_dataset/LICENSE_DAVIS",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/sav_dataset/LICENSE_DAVIS",
+          "sha256": "a727bc2b6f26a1f1c76d0511502da6ba208212708c04a65230159331906354f1",
+          "status": 200
+        },
+        {
+          "path": "sav_dataset/LICENSE_VOS_BENCHMARK",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/sav_dataset/LICENSE_VOS_BENCHMARK",
+          "sha256": "104f011f1cd91268d54a9fab1ff769ef01081410cd622e0f723c03d146d02482",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "facebookresearch/sam3",
+      "retrieved_at_utc": "2026-11-19T17:53:41.242868+00:00",
+      "url": "https://github.com/facebookresearch/sam3",
+      "description": "The repository provides code for running inference and finetuning with the Meta Segment Anything Model 3 (SAM 3), links for downloading the trained model checkpoints, and example notebooks that show how to use the model.",
+      "declared_license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "default_branch": "main",
+      "commit": "31cb7e624e4fe95301b1be1d4e809111593d2e45",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/LICENSE",
+          "sha256": "4dea99bfaa016e21bc860d73f344236bd1e5c4977d1a9a8fd32f822b500ae1be",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/README.md",
+          "sha256": "da3dd047d18ef9a4b33557bf6f8187cf166218dc8aef40f2e18a67cc5249a502",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "yformer/EfficientTAM",
+      "retrieved_at_utc": "2026-11-19T17:53:41.243439+00:00",
+      "url": "https://github.com/yformer/EfficientTAM",
+      "description": "Efficient Track Anything",
+      "declared_license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "default_branch": "main",
+      "commit": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/README.md",
+          "sha256": "68907f37a1fadc48778b5544412577af7beb889690392195aa5641290c981daa",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "facebookresearch/co-tracker",
+      "retrieved_at_utc": "2026-11-19T17:53:41.244219+00:00",
+      "url": "https://github.com/facebookresearch/co-tracker",
+      "description": "CoTracker is a model for tracking any point (pixel) on a video.",
+      "declared_license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "default_branch": "main",
+      "commit": "82e02e8029753ad4ef13cf06be7f4fc5facdda4d",
+      "files": [
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/co-tracker/82e02e8029753ad4ef13cf06be7f4fc5facdda4d/LICENSE.md",
+          "sha256": "1d8ca66080a2701508a70be4ddad4be28c509bcc3397a682fb8edf767fdd7a00",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/co-tracker/82e02e8029753ad4ef13cf06be7f4fc5facdda4d/README.md",
+          "sha256": "214ec02decccf2b5d10477398018f7b6b69d20e2b9e16d483f130595424adabf",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "FoundationVision/ByteTrack",
+      "retrieved_at_utc": "2026-11-19T17:53:41.244874+00:00",
+      "url": "https://github.com/FoundationVision/ByteTrack",
+      "description": "[ECCV 2022] ByteTrack: Multi-Object Tracking by Associating Every Detection Box",
+      "declared_license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "default_branch": "main",
+      "commit": "d1bf0191adff59bc8fcfeaa0b33d3d1642552a99",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/FoundationVision/ByteTrack/d1bf0191adff59bc8fcfeaa0b33d3d1642552a99/LICENSE",
+          "sha256": "e9d83751678cbaba6dfba902ea39215c423d93425e58f8450d6001f7261696f9",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/FoundationVision/ByteTrack/d1bf0191adff59bc8fcfeaa0b33d3d1642552a99/README.md",
+          "sha256": "126d307a421e4421aa9d3917e7849d1cf63c95f7b36864e1ca92a9d1a451c247",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "NirAharon/BoT-SORT",
+      "retrieved_at_utc": "2026-11-19T17:53:43.015476+00:00",
+      "url": "https://github.com/NirAharon/BoT-SORT",
+      "description": "BoT-SORT: Robust Associations Multi-Pedestrian Tracking",
+      "declared_license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "default_branch": "main",
+      "commit": "251985436d6712aaf682aaaf5f71edb4987224bd",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/NirAharon/BoT-SORT/251985436d6712aaf682aaaf5f71edb4987224bd/LICENSE",
+          "sha256": "12a15474ca15cec568da311e6cd89e593e3cd2bb5b790e75b90e1608306a3a5f",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/NirAharon/BoT-SORT/251985436d6712aaf682aaaf5f71edb4987224bd/README.md",
+          "sha256": "b742de781491ad017d606fb2b46d2b1d5eea9f4be1817106321d96547d8d1465",
+          "status": 200
+        },
+        {
+          "path": "fast_reid/LICENSE",
+          "url": "https://raw.githubusercontent.com/NirAharon/BoT-SORT/251985436d6712aaf682aaaf5f71edb4987224bd/fast_reid/LICENSE",
+          "sha256": "14a8a9a670fa989f040bc7a5d964fa7a478ffd7cb44407a9061303240d9e21df",
+          "status": 200
+        },
+        {
+          "path": "yolov7/LICENSE.md",
+          "url": "https://raw.githubusercontent.com/NirAharon/BoT-SORT/251985436d6712aaf682aaaf5f71edb4987224bd/yolov7/LICENSE.md",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "hkchengrex/XMem",
+      "retrieved_at_utc": "2026-11-19T17:53:43.088498+00:00",
+      "url": "https://github.com/hkchengrex/XMem",
+      "description": "[ECCV 2022] XMem: Long-Term Video Object Segmentation with an Atkinson-Shiffrin Memory Model",
+      "declared_license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "default_branch": "main",
+      "commit": "f3b841d50df058910bbf690229ddc15fb1aef7d6",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/LICENSE",
+          "sha256": "8cffbcfb631bbe76caa147bc2515ea47c81042a5dedaeaadce6652bbbbaf7f71",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/README.md",
+          "sha256": "1f1f1e95ce45d77c5fa8e6bba52edb69acba95358adea4d076f8e0a53f3adc00",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "pq-yang/MatAnyone",
+      "retrieved_at_utc": "2026-11-19T17:53:43.167860+00:00",
+      "url": "https://github.com/pq-yang/MatAnyone",
+      "description": "[CVPR 2025] MatAnyone: Stable Video Matting with Consistent Memory Propagation",
+      "declared_license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "default_branch": "main",
+      "commit": "e5ddc534c1fff9bb9e54cf476095d29071b7cb4f",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/LICENSE",
+          "sha256": "dec3847228f2b16bb699a93c46be8c6c4131b90bb4181a14735f1e0006269903",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/README.md",
+          "sha256": "cf9fa7343e59411edc485db95afc5eb7289e40f371c94ac6ab5c1c1a7d580687",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "PeterL1n/RobustVideoMatting",
+      "retrieved_at_utc": "2026-11-19T17:53:43.191123+00:00",
+      "url": "https://github.com/PeterL1n/RobustVideoMatting",
+      "description": "Robust Video Matting in PyTorch, TensorFlow, TensorFlow.js, ONNX, CoreML!",
+      "declared_license": {
+        "key": "gpl-3.0",
+        "name": "GNU General Public License v3.0",
+        "spdx_id": "GPL-3.0",
+        "url": "https://api.github.com/licenses/gpl-3.0",
+        "node_id": "MDc6TGljZW5zZTk="
+      },
+      "default_branch": "master",
+      "commit": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/LICENSE",
+          "sha256": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+          "sha256": "239354ea615b768de0be7f17a703d784dd1eccd9f773b6be76cacbdde3a4aa06",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "DepthAnything/Video-Depth-Anything",
+      "retrieved_at_utc": "2026-11-19T17:53:44.141648+00:00",
+      "url": "https://github.com/DepthAnything/Video-Depth-Anything",
+      "description": "[CVPR 2025 Highlight] Video Depth Anything: Consistent Depth Estimation for Super-Long Videos",
+      "declared_license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "default_branch": "main",
+      "commit": "4f5ae23172ba60fd7bc11ef671cca678842c7072",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/README.md",
+          "sha256": "cb786de4a6ef8f344cd8212dd9e51a6c08923fa5ccafc91dd6c96ee4f4af4d88",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "Tencent/DepthCrafter",
+      "retrieved_at_utc": "2026-11-19T17:53:44.408643+00:00",
+      "url": "https://github.com/Tencent/DepthCrafter",
+      "description": "[CVPR 2025 Highlight] DepthCrafter: Generating Consistent Long Depth Sequences for Open-world Videos",
+      "declared_license": {
+        "key": "other",
+        "name": "Other",
+        "spdx_id": "NOASSERTION",
+        "url": null,
+        "node_id": "MDc6TGljZW5zZTA="
+      },
+      "default_branch": "main",
+      "commit": "e5186120a71ecb56b69f9e89654198b4eadfaf60",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/Tencent/DepthCrafter/e5186120a71ecb56b69f9e89654198b4eadfaf60/LICENSE",
+          "sha256": "3b475066b555b0e56f901ecb6f3ac71fd64e91f514e6f5c6a14211aef6f4c046",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/Tencent/DepthCrafter/e5186120a71ecb56b69f9e89654198b4eadfaf60/README.md",
+          "sha256": "d223ca6e5f63df1fb45769a815308dc664163404f00357687fde61eaa5fa94b9",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "repository": "ultralytics/ultralytics",
+      "retrieved_at_utc": "2026-11-19T17:53:44.683834+00:00",
+      "url": "https://github.com/ultralytics/ultralytics",
+      "description": "Ultralytics YOLO27, YOLO26, YOLO11, YOLOv8 — object detection, instance segmentation, semantic segmentation, image classification, pose estimation, object tracking",
+      "declared_license": {
+        "key": "agpl-3.0",
+        "name": "GNU Affero General Public License v3.0",
+        "spdx_id": "AGPL-3.0",
+        "url": "https://api.github.com/licenses/agpl-3.0",
+        "node_id": "MDc6TGljZW5zZTE="
+      },
+      "default_branch": "main",
+      "commit": "b4fc9066ab670ec110b58bbb26eeee5dd521906d",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/ultralytics/ultralytics/b4fc9066ab670ec110b58bbb26eeee5dd521906d/LICENSE",
+          "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+          "status": 200
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/ultralytics/ultralytics/b4fc9066ab670ec110b58bbb26eeee5dd521906d/README.md",
+          "sha256": "ba04d1f381b0d9ff2b725eacd3ac7bcc22c8c61db91c5b69791c3b7c8b4ac9c3",
+          "status": 200
+        }
+      ]
+    }
+  ],
+  "source_review": [
+    {
+      "repository": "facebookresearch/sam2",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "path": "sam2/sam2_video_predictor.py",
+      "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/sam2/sam2_video_predictor.py",
+      "status": 200,
+      "sha256": "912555920a77f72ded07839efa33fcceecc79f3523abbec783f0be46ee2c55c2",
+      "bytes": 58921,
+      "symbols": [
+        "SAM2VideoPredictor",
+        "__init__",
+        "init_state",
+        "from_pretrained",
+        "_obj_id_to_idx",
+        "_obj_idx_to_id",
+        "_get_obj_num",
+        "add_new_points_or_box",
+        "add_new_points",
+        "add_new_mask",
+        "_get_orig_video_res_output",
+        "_consolidate_temp_output_across_obj",
+        "propagate_in_video_preflight",
+        "propagate_in_video",
+        "clear_all_prompts_in_frame",
+        "reset_state",
+        "_reset_tracking_results",
+        "_get_image_feature",
+        "_run_single_frame_inference",
+        "_run_memory_encoder",
+        "_get_maskmem_pos_enc",
+        "remove_object",
+        "_map_keys",
+        "_clear_non_cond_mem_around_input",
+        "SAM2VideoPredictorVOS",
+        "__init__",
+        "_compile_all_components",
+        "forward_image",
+        "_forward_sam_heads",
+        "_encode_new_memory"
+      ]
+    },
+    {
+      "repository": "facebookresearch/sam2",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "path": "sam2/modeling/memory_attention.py",
+      "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/sam2/modeling/memory_attention.py",
+      "status": 200,
+      "sha256": "07358cb7f58ec3788e88ff4e6415f8a9d628a3963529d6e2c915494a5347c8e2",
+      "bytes": 5509,
+      "symbols": [
+        "MemoryAttentionLayer",
+        "__init__",
+        "_forward_sa",
+        "_forward_ca",
+        "forward",
+        "MemoryAttention",
+        "__init__",
+        "forward"
+      ]
+    },
+    {
+      "repository": "yformer/EfficientTAM",
+      "commit": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+      "path": "efficient_track_anything/efficienttam_video_predictor.py",
+      "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/efficienttam_video_predictor.py",
+      "status": 200,
+      "sha256": "d06d78e799c5529c7d1e6012676f9dccdccba9e63781a5f50e357658a94152cc",
+      "bytes": 58712,
+      "symbols": [
+        "EfficientTAMVideoPredictor",
+        "__init__",
+        "init_state",
+        "from_pretrained",
+        "_obj_id_to_idx",
+        "_obj_idx_to_id",
+        "_get_obj_num",
+        "add_new_points_or_box",
+        "add_new_points",
+        "add_new_mask",
+        "_get_orig_video_res_output",
+        "_consolidate_temp_output_across_obj",
+        "propagate_in_video_preflight",
+        "propagate_in_video",
+        "clear_all_prompts_in_frame",
+        "reset_state",
+        "_reset_tracking_results",
+        "_get_image_feature",
+        "_run_single_frame_inference",
+        "_run_memory_encoder",
+        "_get_maskmem_pos_enc",
+        "remove_object",
+        "_map_keys",
+        "_clear_non_cond_mem_around_input",
+        "EfficientTAMVideoPredictorVOS",
+        "__init__",
+        "_compile_all_components",
+        "forward_image",
+        "_forward_sam_heads",
+        "_encode_new_memory"
+      ]
+    },
+    {
+      "repository": "facebookresearch/co-tracker",
+      "commit": "82e02e8029753ad4ef13cf06be7f4fc5facdda4d",
+      "path": "cotracker/predictor.py",
+      "url": "https://raw.githubusercontent.com/facebookresearch/co-tracker/82e02e8029753ad4ef13cf06be7f4fc5facdda4d/cotracker/predictor.py",
+      "status": 200,
+      "sha256": "783536d6c77790fa6c8e005f2df1d6bd4f0d8955c2c67d464bfb4e64d366375f",
+      "bytes": 11500,
+      "symbols": [
+        "CoTrackerPredictor",
+        "__init__",
+        "forward",
+        "_compute_dense_tracks",
+        "_compute_sparse_tracks",
+        "_compute_backward_tracks",
+        "CoTrackerOnlinePredictor",
+        "__init__",
+        "forward"
+      ]
+    },
+    {
+      "repository": "FoundationVision/ByteTrack",
+      "commit": "d1bf0191adff59bc8fcfeaa0b33d3d1642552a99",
+      "path": "yolox/tracker/byte_tracker.py",
+      "url": "https://raw.githubusercontent.com/FoundationVision/ByteTrack/d1bf0191adff59bc8fcfeaa0b33d3d1642552a99/yolox/tracker/byte_tracker.py",
+      "status": 200,
+      "sha256": "7cecdcdd7998103969a4ba1772f4c9fb5560fd5eef05ca03e0d2df28346ca50b",
+      "bytes": 11940,
+      "symbols": [
+        "STrack",
+        "__init__",
+        "predict",
+        "multi_predict",
+        "activate",
+        "re_activate",
+        "update",
+        "tlwh",
+        "tlbr",
+        "tlwh_to_xyah",
+        "to_xyah",
+        "tlbr_to_tlwh",
+        "tlwh_to_tlbr",
+        "__repr__",
+        "BYTETracker",
+        "__init__",
+        "update",
+        "joint_stracks",
+        "sub_stracks",
+        "remove_duplicate_stracks"
+      ]
+    },
+    {
+      "repository": "FoundationVision/ByteTrack",
+      "commit": "d1bf0191adff59bc8fcfeaa0b33d3d1642552a99",
+      "path": "yolox/tracker/matching.py",
+      "url": "https://raw.githubusercontent.com/FoundationVision/ByteTrack/d1bf0191adff59bc8fcfeaa0b33d3d1642552a99/yolox/tracker/matching.py",
+      "status": 200,
+      "sha256": "2f54bf0c183f577087391901562ae2bcd3c01633a3e077bd5d4168fafbd899a6",
+      "bytes": 6200,
+      "symbols": [
+        "merge_matches",
+        "_indices_to_matches",
+        "linear_assignment",
+        "ious",
+        "iou_distance",
+        "v_iou_distance",
+        "embedding_distance",
+        "gate_cost_matrix",
+        "fuse_motion",
+        "fuse_iou",
+        "fuse_score"
+      ]
+    },
+    {
+      "repository": "NirAharon/BoT-SORT",
+      "commit": "251985436d6712aaf682aaaf5f71edb4987224bd",
+      "path": "tracker/bot_sort.py",
+      "url": "https://raw.githubusercontent.com/NirAharon/BoT-SORT/251985436d6712aaf682aaaf5f71edb4987224bd/tracker/bot_sort.py",
+      "status": 200,
+      "sha256": "ba6dd32ad4b96ee49d6f70654159269bd45ce15fd0fe5007f3a1b81bc257edf0",
+      "bytes": 16778,
+      "symbols": [
+        "STrack",
+        "__init__",
+        "update_features",
+        "predict",
+        "multi_predict",
+        "multi_gmc",
+        "activate",
+        "re_activate",
+        "update",
+        "tlwh",
+        "tlbr",
+        "xywh",
+        "tlwh_to_xyah",
+        "tlwh_to_xywh",
+        "to_xywh",
+        "tlbr_to_tlwh",
+        "tlwh_to_tlbr",
+        "__repr__",
+        "BoTSORT",
+        "__init__",
+        "update",
+        "joint_stracks",
+        "sub_stracks",
+        "remove_duplicate_stracks"
+      ]
+    },
+    {
+      "repository": "hkchengrex/XMem",
+      "commit": "f3b841d50df058910bbf690229ddc15fb1aef7d6",
+      "path": "inference/inference_core.py",
+      "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/inference/inference_core.py",
+      "status": 200,
+      "sha256": "4743c4c80156c330f8c7b517e226ea93dea33cfcd32ea1796993afe43289d5d0",
+      "bytes": 4917,
+      "symbols": [
+        "InferenceCore",
+        "__init__",
+        "clear_memory",
+        "update_config",
+        "set_all_labels",
+        "step"
+      ]
+    },
+    {
+      "repository": "hkchengrex/XMem",
+      "commit": "f3b841d50df058910bbf690229ddc15fb1aef7d6",
+      "path": "inference/memory_manager.py",
+      "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/inference/memory_manager.py",
+      "status": 200,
+      "sha256": "0e2307e841a34cc56edfc5f0b55e86e0ecf013539e831669ffd4ca2e3769c255",
+      "bytes": 12244,
+      "symbols": [
+        "MemoryManager",
+        "__init__",
+        "update_config",
+        "_readout",
+        "match_memory",
+        "add_memory",
+        "create_hidden_state",
+        "set_hidden",
+        "get_hidden",
+        "compress_features",
+        "consolidation"
+      ]
+    },
+    {
+      "repository": "pq-yang/MatAnyone",
+      "commit": "e5ddc534c1fff9bb9e54cf476095d29071b7cb4f",
+      "path": "matanyone/inference/inference_core.py",
+      "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/matanyone/inference/inference_core.py",
+      "status": 200,
+      "sha256": "6a6bb2a1d8a4141bbed01949681e7f6e39e59f0492b81664da7644dc5893d8b6",
+      "bytes": 24044,
+      "symbols": [
+        "InferenceCore",
+        "__init__",
+        "clear_memory",
+        "clear_non_permanent_memory",
+        "clear_sensory_memory",
+        "update_config",
+        "clear_temp_mem",
+        "_add_memory",
+        "_segment",
+        "pred_all_flow",
+        "encode_all_images",
+        "step",
+        "delete_objects",
+        "output_prob_to_mask",
+        "process_video"
+      ]
+    },
+    {
+      "repository": "PeterL1n/RobustVideoMatting",
+      "commit": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "path": "model/model.py",
+      "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/model/model.py",
+      "status": 200,
+      "sha256": "d8378170659fd21d114096120f9a0ad2fed0550c4d4664927d68f2def3ccd960",
+      "bytes": 3091,
+      "symbols": [
+        "MattingNetwork",
+        "__init__",
+        "forward",
+        "_interpolate"
+      ]
+    },
+    {
+      "repository": "DepthAnything/Video-Depth-Anything",
+      "commit": "4f5ae23172ba60fd7bc11ef671cca678842c7072",
+      "path": "video_depth_anything/video_depth.py",
+      "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/video_depth_anything/video_depth.py",
+      "status": 200,
+      "sha256": "208e882d60a41434b3a0d9935a7025b01cce0756c17b3d889c6db0c4c945eb29",
+      "bytes": 6712,
+      "symbols": [
+        "VideoDepthAnything",
+        "__init__",
+        "forward",
+        "infer_video_depth"
+      ]
+    },
+    {
+      "repository": "Tencent/DepthCrafter",
+      "commit": "e5186120a71ecb56b69f9e89654198b4eadfaf60",
+      "path": "depthcrafter/depth_crafter_ppl.py",
+      "url": "https://raw.githubusercontent.com/Tencent/DepthCrafter/e5186120a71ecb56b69f9e89654198b4eadfaf60/depthcrafter/depth_crafter_ppl.py",
+      "status": 200,
+      "sha256": "60ae451847d6b0735e88ad51f51b116b7502b1e25d30b809e6e99ee19048eed7",
+      "bytes": 15125,
+      "symbols": [
+        "DepthCrafterPipeline",
+        "encode_video",
+        "encode_vae_video",
+        "check_inputs",
+        "__call__"
+      ]
+    }
+  ],
+  "apple": [
+    {
+      "path": "avfoundation/avcapturedeviceinput",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.604598+00:00",
+      "status": 200,
+      "title": "AVCaptureDeviceInput",
+      "sha256": "f22849bcf2bbfe843cbfeb1485b4944526788bdee748e0187043bdf2cfc3fd9f",
+      "platforms": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "4.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.7",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": [
+        {
+          "title": "isCinematicVideoCaptureEnabled",
+          "url": "/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocaptureenabled"
+        },
+        {
+          "title": "isCinematicVideoCaptureSupported",
+          "url": "/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocapturesupported"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.605174+00:00",
+      "status": 200,
+      "title": "AVCaptureDevice",
+      "sha256": "f7545a932f80f88cfad203cdcfa1e24552bf51fb9117dbb2c5b326377b57aa6e",
+      "platforms": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "4.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.7",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": [
+        {
+          "title": "AVCaptureDevice.CinematicVideoFocusMode",
+          "url": "/documentation/avfoundation/avcapturedevice/cinematicvideofocusmode"
+        },
+        {
+          "title": "cinematicVideoCaptureSceneMonitoringStatuses",
+          "url": "/documentation/avfoundation/avcapturedevice/cinematicvideocapturescenemonitoringstatuses"
+        },
+        {
+          "title": "setCinematicVideoFixedFocus(at:focusMode:)",
+          "url": "/documentation/avfoundation/avcapturedevice/setcinematicvideofixedfocus(at:focusmode:)"
+        },
+        {
+          "title": "setCinematicVideoTrackingFocus(at:focusMode:)",
+          "url": "/documentation/avfoundation/avcapturedevice/setcinematicvideotrackingfocus(at:focusmode:)"
+        },
+        {
+          "title": "setCinematicVideoTrackingFocus(detectedObjectID:focusMode:)",
+          "url": "/documentation/avfoundation/avcapturedevice/setcinematicvideotrackingfocus(detectedobjectid:focusmode:)"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice/format",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.605723+00:00",
+      "status": 200,
+      "title": "AVCaptureDevice.Format",
+      "sha256": "b68e44f57317f88e9223dca0c174188af89047c8d70d642034853c96b83d4cd2",
+      "platforms": [
+        {
+          "introducedAt": "7.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "7.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.7",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": [
+        {
+          "title": "isCinematicVideoCaptureSupported",
+          "url": "/documentation/avfoundation/avcapturedevice/format/iscinematicvideocapturesupported"
+        },
+        {
+          "title": "isCinematicVideoMetadataCaptureSupported",
+          "url": "/documentation/avfoundation/avcapturedevice/format/iscinematicvideometadatacapturesupported"
+        },
+        {
+          "title": "videoFrameRateRangeForCinematicVideo",
+          "url": "/documentation/avfoundation/avcapturedevice/format/videoframeraterangeforcinematicvideo"
+        },
+        {
+          "title": "videoMaxZoomFactorForCinematicVideo",
+          "url": "/documentation/avfoundation/avcapturedevice/format/videomaxzoomfactorforcinematicvideo"
+        },
+        {
+          "title": "videoMinZoomFactorForCinematicVideo",
+          "url": "/documentation/avfoundation/avcapturedevice/format/videominzoomfactorforcinematicvideo"
+        }
+      ]
+    },
+    {
+      "path": "cinematic",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.606262+00:00",
+      "status": 200,
+      "title": "Cinematic",
+      "sha256": "35450f026fd98c19cb8f59dbec8a2b4640571bb43168c8293adc8f6d9fcd9267",
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "cinematic_references": [
+        {
+          "title": "Cinematic",
+          "url": "/documentation/cinematic"
+        },
+        {
+          "title": "CNCinematicCapability",
+          "url": "/documentation/cinematic/cncinematiccapability"
+        },
+        {
+          "title": "CNCinematicError",
+          "url": "/documentation/cinematic/cncinematicerror"
+        },
+        {
+          "title": "CNCinematicResourceVersion",
+          "url": "/documentation/cinematic/cncinematicresourceversion"
+        },
+        {
+          "title": "CN_CINEMATIC_EXTERN",
+          "url": "/documentation/cinematic/cn_cinematic_extern"
+        },
+        {
+          "title": "Cinematic Constants",
+          "url": "/documentation/cinematic/cinematic-constants"
+        },
+        {
+          "title": "Cinematic Data Types",
+          "url": "/documentation/cinematic/cinematic-data-types"
+        },
+        {
+          "title": "Cinematic Enumerations",
+          "url": "/documentation/cinematic/cinematic-enumerations"
+        },
+        {
+          "title": "Playing and editing Cinematic mode video",
+          "url": "/documentation/cinematic/playing-and-editing-cinematic-mode-video"
+        }
+      ]
+    },
+    {
+      "path": "vision/vntrackobjectrequest",
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vntrackobjectrequest.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.606770+00:00",
+      "status": 200,
+      "title": "VNTrackObjectRequest",
+      "sha256": "96edaa51324993e09e65665804ebc3cfc642632ba43de4c95fd1ecd682e9b4a5",
+      "platforms": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.13",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": []
+    },
+    {
+      "path": "vision/vnsequenceRequestHandler",
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vnsequencerequesthandler.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.933127+00:00",
+      "status": 200,
+      "title": "VNSequenceRequestHandler",
+      "sha256": "4e1885655dd6a7f7b8b9938baef1ba46631f4d106fb7b4162a2d2c2fc8188e74",
+      "platforms": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.13",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": []
+    },
+    {
+      "path": "vision/vngenerateforegroundinstancemaskrequest",
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vngenerateforegroundinstancemaskrequest.json",
+      "retrieved_at_utc": "2026-11-19T17:53:42.953449+00:00",
+      "status": 200,
+      "title": "VNGenerateForegroundInstanceMaskRequest",
+      "sha256": "04a5b5d4b21130512aaaaa181c7b435c2e8919343fae5139062d306a6315b847",
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": []
+    },
+    {
+      "path": "avfoundation/avassetwriterinputpixelbufferadaptor",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avassetwriterinputpixelbufferadaptor.json",
+      "retrieved_at_utc": "2026-11-19T17:53:43.038996+00:00",
+      "status": 200,
+      "title": "AVAssetWriterInputPixelBufferAdaptor",
+      "sha256": "0d0d0debdde47481f4734db494d1f40e2787e42fb8f271c6d390455ffc81450b",
+      "platforms": [
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "4.1",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "iOS"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "4.1",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "iPadOS"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "13.1",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "Mac Catalyst"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "10.7",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "macOS"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "9.0",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "tvOS"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "1.0",
+          "message": "Use AVAssetWriter.inputPixelBufferReceiver(for:pixelBufferAttributes:) instead",
+          "name": "visionOS"
+        }
+      ],
+      "cinematic_references": []
+    },
+    {
+      "path": "avfoundation/avcapturedeviceinput/iscinematicvideocaptureenabled",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocaptureenabled.json",
+      "retrieved_at_utc": "2026-11-19T17:55:15.819916+00:00",
+      "status": 200,
+      "title": "isCinematicVideoCaptureEnabled",
+      "sha256": "c7f9438752a4d11922de4e2d910a86ec58273185cb14abbd81baa7344d34b445",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedeviceinput/iscinematicvideocapturesupported",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedeviceinput/iscinematicvideocapturesupported.json",
+      "retrieved_at_utc": "2026-11-19T17:55:15.820488+00:00",
+      "status": 200,
+      "title": "isCinematicVideoCaptureSupported",
+      "sha256": "9acf38ea692f5004b46dc1e58504b5b1d25f471eb8afc8b8ced87ad7bb311003",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice/setcinematicvideotrackingfocus(at:focusmode:)",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/setcinematicvideotrackingfocus(at:focusmode:).json",
+      "retrieved_at_utc": "2026-11-19T17:55:15.820946+00:00",
+      "status": 200,
+      "title": "setCinematicVideoTrackingFocus(at:focusMode:)",
+      "sha256": "a29d85e50e059fe820fbd48fe47122c30f8a5947c8f949fdab65fc8f7e31b01d",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice/cinematicvideofocusmode",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/cinematicvideofocusmode.json",
+      "retrieved_at_utc": "2026-11-19T17:55:15.821628+00:00",
+      "status": 200,
+      "title": "AVCaptureDevice.CinematicVideoFocusMode",
+      "sha256": "96942a1a332e1a4c77ad5bab072a203ff67af41cbe40ec47a822d14e8eaadfde",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice/format/videoframeraterangeforcinematicvideo",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/videoframeraterangeforcinematicvideo.json",
+      "retrieved_at_utc": "2026-11-19T17:55:15.822641+00:00",
+      "status": 200,
+      "title": "videoFrameRateRangeForCinematicVideo",
+      "sha256": "bd052d24e6c1ee60a10eb01a13cd9dec2556ad972852d338d6ce29b3aa5eb905",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "path": "avfoundation/avcapturedevice/simulatedaperture",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/simulatedaperture.json",
+      "retrieved_at_utc": "2026-11-19T17:55:16.078686+00:00",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "path": "cinematic/cnrenderingsession",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnrenderingsession.json",
+      "retrieved_at_utc": "2026-11-19T17:55:16.092670+00:00",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "path": "cinematic/cnobjecttracker",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnobjecttracker.json",
+      "retrieved_at_utc": "2026-11-19T17:55:16.093193+00:00",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "path": "cinematic/cnassetinfo",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnassetinfo.json",
+      "retrieved_at_utc": "2026-11-19T17:55:16.098152+00:00",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "title": "simulatedAperture",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedeviceinput/simulatedaperture",
+      "sha256": "e0a105214a0be87ce3fe71408d117e7900ca6a3f325d1ad419b5213dd86d8a38",
+      "status": 200,
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "title": "setCinematicVideoFixedFocus(at:focusMode:)",
+      "url": "https://developer.apple.com/documentation/avfoundation/avcapturedevice/setcinematicvideofixedfocus(at:focusmode:)",
+      "sha256": "8a969bd689c79f77c908ad257735ccbdb2eaf2e9de50728f522e258bd5cd02b2",
+      "status": 200,
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "title": "CNRenderingSession",
+      "url": "https://developer.apple.com/documentation/cinematic/cnrenderingsession-1hzh8",
+      "sha256": "a1b7f43760def4df58a5b1948ad505f764dec729b2f61a7c6d5a866e3780a3fe",
+      "status": 200,
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "title": "CNObjectTracker",
+      "url": "https://developer.apple.com/documentation/cinematic/cnobjecttracker-7aliq",
+      "sha256": "2ecb39b8a5bc9629d723cd986b24dd800ca9b488b2d47ae892b3cd6ee914da7d",
+      "status": 200,
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ]
+    }
+  ],
+  "copied_sources": [
+    {
+      "repository": "FoundationVision/ByteTrack",
+      "commit": "d1bf0191adff59bc8fcfeaa0b33d3d1642552a99",
+      "source_path": "yolox/tracker/matching.py",
+      "original_sha256": "2f54bf0c183f577087391901562ae2bcd3c01633a3e077bd5d4168fafbd899a6",
+      "copied_lines": [
+        173,
+        181
+      ],
+      "destination": "third-party/ByteTrack/reference_fuse_score.py",
+      "destination_sha256": "24623453c86d7f3917223cfcc45d1e0079ab097ddfa6819bde70c43a93f09093",
+      "license": "MIT",
+      "usage": "reference snapshot and scalar Swift score-fusion port for subject-association gate; no Python dependency in app"
+    }
+  ]
+}
