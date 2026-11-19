@@ -9,7 +9,8 @@
 | 세션 시작 main | `d977858`(사용자 결정 문서 포함). 앱 소스 기준은 `241c1be` | 2026-11-18 checkout/fetch |
 | 이전 자동 회귀 | `241c1be` 전체 CI 44056942568 성공: 공통 118, iPhone·Simulator 빌드, 네이티브 355개 중 354 통과·Flow 1 skip, UI 11, Python 31, 자산·번들 검사 | [30 보고서 4절](30-OPTIMIZATION-IMPLEMENTATION.ko.md) |
 | 이전 문서 main CI | `004d869` 실행 44060529564 `success`(상태만 확인, 세부 집계는 열지 않음) | GitHub Actions |
-| 최신 코드/자동 회귀 | `cf94605` 전체 CI44235743796 성공: iOS 단위370통과/1skip·UI14통과·portable129·Python31. T00/V07 CI 기준 충족, F1/F2 기기 인수 대기 | [33 기록](33-IOS18-FUSION-SCOPES.ko.md) |
+| 이전 T00/F1/F2 자동 회귀 | `cf94605` 전체 CI44235743796 성공: iOS 단위370통과/1skip·UI14통과·portable129·Python31. T00/V07 CI 기준 충족, F1/F2 기기 인수 대기 | [33 기록](33-IOS18-FUSION-SCOPES.ko.md) |
+| 후속 촬영 UI/심도 main 회귀 | `6b9b148` 전체 CI44505418877 성공: Xcode26.3·SDK/Simulator26.2, 네이티브377통과/기존 Flow1skip·UI14·portable134·Python31. 실제 기기 인수 대기 | [08의57절](08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과), [37 기록](37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md) |
 | 실기기 인수 | 없음. 심도 인수 데이터(100장·기기 trace·블라인드·권리)가 비어 `check_depth_acceptance.py`가 exit 2 | `docs/depth-acceptance/` |
 | 구조 | `CameraService.swift` 1209줄, `CameraModel.swift` 1081줄. `CIKernel(source:)` 계열 2곳 | `git grep` |
 | 구형 원격 브랜치 정리 | 후속 사용자 지시로 `claude/maintenance-guide`, `codex/ios-camera-foundation`, `claude/oss-feature-research-20261117`를 원래 tip의 원격 archive 태그 보존 후 삭제 | [36 백업/정리 기록](36-USER-DECISIONS-AND-BRANCH-CLEANUP.ko.md), 원격 heads/태그 역참조 확인 |
@@ -138,6 +139,7 @@
 
 - [37 구현 기록](37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md): 박스형 뷰파인더·설정 패널1.5배·PRO 첫 f값/간편 심도·작은 전경 CoC 합성 변경. AI 구도 추천/코치/자동 리뷰는 사용자 요청으로 임시 중지하고 수동 가이드·심도 AI는 유지한다.
 - portable134·Python31·Swift 구문165파일은 확인했다. Xcode 빌드·새 네이티브/UI 회귀·실제 기기 중/원거리 전경 품질·열/지연·셔터음 인수는 대기다. 기존 V01~V07 인수 완료를 대신하지 않는다.
+- 2026-11-19 후속 main `6b9b148`의 전체 CI44505418877 성공으로 Xcode26.3·SDK/Simulator26.2 빌드·네이티브/UI 회귀를 확인했다. 첫 인물 위치 보조 스크롤 오판/수정은08의56절에 남겼다. iPhone 15 Pro/iOS27.2 실제 기기 품질·열/지연·셔터음과 V01~V08의 실기기 범위는 여전히 대기다.
 - 셔터음은 기존 공식 지원 검사/매 촬영 요청 자동 무음을 유지한다. Apple 공식 문서의 기기·지역 제한을 확인했고 지원하지 않는 환경의 강제 무음을 완료로 표시하지 않는다.
 
 ## 13. 2026-11-19 카메라 앱·카메라 비교 제안

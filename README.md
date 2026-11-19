@@ -1,10 +1,10 @@
-> **최신 검증:** T00·V07·F1·F2 소스 `cf94605`의 [전체 CI44235743796](https://github.com/MetaParodica/PhotoP/actions/runs/44235743796)가 성공했습니다. iOS 단위370통과/1skip·UI14통과. 실제 iPhone 화질·성능 인수는 대기이며 [33 기록](docs/33-IOS18-FUSION-SCOPES.ko.md)과 [단계별 검증](docs/08-STEP-VALIDATION.ko.md)을 확인하세요. 아래 기존 스크린샷과 과거 Phase 수치는 해당 당시 결과입니다.
+> **최신 검증:** main 촬영 UI·심도 소스 `6b9b148`의 [전체 CI44505418877](https://github.com/MetaParodica/PhotoP/actions/runs/44505418877)가 성공했습니다. Xcode26.3·SDK/Simulator26.2, 네이티브377통과/기존 Flow1skip·UI14통과·공통134·Python31. iPhone 15 Pro/iOS27.2 실제 기기 인수는 대기이며 [최신 검증 기록](docs/08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과)을 확인하세요. 아래 과거 Phase 수치는 당시 결과입니다.
 
 # PhotoP
 
 2026-11-19 조사: [유명 카메라 앱7개·카메라5개 비교와 추가 개선 권장안](docs/38-CAMERA-APP-AND-CAMERA-FEATURE-COMPARISON.ko.md). 촬영 프리셋·간편 메뉴·독립 수평계·초점/심도 일치·고품질 저장을 우선 제안했다. 공식 자료 조사이며 새 앱 구현이나 화질 비교 촬영 결과가 아니다.
 
-2026-11-18 촬영 UI 변경: [박스형 뷰파인더·설정 패널 확대·간편 심도 조작](docs/37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md). AI 구도 추천/코치/자동 리뷰는 임시 중지했다. portable134·Python31·Swift 구문 검사는 통과했으며, 이 변경의 Xcode/실기기 검증은 대기다. 상단 CI는 이전 main 코드의 결과다.
+2026-11-18 촬영 UI 변경: [박스형 뷰파인더·설정 패널 확대·간편 심도 조작](docs/37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md). AI 구도 추천/코치/자동 리뷰는 임시 중지했다. 11월19일 main 반영과 Xcode26.3 전체 회귀를 확인했으며 실제 기기 화질·성능·셔터음은 인수 대기다.
 
 개발 시작은 [최신 커밋 요약·개발 온보딩](docs/34-DEVELOPER-ONBOARDING.ko.md)을 따른다. 2026-11-18 main `2c1a7b3` 기준의 환경·코드 진입점·검증 결과·남은 과제를 정리했다. 아래 날짜별 기록은 당시 상태이며 현행 사용자 결정과 구분한다.
 

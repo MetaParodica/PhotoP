@@ -418,3 +418,21 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 공식 Linux Swift6.0.3을 `/tmp`에 설치했다. 기본 캐시가 읽기 전용인 첫 실패 후 캐시/설정/빌드를 `/tmp/photop-*`로 지정했다. **portable134개/Python31개 통과**, 전체 Swift165파일 구문 검사 통과. Apple SDK 타입 검사·Xcode 빌드가 아니다.
 - Core Image의 작은 전경/원경/전경 spill1개와 모델의 AI 예약 차단1개를 추가하고 관련 UI 회귀를 수정했다. **네이티브/UI/실기기 테스트는 현재 Linux에서 미실행**이다. 이전 main CI 결과를 이번 변경의 성공으로 인용하지 않는다.
 - 커밋·원격 push·main 머지는 수행하지 않았다. 문서 링크/형식·변경 검사와 세부 저장소 상태는 당일 일지에 기록한다.
+
+## 56. 촬영 UI·심도 변경 커밋과 첫 CI·main 반영
+
+- 2026-11-19, 사용자 요청으로 기존 미커밋 앱/UI/심도·회귀 테스트·온보딩/정책/비교 보고서·일지30파일을 `ec01aab69191d21fb4665e52d3ebb452c7bc0fbf`에 커밋하고 작업 브랜치에 push했다.
+- 첫 전체 [CI44501909816](https://github.com/MetaParodica/PhotoP/actions/runs/44501909816)은 정확한 소스 SHA를 확인했다. 원시 job 로그에서 Xcode26.3(17C529)·iOS SDK/Simulator26.2를 확인했다. iPhone/Simulator 빌드·공통134통과, 일반 단위360개 중359통과/Flow1skip, LUT18통과다. 작은 전경/원경 실제 합성과 AI 예약 차단 회귀도 통과했다.
+- UI14개 중13통과/인물 위치 접근 검사1개 실패로 전체 CI는 failure다. 실패는 `CameraInteractionTests.swift`284행의 보조 스크롤 함수에서 발생했다. 로그에서 컨테이너 hit point 기준 위/아래8회 왕복 뒤 실제 segment 버튼 탭은 자동 스크롤되어 선택·화면 가이드 검사를 통과한 것을 확인했다.
+- `6b9b148da93bb2e19f54a671186839508d761d73`에서 인물 위치 컨테이너 보조 스크롤을 제거하고 XCTest의 실제 버튼 탭을 사용했다. 선택·가이드 표시 검사는 유지한다. `ec01aab..6b9b148`의 앱/일반 단위·Package·CI·scripts·assets 소스 차이는 없고 UI 테스트/진행 기록만 바뀌었다.
+- 원격 main을 다시 fetch한 뒤 main을 `2c1a7b3`→`6b9b148` fast-forward해 정상 push했고, 원격 main이 같은 전체 SHA임을 재확인했다. 새 전체 [main CI44505418877](https://github.com/MetaParodica/PhotoP/actions/runs/44505418877)의 SHA 일치와 실행 시작을 확인했다. 최종 결론은 후속 기록으로 구분한다.
+- 이번 요청의 로컬 Python31·LUT5/외부25·모델3파일/NOTICE·문서14개 링크/anchor/fence·shell 구문·출처 JSON/diff 검사가 통과했다. Linux에서 Swift/Xcode를 새로 실행한 결과가 아니라 실제 macOS CI 결과와 구분한다. iPhone 15 Pro/iOS27.2 실제 기기 화질·Flow·열·무음 인수는 미수행이다.
+
+## 57. main 촬영 UI·심도 전체 CI 통과
+
+- 정확한 main 검증 소스 **`6b9b148da93bb2e19f54a671186839508d761d73`**, 전체 [CI44505418877](https://github.com/MetaParodica/PhotoP/actions/runs/44505418877) **success**·완료와 SHA 일치를 확인했다. 원시 job 로그에서 Xcode26.3(17C529), iPhoneOS/Simulator SDK26.2와 실제 Simulator26.2 선택을 확인했다.
+- iPhone 무서명 빌드·Simulator/테스트 빌드 성공. 공통134·일반 단위360개 중359통과/기존 Vision Optical Flow1skip·LUT18통과·UI14통과다. 네이티브 합계378개 중377통과/1skip이며 공통 테스트와 중복 합산하지 않는다.
+- 업로드된 단위/LUT/UI 로그를 각각 직접 읽었다. 작은 근거리 전경/원경 실제 합성·AI 예약 차단, 세로/가로 박스 배치, 간편 심도 기본 조작, 수동 인물 위치 선택, 저장 잠금이 통과했다. 인물 위치 테스트는 실제 segment 버튼 탭/자동 스크롤 뒤 가이드 결과 검사를 유지해 통과했으며 skip/테스트 제거가 아니다.
+- Python31·기본 LUT5·외부25·모델3파일/NOTICE·실제 iPhone 번들 manifest/자원 검증도 모두 통과했다. UI 캡처/결과 archive 업로드까지 완료됐다. 첫 실행의 실패는56절에 보존했다.
+- 원격 main에 `ec01aab`와 `6b9b148`이 반영된 것을 확인했다. 후속 검증/게시 문서 변경은 앱/테스트·프로젝트·Package·CI·scripts·assets를 바꾸지 않는다. 문서 링크·형식과 diff를 확인한 뒤 main에 함께 게시한다.
+- **iPhone 15 Pro/iOS27.2 실기기 인수는 미수행**이다. Simulator의 Optical Flow1skip, 실제 중/원거리 심도 화질·48MP 메모리/열·저장 중단·영상·셔터음과 SDK27 경로를 이번 CI 성공으로 대체하지 않는다.
