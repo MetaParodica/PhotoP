@@ -34,7 +34,7 @@ struct CaptureReviewView: View {
                         }.padding(.horizontal)
                     }
                     facts
-                    if let current {
+                    if CameraFeatureAvailability.aiCompositionRecommendations, let current {
                         DisclosureGroup("AI 촬영 리뷰") { PhotoReviewPanel(model: model, url: current) }
                             .padding(.horizontal).accessibilityIdentifier("camera.review.coach")
                     }

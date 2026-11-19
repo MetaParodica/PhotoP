@@ -1,0 +1,635 @@
+{
+  "research_date": "2026-11-19",
+  "report_timezone": "Asia/Seoul",
+  "retrieval_timestamps_timezone": "UTC",
+  "scope": "PhotoP competitor feature research; no app runtime or camera image-quality comparison",
+  "text_review_method": "Review visible body with HTML comments, scripts, styles and templates excluded; navigation/index entries are not feature evidence. Store only URL/title/status/response hash and retrieval metadata, not full copyrighted source pages.",
+  "records": [
+    {
+      "id": "leica-lux",
+      "url": "https://leica-camera.com/en-int/photography/leica-apps/leica-lux",
+      "retrieved_at_utc": "2026-11-18T17:54:32.792074+00:00",
+      "status": 200,
+      "resolved_url": "https://leica-camera.com/en-int/photography/leica-apps/leica-lux",
+      "bytes": 1230196,
+      "sha256": "f122ec0bb172fa729e0089860448fd00e3f561cf547521749143aaabd34e4851",
+      "title": "Leica LUX – iPhone App delivers iconic Leica Look | Leica Camera AG",
+      "text_chars": 16281,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "halide",
+      "url": "https://halide.cam/",
+      "retrieved_at_utc": "2026-11-18T17:54:32.793272+00:00",
+      "status": 200,
+      "resolved_url": "https://halide.cam/",
+      "bytes": 29294,
+      "sha256": "213cdb7aab8ee280739e0cf442abb24d067dab8cfab2debfc7dddea4e8b05db8",
+      "title": "Halide — The best pro camera for iPhone and iPad",
+      "text_chars": 6336,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "lux-blog",
+      "url": "https://www.lux.camera/",
+      "retrieved_at_utc": "2026-11-18T17:54:32.793900+00:00",
+      "status": 200,
+      "resolved_url": "https://www.lux.camera/",
+      "bytes": 77564,
+      "sha256": "e0eadb75ca8b56a79b3cfcc8f5c8995da3b3bcc8961ea1b00943373ff3060519",
+      "title": "Lux — iPhone camera apps, camera reviews and more",
+      "text_chars": 2564,
+      "evidence_status": "navigation_only",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera",
+      "url": "https://www.procamera-app.com/en/",
+      "retrieved_at_utc": "2026-11-18T17:54:32.794480+00:00",
+      "status": 200,
+      "resolved_url": "https://www.procamera-app.com/en/",
+      "bytes": 110448,
+      "sha256": "6a8e1e3e86021ccbd32249e8e05d386c86acfabf51fde053271f18200d16b3bc",
+      "title": "ProCamera - the next dimension in iOS mobile photography!",
+      "text_chars": 4283,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera-manual",
+      "url": "https://www.procamera-app.com/en/manual/",
+      "retrieved_at_utc": "2026-11-18T17:54:32.795400+00:00",
+      "error": "HTTPError: HTTP Error 404: Not Found",
+      "evidence_status": "excluded_http_error",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "obscura",
+      "url": "https://obscura.camera/",
+      "retrieved_at_utc": "2026-11-18T17:54:32.796549+00:00",
+      "status": 200,
+      "resolved_url": "https://obscura.camera/",
+      "bytes": 1247,
+      "sha256": "6e2d71f5004596f3569fb7d1cc3e93cc2b39ae1b462a4d1f835203b84562a7ac",
+      "title": "ben rice mccarthy",
+      "text_chars": 67,
+      "evidence_status": "excluded_or_duplicate",
+      "reason": "해당 도메인이 카메라 앱 기능 본문 대신 개인 페이지로 연결됨",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "proshot",
+      "url": "https://www.riseupgames.com/proshot",
+      "retrieved_at_utc": "2026-11-18T17:54:33.069525+00:00",
+      "status": 200,
+      "resolved_url": "https://www.riseupgames.com/proshot",
+      "bytes": 460361,
+      "sha256": "7aed5136729eff31ab9e186cb51686652d86ae5c10887325cccb29230ac616fb",
+      "title": "ProShot — The best pro camera for Android, iPhone and iPad — Rise Up Games",
+      "text_chars": 3110,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "blackmagic",
+      "url": "https://www.blackmagicdesign.com/products/blackmagiccamera",
+      "retrieved_at_utc": "2026-11-18T17:54:33.451228+00:00",
+      "status": 200,
+      "resolved_url": "https://www.blackmagicdesign.com/products/blackmagiccamera",
+      "bytes": 184961,
+      "sha256": "6c5e9426530bbbcc7ff18886d292b22a31c23db90b7e309faf361c7c9d2f25c3",
+      "title": "Blackmagic Camera | Blackmagic Design",
+      "text_chars": 31091,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "sony-fn",
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000616725.html",
+      "retrieved_at_utc": "2026-11-18T17:54:33.597137+00:00",
+      "status": 200,
+      "resolved_url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000616725.html",
+      "bytes": 58173,
+      "sha256": "fa41b8309d30068338de2b490d580cb2295d8aba5c2ae4d0975e56afbad6e754",
+      "title": "ILCE-7M4 | Help Guide | Using the Fn (Function) button",
+      "text_chars": 15435,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "sony-af",
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000657960.html",
+      "retrieved_at_utc": "2026-11-18T17:54:33.665825+00:00",
+      "status": 200,
+      "resolved_url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000657960.html",
+      "bytes": 52430,
+      "sha256": "7d625e5d2d6ae918b37c43b5cba69eaa9f4a4401cb2b035409005889d01645c8",
+      "title": "ILCE-7M4 | Help Guide | Using the AF-ON button",
+      "text_chars": 13100,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "canon-toc",
+      "url": "https://cam.start.canon/en/C017/manual/html/js/contents.json",
+      "retrieved_at_utc": "2026-11-18T17:54:33.705814+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/js/contents.json",
+      "bytes": 28850,
+      "sha256": "61f8575db8414529229b3e230d3585ffab2968cc3517727956b832091b815a2d",
+      "title": "canon-toc",
+      "text_chars": 19453,
+      "evidence_status": "navigation_only",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "nikon-z8",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/",
+      "retrieved_at_utc": "2026-11-18T17:54:33.774289+00:00",
+      "status": 200,
+      "resolved_url": "https://onlinemanual.nikonimglib.com/z8/en/",
+      "bytes": 92714,
+      "sha256": "928a858404c135c65d6d4217ed363620b95a3d8c8329da7a9547850134beeba4",
+      "title": "Z 8 Reference Guide",
+      "text_chars": 19815,
+      "evidence_status": "navigation_only",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-xt5",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/",
+      "retrieved_at_utc": "2026-11-18T17:54:33.810075+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/",
+      "bytes": 43040,
+      "sha256": "39972cd65edbb8591048cbfc0abf3b0e9832347776e3786c01bcfa72bf78aa70",
+      "title": "FUJIFILM X-T5 Owner's Manual",
+      "text_chars": 6635,
+      "evidence_status": "navigation_only",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "leica-q3",
+      "url": "https://leica-camera.com/en-int/photography/cameras/q/q3",
+      "retrieved_at_utc": "2026-11-18T17:54:34.117336+00:00",
+      "error": "HTTPError: HTTP Error 404: Not Found",
+      "evidence_status": "excluded_http_error",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "halide-zero",
+      "url": "https://www.lux.camera/introducing-process-zero-for-iphone/",
+      "retrieved_at_utc": "2026-11-18T17:56:02.372485+00:00",
+      "status": 200,
+      "resolved_url": "https://www.lux.camera/introducing-process-zero-for-iphone/",
+      "bytes": 95633,
+      "sha256": "3893fc400a7826041bc3640fbfbf13ad2e758fcd9f2b1f5228802061ca21aa8c",
+      "title": "Process Zero: The Anti-Intelligent Camera",
+      "text_chars": 12778,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "halide-focus",
+      "url": "https://halide.cam/",
+      "retrieved_at_utc": "2026-11-18T17:56:02.373238+00:00",
+      "status": 200,
+      "resolved_url": "https://halide.cam/",
+      "bytes": 29294,
+      "sha256": "213cdb7aab8ee280739e0cf442abb24d067dab8cfab2debfc7dddea4e8b05db8",
+      "title": "Halide — The best pro camera for iPhone and iPad",
+      "text_chars": 6336,
+      "evidence_status": "excluded_or_duplicate",
+      "reason": "halide와 같은 페이지의 중복 조회",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera-presets",
+      "url": "https://procamera-app.com/en/custom-camera-presets/",
+      "retrieved_at_utc": "2026-11-18T17:56:02.373657+00:00",
+      "status": 200,
+      "resolved_url": "https://procamera-app.com/en/custom-camera-presets/",
+      "bytes": 91514,
+      "sha256": "5f2250cc317f79f20fa1491ccaefbd672ed83f008d136ac84969cbe67b63f6e2",
+      "title": "Custom Camera Presets in ProCamera",
+      "text_chars": 4700,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera-gray",
+      "url": "https://procamera-app.com/en/gray-card-calibration/",
+      "retrieved_at_utc": "2026-11-18T17:56:02.374172+00:00",
+      "error": "HTTPError: HTTP Error 404: Not Found",
+      "evidence_status": "excluded_http_error",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera-bracket",
+      "url": "https://procamera-app.com/en/exposure-bracketing/",
+      "retrieved_at_utc": "2026-11-18T17:56:02.374583+00:00",
+      "status": 200,
+      "resolved_url": "https://procamera-app.com/en/exposure-bracketing/",
+      "bytes": 91233,
+      "sha256": "6a7cdf7960547b4893254470126981a96459b7a4b516ef6ea28b78a0389a2a43",
+      "title": "ProCamera App - Exposure Bracketing - ProCamera Up subscription",
+      "text_chars": 4586,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "focos-appstore",
+      "url": "https://itunes.apple.com/lookup?id=1274938524&country=us",
+      "retrieved_at_utc": "2026-11-18T17:56:02.375395+00:00",
+      "status": 200,
+      "resolved_url": "https://itunes.apple.com/lookup?id=1274938524&country=us",
+      "bytes": 9972,
+      "sha256": "27dce633123244cf18a587c8fd6d3c82cbaa528b7c127d1a1edc6e1c5b0ad720",
+      "title": "Focos — Apple App Store developer description",
+      "text_chars": 9952,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple App Store API; developer-supplied listing, not independent performance validation",
+      "app_id": 1274938524,
+      "publisher": "Mosaic S.r.l."
+    },
+    {
+      "id": "camera-search",
+      "url": "https://itunes.apple.com/search?term=ReLens%20camera&entity=software&country=us&limit=5",
+      "retrieved_at_utc": "2026-11-18T17:56:02.606861+00:00",
+      "status": 200,
+      "resolved_url": "https://itunes.apple.com/search?term=ReLens%20camera&entity=software&country=us&limit=5",
+      "bytes": 59459,
+      "sha256": "6069990cf9bb7ba3999cedff640da0d51ec02a3e1ca6435212ced4a4baae68a3",
+      "title": "camera-search",
+      "text_chars": 59157,
+      "evidence_status": "navigation_only",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "nikon-focus-shift",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/psm_focus_shift_shooting_155.html",
+      "retrieved_at_utc": "2026-11-18T17:56:02.807886+00:00",
+      "status": 200,
+      "resolved_url": "https://onlinemanual.nikonimglib.com/z8/en/psm_focus_shift_shooting_155.html",
+      "bytes": 110263,
+      "sha256": "567b006835b77b05a197091792a623f2fdcc2ec0739c466a357bb65a57f3c30c",
+      "title": "Focus Shift Shooting",
+      "text_chars": 28534,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "nikon-lock-on",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/csma_focus_tracking_with_lock-on_206.html",
+      "retrieved_at_utc": "2026-11-18T17:56:02.944224+00:00",
+      "status": 200,
+      "resolved_url": "https://onlinemanual.nikonimglib.com/z8/en/csma_focus_tracking_with_lock-on_206.html",
+      "bytes": 91673,
+      "sha256": "bae1f75ad61fbcbdf48d278d5fd197c5725b5578af1db928d41bc6339e3d79af",
+      "title": "a3: Focus Tracking with Lock-On",
+      "text_chars": 20194,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "nikon-pre-release",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/csmd_pre-release_capture_options_233.html",
+      "retrieved_at_utc": "2026-11-18T17:56:02.960134+00:00",
+      "status": 200,
+      "resolved_url": "https://onlinemanual.nikonimglib.com/z8/en/csmd_pre-release_capture_options_233.html",
+      "bytes": 93353,
+      "sha256": "e720aefb764eecbbeeeaec8aacd321813e47d24c58d431ae479133fc3d0321dc",
+      "title": "d3: Pre-Release Capture Options",
+      "text_chars": 21513,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "nikon-i-menu",
+      "url": "https://onlinemanual.nikonimglib.com/z8/en/csmf_customize_i_menu_260.html",
+      "retrieved_at_utc": "2026-11-18T17:56:03.328144+00:00",
+      "status": 200,
+      "resolved_url": "https://onlinemanual.nikonimglib.com/z8/en/csmf_customize_i_menu_260.html",
+      "bytes": 110432,
+      "sha256": "83498ade4ddaace0f55b2ecd31f7aa7194aa3574f73e7a7a7a29a80d0f05768e",
+      "title": "f1: Customize i Menu",
+      "text_chars": 23364,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-focus",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/taking_photo/manual-focus/",
+      "retrieved_at_utc": "2026-11-18T17:56:03.329474+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/taking_photo/manual-focus/",
+      "bytes": 39676,
+      "sha256": "f47704457b541b64fbdbd4a94bfd37b7d6ea014da2f46d89571941848a9187db",
+      "title": "Manual Focus",
+      "text_chars": 7977,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-quality",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/menu_shooting/image_quality_setting/",
+      "retrieved_at_utc": "2026-11-18T17:56:03.405990+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/menu_shooting/image_quality_setting/",
+      "bytes": 80982,
+      "sha256": "d4d0dae00b2a941c914d61a931ede2dcddff6325c4a90c1e492735579fe28dd0",
+      "title": "IMAGE QUALITY SETTING (Still Photography)",
+      "text_chars": 25147,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-custom",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/menu_setup/button-dial_setting/",
+      "retrieved_at_utc": "2026-11-18T17:56:03.889886+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/menu_setup/button-dial_setting/",
+      "bytes": 57189,
+      "sha256": "f8fea8e77c1de8afdf0a3db872aa23a4c13316827fc3b0da247fe7fd6a05f03b",
+      "title": "BUTTON/DIAL SETTING",
+      "text_chars": 16479,
+      "evidence_status": "excluded_or_duplicate",
+      "reason": "직접 조회했으나 이번 추천의 핵심 근거로 사용하지 않음",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "procamera-gray-correct",
+      "url": "https://procamera-app.com/en/graycardcalibration/",
+      "retrieved_at_utc": "2026-11-18T17:57:08.475514+00:00",
+      "status": 200,
+      "resolved_url": "https://procamera-app.com/en/graycardcalibration/",
+      "bytes": 87861,
+      "sha256": "7326cd6294ea754920d8129f080bdab560ec46fbbe037890932c21c43c432fbe",
+      "title": "ProCamera - Graycardcalibration with ProCamera GrayCard",
+      "text_chars": 4430,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "leica-q3-correct",
+      "url": "https://leica-camera.com/en-int/photography/cameras/q/q3-black",
+      "retrieved_at_utc": "2026-11-18T17:57:08.476293+00:00",
+      "status": 200,
+      "resolved_url": "https://leica-camera.com/en-int/photography/cameras/q/q3-black",
+      "bytes": 1260928,
+      "sha256": "42e9b4ce47e79721de2263211d3e28c1a4d976de1ccc5dd5b03ae0690e48e101",
+      "title": "Leica Q3 | Leica Camera AG",
+      "text_chars": 20418,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "relens-appstore",
+      "url": "https://itunes.apple.com/lookup?id=1638027598&country=us",
+      "retrieved_at_utc": "2026-11-18T17:57:08.476901+00:00",
+      "status": 200,
+      "resolved_url": "https://itunes.apple.com/lookup?id=1638027598&country=us",
+      "bytes": 12928,
+      "sha256": "a71c291709ee72ebe59670d0c7bdd9f4ecb32450b8e01ade4211ce625b50bf9f",
+      "title": "ReLens-DSLR Beauty Focus Cam — Apple App Store developer description",
+      "text_chars": 12843,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple App Store API; developer-supplied listing, not independent performance validation",
+      "app_id": 1638027598,
+      "publisher": "Pixl Concerto Technology Limited"
+    },
+    {
+      "id": "canon-quick",
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-01_Preparations_0140.html",
+      "retrieved_at_utc": "2026-11-18T17:57:08.477329+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/UG-01_Preparations_0140.html",
+      "bytes": 11071,
+      "sha256": "8a7787c99041335c19a7f384d7bf4b647ff41c6fd01c43dfc3233374c33ec2af",
+      "title": "Canon : Product Manual : EOS R5 Mark II : Quick Control",
+      "text_chars": 2121,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "canon-af-area",
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-04_AF-Drive_0060.html",
+      "retrieved_at_utc": "2026-11-18T17:57:08.478054+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/UG-04_AF-Drive_0060.html",
+      "bytes": 54704,
+      "sha256": "88ef84932062edc972d3fd6c60b27e612a3252c83342bd68ded86f493045105a",
+      "title": "Canon : Product Manual : EOS R5 Mark II : Selecting the AF Area",
+      "text_chars": 22010,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "apple-lensposition",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/lensposition.json",
+      "retrieved_at_utc": "2026-11-18T17:57:08.479319+00:00",
+      "status": 200,
+      "resolved_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/lensposition.json",
+      "bytes": 13879,
+      "sha256": "f508f34b3eec848be6f399722fcbea0c756d9fce39a10ad4b1dc05f1bbde008c",
+      "title": "lensPosition",
+      "text_chars": 13875,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple developer API documentation",
+      "platforms": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "8.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "id": "apple-minimum-focus",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/minimumfocusdistance.json",
+      "retrieved_at_utc": "2026-11-18T17:57:08.720599+00:00",
+      "status": 200,
+      "resolved_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/minimumfocusdistance.json",
+      "bytes": 12394,
+      "sha256": "f8d97e8834987101480358a12daabba1e6ba2503cc9118eb13c3b1a9f412ee97",
+      "title": "minimumFocusDistance",
+      "text_chars": 12390,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple developer API documentation",
+      "platforms": [
+        {
+          "introducedAt": "15.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "15.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "15.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "12.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "id": "apple-capturecontrol",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturecontrol.json",
+      "retrieved_at_utc": "2026-11-18T17:57:08.886664+00:00",
+      "status": 200,
+      "resolved_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturecontrol.json",
+      "bytes": 21384,
+      "sha256": "bc3ef241111e06db5d2aa40e38ac3d94a331e6b1464a1814e09e0ef05a829482",
+      "title": "AVCaptureControl",
+      "text_chars": 21382,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple developer API documentation",
+      "platforms": [
+        {
+          "introducedAt": "18.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "18.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "18.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "15.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "18.0",
+          "name": "tvOS"
+        }
+      ]
+    },
+    {
+      "id": "apple-depth-accuracy",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/depthdataaccuracy.json",
+      "retrieved_at_utc": "2026-11-18T17:57:08.916786+00:00",
+      "status": 200,
+      "resolved_url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/depthdataaccuracy.json",
+      "bytes": 14014,
+      "sha256": "f5de335183ac6a98f437f22e8df70b8f085c0882417e80e2bae85500f5d46bac",
+      "title": "depthDataAccuracy",
+      "text_chars": 14006,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "Apple developer API documentation",
+      "platforms": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.13",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ]
+    },
+    {
+      "id": "canon-custom",
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-07_Set-up_0300.html",
+      "retrieved_at_utc": "2026-11-18T17:58:03.564641+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/UG-07_Set-up_0300.html",
+      "bytes": 6218,
+      "sha256": "083d707f8f5eba32e360423750dff3f796e47f56da7cc069c17fea202242304d",
+      "title": "Canon : Product Manual : EOS R5 Mark II : Custom Shooting Mode (C1–C3)",
+      "text_chars": 1671,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "canon-mf",
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-04_AF-Drive_0070.html",
+      "retrieved_at_utc": "2026-11-18T17:58:03.565699+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/UG-04_AF-Drive_0070.html",
+      "bytes": 14947,
+      "sha256": "1841b4e1235f64c7e56b7bd64a0eb613cf3939f652c1d9b1d71ef1f9931f6124",
+      "title": "Canon : Product Manual : EOS R5 Mark II : Manual Focus",
+      "text_chars": 3978,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "canon-stack",
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-03_Shooting-1_0270.html",
+      "retrieved_at_utc": "2026-11-18T17:58:03.566264+00:00",
+      "status": 200,
+      "resolved_url": "https://cam.start.canon/en/C017/manual/html/UG-03_Shooting-1_0270.html",
+      "bytes": 14071,
+      "sha256": "92a9721a44a651ae6e0eaeb65e7d073ac00597a5381ecdcea59f8bd049305b41",
+      "title": "Canon : Product Manual : EOS R5 Mark II : Focus Bracketing",
+      "text_chars": 6336,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-q-menu",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/shortcuts/quick_menu/",
+      "retrieved_at_utc": "2026-11-18T17:58:03.566716+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/shortcuts/quick_menu/",
+      "bytes": 43188,
+      "sha256": "93f29e6bb19ee3e934797160d452d39531bc68825b76c15deb7113a5f38cd802",
+      "title": "The Quick Menu",
+      "text_chars": 8485,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    },
+    {
+      "id": "fuji-my-menu",
+      "url": "https://fujifilm-dsc.com/en/manual/x-t5/shortcuts/my_menu/",
+      "retrieved_at_utc": "2026-11-18T17:58:03.567141+00:00",
+      "status": 200,
+      "resolved_url": "https://fujifilm-dsc.com/en/manual/x-t5/shortcuts/my_menu/",
+      "bytes": 34841,
+      "sha256": "81b1b4f839321c1adce4ee24bf274f443cbbf9f90cfcd04f4c6d26046feb2dd9",
+      "title": "MY MENU",
+      "text_chars": 5290,
+      "evidence_status": "reviewed_feature_source",
+      "source_kind": "manufacturer/developer website or manual"
+    }
+  ]
+}

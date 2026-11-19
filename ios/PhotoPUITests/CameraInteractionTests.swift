@@ -34,41 +34,39 @@ final class CameraInteractionTests: XCTestCase {
         XCTAssertTrue(app.buttons["camera.shutter"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
     }
-    @MainActor func testIntelligentLibraryAppliesManualRuleWithoutFakeDetections() {
+    @MainActor func testAIRecommendationsAreHiddenWhileManualGuidesRemain() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
         app.launch()
-        let ai = app.buttons["camera.ai"]
-        XCTAssertTrue(ai.waitForExistence(timeout: 10))
-        ai.press(forDuration: 1)
-        app.buttons["구도 라이브러리"].tap()
-        let golden = app.buttons["camera.ai.rule.golden"]
-        XCTAssertTrue(golden.waitForExistence(timeout: 3))
-        if !golden.isHittable { app.swipeUp() }
-        golden.tap()
-        XCTAssertEqual(ai.value as? String, "켜짐")
-        XCTAssertTrue(app.descendants(matching: .any)["camera.ai.status"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["camera.guide"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["camera.ai"].exists)
+        app.buttons["camera.guide"].tap()
+        app.buttons["camera.card.settings"].tap()
+        XCTAssertTrue(app.otherElements["camera.panel.guide"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["camera.guide.grid.thirds"].exists)
+        XCTAssertFalse(app.switches["camera.ai.toggle"].exists)
+        XCTAssertFalse(app.buttons["구도 라이브러리"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["camera.ai.status"].exists)
         XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
         XCTAssertFalse(app.buttons["camera.coach.zoom"].exists)
     }
-    @MainActor func testAIGuideCanToggleWithoutInventingPeopleOnSimulator() {
+    @MainActor func testDepthQuickPanelShowsPrimaryControlsBeforeAdvancedOptions() {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-review"]
+        app.launchArguments = ["--ui-review", "--review-depth"]
         app.launch()
-        let ai = app.buttons["camera.ai"]
-        XCTAssertTrue(ai.waitForExistence(timeout: 10))
-        XCTAssertEqual(ai.value as? String, "꺼짐")
-        XCTAssertFalse(app.descendants(matching: .any)["camera.ai.status"].exists)
-        let off = XCTAttachment(screenshot: app.screenshot()); off.name = "PhotoP-AI-off-simulator-no-camera"; off.lifetime = .keepAlways; add(off)
-        ai.tap()
-        XCTAssertEqual(ai.value as? String, "켜짐")
-        XCTAssertTrue(app.descendants(matching: .any)["camera.ai.status"].waitForExistence(timeout: 3))
+        let panel = app.otherElements["camera.panel.aperture"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 10))
+        let toggle = app.switches["camera.depth.toggle"]
+        XCTAssertTrue(toggle.isHittable)
+        XCTAssertFalse(toggle.isEnabled)
+        let stop = app.buttons["camera.depth.stop.14"]
+        XCTAssertTrue(stop.exists)
+        XCTAssertFalse(stop.isEnabled)
+        XCTAssertLessThan(toggle.frame.minY, stop.frame.minY)
+        XCTAssertFalse(app.descendants(matching: .any)["camera.depth.source"].exists)
+        XCTAssertFalse(app.switches["camera.depth.live"].exists)
         XCTAssertFalse(app.buttons["camera.shutter"].isEnabled)
-        let on = XCTAttachment(screenshot: app.screenshot()); on.name = "PhotoP-AI-on-simulator-no-camera"; on.lifetime = .keepAlways; add(on)
-        ai.tap()
-        XCTAssertEqual(ai.value as? String, "꺼짐")
-        XCTAssertFalse(app.descendants(matching: .any)["camera.ai.status"].exists)
-        XCTAssertTrue(app.buttons["camera.tool.ev"].exists)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "PhotoP-depth-quick-panel"; shot.lifetime = .keepAlways; add(shot)
     }
     @MainActor
     func testContextualControlsStayOnCameraAndKeepShutterVisible() {
@@ -201,7 +199,7 @@ final class CameraInteractionTests: XCTestCase {
         looks.name = "PhotoP-look-cards"; looks.lifetime = .keepAlways; add(looks)
     }
 
-    @MainActor func testViewfinderExtendsBehindControlsInBothOrientations() {
+    @MainActor func testBoxedViewfinderDoesNotOverlapSettingsInBothOrientations() {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review"]
         app.launch()
@@ -216,10 +214,17 @@ final class CameraInteractionTests: XCTestCase {
             app.buttons["camera.monitor"].tap()
             let panel = app.descendants(matching: .any)["camera.panel.monitor"]
             XCTAssertTrue(panel.waitForExistence(timeout: 3))
-            XCTAssertTrue(finder.frame.intersects(dock.frame))
-            XCTAssertTrue(finder.frame.contains(panel.frame.insetBy(dx: 2, dy: 2)))
-            XCTAssertEqual(finder.frame.width, before.width, accuracy: 1)
-            XCTAssertEqual(finder.frame.height, before.height, accuracy: 1)
+            XCTAssertFalse(finder.frame.intersects(dock.frame))
+            XCTAssertFalse(finder.frame.intersects(panel.frame))
+            XCTAssertTrue(app.frame.contains(finder.frame.insetBy(dx: 1, dy: 1)))
+            XCTAssertTrue(app.frame.contains(dock.frame.insetBy(dx: 1, dy: 1)))
+            if orientation == .portrait {
+                XCTAssertEqual(finder.frame.width, before.width, accuracy: 1)
+                XCTAssertLessThan(finder.frame.height, before.height)
+            } else {
+                XCTAssertEqual(finder.frame.width, before.width, accuracy: 1)
+                XCTAssertEqual(finder.frame.height, before.height, accuracy: 1)
+            }
             XCTAssertTrue(app.buttons["camera.shutter"].isHittable)
             XCTAssertFalse(app.buttons["디지털 줌"].exists)
             app.buttons["camera.panel.close"].tap()

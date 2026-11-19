@@ -1,5 +1,22 @@
 import Foundation
 
+enum CameraFeatureAvailability {
+    // Temporary product switch; preserve the engine for a later reintroduction.
+    static let aiCompositionRecommendations = false
+}
+
+enum CameraLayoutPolicy {
+    static let panelScale = 1.5
+    static func dockHeight(screenHeight: Double, panel: Bool, drawer: Bool) -> Double {
+        let desired = panel ? 130 + 160 * panelScale : drawer ? 86 + 114 * panelScale : 240
+        // Preserve a separate viewfinder; short screens keep scrollable controls.
+        return max(0, min(desired, screenHeight - 44 - 16 - 136))
+    }
+    static func sidebarWidth(screenWidth: Double) -> Double {
+        max(0, min(380, max(280, screenWidth * 0.42), screenWidth * 0.48))
+    }
+}
+
 enum CameraTool: String, CaseIterable, Identifiable, Sendable {
     case iso, shutter, ev, whiteBalance, focus, aperture, looks, guide, monitor, format, longExposure, video
     var id: String { rawValue }
@@ -26,7 +43,7 @@ enum CaptureWorkflowPolicy {
     static func controls(pro: Bool, long: Bool, video: Bool) -> [CameraTool] {
         if long && !video { return [.longExposure, .iso, .shutter, .ev, .whiteBalance, .focus] }
         if video { return [.iso, .shutter, .ev, .whiteBalance, .focus, .video] }
-        return pro ? [.iso, .shutter, .ev, .whiteBalance, .focus, .aperture] : [.ev]
+        return pro ? [.aperture, .iso, .shutter, .ev, .whiteBalance, .focus] : [.ev]
     }
     static func duration(from text: String) -> Double? {
         guard let value = Double(text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: ".")),

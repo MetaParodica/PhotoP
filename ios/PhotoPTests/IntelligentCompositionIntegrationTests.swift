@@ -5,6 +5,20 @@ import UniformTypeIdentifiers
 
 // These tests require Apple's SDK/runtime. Portable Swift tests do NOT run them.
 final class IntelligentCompositionIntegrationTests: XCTestCase {
+    @MainActor func testTemporarilyDisabledRecommendationsCannotScheduleAnalysisOrReview() {
+        let model = CameraModel()
+        XCTAssertFalse(model.cameraCoachEnabled)
+        XCTAssertFalse(model.photoReviewEnabled)
+        model.guideAIEnabled = true
+        model.photoReviewEnabled = true
+        model.selectIntelligentRule(.golden)
+        model.requestPhotoReview(URL(fileURLWithPath: "/fixture/does-not-exist.jpg"))
+        XCTAssertFalse(model.guideAIEnabled)
+        XCTAssertNil(model.reviewingURL)
+        XCTAssertNil(model.aiComposition)
+        XCTAssertNil(model.cameraCoach)
+        XCTAssertEqual(model.intelligentRule, .automatic)
+    }
     private func fixture() throws -> (root: URL, photo: URL, image: CGImage) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

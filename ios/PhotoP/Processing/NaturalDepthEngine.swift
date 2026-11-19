@@ -26,6 +26,7 @@ final class NaturalDepthEngine {
     private var backgroundKernel: CIColorKernel?
     private var planeKernel: CIColorKernel?
     private var edgeKernel: CIColorKernel?
+    private var coverageKernel: CIColorKernel?
     private var matteCache: (id: UUID, extent: CGRect, images: (alpha: CIImage, foreground: CIImage, background: CIImage))?
 
     func render(original: URL, color: CIImage, width: Int, height: Int, aperture: Double,
@@ -75,7 +76,13 @@ final class NaturalDepthEngine {
             throw ImageEditingError.invalid("초점 위치 또는 깊이 대비가 불확실합니다. 다른 위치를 선택하세요. 원본은 보존됩니다.")
         }
         let span = bounds.upper - bounds.lower
-        let normalized = field.inverseDepth.map { $0 > 0 ? UInt8((min(1, max(0, ($0 - bounds.lower) / span)) * 255).rounded()) : 0 }
+        let longEdge = max(width, height)
+        let radiusLimit = SoftwareDepthPolicy.maximumRadius(longEdge: longEdge)
+        let coordinates = field.inverseDepth.map { value -> Float in
+            guard value > 0, let radius = SoftwareDepthPolicy.radius(inverse: Double(value), focus: Double(focusValue),
+                span: Double(span), absolute: field.units == .inverseMetres, aperture: aperture, longEdge: longEdge) else { return 0.5 }
+            return SoftwareDepthPolicy.blurCoordinate(radius: radius, longEdge: longEdge) ?? 0.5
+        }
         let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }
         let extent = color.extent
         // A stored instance matte belongs to the original subject. Refocusing
@@ -102,9 +109,12 @@ final class NaturalDepthEngine {
             let edge = kernel.apply(extent: extent, arguments: [color, matteImages.foreground, matteImages.alpha])
             if let edge { sourceColor = edge }
         }
-        let map = try Self.mask(normalized, width: field.width, height: field.height, extent: extent)
+        // Float data avoids 8-bit quantization around the focal plane. Compute
+        // CoC BEFORE resampling; small close foreground objects outside the
+        // 2/98 percentile range keep their signed radius instead of flattening.
+        let map = try Self.mask(coordinates, width: field.width, height: field.height, extent: extent)
         let valid = try Self.mask(validity, width: field.width, height: field.height, extent: extent)
-        let focusNormalized = Double(min(1, max(0, (focusValue - bounds.lower) / span)))
+        let focusNormalized = 0.5
         let slice = try Self.kernel(&sliceKernel, source: """
         kernel vec4 photopDepthSlice(__sample c, __sample d, __sample valid, __sample alpha, float lo, float center, float hi, float focus) {
             float w = d.r <= center ? (d.r-lo)/max(0.00001,center-lo) : (hi-d.r)/max(0.00001,hi-center);
@@ -119,16 +129,12 @@ final class NaturalDepthEngine {
         }
         """)
         let plane = try Self.kernel(&planeKernel, source: """
-        kernel vec4 photopFocusPlane(__sample d, __sample valid, float focus) {
-            float w = (1.0-smoothstep(0.008,0.035,abs(d.r-focus))) * valid.r;
+        kernel vec4 photopFocusPlane(__sample d, __sample valid, float sharp, float soft) {
+            float w = (1.0-smoothstep(sharp,soft,abs(d.r-0.5))) * valid.r;
             return vec4(w,w,w,1.0);
         }
         """)
-        let layers = qualityPairs <= 8 ? 8 : 16
-        var centers = (0...layers).map { Double($0) / Double(layers) }
-        centers.append(focusNormalized)
-        centers.sort()
-        centers = centers.enumerated().filter { $0.offset == 0 || $0.element - centers[$0.offset - 1] > 0.0001 }.map(\.element)
+        let centers = SoftwareDepthPolicy.layerCenters(qualityPairs: qualityPairs)
         // The fill only estimates occluded background; never claim it recovers
         // unseen detail. Foreground layers subsequently overwrite it by depth.
         let effectScale = Double(max(width, height)) / 4032
@@ -137,10 +143,8 @@ final class NaturalDepthEngine {
         for i in centers.indices {
             try Task.checkCancellation()
             let center = centers[i], lo = i == 0 ? -0.0625 : centers[i - 1], hi = i == centers.count - 1 ? 1.0625 : centers[i + 1]
-            let inverse = Double(bounds.lower) + center * Double(span)
-            guard let signedRadius = SoftwareDepthPolicy.radius(inverse: inverse, focus: Double(focusValue), span: Double(span),
-                absolute: field.units == .inverseMetres, aperture: aperture, longEdge: max(width, height)),
-                  var layer = slice.apply(extent: extent, arguments: [sourceColor, map, valid,
+            let signedRadius = (0.5 - center) * 2 * radiusLimit
+            guard var layer = slice.apply(extent: extent, arguments: [sourceColor, map, valid,
                     matteImages?.alpha ?? CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: extent),
                     lo, center, hi, focusNormalized]) else { throw CameraError.configuration }
             let radius = abs(signedRadius)
@@ -154,10 +158,14 @@ final class NaturalDepthEngine {
                       let background = fill.apply(extent: extent, arguments: [layer, localFill]) else { throw CameraError.configuration }
                 result = background
             } else if signedRadius < -0.3 {
-                foreground = layer.composited(over: foreground)
+                // Adjacent triangular depth bins are coverage fractions of
+                // the same surface. Source-over would attenuate them twice.
+                foreground = layer.applyingFilter("CIAdditionCompositing", parameters: [kCIInputBackgroundImageKey: foreground])
             } else { result = layer.composited(over: result) }
         }
-        guard var sharp = plane.apply(extent: extent, arguments: [map, valid, focusNormalized]) else { throw CameraError.configuration }
+        let sharpCoordinate = SoftwareDepthPolicy.sharpRadius / 96
+        let softCoordinate = SoftwareDepthPolicy.softRadius / 96
+        guard var sharp = plane.apply(extent: extent, arguments: [map, valid, sharpCoordinate, softCoordinate]) else { throw CameraError.configuration }
         // An embedded portrait matte is a boundary aid, not metric depth. Use
         // only around the focal plane rather than flattening the entire person.
         if let alpha = matteImages?.alpha ?? effectiveEmbedded {
@@ -166,7 +174,14 @@ final class NaturalDepthEngine {
         result = color.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: result, kCIInputMaskImageKey: sharp])
         // Foreground bokeh must spread over a sharp background. Restoring the
         // focus plane AFTER this step would erase that physically important spill.
-        result = foreground.composited(over: result)
+        let coverage = try Self.kernel(&coverageKernel, source: """
+        kernel vec4 photopNearCoverage(__sample c) {
+            float a=clamp(c.a,0.0,1.0);
+            return c.a>0.00001 ? vec4(c.rgb*(a/c.a),a) : vec4(0.0);
+        }
+        """)
+        guard let near = coverage.apply(extent: extent, arguments: [foreground]) else { throw CameraError.configuration }
+        result = near.composited(over: result)
         result = result.applyingFilter("CIBlendWithMask", parameters: [kCIInputBackgroundImageKey: color, kCIInputMaskImageKey: valid]).cropped(to: extent)
         return NaturalDepthResult(image: result, field: field, focusInverse: focusValue, source: source,
             matteUsed: matteImages != nil || effectiveEmbedded != nil, matte: matte, fusionError: fusionError)
@@ -176,6 +191,19 @@ final class NaturalDepthEngine {
         if let cache { return cache }
         guard let value = CIColorKernel(source: source) else { throw CameraError.configuration }
         cache = value; return value
+    }
+
+    private static func mask(_ values: [Float], width: Int, height: Int, extent: CGRect) throws -> CIImage {
+        let data = values.withUnsafeBytes { Data($0) }
+        guard let provider = CGDataProvider(data: data as CFData),
+              let cg = CGImage(width: width, height: height, bitsPerComponent: 32, bitsPerPixel: 32, bytesPerRow: width * 4,
+                space: CGColorSpaceCreateDeviceGray(),
+                bitmapInfo: [.floatComponents, .byteOrder32Little, CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue)],
+                provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent) else { throw CameraError.invalidPhotoData }
+        // Match the existing top-left depth/validity CGImage row convention.
+        // CoC is numeric data and must not undergo a display-gray gamma curve.
+        return CIImage(cgImage: cg, options: [.colorSpace: NSNull()])
+            .transformed(by: CGAffineTransform(scaleX: extent.width / CGFloat(width), y: extent.height / CGFloat(height)))
     }
 
     private static func mask(_ bytes: [UInt8], width: Int, height: Int, extent: CGRect) throws -> CIImage {

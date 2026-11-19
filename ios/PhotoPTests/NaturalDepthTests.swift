@@ -9,6 +9,35 @@ import CoreVideo
 @testable import PhotoP
 
 final class NaturalDepthTests: XCTestCase {
+    func testDistantFocusBlursThinNearForegroundAndSpillsOverSharpBackground() throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
+        let extent = CGRect(x: 0, y: 0, width: 1024, height: 256)
+        let background = CIImage(color: CIColor(red: 0.1, green: 0.7, blue: 0.1)).cropped(to: extent)
+        let checker = try XCTUnwrap(CIFilter(name: "CICheckerboardGenerator", parameters: [
+            "inputColor0": CIColor(red: 0.9, green: 0.1, blue: 0.1),
+            "inputColor1": CIColor(red: 0.1, green: 0.1, blue: 0.9), "inputWidth": 2.0
+        ])?.outputImage).cropped(to: CGRect(x: 0, y: 0, width: 16, height: 256))
+        let color = checker.composited(over: background)
+        let values: [Float] = (0..<(128 * 32)).map { $0 % 128 < 2 ? 1 : 0.05 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 128, height: 32, inverseDepth: values, units: .inverseMetres))
+        let rendered = try NaturalDepthEngine().renderField(color: color, field: field, aperture: 1.4,
+            focus: CGPoint(x: 0.7, y: 0.5))
+        let context = CIContext(options: [.useSoftwareRenderer: false])
+        let space = try XCTUnwrap(CGColorSpace(name: CGColorSpace.sRGB))
+        func raster(_ image: CIImage) throws -> SDRImage {
+            try SDRImage.rasterize(XCTUnwrap(context.createCGImage(image, from: extent, format: .RGBA8, colorSpace: space)))
+        }
+        let before = try raster(color), after = try raster(rendered.image)
+        func redRange(_ image: SDRImage) -> Int {
+            let samples = (110..<130).map { Int(image.rgba[($0 * 1024 + 6) * 4]) }
+            return (samples.max() ?? 0) - (samples.min() ?? 0)
+        }
+        XCTAssertLessThan(redRange(after), redRange(before) / 2)
+        let far = (128 * 1024 + 700) * 4
+        for channel in 0..<3 { XCTAssertEqual(Double(after.rgba[far + channel]), Double(before.rgba[far + channel]), accuracy: 2) }
+        let spill = (128 * 1024 + 20) * 4
+        XCTAssertGreaterThan(Int(after.rgba[spill]) + Int(after.rgba[spill + 2]), Int(before.rgba[spill]) + Int(before.rgba[spill + 2]) + 5)
+    }
     private func fixture() throws -> (root: URL, photo: URL, field: SoftwareDepthField) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

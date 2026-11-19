@@ -35,7 +35,8 @@ final class CaptureResultTests: XCTestCase {
         XCTAssertEqual(model.settings, previous)
         await model.selectOriginalLook()
         XCTAssertFalse(model.liveUsesLUT); XCTAssertNil(model.liveLUTTitle)
-        XCTAssertTrue(model.guideAIEnabled); XCTAssertTrue(model.monitoring.histogram)
+        XCTAssertFalse(model.guideAIEnabled, "Temporarily disabled recommendations cannot be reactivated by look selection")
+        XCTAssertTrue(model.monitoring.histogram)
         XCTAssertEqual(model.settings, previous)
     }
     @MainActor func testOriginalComparisonDoesNotChangeSelectedCapturePreset() async throws {

@@ -6,6 +6,19 @@ import XCTest
 #endif
 
 final class CaptureWorkflowTests: XCTestCase {
+    func testLargerPanelStillReservesViewfinderOnShortScreens() {
+        let expanded = CameraLayoutPolicy.dockHeight(screenHeight: 760, panel: true, drawer: false)
+        XCTAssertEqual(expanded - 130, (290 - 130) * 1.5)
+        for height in [480.0, 568, 667, 760, 1024] {
+            let dock = CameraLayoutPolicy.dockHeight(screenHeight: height, panel: true, drawer: false)
+            XCTAssertGreaterThanOrEqual(height - 60 - dock, 136)
+            XCTAssertGreaterThanOrEqual(dock, 0)
+        }
+        for width in [568.0, 667, 844, 1194] {
+            XCTAssertLessThanOrEqual(CameraLayoutPolicy.sidebarWidth(screenWidth: width), width * 0.48)
+        }
+        XCTAssertEqual(CaptureWorkflowPolicy.controls(pro: true, long: false, video: false).first, .aperture)
+    }
     func testSelectedBracketAndRenderedPhotoRouteToTheirOwnOriginal() {
         let a = URL(fileURLWithPath: "/fixture/a.jpg"), b = URL(fileURLWithPath: "/fixture/b.jpg")
         let effect = URL(fileURLWithPath: "/fixture/effect.jpg")

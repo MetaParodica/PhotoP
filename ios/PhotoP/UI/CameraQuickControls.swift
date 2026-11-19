@@ -171,8 +171,9 @@ struct CameraQuickControls: View {
                 Text("3장 원본은 보존합니다. 같은 크기·최대12.6MP만 융합하며 정렬 실패·움직임 의심 시 이유와 함께 거부합니다. 융합 JPEG는 SDR이며 LUT를 굽지 않습니다.").font(.caption)
             }
             if let reason = model.rawUnavailableReason ?? model.bracketUnavailableReason { Text(reason).font(.caption) }
-            Text(caps.shutterSoundSuppression ? "셔터음 억제 적용" : "이 기기·iOS에서는 앱의 셔터음 억제가 허용되지 않습니다.")
+            Text(caps.shutterSoundSuppression ? "무음 촬영 자동 적용" : "기기·지역 제한으로 무음 촬영을 지원하지 않습니다.")
                 .font(.caption).foregroundStyle(.secondary)
+                .accessibilityIdentifier("camera.shutterSound.status")
         } else { unavailable }
     }
     private func startMonitoring() {
@@ -190,7 +191,7 @@ struct CameraQuickControls: View {
             Toggle("포커스 피킹", isOn: $model.monitoring.peaking)
             if model.monitoring.peaking { Slider(value: $model.monitoring.peakingThreshold, in: 0.01...1) { Text("피킹 임계값") } }
             Text("초록색 피킹은 선명한 윤곽을 표시합니다. 실제 초점 거리(m) 측정값은 아닙니다.").font(.caption).foregroundStyle(.secondary)
-            if model.livePreview != nil { Button("AI·노출 보조 끄기 · 선택 룩 유지") { model.disableLiveLUT() } }
+            if model.livePreview != nil { Button("노출 보조 끄기 · 선택 룩 유지") { model.disableLiveLUT() } }
             else if model.monitoring.enabled { Button("프리뷰 다시 연결") { startMonitoring() }.disabled(model.snapshot.state != .running) }
         }
     }
@@ -204,12 +205,11 @@ struct CameraQuickControls: View {
                     .pickerStyle(.segmented).accessibilityIdentifier("camera.guide.person.position")
                 Stepper("인원 \(model.personGuide.people)명", value: $model.personGuide.people, in: 1...3)
                 Text(model.personGuide.framing.tip).font(.caption).foregroundStyle(.secondary)
-                Text("AI 제안을 켜면 실제 인물 어깨·얼굴 위치를 흰 실루엣과 비교해 이동 방향을 알려 줍니다.").font(.caption2).foregroundStyle(.secondary)
             }
             CameraChoice(title: "포즈 골격", selection: $model.poseTemplate, values: PoseTemplate.allCases, identifier: "camera.guide.pose", key: { $0.id }, label: { $0.title })
             HStack { Text("선명도"); Slider(value: $model.guideOpacity, in: 0.1...1) { Text("구도선 투명도") } }
-            AICompositionControls(model: model)
-            Text("흰 선·점선은 목표 구도·실루엣, 노란 골격은 목표 포즈, 청록 선은 Vision 검출입니다. 이미지 서버 전송 없이 처리합니다.").font(.caption).foregroundStyle(.secondary)
+            if CameraFeatureAvailability.aiCompositionRecommendations { AICompositionControls(model: model) }
+            Text("구도선·인물 실루엣·포즈는 직접 선택하는 촬영 가이드입니다.").font(.caption).foregroundStyle(.secondary)
         }.onChange(of: model.guideGrid) { _, grid in model.showGrid = false; if grid != .off { model.compositionPresetID = nil } }
             .onChange(of: model.guideScene) { _, _ in model.updateComposition() }
             // Body joints are analysed only for the portrait scene. One guide family is drawn at a time.
@@ -250,39 +250,58 @@ struct CameraQuickControls: View {
     }
     private var depth: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
-                .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
-            Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-            Text(model.depthProfile.explanation + " · PhotoP 가상 프로필, 실측 상용 렌즈 아님").font(.caption2)
-            Toggle("실시간 AI 심도 프리뷰", isOn: Binding(get: { model.liveDepthPreviewEnabled }, set: { model.setLiveDepthPreview($0) }))
-                .disabled(!model.depthEnabled || model.depthSource != .ai)
-                .accessibilityIdentifier("camera.depth.live")
-            if model.liveDepthPreviewEnabled {
-                if let error = model.liveDepthError { Text("AI 심도 오류: \(error)").font(.caption).foregroundStyle(.orange) }
-                Text(model.liveDepthHasFrame ? "AI 심도 표시 중 · 사진과 동일한 렌즈/초점 계산" : "AI 심도 대기/움직임 감지 · 원본/룩 프리뷰 유지")
-                    .font(.caption).foregroundStyle(.secondary)
-                Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
-            }
             Toggle("심도 촬영", isOn: Binding(get: { model.depthEnabled }, set: { value in Task { await model.setDepthEnabled(value) } }))
-                .disabled(model.snapshot.state != .running || (!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true))))
+                .disabled(model.busy || model.snapshot.state != .running || (!model.depthEnabled && (!model.depthModeAllowed || (model.depthSource == .measured && model.snapshot.capabilities?.depthAvailable != true))))
                 .accessibilityIdentifier("camera.depth.toggle")
+            HStack {
+                Text("배경·전경 흐림").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text(String(format: "f/%.1f", model.depthAperture)).font(.title2.monospacedDigit())
+            }
+            HStack(spacing: 8) {
+                ForEach([1.4, 2.8, 5.6, 8.0], id: \.self) { aperture in
+                    Button(String(format: "f/%.1f", aperture)) { model.depthAperture = aperture }
+                        .buttonStyle(.bordered).frame(maxWidth: .infinity)
+                        .accessibilityAddTraits(abs(model.depthAperture - aperture) < 0.05 ? .isSelected : [])
+                        .accessibilityIdentifier("camera.depth.stop.\(Int(aperture * 10))")
+                }
+            }.disabled(!model.depthEnabled || model.busy)
             CameraValueSlider(title: "심도 f값", value: $model.depthAperture, range: 1.4...16,
                               display: { String(format: "f/%.1f", $0) }, onCommit: {})
-                .disabled(!model.depthEnabled).accessibilityIdentifier("camera.depth.aperture")
-            Text("최대64MP 원래 해상도로 합성합니다.12.6MP 초과는 처리 샘플 수를 줄이며 더 오래 걸릴 수 있습니다. 깊이 디테일 자체가64MP인 것은 아닙니다. f값은 실제 렌즈 조리개가 아닙니다.")
-                .font(.caption).foregroundStyle(.secondary)
-            if let option = model.snapshot.capabilities?.photoResolutions.filter({ SoftwareDepthPolicy.supports(width: Int($0.width), height: Int($0.height)) }).max(by: { $0.pixels < $1.pixels }) {
-                Button("Natural용 \(option.title) 선택") { model.photoResolution = option }
-                    .disabled(model.busy).accessibilityIdentifier("camera.depth.resolution")
+                .disabled(!model.depthEnabled || model.busy).accessibilityIdentifier("camera.depth.aperture")
+            Text("선명하게 남길 피사체를 화면에서 터치하세요. 멀리 초점을 맞추면 가까운 전경이 흐려집니다. f값이 작을수록 흐림이 커집니다.")
+                .font(.caption).accessibilityIdentifier("camera.depth.touchHint")
+            HStack {
+                Button("AF-ON · 중앙 초점") { Task { await model.autofocusOn() } }
+                    .disabled(model.busy || model.snapshot.capabilities?.automaticFocus != true)
+                    .accessibilityIdentifier("camera.depth.afon")
+                Button("완성 사진 재초점", action: openDepthLibrary)
+                    .accessibilityIdentifier("camera.depth.library")
+            }.buttonStyle(.bordered)
+            if model.liveDepthPreviewEnabled {
+                Text(model.liveDepthHasFrame ? "AI 심도 미리보기 · 저장 사진은 센서 깊이에 따라 차이가 날 수 있습니다." : "AI 미리보기 준비/움직임 감지 · 촬영 원본은 보존합니다.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if let error = model.liveDepthError { Text("미리보기: \(error)").font(.caption2).foregroundStyle(.orange) }
             }
-            if !model.depthModeAllowed { Text("심도는 PRO의 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상·네이티브 피사체 추적과 현재 동시 사용하지 않습니다.").font(.caption) }
-            else if model.snapshot.capabilities?.depthAvailable != true { Text("사진 깊이가 없으면 내장된 Depth Anything V2 Small을 기기 내에서 사용합니다. AI 결과는 상대 깊이이며 m 단위 측정이 아닙니다.").font(.caption) }
-            Text("심도 카메라로 전환하면 렌즈의 노출·초점 지원 범위가 바뀔 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
-            Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
-                .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
-            Button("심도 보관함 · 사진 재초점", action: openDepthLibrary)
-                .accessibilityIdentifier("camera.depth.library")
-            Text("저장된 깊이·촬영 당시 초점/룩을 사용해 새 결과를 만듭니다. 화면의 현재 장면으로 다시 추론하지 않습니다.").font(.caption2).foregroundStyle(.secondary)
+            DisclosureGroup("심도 고급 설정") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
+                        .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
+                    Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                        .disabled(model.busy)
+                    Toggle("실시간 AI 심도 프리뷰", isOn: Binding(get: { model.liveDepthPreviewEnabled }, set: { model.setLiveDepthPreview($0) }))
+                        .disabled(model.busy || !model.depthEnabled || model.depthSource == .measured).accessibilityIdentifier("camera.depth.live")
+                    Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
+                    Text(model.depthProfile.explanation + " · 가상 프로필이며 실제 렌즈 조리개가 아닙니다. 최대64MP 합성·12.6MP 초과는 샘플 수를 줄입니다. AI 깊이는 상대값입니다.").font(.caption2)
+                    if let option = model.snapshot.capabilities?.photoResolutions.filter({ SoftwareDepthPolicy.supports(width: Int($0.width), height: Int($0.height)) }).max(by: { $0.pixels < $1.pixels }) {
+                        Button("Natural용 \(option.title) 선택") { model.photoResolution = option }
+                            .disabled(model.busy).accessibilityIdentifier("camera.depth.resolution")
+                    }
+                    Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
+                        .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
+                }.padding(.top, 8)
+            }.accessibilityIdentifier("camera.depth.advanced")
+            if !model.depthModeAllowed { Text("PRO 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상·네이티브 추적과 동시 사용하지 않습니다.").font(.caption2) }
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
     }

@@ -48,8 +48,14 @@ struct SoftwareDepthField: Sendable {
     private static func normalizationBounds(_ depth: [Float]) -> (lower: Float, upper: Float)? {
         let valid = depth.filter { $0 > 0 }.sorted()
         guard valid.count >= 9 else { return nil }
-        let lo = valid[Int(Double(valid.count - 1) * 0.02)]
-        let hi = valid[Int(Double(valid.count - 1) * 0.98)]
+        var lo = valid[Int(Double(valid.count - 1) * 0.02)]
+        var hi = valid[Int(Double(valid.count - 1) * 0.98)]
+        // A narrow foreground object can occupy less than 2% of the frame.
+        // Preserve it if at least three samples agree, while still rejecting
+        // a single isolated depth spike and genuinely uniform depth.
+        if hi - lo <= max(0.0001, abs(hi) * 0.001) {
+            lo = valid[2]; hi = valid[valid.count - 3]
+        }
         guard hi - lo > max(0.0001, abs(hi) * 0.001) else { return nil }
         return (lo, hi)
     }
@@ -58,6 +64,22 @@ struct SoftwareDepthField: Sendable {
 enum SoftwareDepthPolicy {
     static let maximumPixels = 64_000_000
     static let modelID = "apple-depth-anything-v2-small-f16-cfef6f6"
+    static func maximumRadius(longEdge: Int) -> Double { 48 * Double(longEdge) / 4032 }
+    // Store signed circle of confusion instead of clipping depth percentiles.
+    // 0=far blur limit, 0.5=focus, 1=near blur limit. Invalid stays separate.
+    static func blurCoordinate(radius: Double, longEdge: Int) -> Float? {
+        guard radius.isFinite, longEdge > 0 else { return nil }
+        return Float(min(1, max(0, 0.5 - radius / (2 * maximumRadius(longEdge: longEdge)))))
+    }
+    static func layerCenters(qualityPairs: Int) -> [Double] {
+        let half = qualityPairs <= 8 ? 4 : 8
+        return (-half...half).map { index in
+            let t = Double(index) / Double(half)
+            return 0.5 + 0.5 * t * abs(t)
+        }
+    }
+    static let sharpRadius = 0.5
+    static let softRadius = 1.5
     static func supports(width: Int, height: Int) -> Bool {
         width >= 3 && height >= 3 && width <= 16384 && height <= 16384 && width * height <= maximumPixels
     }
@@ -89,7 +111,7 @@ enum SoftwareDepthPolicy {
         } else {
             value = (focus - inverse) / span * Double(longEdge) / 120 * (2.8 / aperture)
         }
-        let limit = 48 * Double(longEdge) / 4032
+        let limit = maximumRadius(longEdge: longEdge)
         return min(limit, max(-limit, value))
     }
 }

@@ -1,0 +1,69 @@
+{
+  "purpose": "PhotoP boxed viewfinder, quick depth controls and official shutter-sound constraints",
+  "sources": [
+    {
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000616725.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.031630+00:00",
+      "status": 200,
+      "sha256": "fa41b8309d30068338de2b490d580cb2295d8aba5c2ae4d0975e56afbad6e754",
+      "bytes": 58173,
+      "title": "ILCE-7M4 | Help Guide | Using the Fn (Function) button"
+    },
+    {
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000649045.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.032078+00:00",
+      "status": 200,
+      "sha256": "ab5f73efec6caf4227d698ba6aff68fae0f58ed9f00648e428c7127543b5ccf6",
+      "bytes": 58783,
+      "title": "ILCE-7M4 | Help Guide | Focusing using touch operations (Touch Focus)"
+    },
+    {
+      "url": "https://helpguide.sony.net/ilc/2110/v1/en/contents/TP1000657960.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.032458+00:00",
+      "status": 200,
+      "sha256": "7d625e5d2d6ae918b37c43b5cba69eaa9f4a4401cb2b035409005889d01645c8",
+      "bytes": 52430,
+      "title": "ILCE-7M4 | Help Guide | Using the AF-ON button"
+    },
+    {
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-01_Preparations_0140.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.032947+00:00",
+      "status": 200,
+      "sha256": "8a7787c99041335c19a7f384d7bf4b647ff41c6fd01c43dfc3233374c33ec2af",
+      "bytes": 11071,
+      "title": "Canon : Product Manual : EOS R5 Mark II : Quick Control"
+    },
+    {
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-02_ShootingMode_0070.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.448246+00:00",
+      "status": 200,
+      "sha256": "e33ac2f0f6bc6f8b8200c670f7c7fd6b90ef9ba2e7e79861acd73af57ace109f",
+      "bytes": 7501,
+      "title": "Canon : Product Manual : EOS R5 Mark II : Av: Aperture-Priority AE"
+    },
+    {
+      "url": "https://cam.start.canon/en/C017/manual/html/UG-04_AF-Drive_0060.html",
+      "retrieved_at_utc": "2026-11-18T14:43:20.694937+00:00",
+      "status": 200,
+      "sha256": "88ef84932062edc972d3fd6c60b27e612a3252c83342bd68ded86f493045105a",
+      "bytes": 54704,
+      "title": "Canon : Product Manual : EOS R5 Mark II : Selecting the AF Area"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/isshuttersoundsuppressionsupported.json",
+      "retrieved_at_utc": "2026-11-18T14:43:20.734281+00:00",
+      "status": 200,
+      "sha256": "d6ff1f8d90c70ceb937379ea6c5e854f50714368b623c96a8981da402b6e8337",
+      "bytes": 13570,
+      "title": "isShutterSoundSuppressionSupported"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotosettings/isshuttersoundsuppressionenabled.json",
+      "retrieved_at_utc": "2026-11-18T14:43:20.778276+00:00",
+      "status": 200,
+      "sha256": "661f2897da915851c68e070f8bc92480ad41162c5d95b8871388397f85ebea7c",
+      "bytes": 14093,
+      "title": "isShutterSoundSuppressionEnabled"
+    }
+  ]
+}

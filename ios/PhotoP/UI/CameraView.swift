@@ -38,28 +38,32 @@ struct CameraView: View {
     private var cameraLayout: some View {
         GeometryReader { geometry in
             let landscape = geometry.size.width > geometry.size.height
-            let dockHeight = min(landscape ? (tool != nil ? 154.0 : drawer != nil ? 110.0 : 96.0) : (tool != nil ? 290.0 : drawer != nil ? 200.0 : 240.0), geometry.size.height * 0.48)
-            let insets = geometry.safeAreaInsets
-            ZStack(alignment: .topLeading) {
-                viewfinder(width: geometry.size.width + insets.leading + insets.trailing,
-                           height: geometry.size.height + insets.top + insets.bottom,
-                           topInset: geometry.safeAreaInsets.top + 52,
-                           bottomInset: dockHeight + geometry.safeAreaInsets.bottom + 8)
-                    .offset(x: -insets.leading, y: -insets.top)
-                    .accessibilityElement(children: .contain).accessibilityIdentifier("camera.viewfinder")
-                VStack(spacing: 0) {
-                    topBar.padding(.horizontal, 10).frame(height: 44)
-                    Spacer(minLength: 0)
-                    cameraDock(landscape: landscape, height: dockHeight)
-                        .frame(height: dockHeight).clipped()
-                        .accessibilityElement(children: .contain).accessibilityIdentifier("camera.dock")
-                        .background(alignment: .bottom) {
-                            LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
-                                .allowsHitTesting(false)
-                        }
-                }.frame(width: geometry.size.width, height: geometry.size.height)
-            }.frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+            let dockHeight = CGFloat(CameraLayoutPolicy.dockHeight(screenHeight: Double(geometry.size.height), panel: tool != nil, drawer: drawer != nil))
+            let sidebar = CGFloat(CameraLayoutPolicy.sidebarWidth(screenWidth: Double(geometry.size.width)))
+            VStack(spacing: 8) {
+                topBar.padding(.horizontal, 10).frame(height: 44)
+                if landscape {
+                    HStack(spacing: 8) {
+                        framedViewfinder(width: max(1, geometry.size.width - sidebar - 24), height: max(1, geometry.size.height - 52))
+                        dock(landscape: true, height: max(1, geometry.size.height - 52)).frame(width: sidebar)
+                    }.padding(.horizontal, 8)
+                } else {
+                    framedViewfinder(width: max(1, geometry.size.width - 16), height: max(1, geometry.size.height - 60 - dockHeight))
+                        .padding(.horizontal, 8)
+                    dock(landscape: false, height: dockHeight)
+                }
+            }.frame(width: geometry.size.width, height: geometry.size.height)
         }
+    }
+    private func framedViewfinder(width: CGFloat, height: CGFloat) -> some View {
+        viewfinder(width: width, height: height, topInset: 8, bottomInset: 8)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(.white.opacity(0.25), lineWidth: 1).allowsHitTesting(false))
+            .accessibilityElement(children: .contain).accessibilityIdentifier("camera.viewfinder")
+    }
+    private func dock(landscape: Bool, height: CGFloat) -> some View {
+        cameraDock(landscape: landscape, height: height).frame(height: height).clipped()
+            .accessibilityElement(children: .contain).accessibilityIdentifier("camera.dock")
     }
     private var cameraPresentation: some View {
         cameraLayout
@@ -246,7 +250,7 @@ struct CameraView: View {
             .frame(height: 120)
     }
     private var previewBadge: some View {
-        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · \(model.videoPreviewFill ? "화면 채움" : "전체 프레임") · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.snapshot.state == .running ? "화면 채움 · 원본 전체 프레임 저장" : "CAMERA OFFLINE")
+        Text(model.snapshot.video.phase.isActive ? String(format: "REC · %02d:%02d · %@", Int(model.snapshot.video.elapsedSeconds) / 60, Int(model.snapshot.video.elapsedSeconds) % 60, VideoCapturePolicy.audioLabel(model.snapshot.video.configuration)) : reviewing ? "SIMULATOR · UI 검토" : isVideo ? "SDR · \(model.videoPreviewFill ? "화면 채움" : "전체 프레임") · \(VideoCapturePolicy.audioLabel(model.snapshot.video.configuration))" : model.snapshot.state == .running ? "전체 프레임 · 터치 초점" : "CAMERA OFFLINE")
             .font(.system(size: 9, weight: .semibold, design: .monospaced)).tracking(1)
             .padding(.horizontal, 10).padding(.vertical, 7).background(.black.opacity(0.5), in: Capsule())
     }
@@ -348,7 +352,7 @@ struct CameraView: View {
     private var controlsRail: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                if !model.longMode || isVideo { aiButton }
+                if CameraFeatureAvailability.aiCompositionRecommendations && (!model.longMode || isVideo) { aiButton }
                 if !model.proMode && !isVideo && !model.longMode {
                     Text("AUTO").font(.system(size: 10, weight: .bold, design: .rounded)).tracking(1).foregroundStyle(accent)
                         .padding(.horizontal, 8)
@@ -370,7 +374,7 @@ struct CameraView: View {
                     }.buttonStyle(.plain).accessibilityLabel(item.title).accessibilityValue(value(item))
                         .accessibilityIdentifier("camera.tool.\(item.rawValue)")
                 }
-                if model.longMode && !isVideo { aiButton }
+                if CameraFeatureAvailability.aiCompositionRecommendations && model.longMode && !isVideo { aiButton }
                 if !model.proMode && !isVideo && !model.longMode { autoReadout }
             }.padding(4)
         }.cameraGlass(radius: 22)
@@ -467,16 +471,19 @@ struct CameraView: View {
     private func cameraDock(landscape: Bool, height: CGFloat) -> some View {
         Group {
             if landscape {
-                HStack(spacing: 12) {
-                    VStack(spacing: 2) {
-                        Group {
-                            if let tool { panel(tool, availableHeight: height - 48) }
-                            else if let drawer, !isVideo { carousel(drawer) }
-                            else { HStack { controlsRail; if !isVideo { looksButton } } }
-                        }.frame(height: drawer == nil ? height - 48 : height).clipped()
-                        if drawer == nil { modeRow.frame(height: 44) }
-                    }
-                    shutterRow.frame(width: 240)
+                VStack(spacing: 4) {
+                    Group {
+                        if let tool { panel(tool, availableHeight: height - 130) }
+                        else if let drawer, !isVideo { carousel(drawer) }
+                        else {
+                            VStack(spacing: 8) {
+                                HStack { controlsRail; if !isVideo { looksButton } }
+                                if !sideLenses.isEmpty && !isVideo { zoomControl }
+                            }.frame(maxHeight: .infinity)
+                        }
+                    }.frame(height: max(60, height - (drawer == nil ? 130 : 86))).clipped()
+                    if drawer == nil { modeRow.frame(height: 44) }
+                    shutterRow.frame(height: 78)
                 }
             } else {
                 VStack(spacing: 4) {

@@ -7,6 +7,51 @@ import XCTest
 #endif
 
 final class FocusDepthPolicyTests: XCTestCase {
+    func testDistantFocusKeepsSmallNearForegroundOutsidePercentileRange() throws {
+        var depth = [Float](repeating: 0.05, count: 10000) // 20 m focus.
+        for i in 0..<100 { depth[i] = 1 } // 1% close foreground, at 1 m.
+        let field = try XCTUnwrap(SoftwareDepthField(width: 100, height: 100, inverseDepth: depth, units: .inverseMetres))
+        let bounds = try XCTUnwrap(field.bounds)
+        let r = try XCTUnwrap(SoftwareDepthPolicy.radius(inverse: 1, focus: 0.05,
+            span: Double(bounds.upper - bounds.lower), absolute: true, aperture: 2.8, longEdge: 4032))
+        XCTAssertLessThan(r, -30)
+        XCTAssertGreaterThan(try XCTUnwrap(SoftwareDepthPolicy.blurCoordinate(radius: r, longEdge: 4032)), 0.8)
+        depth[0] = 100
+        let outlier = try XCTUnwrap(SoftwareDepthField(width: 100, height: 100, inverseDepth: depth, units: .inverseMetres))
+        XCTAssertEqual(outlier.bounds?.upper, 1)
+    }
+    func testSingleDepthSpikeCannotEnableBlurInAnOtherwiseFlatScene() throws {
+        var depth = [Float](repeating: 1, count: 10000); depth[0] = 100
+        let field = try XCTUnwrap(SoftwareDepthField(width: 100, height: 100, inverseDepth: depth, units: .relativeInverse))
+        XCTAssertNil(field.bounds)
+    }
+    func testCircleOfConfusionLayeringResolvesNearFocusAndMaintainsBudget() throws {
+        for quality in [8, 16] {
+            let centers = SoftwareDepthPolicy.layerCenters(qualityPairs: quality)
+            XCTAssertEqual(centers.count, quality + 1)
+            XCTAssertEqual(centers.first, 0); XCTAssertEqual(centers.last, 1)
+            let middle = centers.count / 2
+            XCTAssertEqual(centers[middle], 0.5)
+            XCTAssertLessThan(centers[middle + 1] - 0.5, centers.last! - centers[centers.count - 2])
+            for (a, b) in zip(centers, centers.dropFirst()) { XCTAssertLessThan(a, b) }
+        }
+        XCTAssertEqual(SoftwareDepthPolicy.blurCoordinate(radius: 0, longEdge: 4032), 0.5)
+        XCTAssertEqual(SoftwareDepthPolicy.blurCoordinate(radius: 48, longEdge: 4032), 0)
+        XCTAssertEqual(SoftwareDepthPolicy.blurCoordinate(radius: -48, longEdge: 4032), 1)
+        XCTAssertNil(SoftwareDepthPolicy.blurCoordinate(radius: .nan, longEdge: 4032))
+    }
+    func testMiddleGroundBlurAtDistantFocusDoesNotDependOnOtherSceneDepths() throws {
+        func coordinate(span: Double, aperture: Double, edge: Int) throws -> Float {
+            let r = try XCTUnwrap(SoftwareDepthPolicy.radius(inverse: 0.2, focus: 0.05, span: span,
+                absolute: true, aperture: aperture, longEdge: edge)) // 5 m foreground, 20 m focus.
+            return try XCTUnwrap(SoftwareDepthPolicy.blurCoordinate(radius: r, longEdge: edge))
+        }
+        let normal = try coordinate(span: 0.15, aperture: 2.8, edge: 4032)
+        XCTAssertGreaterThan(normal, 0.55)
+        XCTAssertEqual(normal, try coordinate(span: 10, aperture: 2.8, edge: 4032), accuracy: 0.000001)
+        XCTAssertEqual(normal, try coordinate(span: 0.15, aperture: 2.8, edge: 8064), accuracy: 0.000001)
+        XCTAssertGreaterThan(normal, try coordinate(span: 0.15, aperture: 8, edge: 4032))
+    }
     func testOrdinaryTouchPreservesManualAndExposureLocks() {
         let action = FocusTouchPolicy.actions(scope: .both, focusSupported: true, exposureSupported: true,
             focusLocked: true, exposureLocked: true, explicitAFOn: false)

@@ -36,7 +36,11 @@ final class CameraModel: ObservableObject {
     @Published var guideScene: GuideScene = .general
     @Published var poseTemplate: PoseTemplate = .off
     @Published var guideOpacity = 0.6
-    @Published var guideAIEnabled = false
+    @Published private var requestedGuideAIEnabled = false
+    var guideAIEnabled: Bool {
+        get { CameraFeatureAvailability.aiCompositionRecommendations && requestedGuideAIEnabled }
+        set { requestedGuideAIEnabled = CameraFeatureAvailability.aiCompositionRecommendations && newValue }
+    }
     @Published private(set) var composition: CompositionSnapshot?
     @Published private(set) var aiComposition: LiveCompositionGuide?
     @Published var compositionTarget: CompositionTarget = .automatic
@@ -45,8 +49,8 @@ final class CameraModel: ObservableObject {
     private var lastCompositionHapticTime = -Double.infinity
     @Published var shootingIntent: ShootingIntent = .balanced
     @Published var intelligentRule: CompositionRule = .automatic
-    @Published var cameraCoachEnabled = true
-    @Published var photoReviewEnabled = true
+    @Published var cameraCoachEnabled = false
+    @Published var photoReviewEnabled = false
     @Published var coachLearningEnabled = false
     @Published private(set) var cameraTilt: CameraTilt?
     @Published private(set) var cameraCoach: CameraCoachResult?
@@ -147,7 +151,7 @@ final class CameraModel: ObservableObject {
         Task { @MainActor [weak self] in self?.receive(value) }
     }
     var previewSession: AVCaptureSession { service.session }
-    var viewfinderFill: Bool { !snapshot.video.isVideoMode || videoPreviewFill }
+    var viewfinderFill: Bool { snapshot.video.isVideoMode && videoPreviewFill }
     var coachMode: CoachCaptureMode {
         if snapshot.video.isVideoMode { return .video }
         if longMode { return .longExposure }
@@ -285,6 +289,7 @@ final class CameraModel: ObservableObject {
         if !enabled { liveDepthPreviewEnabled = false; updateDepthPreview() }
         if enabled, depthSource == .ai || (depthSource == .automatic && snapshot.capabilities?.depthAvailable != true) {
             depthEnabled = true
+            setLiveDepthPreview(true)
             message = "AI 상대 깊이로 촬영 후 처리합니다. 최대64MP이며 실제 거리 측정이 아닙니다. 고해상도는 축소 추론 후 원래 해상도로 합성합니다."
             return
         }
@@ -299,6 +304,7 @@ final class CameraModel: ObservableObject {
             if enabled {
                 try await service.enablePhotoDepth()
                 depthReturnLens = originalLens; depthEnabled = true
+                setLiveDepthPreview(depthSource != .measured)
                 // The new input may have different manual-control capabilities;
                 // use the actual snapshot/readout rather than guessing support.
             } else {
@@ -314,12 +320,12 @@ final class CameraModel: ObservableObject {
     }
 
     func setLiveDepthPreview(_ enabled: Bool) {
-        guard !enabled || (depthEnabled && depthModeAllowed && depthSource == .ai) else { return }
+        guard !enabled || (depthEnabled && depthModeAllowed && depthSource != .measured) else { return }
         liveDepthPreviewEnabled = enabled; liveDepthHasFrame = false; liveDepthError = nil
         updateDepthPreview(); monitoringChanged()
     }
     func updateDepthPreview() {
-        let enabled = liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource == .ai && !busy && !compositionCaptureSuspended
+        let enabled = liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured && !busy && !compositionCaptureSuspended
         livePreview?.setDepthPreview(.init(enabled: enabled, aperture: depthAperture, focus: depthFocusPoint,
             profile: depthProfile, comparingOriginal: liveCompareOriginal))
         if !enabled { liveDepthHasFrame = false }
@@ -584,7 +590,7 @@ final class CameraModel: ObservableObject {
     private var needsAnalysis: Bool {
         LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
                                    focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted,
-                                   depth: liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource == .ai)
+                                   depth: liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured)
     }
 
     func monitoringChanged() {
@@ -706,6 +712,7 @@ final class CameraModel: ObservableObject {
                                           tilt: cameraTilt, now: ProcessInfo.processInfo.systemUptime)
     }
     func requestPhotoReview(_ url: URL) {
+        guard CameraFeatureAvailability.aiCompositionRecommendations else { return }
         guard !busy, !snapshot.video.phase.isActive, photoReviews[url] == nil, reviewingURL != url else { return }
         reviewTask?.cancel(); reviewJobID = UUID(); let job = reviewJobID
         if photoReviewErrors.count >= 8 { photoReviewErrors.removeAll() }
@@ -736,6 +743,7 @@ final class CameraModel: ObservableObject {
         if hadReview { updateComposition() }
     }
     func selectIntelligentRule(_ rule: CompositionRule) {
+        guard CameraFeatureAvailability.aiCompositionRecommendations else { return }
         compositionPresetID = nil; personGuide.framing = .off; poseTemplate = .off; guideGrid = .off
         intelligentRule = rule; guideAIEnabled = true; intelligentOptionsChanged()
     }
