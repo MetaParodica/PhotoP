@@ -191,7 +191,8 @@ enum VideoDepthStore {
             let file = directory.appendingPathComponent("Depth.mov"), manifest = directory.appendingPathComponent("recipe.json")
             guard (try? file.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false,
                   (try? manifest.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false,
-                  let data = try? Data(contentsOf: manifest), data.count < 2_000_000,
+                  let size = try? manifest.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 0, size < 2_000_000,
+                  let data = try? Data(contentsOf: manifest), data.count == size,
                   let recipe = try? JSONDecoder().decode(VideoDepthRecipe.self, from: data), recipe.version == 1, recipe.intent.valid,
                   recipe.frames > 0, recipe.processedFrames > 0, recipe.fallbackFrames >= 0,
                   recipe.processedFrames + recipe.fallbackFrames == recipe.frames else { return nil }

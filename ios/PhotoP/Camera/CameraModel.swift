@@ -100,6 +100,7 @@ final class CameraModel: ObservableObject {
     @Published private(set) var videoDepthProgress: Double?
     @Published private(set) var videoDepthMessage: String?
     private var depthSelection: SubjectTrackingSelection?
+    private var recordingDepthOrientation: CameraOrientation = .portrait
     private var recordingDepthIntent: VideoDepthIntent?
     private var videoDepthJob: UUID?
     private var videoDepthTask: Task<Void, Never>?
@@ -978,6 +979,7 @@ final class CameraModel: ObservableObject {
     func recordVideo() async {
         guard canRecordVideo, let configuration = snapshot.video.configuration else { return }
         pausePhotoReview()
+        recordingDepthOrientation = orientation
         recordingDepthIntent = videoDepthEnabled ? .init(keyframes: [currentDepthKeyframe(time: 0)]) : nil
         recordingRequested = true; defer { recordingRequested = false; busy = false; recordingDepthIntent = nil }
         do {
@@ -999,8 +1001,11 @@ final class CameraModel: ObservableObject {
     }
 
     private func currentDepthKeyframe(time: Double) -> VideoDepthKeyframe {
-        .init(time: time, focus: depthFocusPoint, aperture: depthAperture, profile: depthProfile,
-              selection: depthTrackingEnabled ? depthSelection : nil)
+        let front = snapshot.lenses.first(where: { $0.id == snapshot.selectedLens })?.isFront == true
+        let preview = Int(orientation.rotationAngle), saved = Int(recordingDepthOrientation.rotationAngle)
+        let focus = VideoDepthPolicy.recordedPoint(depthFocusPoint, mirrored: front, previewAngle: preview, recordingAngle: saved) ?? CGPoint(x: 0.5, y: 0.5)
+        let selection = VideoDepthPolicy.recordedSelection(depthTrackingEnabled ? depthSelection : nil, mirrored: front, previewAngle: preview, recordingAngle: saved)
+        return .init(time: time, focus: focus, aperture: depthAperture, profile: depthProfile, selection: selection)
     }
     private func recordDepthParameters() {
         guard snapshot.video.phase == .recording, recordingDepthIntent != nil else { return }

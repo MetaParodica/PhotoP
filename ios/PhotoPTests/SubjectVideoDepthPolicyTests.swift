@@ -47,6 +47,15 @@ final class SubjectVideoDepthPolicyTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(VideoDepthIntent.self, from: JSONEncoder().encode(intent)), intent)
         intent.keyframes.reverse(); XCTAssertFalse(intent.valid)
     }
+    func testFrontPreviewAndOrientationMapIntoUnmirroredRecording() {
+        let point = CGPoint(x: 0.2, y: 0.3)
+        XCTAssertEqual(VideoDepthPolicy.recordedPoint(point, mirrored: true, previewAngle: 90, recordingAngle: 90), CGPoint(x: 0.8, y: 0.3))
+        let rotated = VideoDepthPolicy.recordedPoint(point, mirrored: false, previewAngle: 0, recordingAngle: 90)!
+        XCTAssertEqual(rotated.x, 0.7, accuracy: 0.00001); XCTAssertEqual(rotated.y, 0.2, accuracy: 0.00001)
+        let back = VideoDepthPolicy.recordedPoint(rotated, mirrored: false, previewAngle: 90, recordingAngle: 0)!
+        XCTAssertEqual(back.x, point.x, accuracy: 0.00001); XCTAssertEqual(back.y, point.y, accuracy: 0.00001)
+        XCTAssertNil(VideoDepthPolicy.recordedPoint(point, mirrored: false, previewAngle: 12, recordingAngle: 90))
+    }
     func testQualityAndOrientationContracts() {
         XCTAssertTrue(VideoDepthPolicy.supports(width: 2160, height: 3840, fps: 60, duration: 600))
         XCTAssertFalse(VideoDepthPolicy.supports(width: 7680, height: 4320, fps: 30, duration: 1))

@@ -16,6 +16,7 @@ final class SubjectTrackingVisionEngine {
         let scale = min(1, 640 / max(image.extent.width, image.extent.height))
         let image = image.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         state.configure(enabled: true, selection: selection, generation: generation)
+        if state.snapshot(at: time).phase == .lost { return state.snapshot(at: time) }
         if selectionID != selection.id || epoch != generation {
             epoch = generation
             sequence = VNSequenceRequestHandler(); request = nil; selectionID = selection.id

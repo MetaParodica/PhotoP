@@ -85,7 +85,7 @@ enum SubjectAssociation {
         let distance = hypot(a.midX - b.midX, a.midY - b.midY)
         let intersection = a.intersection(b)
         let area = intersection.isNull ? 0 : intersection.width * intersection.height
-        let iou = area / max(0.000001, a.width * a.height + b.width * b.height - area)
+        let iou = min(1, max(0, area / max(0.000001, a.width * a.height + b.width * b.height - area)))
         guard let cost = cost(overlap: Double(iou), confidence: Double(confidence)) else { return false }
         return (0.4...2.5).contains(ratio) && distance < 0.24 && (cost < 0.97 || distance < 0.075)
     }
@@ -112,6 +112,7 @@ struct SubjectTrackingState: Sendable {
     }
     @discardableResult mutating func observe(bounds: CGRect?, confidence: Float, time: Double, generation: UInt64) -> Bool {
         guard enabled, selection != nil, self.generation == generation, time.isFinite, time > lastTime, phase != .lost else { return false }
+        if lastTime.isFinite, time - lastTime > 0.8 { phase = .lost; self.confidence = 0; return false }
         if !firstTime.isFinite { firstTime = time }
         lastTime = time
         guard let bounds, SubjectTrackingSelection.valid(bounds), confidence.isFinite, (0...1).contains(confidence),

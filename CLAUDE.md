@@ -11,6 +11,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
+- 사진·영상 공통 심도/선택 대상 추적의 새 구현은 [41 구현 기록](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 따른다. 조사39·사전 계획40을 먼저 작성했다. 최신 테스트/게시 상태는08과 당일 일지에 기록하며 실제 기기 품질·시간적 일관성 모델/네이티브 Cinematic은 후속 검증이다.
+
 - 2026-11-19 [38 카메라 앱·카메라 비교](docs/38-CAMERA-APP-AND-CAMERA-FEATURE-COMPARISON.ko.md)는 공식 기능/현재 소스 대조와 후속 제안이다. 새 제품 정책 확정·앱 구현·실기기 화질 검증이 아니며 AI 구도 추천 임시 중지 등 기존 결정을 유지한다.
 - [34 개발 온보딩](docs/34-DEVELOPER-ONBOARDING.ko.md)을 먼저 읽는다. 2026-11-18 main `2c1a7b3`, 이전 `004d869` 이후17개 커밋의 요약·실행 방법·소스 진입점을 정리했다.
 - 최신 main 촬영 UI·심도 소스 `6b9b148` 전체 [CI44505418877](https://github.com/MetaParodica/PhotoP/actions/runs/44505418877)는 SHA·success·원시 job/단위/LUT/UI 로그를 확인했다. Xcode26.3·SDK/Simulator26.2, 공통134·Python31, 네이티브378개 중377통과/기존 Flow1skip, UI14통과. 첫 UI 보조 스크롤 실패와 수정, 실제 기기 인수 미완료는 [08의56~57절](docs/08-STEP-VALIDATION.ko.md)을 따른다. 이전 온보딩 기준 `2c1a7b3`의 CI44240812815는 당시 기록이다.
