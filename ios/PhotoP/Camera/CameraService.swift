@@ -649,7 +649,9 @@ final class CameraService: NSObject, @unchecked Sendable, AVCapturePhotoCaptureD
                     let wanted = FocusTouchPolicy.actions(scope: scope,
                         focusSupported: d.isFocusPointOfInterestSupported && d.isFocusModeSupported(focusMode),
                         exposureSupported: d.isExposurePointOfInterestSupported && d.isExposureModeSupported(.continuousAutoExposure),
-                        focusLocked: userFocusLocked ?? (d.focusMode == .locked),
+                        // Background tracking (nil override) must also preserve a
+                        // hold whose AF/AE lock is still waiting to settle.
+                        focusLocked: userFocusLocked ?? (d.focusMode == .locked || meteringLockID != nil),
                         exposureLocked: d.exposureMode == .custom || d.exposureMode == .locked, explicitAFOn: explicitAFOn)
                     let actions = PointMeteringActions(focus: wanted.focus, exposure: wanted.exposure)
                     guard !locked || ((!actions.focus || d.isFocusModeSupported(.locked)) && (!actions.exposure || d.isExposureModeSupported(.locked))) else { throw CameraError.invalidSettings }
