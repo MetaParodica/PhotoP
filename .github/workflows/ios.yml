@@ -147,7 +147,7 @@ jobs:
           /usr/libexec/PlistBuddy -c 'Print :NSMotionUsageDescription' .build/Build/Products/Debug-iphoneos/PhotoP.app/Info.plist
       - name: Select available iOS Simulator
         working-directory: ios
-        timeout-minutes: 5
+        timeout-minutes: 8
         shell: bash
         run: |
           selection=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; choices=[x for x in choices if x[0]>=(18,0)]; assert choices,"No available iPhone Simulator with iOS >=18.0"; version,udid=max(choices); print(".".join(map(str,version)),udid)')
@@ -262,7 +262,7 @@ jobs:
           cmp assets/company-luts/manifest.json ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts/manifest.json
           python3 scripts/check_company_luts.py --bundle ios/.build/Build/Products/Debug-iphoneos/PhotoP.app/company-luts
       - name: Capture implemented camera UI on Simulator
-        if: always() && !cancelled() && env.PHOTOP_SIMULATOR != '' && inputs.test_scope != 'depth'
+        if: always() && !cancelled() && env.PHOTOP_SIMULATOR != '' && inputs.test_scope != 'depth' && steps.simulator_build.outcome == 'success'
         timeout-minutes: 3
         working-directory: ios
         run: |

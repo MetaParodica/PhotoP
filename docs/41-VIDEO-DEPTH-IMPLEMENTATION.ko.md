@@ -20,6 +20,7 @@
 ## 실제 영상 출력
 
 - `VideoDepthProcessor`는 원본을 검사하고 해시를 기록한 뒤 AVAssetReader→기존 Core ML Depth Anything V2 Small→선택 매트→사진과 같은 `NaturalDepthEngine`→AVAssetWriter로 처리한다. 별도 결과의 해시/레시피를 기록하고 pending 폴더의 완성 결과만 원자 게시한다.
+- 파생 영상의 픽셀 경로는8비트 BGRA SDR이다. 원본 bytes는 보존하지만10비트 SDR의 비트 심도까지 파생물에 유지하는 경로는 아직 구현하지 않았다.
 - SDR H.264/HEVC, 최소16px·최대4096px/9.4MP, 60fps, 10분, 비디오1트랙/오디오0~1트랙 범위다. 기존 4K 촬영 해상도를 자동 축소하지 않고 원래 코덱·원본 이상 목표 bitrate(최대240Mbps)를 요청한다. 인코더의 실제 지원을 검사하며 지원하지 않으면 원본을 남기고 실패를 알린다. 무손실 출력이라고 주장하지 않는다.
 - 원래 각 프레임의 PTS를 사용하며 임의 index/fps로 재타이밍하지 않는다. 회전은 실제 출력 픽셀에 적용하고 파일 transform은 identity다. 오디오는 압축 sample을 passthrough하여 다시 인코딩하지 않는다. 다음 오디오/비디오 PTS 순으로 읽고 writer readiness/timeout/cancellation을 검사한다.
 - 매 프레임 새로운 깊이를 추정한다. 상대 깊이를 단순 평균하지 않는다. 시계열 척도 정합/메모리 segmentation 모델은 후속 과제이며 시간적 깜빡임이 완전히 해결됐다고 주장하지 않는다.
