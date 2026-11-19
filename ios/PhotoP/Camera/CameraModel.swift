@@ -338,7 +338,8 @@ final class CameraModel: ObservableObject {
     func updateDepthPreview() {
         recordDepthParameters()
         let enabled = (snapshot.video.isVideoMode ? videoDepthEnabled : liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured) && !busy && !compositionCaptureSuspended
-        livePreview?.setSubjectTracking(enabled: enabled && depthTrackingEnabled, selection: depthSelection)
+        let tracking = depthTrackingEnabled && (snapshot.video.isVideoMode ? videoDepthEnabled : depthEnabled && depthModeAllowed) && !busy && !compositionCaptureSuspended
+        livePreview?.setSubjectTracking(enabled: tracking, selection: depthSelection)
         livePreview?.setDepthPreview(.init(enabled: enabled, aperture: depthAperture, focus: depthFocusPoint,
             profile: depthProfile, comparingOriginal: liveCompareOriginal))
         if !enabled { liveDepthHasFrame = false }
@@ -612,7 +613,7 @@ final class CameraModel: ObservableObject {
     }
 
     private var needsAnalysis: Bool {
-        LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
+        (depthTrackingEnabled && depthEnabled && depthModeAllowed) || LiveLookPolicy.needsOutput(selected: liveUsesLUT, monitoring: monitoring.enabled, guide: guideAIEnabled,
                                    focusAssist: settings.focus.manual && focusAssistEnabled, samples: previewSamplesWanted,
                                    depth: snapshot.video.isVideoMode ? videoDepthEnabled : liveDepthPreviewEnabled && depthEnabled && depthModeAllowed && depthSource != .measured)
     }
@@ -844,12 +845,13 @@ final class CameraModel: ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, self.active, !self.busy, !self.compositionCaptureSuspended, self.snapshot.state == .running, self.livePreview?.id == id, self.depthTrackingEnabled,
                     self.depthSelection?.id == tracked.selectionID,
-                    (self.snapshot.video.isVideoMode ? self.videoDepthEnabled : self.depthEnabled && self.liveDepthPreviewEnabled) else { return }
+                    (self.snapshot.video.isVideoMode ? self.videoDepthEnabled : self.depthEnabled && self.depthModeAllowed) else { return }
                 self.depthTrackingSnapshot = tracked
                 if let focus = tracked.focus(at: ProcessInfo.processInfo.systemUptime) {
                     self.depthFocusPoint = focus
                     // Tracking updates are not user keyframes. Offline replay tracks the same seed.
-                    self.livePreview?.setDepthPreview(.init(enabled: true, aperture: self.depthAperture, focus: focus,
+                    let renderDepth = self.snapshot.video.isVideoMode ? self.videoDepthEnabled : self.liveDepthPreviewEnabled && self.depthSource != .measured
+                    self.livePreview?.setDepthPreview(.init(enabled: renderDepth, aperture: self.depthAperture, focus: focus,
                         profile: self.depthProfile, comparingOriginal: self.liveCompareOriginal))
                 }
             }

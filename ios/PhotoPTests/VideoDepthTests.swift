@@ -40,6 +40,13 @@ final class VideoDepthTests: XCTestCase {
         let track = try await AVURLAsset(url: result.url).loadTracks(withMediaType: .video).first!
         let transform = try await track.load(.preferredTransform)
         XCTAssertEqual(transform, .identity)
+        let reference = AVAssetImageGenerator(asset: AVURLAsset(url: url)); reference.appliesPreferredTrackTransform = true
+        let processed = AVAssetImageGenerator(asset: AVURLAsset(url: result.url))
+        let expected = try SDRImage.rasterize(reference.copyCGImage(at: .zero, actualTime: nil))
+        let actual = try SDRImage.rasterize(processed.copyCGImage(at: .zero, actualTime: nil))
+        XCTAssertEqual(expected.width, actual.width); XCTAssertEqual(expected.height, actual.height)
+        let difference = zip(expected.rgba, actual.rgba).reduce(0.0) { $0 + abs(Double($1.0) - Double($1.1)) } / Double(expected.rgba.count)
+        XCTAssertLessThan(difference, 15, "Actual upright pixels must match AVFoundation's canonical orientation")
     }
     func testAllUncertainFramesFailAndRemoveOnlyPending() async throws {
         let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
@@ -75,6 +82,16 @@ final class VideoDepthTests: XCTestCase {
         let a = try first.copyCGImage(at: .zero, actualTime: nil), b = try second.copyCGImage(at: .zero, actualTime: nil)
         let originalPixels = try SDRImage.rasterize(a), processedPixels = try SDRImage.rasterize(b)
         XCTAssertNotEqual(originalPixels.rgba, processedPixels.rgba)
+        func foregroundContrast(_ image: SDRImage) -> Double {
+            var total = 0.0
+            for y in 8..<(image.height - 8) { for x in 8..<100 {
+                let offset = (y * image.width + x) * 4
+                total += abs(Double(image.rgba[offset]) - Double(image.rgba[offset + 4]))
+            } }
+            return total
+        }
+        XCTAssertLessThan(foregroundContrast(processedPixels), foregroundContrast(originalPixels) * 0.9,
+                          "A hash change alone could be re-encoding: foreground checker contrast must actually decrease")
     }
     func testAudioPassthroughPreservesTrackAndSamples() async throws {
         let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
@@ -169,7 +186,11 @@ final class VideoDepthTests: XCTestCase {
         writer.metadata = [location]
         guard writer.startWriting() else { throw CameraError.configuration }; writer.startSession(atSourceTime: .zero)
         let context = CIContext()
-        let pattern = CIFilter(name: "CICheckerboardGenerator", parameters: ["inputWidth": 5,"inputSharpness": 1])!.outputImage!
+        var pattern = CIFilter(name: "CICheckerboardGenerator", parameters: ["inputWidth": 5,"inputSharpness": 1])!.outputImage!
+        if rotated {
+            pattern = CIImage(color: CIColor(red: 1,green: 0,blue: 0)).cropped(to: CGRect(x: 0,y: 0,width: 80,height: 180)).composited(over: pattern)
+            pattern = CIImage(color: CIColor(red: 0,green: 0,blue: 1)).cropped(to: CGRect(x: 0,y: 140,width: 320,height: 40)).composited(over: pattern)
+        }
         for index in 0..<6 {
             var attempts = 0
             while !input.isReadyForMoreMediaData { attempts += 1; guard attempts < 500 else { throw CameraError.captureTimedOut }; try await Task.sleep(nanoseconds: 2_000_000) }
