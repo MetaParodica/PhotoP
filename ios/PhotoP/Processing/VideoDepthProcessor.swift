@@ -62,7 +62,7 @@ actor VideoDepthProcessor {
         guard reader.canAdd(videoOutput) else { throw CameraError.invalidPhotoData }; reader.add(videoOutput)
         let writer = try AVAssetWriter(outputURL: output, fileType: .mov)
         let rate = try await video.load(.estimatedDataRate)
-        let bitrate = VideoDepthPolicy.bitrate(width: info.displayWidth, height: info.displayHeight, fps: Double(info.nominalFrameRate), original: Double(rate), hevc: info.codec == .hevc)!
+        guard let bitrate = VideoDepthPolicy.bitrate(width: info.displayWidth, height: info.displayHeight, fps: Double(info.nominalFrameRate), original: Double(rate), hevc: info.codec == .hevc) else { throw CameraError.invalidPhotoData }
         let settings: [String: Any] = [AVVideoCodecKey: info.codec == .hevc ? AVVideoCodecType.hevc : AVVideoCodecType.h264,
             AVVideoWidthKey: info.displayWidth, AVVideoHeightKey: info.displayHeight,
             AVVideoCompressionPropertiesKey: [AVVideoAverageBitRateKey: bitrate],
@@ -91,10 +91,15 @@ actor VideoDepthProcessor {
         description.identifier = .commonIdentifierDescription
         description.value = "PhotoP AI depth · Depth Anything V2 Small + selected-subject matte · SDR derivative · location removed" as NSString
         writer.metadata = [description] // Whitelist: never copy source GPS/device metadata.
+        var completed = false
+        defer {
+            if !completed {
+                if reader.status == .reading { reader.cancelReading() }
+                if writer.status == .writing { writer.cancelWriting() }
+            }
+        }
         guard writer.startWriting(), reader.startReading() else { throw writer.error ?? reader.error ?? CameraError.invalidPhotoData }
         writer.startSession(atSourceTime: .zero)
-        var completed = false
-        defer { if !completed { reader.cancelReading(); writer.cancelWriting() } }
         let context = CIContext(options: [.cacheIntermediates: false, .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
         let outputSpace = CGColorSpace(name: CGColorSpace.itur_709)!
         let estimator = ExternalDepthEstimator(), matte = DepthMatteRefiner(), engine = NaturalDepthEngine()

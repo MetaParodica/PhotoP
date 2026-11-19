@@ -132,12 +132,13 @@ final class VideoDepthTests: XCTestCase {
         let track = try await asset.loadTracks(withMediaType: .audio).first!
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         reader.add(output); reader.startReading()
-        var result = Data()
+        var result = Data(), markers = 0
         while let sample = output.copyNextSampleBuffer() {
             // Drain non-data marker buffers too; they are not EOF. Stopping at
             // the first marker leaves AVAssetReader in .reading and truncates verification.
-            guard let block = CMSampleBufferGetDataBuffer(sample) else { continue }
+            guard let block = CMSampleBufferGetDataBuffer(sample) else { markers += 1; continue }
             let count = CMBlockBufferGetDataLength(block)
+            guard count > 0 else { continue }
             var bytes = [UInt8](repeating: 0, count: count)
             let status = bytes.withUnsafeMutableBytes { raw in
                 CMBlockBufferCopyDataBytes(block, atOffset: 0, dataLength: count, destination: raw.baseAddress!)
@@ -145,6 +146,7 @@ final class VideoDepthTests: XCTestCase {
             XCTAssertEqual(status, kCMBlockBufferNoErr)
             result.append(contentsOf: bytes)
         }
+        print("Audio verification: \(result.count) bytes, \(markers) non-data samples, reader \(reader.status.rawValue)")
         XCTAssertEqual(reader.status, .completed)
         return result
     }
