@@ -123,4 +123,31 @@ final class ExperimentalPhotoTests: XCTestCase {
         XCTAssertEqual(session.recipe.experimentalDepth?.failure, .noSubject)
         XCTAssertEqual(session.field.inverseDepth, input.field.inverseDepth)
     }
+    func testPortraitExperimentRejectsNonHumanGradientInsteadOfApplyingPersonMatte() async throws {
+        let input = try fixture()
+        let photo = input.photo.deletingLastPathComponent().appendingPathComponent("gradient.jpg")
+        var rgba = [UInt8](repeating: 255, count: 512 * 512 * 4)
+        for y in 0..<512 { for x in 0..<512 {
+            let i = (y * 512 + x) * 4
+            rgba[i] = UInt8(30 + (x * 63 / 511) * 3)
+            rgba[i + 1] = UInt8(40 + (y * 63 / 511) * 2)
+            rgba[i + 2] = 110
+        } }
+        let original = try SDRImage(rgba: Data(rgba), width: 512, height: 512).jpeg()
+        try original.write(to: photo)
+        input.runtime.setPortraitMatte(true)
+        let request = try XCTUnwrap(input.runtime.request(for: .photo))
+        let output = try await CaptureResultProcessor.shared.render(original: photo, look: nil, aperture: 2.8,
+            focus: CGPoint(x: 0.5, y: 0.5), documents: input.root, depthOverride: input.field, experimentalRequest: request)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: output, original: photo, documents: input.root)
+        let record = try XCTUnwrap(session.recipe.experimentalPortrait)
+        XCTAssertEqual(record.outcome, .fallback)
+        XCTAssertTrue(record.failure.map { [ExperimentalSelectionFailure.notPerson, .noSubject, .ambiguousPerson].contains($0) } == true)
+        XCTAssertEqual(session.field.inverseDepth, input.field.inverseDepth)
+        XCTAssertEqual(try Data(contentsOf: photo), original)
+        let source = try XCTUnwrap(CGImageSourceCreateWithURL(output as CFURL, nil))
+        let properties = try XCTUnwrap(CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any])
+        let iptc = properties[kCGImagePropertyIPTCDictionary as String] as? [String: Any]
+        XCTAssertFalse((iptc?[kCGImagePropertyIPTCCaptionAbstract as String] as? String)?.contains("PhotoP AI portrait matte") == true)
+    }
 }

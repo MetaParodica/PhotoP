@@ -129,8 +129,17 @@ final class ExperimentalPortraitMatte {
             let buffer = try result.generateScaledMaskForImage(forInstances: IndexSet(integer: instance), from: handler)
             let alpha = try DepthMatteRefiner.alpha(CIImage(cvPixelBuffer: buffer), width: cg.width, height: cg.height, context: context)
             try check(request)
-            return Seed(width: cg.width, height: cg.height, alpha: alpha, modelID: "Vision-person-instance")
+            let seed = Seed(width: cg.width, height: cg.height, alpha: alpha, modelID: "Vision-person-instance")
+            // A person-mask proposal can hallucinate an instance even on a
+            // featureless gradient. Confirm a human/face before running matting,
+            // just as for the external seed, rather than announcing it as applied.
+            try confirmPerson(color: color, focus: focus, seed: seed)
+            try check(request)
+            return seed
         } catch is CancellationError { throw CancellationError() }
+        catch let failure as ExperimentalSelectionFailure where failure == .notPerson || failure == .ambiguousPerson {
+            throw failure
+        }
         catch {
             try check(request)
             // A runtime without the person-instance request can still use a
