@@ -40,7 +40,7 @@ struct VideoDepthEditorView: View {
                     }.frame(height: 260).accessibilityElement(children: .contain).accessibilityIdentifier("video.depth.target")
                 } else { ProgressView("원본 화면 읽는 중…").frame(height: 160) }
                 CameraValueSlider(title: "심도 f값", value: $aperture, range: 1.4...16, display: { String(format: "f/%.1f", $0) }, onCommit: {})
-                Picker("보케 렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                DepthLensPicker(selection: $profile)
                 Toggle("선택 피사체 추적", isOn: $tracking).onChange(of: tracking) { _, _ in selection = tracking ? .init(point: focus, mode: mode) : nil }
                 if tracking {
                     Picker("추적 대상", selection: $mode) { ForEach(SubjectTrackingMode.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).accessibilityIdentifier("video.depth.mode")

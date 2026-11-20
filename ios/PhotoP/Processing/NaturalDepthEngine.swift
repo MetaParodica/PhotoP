@@ -80,7 +80,7 @@ final class NaturalDepthEngine {
         let radiusLimit = SoftwareDepthPolicy.maximumRadius(longEdge: longEdge)
         let coordinates = field.inverseDepth.map { value -> Float in
             guard value > 0, let radius = SoftwareDepthPolicy.radius(inverse: Double(value), focus: Double(focusValue),
-                span: Double(span), absolute: field.units == .inverseMetres, aperture: aperture, longEdge: longEdge) else { return 0.5 }
+                span: Double(span), absolute: field.units == .inverseMetres, aperture: aperture, longEdge: longEdge, focalLengthMM: profile.focalLengthMM) else { return 0.5 }
             return SoftwareDepthPolicy.blurCoordinate(radius: radius, longEdge: longEdge) ?? 0.5
         }
         let validity = field.inverseDepth.map { $0 > 0 ? UInt8(255) : 0 }

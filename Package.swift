@@ -6,7 +6,7 @@ import Foundation
 // This is not an iOS build and cannot exercise Vision, AVFoundation or SwiftUI.
 let testPath = "ios/PhotoPTests"
 let testURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(testPath)
-let coreTests = ["SubjectVideoDepthPolicyTests.swift", "CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift", "FocusDepthPolicyTests.swift", "DepthPhaseTests.swift", "LUTTextEncoderTests.swift", "LUTBinaryCodecTests.swift", "ExposureFusionPolicyTests.swift", "ScopeAnalysisPolicyTests.swift"]
+let coreTests = ["AdvancedDepthTests.swift", "SubjectVideoDepthPolicyTests.swift", "CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift", "FocusDepthPolicyTests.swift", "DepthPhaseTests.swift", "LUTTextEncoderTests.swift", "LUTBinaryCodecTests.swift", "ExposureFusionPolicyTests.swift", "ScopeAnalysisPolicyTests.swift"]
 let excludedTests = try FileManager.default.contentsOfDirectory(atPath: testURL.path)
     .filter { !coreTests.contains($0) }
 let cameraPath = "ios/PhotoP/Camera"

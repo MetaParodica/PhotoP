@@ -2,15 +2,62 @@ import Foundation
 
 enum DepthLensProfile: String, Codable, CaseIterable, Identifiable, Sendable {
     case natural, portrait, classic
+    case vista28, street35, standard50, studio75, velvet85, reach90
     var id: String { rawValue }
-    var title: String { self == .natural ? "Natural" : self == .portrait ? "Portrait" : "Classic" }
+    static let legacy: [Self] = [.natural, .portrait, .classic]
+    var title: String {
+        switch self {
+        case .natural: return "Natural"
+        case .portrait: return "Portrait"
+        case .classic: return "Classic"
+        case .vista28: return "Vista 28"
+        case .street35: return "Street 35"
+        case .standard50: return "Standard 50"
+        case .studio75: return "Studio 75"
+        case .velvet85: return "Velvet 85"
+        case .reach90: return "Reach 90"
+        }
+    }
     var explanation: String {
         switch self {
         case .natural: return "중립 원형·균일 광량"
         case .portrait: return "부드러운 중심 가중·완만한 전이"
         case .classic: return "가상 6날 조리개·주변부 캣아이"
+        default: return "독자 보케 스타일 · 가상 \(Int(focalLengthMM))mm 특성, 실제 광학 줌 아님"
         }
     }
+    var focalLengthMM: Double {
+        switch self {
+        case .vista28: return 28
+        case .street35: return 35
+        case .studio75: return 75
+        case .velvet85: return 85
+        case .reach90: return 90
+        default: return 50
+        }
+    }
+    var blades: Int {
+        switch self {
+        case .classic, .vista28: return 6
+        case .street35, .standard50, .studio75: return 8
+        case .velvet85, .reach90: return 10
+        default: return 0
+        }
+    }
+    var catEye: Double {
+        switch self {
+        case .classic: return 1.2
+        case .vista28: return 0.3
+        case .street35: return 0.5
+        case .standard50: return 0.65
+        case .studio75: return 0.85
+        case .velvet85: return 1.05
+        case .reach90: return 1.4
+        default: return 0
+        }
+    }
+    var centerWeight: Double { self == .portrait ? 1.5 : self == .velvet85 ? 0.6 : 0 }
+
 }
 
 struct DepthBokehTap: Sendable {
@@ -29,18 +76,28 @@ enum DepthLensKernel {
         for i in 0..<n {
             let r = sqrt((Double(i) + 0.5) / Double(n)), angle = Double(i) * 2.399963229728653
             var shape = 1.0
-            if profile == .classic {
-                let sector = Double.pi / 3
+            if profile.blades > 0 {
+                let sector = 2 * Double.pi / Double(profile.blades)
                 let local = (angle + sector / 2).truncatingRemainder(dividingBy: sector) - sector / 2
-                let polygon = cos(Double.pi / 6) / cos(local)
+                let polygon = cos(sector / 2) / cos(local)
                 shape = 1 + (polygon - 1) * min(1, (f - 1.4) / 6.6)
             }
-            let weight = profile == .portrait ? pow(max(0.02, 1 - r * r), 1.5) : 1
+            let weight = pow(max(0.02, 1 - r * r), profile.centerWeight)
             let x = cos(angle) * r * shape, y = sin(angle) * r * shape
             values.append(.init(x: x, y: y, weight: weight)); values.append(.init(x: -x, y: -y, weight: weight))
         }
         let total = values.reduce(0) { $0 + $1.weight }
         return values.map { .init(x: $0.x, y: $0.y, weight: $0.weight / total) }
+    }
+    // Coordinates are pixel centers in the full image, including when CI tiles.
+    // This is the same radial transform used by the Metal compute kernel.
+    static func offset(_ tap: DepthBokehTap, x: Double, y: Double, width: Int, height: Int, profile: DepthLensProfile) -> SIMD2<Double> {
+        let edge = Double(max(width, height))
+        let radial = SIMD2((x + 0.5 - Double(width) / 2) / edge, (y + 0.5 - Double(height) / 2) / edge)
+        let rr = radial.x * radial.x + radial.y * radial.y
+        guard rr > 0.00000001 else { return SIMD2(tap.x, tap.y) }
+        let axis = radial / sqrt(rr), value = SIMD2(tap.x, tap.y)
+        return value - axis * (value.x * axis.x + value.y * axis.y) * min(0.4, rr * profile.catEye)
     }
     static func reference(_ image: [SIMD3<Float>], width: Int, height: Int, radius: Double,
                           profile: DepthLensProfile, aperture: Double = 2.8) -> [SIMD3<Float>]? {
@@ -52,7 +109,8 @@ enum DepthLensKernel {
             var result = SIMD3<Float>.zero
             for t in taps {
                 result += DepthGrid.sample(image, width: width, height: height,
-                    x: Double(x) + t.x * radius, y: Double(y) + t.y * radius) * Float(t.weight)
+                    x: Double(x) + offset(t, x: Double(x), y: Double(y), width: width, height: height, profile: profile).x * radius,
+                    y: Double(y) + offset(t, x: Double(x), y: Double(y), width: width, height: height, profile: profile).y * radius) * Float(t.weight)
             }
             return result
         }

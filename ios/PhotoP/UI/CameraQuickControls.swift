@@ -288,7 +288,7 @@ struct CameraQuickControls: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Picker("깊이 입력", selection: $model.depthSource) { ForEach(SoftwareDepthSource.allCases) { Text($0.title).tag($0) } }
                         .disabled(model.depthEnabled).accessibilityIdentifier("camera.depth.source")
-                    Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                    DepthLensPicker(selection: $model.depthProfile)
                         .disabled(model.busy)
                     Toggle("실시간 AI 심도 프리뷰", isOn: Binding(get: { model.liveDepthPreviewEnabled }, set: { model.setLiveDepthPreview($0) }))
                         .disabled(model.busy || !model.depthEnabled || model.depthSource == .measured).accessibilityIdentifier("camera.depth.live")
@@ -330,7 +330,7 @@ struct CameraQuickControls: View {
                 .accessibilityIdentifier("camera.video.depth")
             CameraValueSlider(title: "영상 심도 f값", value: $model.depthAperture, range: 1.4...16,
                 display: { String(format: "f/%.1f", $0) }, onCommit: {})
-            Picker("보케 렌즈", selection: $model.depthProfile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+            DepthLensPicker(selection: $model.depthProfile)
             subjectTracking
             Toggle("원본 프리뷰 비교", isOn: $model.liveCompareOriginal).onChange(of: model.liveCompareOriginal) { _, _ in model.updateLiveIntensity() }
             Text("화면 터치로 선명한 위치 선택 · 녹화는 원본을 보존하고 종료 후 별도 AI 심도 영상을 만듭니다. 최대4K/60fps·10분, 오디오 유지. 처리 속도는 실시간보다 느릴 수 있습니다.").font(.caption)

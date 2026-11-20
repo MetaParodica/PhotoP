@@ -100,16 +100,16 @@ enum SoftwareDepthPolicy {
     // Signed RADIUS in output pixels; negative=near foreground, positive=far.
     // Absolute input uses a virtual 50mm lens / 36mm long edge, not phone aperture.
     static func radius(inverse: Double, focus: Double, span: Double, absolute: Bool,
-                       aperture: Double, longEdge: Int) -> Double? {
-        guard [inverse, focus, span, aperture].allSatisfy(\.isFinite), inverse > 0, focus > 0,
-              span > 0, (1.4...16).contains(aperture), longEdge > 0 else { return nil }
+                       aperture: Double, longEdge: Int, focalLengthMM: Double = 50) -> Double? {
+        guard [inverse, focus, span, aperture, focalLengthMM].allSatisfy(\.isFinite), inverse > 0, focus > 0,
+              span > 0, (20...120).contains(focalLengthMM), (1.4...16).contains(aperture), longEdge > 0 else { return nil }
         let value: Double
         if absolute {
-            let distance = 1 / focus, focal = 0.05
+            let distance = 1 / focus, focal = focalLengthMM / 1000
             guard distance > focal else { return nil }
             value = focal * focal * distance / (aperture * (distance - focal)) * (focus - inverse) * Double(longEdge) / 0.036 / 2
         } else {
-            value = (focus - inverse) / span * Double(longEdge) / 120 * (2.8 / aperture)
+            value = (focus - inverse) / span * Double(longEdge) / 120 * (2.8 / aperture) * pow(focalLengthMM / 50, 2)
         }
         let limit = maximumRadius(longEdge: longEdge)
         return min(limit, max(-limit, value))

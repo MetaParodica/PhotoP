@@ -104,7 +104,7 @@ struct DepthResultEditorView: View {
                     Group {
                         Slider(value: $aperture, in: 1.4...16)
                             .accessibilityIdentifier("editor.depth.aperture")
-                        Picker("렌즈", selection: $profile) { ForEach(DepthLensProfile.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
+                        DepthLensPicker(selection: $profile)
                             .accessibilityIdentifier("editor.depth.profile")
                         Toggle("원본 비교", isOn: $compare).accessibilityIdentifier("editor.depth.compare")
                     }.disabled(saving)
