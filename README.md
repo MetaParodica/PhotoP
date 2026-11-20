@@ -1,4 +1,6 @@
-> **최신 검증·main 반영:** 사진·영상 공통 심도/선택 대상 추적 소스 `f140234`의 [전체 CI44665022130](https://github.com/MetaParodica/PhotoP/actions/runs/44665022130)와 [Xcode26.6 UI CI44665022029](https://github.com/MetaParodica/PhotoP/actions/runs/44665022029)가 성공했습니다. Native392통과/기존 Flow1skip·UI15·공통140·Python31. Xcode26.3/Simulator26.2 및26.6/26.5이며 iPhone15Pro/iOS27.2 실기기 인수는 대기입니다. [최신 검증 기록](docs/08-STEP-VALIDATION.ko.md)·[구현/사용법](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 확인하세요. 아래 과거 Phase 수치는 당시 결과입니다.
+> **2026-11-21 사진 AI 실험 main 반영:** [47 구현·검증 기록](docs/47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md). 정밀 피사체 선택과 인물 경계 개선을 사진 전용·각각 기본Off로 추가했습니다. 기존 심도/AI/영상·라이브/편집 설정은 유지합니다. 검증 앱 소스 `19b343a`, 전체 CI44784405939(Xcode26.3)/44784461745(26.6) success. 각 환경 native424 중423통과/기존Flow1skip·UI18·portable158·Python34. 실제 모델 양성·비인물 거부·저장/Off 재편집을 포함한다. iPhone15Pro/iOS27.2 실기기 인수와 새 영상 기억 추적·live 모델은 후속입니다.
+
+> **이전 사진·영상 심도 검증·main 반영:** 사진·영상 공통 심도/선택 대상 추적 소스 `f140234`의 [전체 CI44665022130](https://github.com/MetaParodica/PhotoP/actions/runs/44665022130)와 [Xcode26.6 UI CI44665022029](https://github.com/MetaParodica/PhotoP/actions/runs/44665022029)가 성공했습니다. Native392통과/기존 Flow1skip·UI15·공통140·Python31. Xcode26.3/Simulator26.2 및26.6/26.5이며 iPhone15Pro/iOS27.2 실기기 인수는 대기입니다. [최신 검증 기록](docs/08-STEP-VALIDATION.ko.md)·[구현/사용법](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 확인하세요. 아래 과거 Phase 수치는 당시 결과입니다.
 
 # PhotoP
 

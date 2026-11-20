@@ -524,3 +524,46 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 사용자 범위 명확화에 따라46의실험 범위를 신규 EdgeTAM/MatAnyone2/streaming 모델 등 추가 처리로 한정했다. 기존 Depth Anything/Vision/센서·라이브/영상 심도·추적·PSF/프로필·64MP·brush/v4·키프레임/원본 비교는 기본 기능에 남기고 기존 설정을 보존한다.
 
 실험실Off 검사 계획도 신규 실험 모델 호출0회와 기존 AI/심도 정상 실행을 분리했다. 실험 작업 취소·자원 정리·설정 저장을 기본 경로와 분리하며 기존 기능을 실험 토글로 막지 않는다. 이번 변경은 문서만이며 앱/설정/모델 구현·추론 테스트를 수행한 기록이 아니다.
+
+
+## 64. 실험적 사진 AI 심도 개발·실패 수정 — 2026-11-21
+
+기준main ec97e59, [46 기획](46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)에 따른 [47 구현](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md). 기존 심도/AI/추적·사진/영상/live 설정은 유지하고 신규 두 사진 옵션만 독립Off로 구현한다. 실제 사진 CoreML·저장/Off 재편집·불확실 대상 fallback·UI 재실행과 기존 편집 제어 보존 검사를 추가했다.
+
+### 직접 실행·처음 실패
+
+- Linux Python34검사와 두 신규 모델군/가중치·rights·적응 source 무결성 통과. Linux CoreML runtime은 없으며 protobuf 및 hash 검사를 native 추론으로 세지 않는다.
+- b58d859 전체CI44766574634(26.3)/44766666910(26.6): iPhone/Simulator 빌드 후 새 실제 선택의 noSubject/관련 assertion 때문에 실패. 기존 손/의상(.45,.6)은 고정 원본Torch모델에서도 최고IoU0.4106이었다. 명확한 얼굴(.43,.2)은0.9019. [CPU 실제 결과](research/2026-11-21-photo-reference.json)를 기록하고 기준0.5를 유지한 채 positive/negative fixture를 분리했다.
+- 9d7c4ff depth CI44771520957(26.6): 92개 중 기존Flow1skip, 새 선택2케이스/관련5assertion 실패. 실제 인물 모델 alpha/저장·Off 재편집은 통과했다. 얼굴의bestIoU0.9067/score29인데 reduced mask가0으로 읽혔으므로 별도 출력 경로 문제를 확인했다.
+- 4dccbce: CoreML 소유 배열의 논리 좌표와 최고IoU 첫 candidate 선택으로 수정했다. whole-subject 경로만 같은 기준을 통과한 가장 큰 후보를 사용한다. candidate 면적/min/max 진단으로 그래프 출력/읽기 결과를 확인하며 성공 assertions는 유지한다.
+- 중간69ba99c/18d39aa/b79835c 및4dccbce depth 실행은 후속 전체검사로 대체하며 취소 요청한 실행을 통과로 세지 않는다.
+
+### 최종 검증·게시
+
+4dccbce의26.3 native404 중 선택2케이스/관련5assertion이 다시 실패했고 세 후보 모두0, IoU는 정상임을 진단했다. scalar 신뢰도/마스크 기준을 낮추지 않았다. 후속c65d6f8는 가중치/학습층 그대로 FP32 preactivation/coefficients를 내보내고 terminal exact GELU·선형 곱만 native Darwin erf/vDSP로 복원한다. pristine7d128934…81ef9c → deriveda3e0ca63…67f373, 재현 script를 재실행한 byte 일치·hash/권리 검사는 통과했다. 원본Torch 중간 출력 대조에서 GELU 차이8.94e-8, clamped mask 최대차이3.81e-6/영역 일치이며 CoreML runtime 검증으로 대신 세지 않는다.
+
+c65d6f8 CI44778340328/44778387696은 없는 vverff API를 사용해 iPhone 컴파일 실패했다. Darwin.erff로 동일 수식을 구현했다. 4dccbce의UI18은 기존17통과/신규1실패(2assertion)였고 AX snapshot에서 wrapper ID가 하위 control ID를 덮는 것을 확인했다. 실험실/사진 고급 wrapper ID를 제거해 실제 switch/button의 ID를 보존한다.
+
+현재b294452 전체CI44778982243(26.3)/44779078806(26.6) 진행 중. 완료된 원시 로그·summary를 확인한 뒤 수치/상태와 게시 ref를 확정한다. 실제 기기·SDK27·100장/10종/3명 blind 인수는 미수행이며 기존 gate를 낮추지 않는다.
+
+
+### 스크린샷에서 발견한 비인물 오적용과 추가 회귀
+
+b294452 전체CI44778982243(26.3)은 unit405=404통과/Flow1skip·LUT18·UI18로 success였다. xcresult summary/새 UI screenshot을 직접 확인했다. 비인물 그라데이션의 인물 적용 문구를 발견하여 단순한 전체 success와 실제 기능 검토를 구별했다.
+
+19b343a에서 primary person-mask에도 기존 보조 seed와 동일한 사람/얼굴 검출을 요구하고 notPerson/ambiguousPerson은 보조 모델로 우회하지 않도록 고쳤다. native 비인물512px의 fallback·원본/기본깊이 보존·MatAnyone2 AI credit 부재를 추가하고 UI64px 비인물도 인물 적용 문구가 없어야 한다고 강화했다. 기존 실제 인물 양성 검사는 유지한다. 새 full CI44784405939(26.3)/44784461745(26.6)는 진행 중이다. 이 수정 전의26.6 ARM/Intel 실행은 취소·대체했으며 실제 전체 통과로 세지 않는다.
+
+
+## 65. 사진 실험 최종 전체 회귀·main 게시 — 2026-11-21
+
+앱 소스 `19b343ac42f95555790ca75f60bcd53270d83d6c`, [47 구현](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md).
+
+- [전체44784405939](https://github.com/MetaParodica/PhotoP/actions/runs/44784405939): **success**, Xcode26.3·SDK/Simulator26.2·arm64.
+- [전체44784461745](https://github.com/MetaParodica/PhotoP/actions/runs/44784461745): **success**, Xcode26.6·SDK/Simulator26.5·arm64.
+- 각 portable158·unit406중405통과/Flow1skip·LUT18통과·UI18통과·Python34. native합계424중423통과/기존Flow1skip이며 새 모델 검사는 제외하지 않았다. 이번 실행의 원시 logs/xcresult summary·head SHA/전체 결론을 직접 확인했다.
+- 새 실제사진7검사: 실제 선택/매트, 저장·Off 재편집/원본 bytes, 폐기 lease 기본 심도 복귀, exact GELU/linear head 배치·NaN 거부, 실제 인물 alpha·저장 복원, 불확실 손 선택 거부, 비인물의 portrait 거부/원본·기본깊이 보존/잘못된 AI credit 미표기. 신규 policy8도 defaultOff·모드 독립·v1 호환·기존 설정 보존·atomic 세대·geometry·alpha/provenance를 검증했다.
+- 새 UI는 두 옵션 영구 저장·실제 재분석·비인물에 인물 적용 문구 부재·f값/프로필/brush 유지까지 통과했다. 26.6 최종 screenshot도 직접 열어 비인물의 두 fallback 표시를 확인했다. 26.3/26.6 새 UI 케이스는 각각59.957/47.202초였으며 기기 처리 속도로 환산하지 않는다.
+- Linux 직접 Python34·신규 모델6/권리2·매팅35/source3/파생 graph·재현 script hash·문서 링크/형식 검사 통과. Linux에서 native/CoreML을 실행했다고 표시하지 않는다.
+- 앱19b343a main 정상FF push 후 원격 main 동일SHA 확인. 문서 후속은 앱·모델·테스트·CI 설정 불변이며 `[skip ci]`로 중복 native 실행을 생략한다. 검증 앱 SHA와 문서 HEAD는 별도로 식별한다.
+
+실제 iPhone15Pro/iOS27.2 촬영/시간·peak memory·열·AF 인수0건, SDK27 빌드0회. NASA1장의 계약/양성 검사와 비인물 그라데이션을100장·영상10종·blind/기기 trace gate로 세지 않는다. 기존 gate는 미인수 상태를 유지한다. 기존 사진/영상/live 심도는 기본 기능, 두 신규 사진 옵션만 Off이며 새 video memory/streaming/live 모델은 후속이다.

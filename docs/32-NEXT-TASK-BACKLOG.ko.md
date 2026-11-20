@@ -2,6 +2,8 @@
 
 작성: 2026-11-17. 기준: `main` `004d869`. [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md), [30 최적화 구현](30-OPTIMIZATION-IMPLEMENTATION.ko.md), [31 기능·오픈소스 조사](31-FEATURE-AND-OSS-RESEARCH.ko.md)와 이전 단계 문서에 흩어진 남은 과제를 한곳에 모았다. 과제 정리 문서이며 이번에 앱 코드를 바꾸거나 새로 검증하지 않았다. 2026-11-18 사용자 결정(7절)을 반영했다.
 
+> 2026-11-21 사진 전용 신규 AI 실험 개발: [47 구현 기록](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md). 두 옵션만 기본Off로 추가하며 기존 심도/AI/영상/live는 기본 기능을 유지한다. 새 영상 기억 추적·live 모델·실사 품질/기기 trace gate는 후속 과제다. 검증 앱19b343a를 두 SDK 전체회귀(native423통과/Flow1skip·UI18/각SDK) 후 main push했다. 자세한 결과·후속은47/08/당일 일지를 따른다.
+
 ## 1. 현재 상태
 
 | 항목 | 상태 | 근거 |

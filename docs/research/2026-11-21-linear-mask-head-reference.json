@@ -1,6 +1,7 @@
 {
   "runtime": "PyTorch2.7 CPU and NumPy linear head; not CoreML execution",
-  "maxAbsoluteClampedLogitDifference": 0.0,
+  "maxAbsoluteClampedLogitDifference": 3.814697265625e-06,
+  "terminalExactGELUDifference": 8.940696716308594e-08,
   "embeddingRange": [
     -0.16997122764587402,
     0.9854839444160461
