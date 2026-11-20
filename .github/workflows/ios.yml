@@ -50,6 +50,9 @@ jobs:
               xcrun xcresulttool get test-results summary --path "retained/$bundle.xcresult" > "diagnostics/$bundle-summary.json" 2> "diagnostics/$bundle-errors.log" || true
               cat "diagnostics/$bundle-summary.json"
               xcrun xcresulttool export diagnostics --path "retained/$bundle.xcresult" --output-path "diagnostics/exported/$bundle" 2>> "diagnostics/$bundle-errors.log" || true
+              if [ "$bundle" = UIValidation ]; then
+                xcrun xcresulttool export attachments --path "retained/$bundle.xcresult" --output-path diagnostics/ui-attachments 2>> "diagnostics/$bundle-errors.log" || true
+              fi
             fi
           done
           [ "$found" = 1 ]
@@ -309,6 +312,9 @@ jobs:
           except (OSError,ValueError):
               print('::notice::'+sys.argv[1]+' XCTest summary unavailable; inspect retained result')
           PYSUMMARY
+              if [ "$bundle" = UIValidation ]; then
+                xcrun xcresulttool export attachments --path "$bundle.xcresult" --output-path diagnostics/ui-attachments 2>> "diagnostics/$bundle-errors.log" || true
+              fi
               ditto -c -k --keepParent "$bundle.xcresult" "diagnostics/results/$bundle.xcresult.zip" || true
             fi
           done

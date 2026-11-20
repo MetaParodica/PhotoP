@@ -44,6 +44,8 @@ final class DepthEditorInteractionTests: XCTestCase {
         aperture.adjust(toNormalizedSliderPosition: 0.35)
         let profile = app.segmentedControls["editor.depth.profile"]
         profile.buttons["Portrait"].tap()
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"),object: profile.buttons["Portrait"])
+        XCTAssertEqual(XCTWaiter.wait(for: [selected],timeout: 3),.completed)
         XCTAssertTrue(profile.buttons["Portrait"].isSelected)
         let value = app.staticTexts["editor.depth.apertureValue"].label
         app.buttons["editor.depth.save"].tap()

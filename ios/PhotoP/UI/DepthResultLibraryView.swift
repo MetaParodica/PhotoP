@@ -144,7 +144,9 @@ struct DepthResultEditorView: View {
                             Text("원본 깊이 지도 보존 · 전경/배경 값은 기존 지도 범위에서 결정합니다. 노란 진단은 결측/혼합 경계이며 모델 확률이 아닙니다.").font(.caption2)
                         }.disabled(saving)
                     }.disabled(saving)
-                    if rendering { ProgressView("미리보기 갱신 중") }
+                    ProgressView("미리보기 갱신 중").frame(height: 24)
+                        .opacity(rendering ? 1 : 0).accessibilityHidden(!rendering)
+                        .allowsHitTesting(false)
                     if let message { Text(message).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("editor.depth.message") }
                     if saving { Button("저장 취소") { saveTask?.cancel() }.accessibilityIdentifier("editor.depth.cancel") }
                     else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent).accessibilityIdentifier("editor.depth.save") }
