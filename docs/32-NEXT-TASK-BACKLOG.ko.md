@@ -168,7 +168,7 @@
 
 ## 2026-11-20 차세대 심도 후속 — 최신
 
-[감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[13항목 구현 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존29/30/41의 기능을 새로 만들었다고 집계하지 않는다. source `d0560e6`의 native/UI 전체 검증 진행 중이며 성공/게시 SHA는08·당일 일지에 확정한다.
+[감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[13항목 구현 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존29/30/41의 기능을 새로 만들었다고 집계하지 않는다. source **77fa25f**를 Xcode26.3/26.6 두 전체 CI로 검증하고 main에 push했다(각 native409중408통과/Flow1skip·UI17·portable150·Python34). 정확한 URL/범위는08·44·당일 일지를 따른다. 실제 품질 인수는 미완료다.
 
 | 우선 | 실제 남은 작업 | 확보한 근거/범위 |
 |---|---|---|

@@ -487,4 +487,17 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 
 ### 60.3 최종 source·게시
 
-현재 `d0560e64cc8e51d4e575a419b19620756a4c4d6d`의 전체 CI44673646262 및 Xcode26.6 depth CI44673647392 진행 중이다. 성공/실패·실제 counts·UI 결과·main 게시 SHA는 확인 후 여기에 갱신한다. Xcode/Simulator 성공은 iPhone15Pro/iOS27.2·SDK27 빌드·실측 화질/발열 인수가 아니다.
+최종 **77fa25ff97d578e3c96ac4846adacbba42089882**의 두 **전체** 실행을 확인했다.
+
+- [CI44687571347](https://github.com/MetaParodica/PhotoP/actions/runs/44687571347) **success**, Xcode26.3/Simulator26.2.
+- [CI44687571198](https://github.com/MetaParodica/PhotoP/actions/runs/44687571198) **success**, Xcode26.6/Simulator26.5.
+- 각각 portable150/0실패, 단위391중390통과/정확한 기존Vision backend Flow1skip·0실패, 별도LUT18/0실패, UI17/0실패, Python34/0실패. native409중408통과/1skip, portable와 중복 합산하지 않는다. 검증 JSON·원시 log digest는 [연구 기록](research/2026-11-20-depth-validation.json)에 보존했다.
+- UI: brush stroke→undo/redo→depth diagnostic, 실제 MOV frame seek→키프레임2개→CoreML 심도 preview→삭제, 실제 save 잠금/취소/완료 통과. 작은 화면에서는 nav bar/home indicator를 제외한 viewport에 전체 control을 노출한 뒤 조작하고, 실제 time 변화까지 확인한다.
+- 실제 MOV의 CoreML·추적/실패·PTS/오디오/방향/원본 hash, v2/v3/v4 사진 base map 보존·reopen/교정 해제, native checkerboard의 실제 초점면 pixel 변화, Metal CPU maxabs0.0013741851/허용0.006 포함.
+- fa713e7/26.3 CI44683738865 전체 success 후 같은 source의26.6은 부분 노출 scrubber UI1개에서 실패하여 helper를 보강했다. 단일 preview revision77fa25f에서 원본/심도 비동기 결과 덮어쓰기도 막았다. 실패·취소한 source를 최신 통과로 치환하지 않는다. 마지막 원본의 각 job SHA/conclusion 및 raw logs를 직접 확인했다.
+
+### 60.4 main 게시와 품질 인수 범위
+
+기존 main9acbb258을 fetch하고 검증 소스의 조상임을 확인한 후 **77fa25f로 정상 fast-forward push**했다. `git ls-remote origin refs/heads/main`에서 정확한77fa25ff97d578e3c96ac4846adacbba42089882 확인. 후속 보고/일지 커밋은 앱·테스트·Package·CI·scripts·모델/자산을 수정하지 않는다.
+
+실제 사진0장/영상0개/physical trace0건. 기존100장/3기기10분/3명 blind gate 및 영상10종 gate는 **exit2 미인수**이며 낮추지 않았다. iPhone15Pro/iOS27.2 실제 화질·AF/추적/가림·4K60·latency/memory/thermal·SDK27 검증 없음. EfficientTAM encoder-only 변환을 whole tracker/ANE 배포 성공으로 표기하지 않는다. 단계별 구현/미완료는44·32에 구분했다.

@@ -4,7 +4,7 @@
 
 ## 1. 실제 기준 main
 
-작업 시작 fetch 후 main/origin/main은 `9acbb2581b677bfb868f00d55b35d7dba366888f`, 작업 트리 clean, 열린 PR0. 해당 [CI44667252120](https://github.com/MetaParodica/PhotoP/actions/runs/44667252120) success 확인. 별도 작업 브랜치 `codex/computational-depth-20261120`에서 변경/검증한다. 최종 게시 SHA는08과 일지에 추가한다.
+작업 시작 fetch 후 main/origin/main은 `9acbb2581b677bfb868f00d55b35d7dba366888f`, 작업 트리 clean, 열린 PR0. 해당 [CI44667252120](https://github.com/MetaParodica/PhotoP/actions/runs/44667252120) success 확인. 별도 작업 브랜치 `codex/computational-depth-20261120`에서 변경/검증한다. 최종 검증 소스 **`77fa25ff97d578e3c96ac4846adacbba42089882`**를 두 전체 CI success 확인 후 main에 정상 fast-forward push했다. `git ls-remote`의 동일 SHA를 직접 확인했다. 뒤의 최종 정리 커밋은 문서만 갱신한다.
 
 ## 2. 기존 기능과 재사용 범위
 
@@ -34,6 +34,8 @@ signed CoC·가상50mm thin-lens·9/17 depth layers·near coverage 합산·초�
 | Processing/CaptureResultProcessor.swift·DepthPhotoEditor.swift | v4 저장/로드/reprocess, base hash·교정 복원·768px 진단 |
 | Processing/VideoDepthPolicy.swift·VideoDepthFramePreview.swift | 하위 호환 보간·actual frame/심도 미리보기 |
 | UI/DepthLensPicker.swift·CameraQuickControls.swift·DepthResultLibraryView.swift·VideoDepthEditorView.swift | legacy segment+추가 style menu·편집 UX |
+| App/PhotoPApp.swift·UI/CameraView.swift·DepthEditorReviewFixture.swift | DEBUG Simulator editor root 직접 진입, 실제 editor/MOV 사용; iPhone/release 기본 CameraView 유지 |
+| scripts/run_test_process.py·test_run_test_process.py | Darwin dead-group EPERM 구별·살아 있는 그룹/ps 실패 오류 유지, signal handler 복원 |
 | PhotoPTests/AdvancedDepthTests.swift·DepthPSFMetalTests.swift·NaturalDepthTests.swift·PhotoPUITests/DepthEditorInteractionTests.swift | 수학/이미지/GPU/레시피/편집 UI 회귀 |
 | scripts/check_video_depth_evidence.py·test_video_depth_evidence.py·measure_depth_synthetic_baseline.swift·probe_efficienttam_coreml.py | 실제 evidence integrity·baseline·모델 변환 재현 |
 
@@ -78,7 +80,7 @@ temporal은 현재→이전 flow의 광도 대응이 충분할 때만 이전 깊
 | 같은 구버전/현재 함수의 one-pixel strand+fractional edges+background gaps 합성 | boundary MAE **0.15071633→0.022607395**, hard-seed **0.000038596→0.0**. 실제 모발/유리 신경망 평가가 아닌 관측색 혼합 fixture |
 | 등록된 정지 synthetic30-frame 교대 깊이 noise | raw estimate 대비 MAE 비율 **0.5635766**. 새 컷/가림/등록 만료는 averaging 없이 현재값. 실제 움직이는 인물 성능 수치 아님 |
 | 공간 가변 CPU PSF impulse | nine profiles, off-axis 밝기8 impulse/radius4, 최악 상대 에너지 편차 **0.00614864**(약0.615%, 허용3%). DC/중심/지원 반경 검증 |
-| native Metal–CPU linear RGB | nine profiles 전체 canvas 비교/alpha 검증, 허용 maxabs0.006. 실제 native 결과는08에 기록 |
+| native Metal–CPU linear RGB | nine profiles 전체 canvas 비교/alpha 검증, 허용 maxabs0.006. 실제 두 SDK native 실행에서 최악 maxabs **0.0013741851**;08/검증 JSON에 기록 |
 | native far-only 배경 fixture | blue far/red foreground에서 제한 확장 pixel에 red 유입 금지, 관측 없는 먼 hole 원본 유지 |
 | saved recipe/original/고해상도/영상 | 기존 및 신규 native fixture의 검증 로그를08에 기록. 실제 사용자 사진/영상 수는0 |
 
@@ -96,11 +98,20 @@ EfficientTAM의 Linux CPU random fixture encoder1회 약0.313초는 graph 확인
 
 ## 9. 테스트 수·실패·해결
 
-초기140 portable → 현재150 portable 통과/0실패. Python31→33 통과. 새 native388개 중387통과/기존 Vision flow1skip인 중간 source를 확인했으며 최종 source의 전체 native/LUT/UI와 정확한 수는08에 갱신한다. CI 두 초기 실패는 apply 반환형 Optional 오해와 fixture CIColor Optional 누락으로 각각 수정했다. 테스트 assertion 삭제/강제 skip으로 처리하지 않았다. 실제 영상 gate는0건으로 exit2, 기존 사진 gate도 미인수 상태를 유지한다.
+초기140 → **150 portable 통과**, Python31 → **34 통과**. 최종 source의 두 전체 CI 각각 **앱 단위391개 중390통과/기존 Flow1skip·0실패 + 별도LUT18통과 + UI17통과**. native 합계409개 중408통과/1skip이며 portable150을 다시 더하지 않는다. 새 brush와 실제 MOV/CoreML frame preview·키프레임 추가/삭제도 UI에서 통과했다.
+
+수정한 실패: CIImageProcessor.apply 반환형/CIColor Optional,26.6 복합 산술식 type-check timeout, preview 중 컨트롤 위치 이동·초기 cover 미표시, Darwin 종료 그룹 killpg EPERM, 작은 화면의 부분 노출 slider를 hittable만으로 조작하던 UI helper. 검사를 삭제/강제 skip하지 않았다. 실제 시각 이동/키프레임 수/저장 잠금/원본 bytes assertions를 유지하거나 강화했다. source 폐기 후 취소한 CI는 통과로 세지 않는다. 실제 사진/영상 evidence gate는 각각0건으로 exit2이며 품질 인수 미통과다.
 
 ## 10. 정확한 CI 소스와 실행
 
-중간 [CI44671800000](https://github.com/MetaParodica/PhotoP/actions/runs/44671800000)는 `d5b87746a6bfff2233f90d323a01ecdebabc6c3f`의 native388/Flow1skip을 확인했다. 최종 성공 SHA/URL·전체/LUT/UI 수는08·당일 일지에서 확정하며 진행 중 실행을 성공으로 쓰지 않는다.
+**동일 source `77fa25ff97d578e3c96ac4846adacbba42089882`**:
+
+| 전체 실행 | 결과·실제 runtime | 직접 확인 |
+|---|---|---|
+| [44687571347](https://github.com/MetaParodica/PhotoP/actions/runs/44687571347) | success · Xcode26.3 / Simulator26.2 | iPhone/Simulator 빌드·portable150·단위391/Flow1skip·LUT18·UI17·Python34·실제 앱 자산/고지 |
+| [44687571198](https://github.com/MetaParodica/PhotoP/actions/runs/44687571198) | success · Xcode26.6 / Simulator26.5 | 같은 전체 항목, UI-only/depth-only 성공으로 대체하지 않음 |
+
+[검증 JSON](research/2026-11-20-depth-validation.json)에 SHA·실행 URL·수·원시 log hash·실제자료0건을 기록했다. 초기/중간 실패와 정정은08 및 당일 일지에 남겼다. SDK27/iPhone27.2 실기기 인수는 실행하지 않았다.
 
 ## 11. 실기기 미검증
 
@@ -122,4 +133,6 @@ EfficientTAM의 Linux CPU random fixture encoder1회 약0.313초는 graph 확인
 
 ## 13. 커밋·브랜치·푸시 상태
 
-감사 c0036f8 → PSF44d8df2 → matte/temporal01e708f → editor96337c6 → Optional fixture d5b8774 → UI/evidence8ddd968 → stale/probe28f4a24. 작업 브랜치로 정상 push하여 CI를 반복했다. 마지막 검증·main 반영 SHA는08 및 당일 일지에 기록한다. 원본/기존 결과/레시피를 삭제하지 않았고 강제 push하지 않았다.
+감사/계획 c0036f8 → PSF44d8df2 → matte/temporal01e708f → editor96337c6 → timeline/원본 보존·상태/호환/취소 보강 → rack focus d2078f7 → 최종사진512 cbbdc9b → 검증 root/watchdog fa713e7 → 완전 노출 UI helper cf8a62e → 단일 preview revision **77fa25f**. 전체18개 작업 커밋을 별도 브랜치에서 검증했다.
+
+`main`/`origin/main`의 기존9acbb258이 검증 소스의 조상임을 fetch/merge-base로 확인하고 **정상 fast-forward main push**를 수행했다. 원격 main **77fa25ff97d578e3c96ac4846adacbba42089882** 확인. 작업 브랜치 `codex/computational-depth-20261120`는 검증 소스 보존용으로 유지한다. 강제 push·원본/기존 결과 삭제 없음. 이후 정리 커밋은 문서만 변경하고 실제 최종 문서 SHA는 채팅/원격 ref로 확인한다.

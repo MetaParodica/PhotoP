@@ -182,6 +182,6 @@ Xcode Scheme의 DEBUG Simulator 실행 인자 `--ui-review`에 `--review-guide`,
 
 ## 2026-11-20 차세대 심도 인계 추가
 
-현재 고도화는 [감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md) → [계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md) → [구현·연구·인수 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 먼저 읽는다. 새 PSF는 CIImageProcessorKernel→DepthPSF.metal이며 XcodeGen이 소스를 포함한다. 원본 사진/깊이를 수정하지 않는 v4 brush recipe, 영상v2 보간/v1 hold 복원을 유지한다. 최종 source/CI·main 상태는08의60절과11월20일 일지를 확인한다.
+현재 고도화는 [감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md) → [계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md) → [구현·연구·인수 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 먼저 읽는다. 새 PSF는 CIImageProcessorKernel→DepthPSF.metal이며 XcodeGen이 소스를 포함한다. 원본 사진/깊이를 수정하지 않는 v4 brush recipe, 영상v2 보간/v1 hold 복원을 유지한다. 검증 소스77fa25f가 main에 push됐다. 전체 CI44687571347(Xcode26.3)/44687571198(26.6) 모두 success: native409중408통과/Flow1skip·UI17·portable150·Python34. 정확한 source/게시 상태와 실제 품질 미인수는08의60절·44·11월20일 일지를 확인한다.
 
 portable는 Swift6.0.3 Linux에서도150개 통과했다. 외부 encoder-only 변환 probe는 앱/일반 CI 의존성이 아니며 별도 /tmp venv의 torch2.5.1+cpu·CoreMLTools8.3·numpy1.26.4와 pinned upstream/weights를 필요로 한다. 실행 옵션은 scripts/probe_efficienttam_coreml.py를 따른다. encoder 패키지 생성과 whole tracker/ANE/runtime 검증을 구분한다. 앱은 기존 고정 CoreML 모델을 유지한다. 사진100장 및10종 실제 영상 gate는 자료0으로 미인수이며 합성 fixture로 통과시키지 않는다.

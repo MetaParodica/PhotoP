@@ -1,0 +1,86 @@
+{
+  "recordedAtKST": "2026-11-20T15:52:20.064100+09:00",
+  "baselineMainSHA": "9acbb2581b677bfb868f00d55b35d7dba366888f",
+  "validatedSourceSHA": "77fa25ff97d578e3c96ac4846adacbba42089882",
+  "publishedCodeMainSHA": "77fa25ff97d578e3c96ac4846adacbba42089882",
+  "runs": [
+    {
+      "id": 44687571347,
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/44687571347",
+      "sourceSHA": "77fa25ff97d578e3c96ac4846adacbba42089882",
+      "conclusion": "success",
+      "scope": "all",
+      "xcode": "26.3",
+      "simulatorRuntime": "26.2",
+      "counts": {
+        "portablePassed": 150,
+        "unitPassed": 390,
+        "unitSkipped": 1,
+        "unitFailed": 0,
+        "lutPassed": 18,
+        "uiPassed": 17,
+        "pythonPassed": 34
+      },
+      "rawLogDigests": {
+        "unit-tests.log": {
+          "sha256": "ea144e9ed1077db93a40828aeeb8d8ac4a6cffea51c70162ddcaf9dd74c69db8",
+          "bytes": 110548
+        },
+        "lut-tests.log": {
+          "sha256": "92697ca9f150692812e679fd8384619e9d4926336fab3ceb26641a4cedff70f7",
+          "bytes": 9245
+        },
+        "ui-tests.log": {
+          "sha256": "2ada15b8a06e018d90e1ce4f12c6305dc8562e382a35b0531f3832736b1edd9a",
+          "bytes": 79945
+        }
+      }
+    },
+    {
+      "id": 44687571198,
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/44687571198",
+      "sourceSHA": "77fa25ff97d578e3c96ac4846adacbba42089882",
+      "conclusion": "success",
+      "scope": "all",
+      "xcode": "26.6",
+      "simulatorRuntime": "26.5",
+      "counts": {
+        "portablePassed": 150,
+        "unitPassed": 390,
+        "unitSkipped": 1,
+        "unitFailed": 0,
+        "lutPassed": 18,
+        "uiPassed": 17,
+        "pythonPassed": 34
+      },
+      "rawLogDigests": {
+        "unit-tests.log": {
+          "sha256": "3ffffc55fd380c88f67539bf979029b2eb425c494fe141691af1865110d92d9e",
+          "bytes": 110288
+        },
+        "lut-tests.log": {
+          "sha256": "7c06f25c8d88ea92e4f04f608d48da204804cd8e0e4da3ea17d01f4cf30ae17e",
+          "bytes": 9515
+        },
+        "ui-tests.log": {
+          "sha256": "4e72091e5df72bafdf0e5feb3c4d010ddf1aa095317f56b353fc2b7a8cdc2df5",
+          "bytes": 85424
+        }
+      }
+    }
+  ],
+  "realPhotoScenes": 0,
+  "realVideoScenes": 0,
+  "physicalDeviceRuns": 0,
+  "qualityAcceptance": false,
+  "syntheticMetrics": {
+    "colorLineBoundaryMAEBefore": 0.0983785,
+    "colorLineBoundaryMAEAfter": 0.014756747,
+    "thinStructureBoundaryMAEBefore": 0.15071633,
+    "thinStructureBoundaryMAEAfter": 0.022607395,
+    "registeredDepthMAERatio": 0.5635766,
+    "pointEnergyWorstRelativeDeviation": 0.0061486363,
+    "metalCPUWorstAbsoluteDifference": 0.0013741851
+  },
+  "note": "Native counts include the portable policies; do not sum them as independent app cases. Simulator and synthetic success do not establish device/competitor quality."
+}
