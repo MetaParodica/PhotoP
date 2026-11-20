@@ -5,10 +5,11 @@ final class VideoDepthInteractionTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review", "--review-video-depth-editor"]
         app.launch(); defer { app.terminate() }
-        let target = app.otherElements["video.depth.target"]
+        let target = app.descendants(matching: .any)["video.depth.target"]
         let render = app.buttons["video.depth.render"]
         XCTAssertTrue(render.waitForExistence(timeout: 25))
-        XCTAssertTrue(target.exists)
+        XCTAssertTrue(target.waitForExistence(timeout: 25))
+        XCTAssertTrue(render.isEnabled, "The source thumbnail must be ready before rendering")
         let tracking = app.switches["선택 피사체 추적"]
         for _ in 0..<4 where !tracking.isHittable { app.swipeUp() }
         XCTAssertTrue(tracking.isHittable); tracking.tap()
@@ -26,7 +27,16 @@ final class VideoDepthInteractionTests: XCTestCase {
         XCTAssertTrue(message.waitForExistence(timeout: 10))
         let cancel = app.buttons["처리 취소"]
         if cancel.waitForExistence(timeout: 2), cancel.isHittable { cancel.tap() }
-        XCTAssertTrue(render.waitForExistence(timeout: 30))
-        XCTAssertTrue(message.label.contains("원본") || message.label.contains("취소"))
+        // The initial progress message also mentions the original. Wait for an
+        // actual terminal outcome, then bring the control back into the viewport.
+        let finished = NSPredicate { _, _ in
+            message.exists && (message.label.contains("취소했습니다.") || message.label.contains("유효한 프레임이 없습니다."))
+        }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: finished, object: nil)], timeout: 60), .completed)
+        for _ in 0..<3 where !render.isHittable { app.swipeUp() }
+        for _ in 0..<4 where !render.isHittable { app.swipeDown() }
+        XCTAssertTrue(render.isHittable)
+        XCTAssertTrue(render.isEnabled)
+        XCTAssertTrue(message.label.contains("원본"))
     }
 }
