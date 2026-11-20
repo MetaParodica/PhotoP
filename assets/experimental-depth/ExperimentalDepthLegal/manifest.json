@@ -72,11 +72,11 @@
     },
     {
       "path": "ExperimentalDepthLegal/NOTICE",
-      "sha256": "5c48edfd8e730905e5812dbecd6ca064d7c32cb0b1f1228610d7a925c0b68da9"
+      "sha256": "2a16c0c50f0d99faabb7b259e56d7ebf1f6b1d1b120538c06e7b673246e797bc"
     }
   ],
   "derivation": {
-    "method": "Expose unchanged FP32 preactivation input_93 [1,32,256,256] and hyper_in [1,4,32]; reconstruct terminal exact GELU and linear mask head with native vForce/vDSP; no weight changes",
+    "method": "Expose unchanged FP32 preactivation input_93 [1,32,256,256] and hyper_in [1,4,32]; reconstruct terminal exact GELU and linear mask head with native Darwin erf/vDSP; no weight changes",
     "sourceSpecificationSHA256": "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c",
     "derivedSpecificationSHA256": "a3e0ca6334727c633e3185262f4b2dca888a5ebaec6349166dff4fa9b167f373",
     "script": "scripts/derive_experimental_photo_head.py",

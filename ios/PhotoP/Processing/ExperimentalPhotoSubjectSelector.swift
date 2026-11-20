@@ -3,6 +3,7 @@
 import CoreVideo
 import Foundation
 import Accelerate
+import Darwin
 
 /// Photo-only initializer of the pinned EdgeTAM conversion. No temporal memory,
 /// autofocus, live/video hooks or state shared with the baseline depth estimator.
@@ -146,19 +147,13 @@ final class ExperimentalPhotoSubjectSelector {
             }
         }
     }
-    /// SAM2's exact terminal GELU, using vector erf without changing weights.
+    /// SAM2's exact terminal GELU, without changing learned weights.
     static func exactGELU(_ values: [Float]) throws -> [Float] {
         guard !values.isEmpty, values.count <= 32 * 256 * 256, values.allSatisfy(\.isFinite) else {
             throw ExperimentalSelectionFailure.invalidOutput
         }
-        var scaled = [Float](repeating: 0, count: values.count)
-        var result = scaled
-        var scale: Float = 1 / sqrt(2)
-        vDSP_vsmul(values, 1, &scale, &scaled, 1, vDSP_Length(values.count))
-        var count = Int32(values.count)
-        vverff(&result, &scaled, &count)
-        for index in values.indices { result[index] = 0.5 * values[index] * (1 + result[index]) }
-        return result
+        let scale: Float = 1 / sqrt(2)
+        return values.map { 0.5 * $0 * (1 + Darwin.erff($0 * scale)) }
     }
     /// SAM2's unchanged final linear head: [3,32] × [32,pixels]. The
     /// single-mask token (row zero) is intentionally excluded for one-point SAM2.

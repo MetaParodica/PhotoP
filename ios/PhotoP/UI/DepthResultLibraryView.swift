@@ -155,7 +155,7 @@ struct DepthResultEditorView: View {
                                     Button("터치한 피사체를 정밀 선택하여 새 사진 만들기") { reanalyse() }
                                         .disabled(saving || compare).accessibilityIdentifier("editor.depth.reanalyse")
                                 }
-                            }.accessibilityIdentifier("editor.depth.experiments")
+                            }
                         }.disabled(saving)
                     }.disabled(saving)
                     ProgressView("미리보기 갱신 중").frame(height: 24)

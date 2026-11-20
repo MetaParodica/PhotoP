@@ -17,7 +17,7 @@ policy, saved recipe handling and rendering integration are implemented here.
   are renamed to `ExperimentalPhotoEncoder.mlpackage` and
   `ExperimentalPhotoInitializer.mlpackage`. Encoder and all weight bytes are unchanged.
   PhotoP exposes the initializer’s unchanged FP32 `input_93`/`hyper_in`
-  tensors and reconstructs the same terminal exact GELU and linear mask product with native vForce/vDSP.
+  tensors and reconstructs the same terminal exact GELU and linear mask product with native Darwin erf/vDSP.
   The release returned zero masks on the tested Core ML CPU runtime. Original
   and derived specification hashes, reproducible script and method are recorded
   in the manifest; this is an output-graph adaptation, not retrained weights.

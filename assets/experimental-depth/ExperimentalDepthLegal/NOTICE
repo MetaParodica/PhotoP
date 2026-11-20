@@ -11,7 +11,7 @@ The converted .mlpackage files are a derivative work of the EdgeTAM checkpoint: 
 Core ML (fixed rotary tables, branch-free prompt handling, fp16) and its weights are otherwise unchanged unless a
 release notes a quantized variant. Keep this NOTICE and LICENSE with any copy of the packages.
 
-PhotoP experimental photo selection includes only the ImageEncoder and Initializer from the Jutsu v1.2 release, renamed at the package-folder level. Encoder and all weights are unchanged. PhotoP exposes the initializer FP32 mask preactivation/coefficients and reconstructs the identical terminal exact GELU and linear head with native vForce/vDSP; scripts/derive_experimental_photo_head.py records this output-graph adaptation. No temporal tracker is included in this resource group. MatAnyone2 is separately documented under third-party/MatAnyone2Kit.
+PhotoP experimental photo selection includes only the ImageEncoder and Initializer from the Jutsu v1.2 release, renamed at the package-folder level. Encoder and all weights are unchanged. PhotoP exposes the initializer FP32 mask preactivation/coefficients and reconstructs the identical terminal exact GELU and linear head with native Darwin erf/vDSP; scripts/derive_experimental_photo_head.py records this output-graph adaptation. No temporal tracker is included in this resource group. MatAnyone2 is separately documented under third-party/MatAnyone2Kit.
 Source: https://github.com/jutsuhq/edgetam-coreml/releases/tag/v1.2
 Conversion source inspected: 3c36c37f93a3106375aa33c14fd7ec426b9e1fa9
 Release archive SHA-256: 9c35c1b6667a0dd80b093bbc20747628f304133ad2a531de049307beb3ae1401

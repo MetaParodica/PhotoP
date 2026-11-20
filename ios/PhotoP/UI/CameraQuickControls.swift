@@ -301,9 +301,8 @@ struct CameraQuickControls: View {
                     Button("최근 심도 사진을 현재 f값으로 재처리") { Task { await model.reprocessLatestDepth() } }
                         .disabled(model.busy || model.latestDepthResult == nil).accessibilityIdentifier("camera.depth.reprocess")
                     DisclosureGroup("실험실 · 추가 AI 기능") { ExperimentalDepthSettingsView().padding(.top, 8) }
-                        .accessibilityIdentifier("camera.depth.experiments")
                 }.padding(.top, 8)
-            }.accessibilityIdentifier("camera.depth.advanced")
+            }
             if !model.depthModeAllowed { Text("PRO 일반 단일 사진에서 사용합니다. RAW·브래킷·장노출·영상·네이티브 추적과 동시 사용하지 않습니다.").font(.caption2) }
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
@@ -344,7 +343,6 @@ struct CameraQuickControls: View {
             }
             if let message = model.videoDepthMessage { Text(message).font(.caption2).accessibilityIdentifier("camera.video.depth.status") }
             DisclosureGroup("실험실 · 사진 전용 AI") { ExperimentalDepthSettingsView().padding(.top, 8) }
-                .accessibilityIdentifier("camera.video.depth.photoExperiments")
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
     }
