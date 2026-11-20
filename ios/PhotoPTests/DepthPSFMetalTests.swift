@@ -30,7 +30,7 @@ final class DepthPSFMetalTests: XCTestCase {
         let space = try XCTUnwrap(CGColorSpace(name: CGColorSpace.extendedLinearSRGB))
         let context = CIContext(options: [.workingColorSpace: space])
         let extent = CGRect(x: 0, y: 0, width: 33, height: 33)
-        let image = CIImage(color: CIColor(red: 4, green: 2, blue: 1, alpha: 0.25, colorSpace: space)).cropped(to: extent)
+        let image = CIImage(color: try XCTUnwrap(CIColor(red: 4, green: 2, blue: 1, alpha: 0.25, colorSpace: space))).cropped(to: extent)
         let output = try DepthLensFilter().blur(image, radius: 4, profile: .classic, aperture: 8)
         var pixel = [Float](repeating: 0, count: 4)
         pixel.withUnsafeMutableBytes { context.render(output, toBitmap: $0.baseAddress!, rowBytes: 16,
