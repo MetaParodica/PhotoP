@@ -86,4 +86,57 @@ final class AdvancedDepthTests: XCTestCase {
         XCTAssertEqual(state.update(new, luma: luma, time: 0.3, generation: 1, requireRegistration: true)?.inverseDepth, new.inverseDepth)
     }
 
+    func testCorrectionIsNonDestructiveBoundedAndUndoable() throws {
+        let values = (0..<400).map { Float($0 % 20) / 20 + 0.1 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 20, height: 20, inverseDepth: values, units: .relativeInverse))
+        let stroke = DepthBrushStroke(points: [.init(x: 0.5,y: 0.5)], mode: .foreground, radius: 0.15, softness: 0.7)
+        var history = DepthCorrectionHistory()
+        XCTAssertTrue(history.append(stroke)); XCTAssertTrue(history.canUndo)
+        let corrected = try XCTUnwrap(history.current.applying(to: field))
+        XCTAssertEqual(field.inverseDepth, values)
+        XCTAssertEqual(corrected.inverseDepth[0], values[0])
+        XCTAssertGreaterThan(corrected.inverseDepth[10*20+10], values[10*20+10])
+        XCTAssertEqual(corrected.bounds?.lower, field.bounds?.lower)
+        XCTAssertEqual(corrected.bounds?.upper, field.bounds?.upper)
+        XCTAssertTrue(corrected.inverseDepth.allSatisfy { $0 >= field.bounds!.lower && $0 <= max(field.bounds!.upper,values.max()!) })
+        let saved = try JSONEncoder().encode(history.current)
+        XCTAssertEqual(try JSONDecoder().decode(DepthCorrections.self,from: saved).applying(to: field)?.inverseDepth, corrected.inverseDepth)
+        history.undo(); XCTAssertEqual(history.current.applying(to: field)?.inverseDepth, values)
+        history.redo(); XCTAssertEqual(history.current.applying(to: field)?.inverseDepth, corrected.inverseDepth)
+        var protected = stroke; protected.protectedRange = 0.1...1.1
+        XCTAssertEqual(DepthCorrections(strokes: [protected]).applying(to: field)?.inverseDepth,values)
+        var invalid = stroke; invalid.points = [.init(x: .nan,y: 0.5)]
+        XCTAssertFalse(history.append(invalid)); XCTAssertFalse(DepthCorrections(strokes: [invalid]).valid)
+    }
+    func testBrushSoftEdgeAndInvalidDepthRequireExplicitStroke() throws {
+        var values = (0..<400).map { Float($0 % 20)/20+0.1 }; values[210] = 0
+        let field = try XCTUnwrap(SoftwareDepthField(width: 20,height: 20,inverseDepth: values,units: .relativeInverse))
+        let edits = DepthCorrections(strokes: [.init(points: [.init(x: 0.525,y: 0.525)],mode: .foreground,radius: 0.15,softness: 1)])
+        let output = try XCTUnwrap(edits.applying(to: field))
+        XCTAssertEqual(output.inverseDepth[210], field.bounds!.upper,accuracy: 0.00001)
+        XCTAssertEqual(output.inverseDepth[0], values[0])
+        XCTAssertGreaterThan(output.inverseDepth[211],values[211]); XCTAssertLessThan(output.inverseDepth[211],field.bounds!.upper)
+        XCTAssertFalse(DepthCorrections(strokes: Array(repeating: edits.strokes[0],count: 65)).valid)
+    }
+
+    func testVideoSmoothInterpolationIsOpticalAndLegacyRecipesHold() throws {
+        let keys: [VideoDepthKeyframe] = [
+            .init(time: 0,focus: CGPoint(x: 0.2,y: 0.4),aperture: 2,profile: .natural),
+            .init(time: 2,focus: CGPoint(x: 0.8,y: 0.6),aperture: 8,profile: .natural)]
+        let legacy = VideoDepthIntent(keyframes: keys)
+        XCTAssertEqual(legacy.parameters(at: 1),keys[0])
+        let old = try JSONDecoder().decode(VideoDepthIntent.self,from: JSONEncoder().encode(legacy))
+        XCTAssertNil(old.interpolation); XCTAssertEqual(old.parameters(at: 1),keys[0])
+        let animated = VideoDepthIntent(keyframes: keys,interpolation: .smooth)
+        let mid = try XCTUnwrap(animated.parameters(at: 1))
+        XCTAssertEqual(mid.focus.x,0.5,accuracy: 1e-8); XCTAssertEqual(mid.aperture,3.2,accuracy: 1e-8)
+        XCTAssertEqual(animated.parameters(at: 0)?.focus,keys[0].focus)
+        XCTAssertEqual(animated.parameters(at: 2),keys[1])
+        XCTAssertEqual(try JSONDecoder().decode(VideoDepthIntent.self,from: JSONEncoder().encode(animated)),animated)
+        var targetChange = keys
+        targetChange[1].selection = .init(point: CGPoint(x: 0.8,y: 0.6),mode: .person)
+        let safe = VideoDepthIntent(keyframes: targetChange,interpolation: .smooth)
+        XCTAssertEqual(safe.parameters(at: 1),keys[0],"New target must never be anticipated or interpolated")
+    }
+
 }

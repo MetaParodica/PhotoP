@@ -32,6 +32,8 @@ struct CaptureResultRecipe: Codable, Sendable {
     var matteHeight: Int? = nil
     var matteSHA256: String? = nil
     var fusionNormalizedError: Double? = nil
+    var depthCorrections: DepthCorrections? = nil
+    var depthMapRole: String? = nil
 }
 
 struct DepthEditSession: Identifiable, Sendable {
@@ -41,6 +43,7 @@ struct DepthEditSession: Identifiable, Sendable {
     let field: SoftwareDepthField
     let matte: DepthMatteSurface?
     let look: ImportedLUT?
+    var corrections: DepthCorrections = .init()
     var id: URL { result }
 }
 
@@ -58,12 +61,12 @@ actor CaptureResultProcessor {
     private var activePending: Set<URL> = []
 
     func reprocess(result: URL, original: URL, aperture: Double, documents: URL? = nil,
-                   focus: CGPoint? = nil, profile: DepthLensProfile? = nil) async throws -> URL {
+                   focus: CGPoint? = nil, profile: DepthLensProfile? = nil, corrections: DepthCorrections? = nil) async throws -> URL {
         let session = try loadSession(result: result, original: original, documents: documents)
         let recipe = session.recipe
         return try await render(original: original, look: session.look, aperture: aperture,
             focus: focus ?? CGPoint(x: recipe.focusX, y: recipe.focusY), documents: documents, depthOverride: session.field,
-            profile: profile ?? recipe.lensProfile ?? .natural, savedMatte: session.matte, depthOrigin: recipe.depthSource)
+            profile: profile ?? recipe.lensProfile ?? .natural, savedMatte: session.matte, depthOrigin: recipe.depthSource, corrections: corrections ?? session.corrections)
     }
 
     func list(documents: URL? = nil) throws -> [DepthResultSummary] {
@@ -77,7 +80,7 @@ actor CaptureResultProcessor {
                       (try? entry.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false,
                       let data = try? bounded(entry.appendingPathComponent("recipe.json"), limit: 131_072),
                       let recipe = try? JSONDecoder().decode(CaptureResultRecipe.self, from: data),
-                      [2, 3].contains(recipe.version), recipe.depthMapFilename == "depth.f32", let aperture = recipe.aperture,
+                      [2, 3, 4].contains(recipe.version), recipe.depthMapFilename == "depth.f32", let aperture = recipe.aperture,
                       recipe.originalFilename == (recipe.originalFilename as NSString).lastPathComponent,
                       !recipe.originalFilename.isEmpty, !recipe.originalFilename.hasPrefix("."),
                       FileManager.default.fileExists(atPath: entry.appendingPathComponent("photo.jpg").path) else { return nil }
@@ -97,7 +100,7 @@ actor CaptureResultProcessor {
         }
         let recipe = try JSONDecoder().decode(CaptureResultRecipe.self, from: bounded(folder.appendingPathComponent("recipe.json"), limit: 131_072))
         let sourceInfo = try original.resourceValues(forKeys: [.isSymbolicLinkKey, .isRegularFileKey])
-        guard [2, 3].contains(recipe.version), recipe.originalFilename == original.lastPathComponent,
+        guard [2, 3, 4].contains(recipe.version), recipe.originalFilename == original.lastPathComponent,
               sourceInfo.isSymbolicLink != true, sourceInfo.isRegularFile == true,
               recipe.originalSHA256 == (try LUTPhotoEditor.hashFile(original)),
               recipe.depthMapFilename == "depth.f32", let hash = recipe.depthMapSHA256,
@@ -112,6 +115,9 @@ actor CaptureResultProcessor {
             (0..<(w * h)).map { Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 4, as: UInt32.self))) }
         }
         guard let field = SoftwareDepthField(width: w, height: h, inverseDepth: values, units: unit) else { throw CameraError.invalidPhotoData }
+        let corrections = recipe.depthCorrections ?? DepthCorrections()
+        guard corrections.valid, (recipe.version != 4 || (recipe.depthMapRole == "uncorrected-base" && recipe.depthCorrections != nil)),
+              (recipe.version == 4 || corrections.strokes.isEmpty) else { throw CameraError.invalidPhotoData }
         var matte: DepthMatteSurface?
         if let hash = recipe.matteSHA256 {
             guard let mw = recipe.matteWidth, let mh = recipe.matteHeight, (3...512).contains(mw), (3...512).contains(mh) else { throw CameraError.invalidPhotoData }
@@ -126,7 +132,7 @@ actor CaptureResultProcessor {
             look = ImportedLUT(data: data, lut: try CubeLUT.parse(text), displayName: "촬영 당시 룩", preset: recipe.look, provenance: recipe.provenance)
         } else if recipe.look != nil { throw CameraError.invalidPhotoData }
         try Task.checkCancellation()
-        return DepthEditSession(result: result, original: original, recipe: recipe, field: field, matte: matte, look: look)
+        return DepthEditSession(result: result, original: original, recipe: recipe, field: field, matte: matte, look: look, corrections: corrections)
     }
 
     private func bounded(_ url: URL, limit: Int) throws -> Data {
@@ -152,7 +158,11 @@ actor CaptureResultProcessor {
 
     func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil,
                 depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil,
-                profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil, depthOrigin: String? = nil) async throws -> URL {
+                profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil, depthOrigin: String? = nil, corrections: DepthCorrections = .init()) async throws -> URL {
+        guard corrections.valid else { throw CameraError.invalidSettings }
+        let effectiveDepth: SoftwareDepthField?
+        if let depthOverride { effectiveDepth = corrections.applying(to: depthOverride); guard effectiveDepth != nil else { throw CameraError.invalidSettings } }
+        else { guard corrections.strokes.isEmpty else { throw CameraError.invalidSettings }; effectiveDepth = nil }
         guard look != nil || aperture != nil else { return original }
         let settings = look.map { $0.preset ?? ProcessingLookSettings() }
         try settings?.validate()
@@ -169,15 +179,16 @@ actor CaptureResultProcessor {
             let credit = look?.provenance.map { "\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)" }
             let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original,
                 destination: pending.appendingPathComponent("photo.jpg"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),
-                aperture: aperture, focus: focus, credit: credit, depthSource: depthSource, depthOverride: depthOverride,
+                aperture: aperture, focus: focus, credit: credit, depthSource: depthSource, depthOverride: effectiveDepth,
                 profile: profile, savedMatte: savedMatte)
             let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space lens depth layers (max64MP; reduced sample count above12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
-            var recipe = CaptureResultRecipe(version: 3, originalFilename: original.lastPathComponent,
+            var recipe = CaptureResultRecipe(version: corrections.strokes.isEmpty ? 3 : 4, originalFilename: original.lastPathComponent,
                 originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
                 focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth ? result.focusDepth : nil,
                 focusDepthValue: result.focusDepth, depthAccuracy: aperture == nil ? nil : result.absoluteDepth ? "absolute" : "relative",
                 look: settings, lutSHA256: look.map { LUTPhotoEditor.hash($0.data) }, provenance: look?.provenance,
                 pipeline: "Oriented color-managed SDR → \(depthStep) → encoded-sRGB LUT/grain/finish halo tiles → disk-backed RGBA → JPEG; original preserved; derivatives omit original metadata")
+            if !corrections.strokes.isEmpty { recipe.depthCorrections = corrections; recipe.depthMapRole = "uncorrected-base" }
             recipe.outputWidth = result.width; recipe.outputHeight = result.height
             recipe.depthSource = depthOrigin ?? result.depthSource; recipe.portraitMatteUsed = result.matteUsed
             recipe.lensProfile = aperture == nil ? nil : profile; recipe.fusionNormalizedError = result.fusionError
@@ -185,7 +196,7 @@ actor CaptureResultProcessor {
                 let bytes = matte.encoded(); try bytes.write(to: pending.appendingPathComponent("matte.f32"), options: options)
                 recipe.matteWidth = matte.width; recipe.matteHeight = matte.height; recipe.matteSHA256 = LUTPhotoEditor.hash(bytes)
             }
-            if let field = result.depthField {
+            if let field = depthOverride ?? result.depthField {
                 let words = field.inverseDepth.map { $0.bitPattern.littleEndian }
                 let bytes = words.withUnsafeBytes { Data($0) }
                 try bytes.write(to: pending.appendingPathComponent("depth.f32"), options: options)

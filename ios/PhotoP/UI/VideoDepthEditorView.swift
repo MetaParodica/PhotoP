@@ -5,7 +5,14 @@ import SwiftUI
 @MainActor
 struct VideoDepthEditorView: View {
     let item: StoredVideo
+    private let framePreview = VideoDepthFramePreview()
     @State private var thumbnail: UIImage?
+    @State private var playhead = 0.0
+    @State private var timeline = false
+    @State private var events: [VideoDepthKeyframe] = []
+    @State private var interpolation: VideoDepthInterpolation = .smooth
+    @State private var previewing = false
+    @State private var previewRevision = UUID()
     @State private var focus = CGPoint(x: 0.5, y: 0.5)
     @State private var aperture = 2.8
     @State private var profile: DepthLensProfile = .natural
@@ -24,7 +31,7 @@ struct VideoDepthEditorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("영상 AI 심도 편집").font(.title2.bold())
-                Text("원본은 보존합니다. 아래 원본 첫 화면을 터치해 초점/추적 대상을 선택하세요. AI 깊이는 상대값이며 미터 단위 거리가 아닙니다.").font(.caption)
+                Text("원본은 보존합니다. 아래 화면을 터치해 초점/추적 대상을 선택하세요. AI 깊이는 상대값이며 미터 단위 거리가 아닙니다.").font(.caption)
                 if let thumbnail {
                     GeometryReader { geometry in
                         let rect = GuideGeometry.imageRect(image: thumbnail.size, viewport: geometry.size)
@@ -47,6 +54,30 @@ struct VideoDepthEditorView: View {
                         .onChange(of: mode) { _, _ in selection = .init(point: focus, mode: mode) }
                 }
                 Picker("출력 품질", selection: $quality) { ForEach(VideoDepthQuality.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).accessibilityIdentifier("video.depth.quality")
+                DisclosureGroup("시간별 초점·f값 전환") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle("키프레임 사용", isOn: $timeline).onChange(of: timeline) { _, enabled in
+                            if enabled, events.isEmpty { events = [.init(time: 0,focus: focus,aperture: aperture,profile: profile,selection: tracking ? selection : nil,requiresTracking: tracking)] }
+                        }
+                        if timeline {
+                            Text(String(format: "현재 %.2f초 / %.2f초",playhead,item.manifest.actual.durationSeconds)).font(.caption)
+                            Slider(value: $playhead,in: 0...max(0.01,item.manifest.actual.durationSeconds-0.05))
+                                .accessibilityIdentifier("video.depth.time")
+                            Picker("전환",selection: $interpolation) { ForEach(VideoDepthInterpolation.allCases,id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu)
+                            Button("현재 초점·f값을 이 시점에 저장") { setKeyframe() }.disabled(events.count >= 64)
+                            ForEach(events, id: \.time) { event in
+                                HStack {
+                                    Button(String(format: "%.2f초 · f/%.1f",event.time,event.aperture)) { playhead = event.time; focus = event.focus; aperture = event.aperture; profile = event.profile }
+                                    Spacer()
+                                    if event.time > 0 { Button("삭제") { events.removeAll { $0.time == event.time } } }
+                                }.font(.caption)
+                            }
+                            Button(previewing ? "미리보기 처리 중…" : "현재 시점 전환 미리보기") { previewRevision = UUID() }
+                                .disabled(previewing || tracking)
+                            Text("슬라이더는 원본의 해당 프레임을 표시합니다. 전환 미리보기는 현재 시점의 심도이며 추적 결과는 전체 처리 후 확인합니다. 대상/렌즈 변경은 해당 시점에서 적용합니다.").font(.caption2)
+                        }
+                    }.disabled(progress != nil)
+                }
                 if let progress {
                     ProgressView(value: progress).accessibilityIdentifier("video.depth.progress")
                     Button("처리 취소") { task?.cancel() }.buttonStyle(.bordered)
@@ -58,7 +89,7 @@ struct VideoDepthEditorView: View {
                     }
                 }
                 if let message { Text(message).font(.caption).accessibilityIdentifier("video.depth.message") }
-                Text("현재 설정은 전체 영상에 적용됩니다. SDR·원본 해상도/프레임 시각/오디오 유지 · 공유 결과 위치 제거 · AI 처리 메타데이터 기록. 추적 불확실/깊이 추정 실패 프레임은 원본을 유지하며 결과에 개수를 알립니다. 최대4K/60fps·10분, 처리는 실시간보다 느릴 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
+                Text("키프레임을 끄면 현재 설정이 전체 영상에 적용됩니다. SDR·원본 해상도/프레임 시각/오디오 유지 · 공유 결과 위치 제거 · AI 처리 메타데이터 기록. 추적 불확실/깊이 추정 실패 프레임은 원본을 유지하며 결과에 개수를 알립니다. 최대4K/60fps·10분, 처리는 실시간보다 느릴 수 있습니다.").font(.caption2).foregroundStyle(.secondary)
                 ForEach(results) { result in
                     Button { Task { do { try await VideoDepthStore.verify(result); selected = result } catch { message = error.localizedDescription } } } label: {
                         Label("심도 영상 재생 · 원본 유지 \(result.recipe.fallbackFrames)/\(result.recipe.frames)프레임", systemImage: "play.rectangle")
@@ -68,7 +99,32 @@ struct VideoDepthEditorView: View {
         }.navigationTitle("영상 심도").navigationBarTitleDisplayMode(.inline)
             .task { await load() }
             .onDisappear { task?.cancel() }
+            .task(id: playhead) {
+                guard timeline else { return }
+                do {
+                    try await Task.sleep(for: .milliseconds(150))
+                    let pixels = try await framePreview.image(url: item.url,time: playhead)
+                    try Task.checkCancellation(); thumbnail = UIImage(cgImage: try pixels.cgImage())
+                } catch { if !Task.isCancelled { message = error.localizedDescription } }
+            }
+            .task(id: previewRevision) {
+                guard timeline, let parameters = editingIntent.parameters(at: playhead) else { return }
+                previewing = true; defer { previewing = false }
+                do {
+                    let pixels = try await framePreview.image(url: item.url,time: playhead,parameters: parameters)
+                    try Task.checkCancellation(); thumbnail = UIImage(cgImage: try pixels.cgImage())
+                } catch { if !Task.isCancelled { message = error.localizedDescription } }
+            }
             .sheet(item: $selected) { VideoDepthPlaybackView(result: $0, original: item.url) }
+    }
+    private var editingIntent: VideoDepthIntent {
+        VideoDepthIntent(quality: quality,keyframes: events,interpolation: interpolation)
+    }
+    private func setKeyframe() {
+        let time = (playhead * 100).rounded() / 100
+        let value = VideoDepthKeyframe(time: time,focus: focus,aperture: aperture,profile: profile,
+            selection: tracking ? selection : nil,requiresTracking: tracking)
+        events.removeAll { abs($0.time-time) < 0.005 }; events.append(value); events.sort { $0.time < $1.time }
     }
     private func load() async {
         do {
@@ -96,7 +152,7 @@ struct VideoDepthEditorView: View {
     }
     private func render(_ recorded: VideoDepthIntent?) {
         guard task == nil else { return }
-        let intent = recorded ?? VideoDepthIntent(quality: quality, keyframes: [.init(time: 0, focus: focus, aperture: aperture, profile: profile, selection: tracking ? selection : nil, requiresTracking: tracking)])
+        let intent = recorded ?? (timeline ? editingIntent : VideoDepthIntent(quality: quality, keyframes: [.init(time: 0, focus: focus, aperture: aperture, profile: profile, selection: tracking ? selection : nil, requiresTracking: tracking)]))
         let token = UUID(); jobID = token
         progress = 0; message = "AI 심도 처리 중 · 녹화 원본 보존"
         task = Task {

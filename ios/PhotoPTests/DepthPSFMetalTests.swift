@@ -39,4 +39,24 @@ final class DepthPSFMetalTests: XCTestCase {
         XCTAssertEqual(pixel[1] / pixel[3], 2, accuracy: 0.02)
         XCTAssertEqual(pixel[3], 0.25, accuracy: 0.002)
     }
+    func testBoundedBackgroundExtensionRejectsForegroundColorContamination() throws {
+        let extent = CGRect(x: 0, y: 0, width: 64, height: 16)
+        let blue = CIImage(color: CIColor(red: 0, green: 0, blue: 1)).cropped(to: extent)
+        let red = CIImage(color: CIColor(red: 1, green: 0, blue: 0)).cropped(to: CGRect(x: 32, y: 0, width: 32, height: 16))
+        let color = red.composited(over: blue)
+        let far = CIImage(color: CIColor(red: 0.2, green: 0.2, blue: 0.2)).cropped(to: extent)
+        let near = CIImage(color: CIColor(red: 0.8, green: 0.8, blue: 0.8)).cropped(to: CGRect(x: 32, y: 0, width: 32, height: 16))
+        let valid = CIImage(color: .white).cropped(to: extent)
+        let output = try DepthBackgroundExtension().image(color: color, coordinates: near.composited(over: far), validity: valid, radius: 8)
+        let context = CIContext(), space = CGColorSpace(name: CGColorSpace.sRGB)!
+        var pixel = [UInt8](repeating: 0, count: 4)
+        pixel.withUnsafeMutableBytes { context.render(output, toBitmap: $0.baseAddress!, rowBytes: 4,
+            bounds: CGRect(x: 34, y: 8, width: 1, height: 1), format: .RGBA8, colorSpace: space) }
+        XCTAssertLessThan(pixel[0], 3, "Nearby far samples must exclude red foreground")
+        XCTAssertGreaterThan(pixel[2], 250)
+        pixel.withUnsafeMutableBytes { context.render(output, toBitmap: $0.baseAddress!, rowBytes: 4,
+            bounds: CGRect(x: 60, y: 8, width: 1, height: 1), format: .RGBA8, colorSpace: space) }
+        XCTAssertGreaterThan(pixel[0], 250, "Unsupported hidden background retains observed pixels")
+    }
+
 }

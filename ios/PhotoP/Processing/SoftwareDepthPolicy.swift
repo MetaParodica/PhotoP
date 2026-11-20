@@ -34,6 +34,12 @@ struct SoftwareDepthField: Sendable {
         guard data.contains(where: { $0 > 0 }) else { return nil }
         return Self(width: width, height: height, validDepth: data, units: units, bounds: bounds)
     }
+    // Manual correction keeps the original scale; brush size cannot renormalize
+    // the untouched background or mutate the saved base map.
+    func replacingDepthPreservingBounds(_ values: [Float]) -> Self? {
+        guard values.count == inverseDepth.count, values.allSatisfy({ $0.isFinite && $0 >= 0 }), values.contains(where: { $0 > 0 }) else { return nil }
+        return Self(width: width, height: height, validDepth: values, units: units, bounds: bounds)
+    }
     func focusValue(x: Double, y: Double) -> Float? {
         guard x.isFinite, y.isFinite, (0...1).contains(x), (0...1).contains(y) else { return nil }
         let cx = min(width - 1, Int(x * Double(width))), cy = min(height - 1, Int(y * Double(height)))

@@ -49,6 +49,8 @@ private struct DepthPreviewRequest: Hashable {
     let y: Double
     let profile: DepthLensProfile
     let original: Bool
+    let corrections: DepthCorrections
+    let diagnostic: DepthDiagnostic
 }
 
 @MainActor
@@ -66,6 +68,14 @@ struct DepthResultEditorView: View {
     @State private var message: String?
     @State private var saving = false
     @State private var rendering = false
+    @State private var history: DepthCorrectionHistory
+    @State private var brushEnabled = false
+    @State private var brushMode: DepthBrushMode = .foreground
+    @State private var brushRadius = 0.035
+    @State private var softness = 0.6
+    @State private var protectFocus = false
+    @State private var strokePoints: [DepthBrushPoint] = []
+    @State private var diagnostic: DepthDiagnostic = .result
     @State private var saveTask: Task<Void, Never>?
 
     init(session: DepthEditSession, beforeSave: (@Sendable () async throws -> Void)? = nil) {
@@ -74,9 +84,10 @@ struct DepthResultEditorView: View {
         _aperture = State(initialValue: session.recipe.aperture ?? 2.8)
         _focus = State(initialValue: CGPoint(x: session.recipe.focusX, y: session.recipe.focusY))
         _profile = State(initialValue: session.recipe.lensProfile ?? .natural)
+        _history = State(initialValue: DepthCorrectionHistory(session.corrections))
     }
     private var request: DepthPreviewRequest {
-        .init(aperture: aperture, x: Double(focus.x), y: Double(focus.y), profile: profile, original: compare)
+        .init(aperture: aperture, x: Double(focus.x), y: Double(focus.y), profile: profile, original: compare, corrections: history.current, diagnostic: diagnostic)
     }
     var body: some View {
         NavigationStack {
@@ -93,9 +104,15 @@ struct DepthResultEditorView: View {
                             }
                             .contentShape(Rectangle())
                             .gesture(SpatialTapGesture().onEnded { value in
-                                guard !saving, !compare else { return }
+                                guard !saving, !compare, !brushEnabled else { return }
                                 focus = CGPoint(x: min(1, max(0, value.location.x / size.width)), y: min(1, max(0, value.location.y / size.height)))
-                            }).position(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
+                            })
+                            .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { value in
+                                guard brushEnabled, !saving, !compare else { return }
+                                let point = DepthBrushPoint(x: min(1,max(0,Double(value.location.x / size.width))), y: min(1,max(0,Double(value.location.y / size.height))))
+                                if strokePoints.count < 128, strokePoints.last.map({ hypot($0.x-point.x,$0.y-point.y)>0.004 }) ?? true { strokePoints.append(point) }
+                            }.onEnded { _ in finishStroke() })
+                            .position(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
                     } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
                 }
                 VStack(alignment: .leading, spacing: 10) {
@@ -106,6 +123,24 @@ struct DepthResultEditorView: View {
                             .accessibilityIdentifier("editor.depth.aperture")
                         DepthLensPicker(selection: $profile, identifier: "editor.depth.profile")
                         Toggle("원본 비교", isOn: $compare).accessibilityIdentifier("editor.depth.compare")
+                    }.disabled(saving)
+                    DisclosureGroup("심도 교정·진단") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Picker("보기", selection: $diagnostic) { ForEach(DepthDiagnostic.allCases, id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu)
+                            if diagnostic == .matte, session.matte == nil { Text("저장된 선택 매트가 없습니다.").font(.caption) }
+                            Toggle("깊이 교정 브러시", isOn: $brushEnabled).accessibilityIdentifier("editor.depth.brush")
+                            if brushEnabled {
+                                Picker("교정", selection: $brushMode) { Text("전경").tag(DepthBrushMode.foreground); Text("배경").tag(DepthBrushMode.background) }.pickerStyle(.segmented)
+                                Text("브러시 크기").font(.caption); Slider(value: $brushRadius, in: 0.01...0.15)
+                                Text("경계 부드러움").font(.caption); Slider(value: $softness, in: 0...1)
+                                Toggle("현재 초점 깊이 범위 보호", isOn: $protectFocus)
+                            }
+                            HStack {
+                                Button("실행 취소") { history.undo() }.disabled(!history.canUndo)
+                                Button("다시 실행") { history.redo() }.disabled(!history.canRedo)
+                            }
+                            Text("원본 깊이 지도 보존 · 전경/배경 값은 기존 지도 범위에서 결정합니다. 노란 진단은 결측/혼합 경계이며 모델 확률이 아닙니다.").font(.caption2)
+                        }.disabled(saving)
                     }.disabled(saving)
                     if rendering { ProgressView("미리보기 갱신 중") }
                     if let message { Text(message).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("editor.depth.message") }
@@ -122,23 +157,35 @@ struct DepthResultEditorView: View {
                 .onDisappear { saveTask?.cancel() }
         }.preferredColorScheme(.dark)
     }
+    private func finishStroke() {
+        defer { strokePoints.removeAll() }
+        guard brushEnabled, !saving, !compare, !strokePoints.isEmpty else { return }
+        var range: ClosedRange<Float>?
+        if protectFocus, let value = session.field.focusValue(x: Double(focus.x), y: Double(focus.y)), let bounds = session.field.bounds {
+            let margin = max(0.0001,(bounds.upper-bounds.lower)*0.05)
+            range = max(0.000001,value-margin)...(value+margin)
+        }
+        if !history.append(.init(points: strokePoints, mode: brushMode, radius: brushRadius, softness: softness, protectedRange: range)) {
+            message = "교정 횟수/점 한도에 도달했습니다. 실행 취소 후 다시 시도하세요."
+        }
+    }
     private func refresh(_ value: DepthPreviewRequest) async {
         do {
             try await Task.sleep(for: .milliseconds(150)); rendering = true
-            let pixels = try await editor.preview(aperture: value.aperture, focus: CGPoint(x: value.x, y: value.y), profile: value.profile, original: value.original)
+            let pixels = try await editor.preview(aperture: value.aperture, focus: CGPoint(x: value.x, y: value.y), profile: value.profile, original: value.original, corrections: value.corrections, diagnostic: value.diagnostic)
             try Task.checkCancellation(); image = try pixels.cgImage(); rendering = false
         } catch is CancellationError { }
         catch { if !Task.isCancelled { message = error.localizedDescription; rendering = false } }
     }
     private func save() {
-        let f = aperture, point = focus, lens = profile
+        let f = aperture, point = focus, lens = profile, edits = history.current
         saving = true; message = nil
         saveTask = Task {
             defer { saving = false; saveTask = nil }
             do {
                 try await beforeSave?()
                 try Task.checkCancellation()
-                _ = try await editor.save(aperture: f, focus: point, profile: lens)
+                _ = try await editor.save(aperture: f, focus: point, profile: lens, corrections: edits)
                 message = "새 심도 사진을 앱 보관함에 저장했습니다."
             } catch is CancellationError { message = "저장을 취소했습니다. 원본과 이전 결과는 보존됩니다." }
             catch { message = error.localizedDescription }

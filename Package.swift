@@ -18,7 +18,7 @@ let coreURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().append
 let excludedCoreSources = try FileManager.default.contentsOfDirectory(atPath: coreURL.path).filter { !coreSources.contains($0) }
 let imagePath = "ios/PhotoP/Processing"
 let imageURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(imagePath)
-let imageSources = ["SubjectTrackingPolicy.swift", "VideoDepthPolicy.swift", "HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift", "SoftwareDepthPolicy.swift", "DepthProcessingCore.swift", "LUTTextEncoder.swift", "LUTBinaryCodec.swift", "InferenceRetryBackoff.swift", "ExposureFusionPolicy.swift", "ScopeAnalysisPolicy.swift"]
+let imageSources = ["DepthCorrections.swift", "SubjectTrackingPolicy.swift", "VideoDepthPolicy.swift", "HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift", "SoftwareDepthPolicy.swift", "DepthProcessingCore.swift", "LUTTextEncoder.swift", "LUTBinaryCodec.swift", "InferenceRetryBackoff.swift", "ExposureFusionPolicy.swift", "ScopeAnalysisPolicy.swift"]
 let excludedImageSources = try FileManager.default.contentsOfDirectory(atPath: imageURL.path).filter { !imageSources.contains($0) }
 
 let package = Package(

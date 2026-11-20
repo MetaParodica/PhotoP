@@ -21,6 +21,7 @@ struct NaturalDepthResult {
 final class NaturalDepthEngine {
     private let estimator = ExternalDepthEstimator()
     private let matteRefiner = DepthMatteRefiner()
+    private let backgroundExtension = DepthBackgroundExtension()
     private let lensFilter = DepthLensFilter()
     private var sliceKernel: CIColorKernel?
     private var backgroundKernel: CIColorKernel?
@@ -138,7 +139,7 @@ final class NaturalDepthEngine {
         // The fill only estimates occluded background; never claim it recovers
         // unseen detail. Foreground layers subsequently overwrite it by depth.
         let effectScale = Double(max(width, height)) / 4032
-        var result = color.clampedToExtent().applyingFilter("CIDiscBlur", parameters: [kCIInputRadiusKey: 24 * effectScale]).cropped(to: extent)
+        var result = try backgroundExtension.image(color: sourceColor, coordinates: map, validity: valid, radius: 48 * effectScale)
         var foreground = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
         for i in centers.indices {
             try Task.checkCancellation()

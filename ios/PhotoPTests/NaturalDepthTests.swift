@@ -283,4 +283,25 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertEqual(model.settings, before)
         XCTAssertEqual(model.focusPhase, .manual)
     }
+    func testCorrectionRecipePreservesBaseMapAcrossReopenAndClearing() async throws {
+        let input = try fixture(), before = try Data(contentsOf: input.photo)
+        let edits = DepthCorrections(strokes: [.init(points: [.init(x: 0.75,y: 0.5)],mode: .foreground,radius: 0.1,softness: 0.6)])
+        let result = try await CaptureResultProcessor.shared.render(original: input.photo,look: nil,aperture: 2.8,
+            focus: CGPoint(x: 0.25,y: 0.5),documents: input.root,depthOverride: input.field,corrections: edits)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: result,original: input.photo,documents: input.root)
+        XCTAssertEqual(session.recipe.version,4); XCTAssertEqual(session.corrections,edits)
+        XCTAssertEqual(session.field.inverseDepth,input.field.inverseDepth,"Saved depth is immutable base, never a twice-corrected map")
+        let next = try await CaptureResultProcessor.shared.reprocess(result: result,original: input.photo,aperture: 4,documents: input.root)
+        let reopened = try await CaptureResultProcessor.shared.loadSession(result: next,original: input.photo,documents: input.root)
+        XCTAssertEqual(reopened.corrections,edits); XCTAssertEqual(reopened.recipe.depthMapSHA256,session.recipe.depthMapSHA256)
+        let clear = try await CaptureResultProcessor.shared.reprocess(result: next,original: input.photo,aperture: 4,documents: input.root,corrections: .init())
+        let cleared = try await CaptureResultProcessor.shared.loadSession(result: clear,original: input.photo,documents: input.root)
+        XCTAssertEqual(cleared.recipe.version,3); XCTAssertTrue(cleared.corrections.strokes.isEmpty)
+        XCTAssertEqual(cleared.field.inverseDepth,input.field.inverseDepth)
+        XCTAssertEqual(try Data(contentsOf: input.photo),before)
+        var corrupt = reopened.recipe; corrupt.depthMapRole = nil
+        try JSONEncoder().encode(corrupt).write(to: next.deletingLastPathComponent().appendingPathComponent("recipe.json"))
+        do { _ = try await CaptureResultProcessor.shared.loadSession(result: next,original: input.photo,documents: input.root); XCTFail("v4 missing base-map contract accepted") } catch { }
+    }
+
 }

@@ -20,11 +20,17 @@ struct VideoDepthKeyframe: Codable, Equatable, Sendable {
     }
 }
 
+enum VideoDepthInterpolation: String, Codable, CaseIterable, Sendable {
+    case hold, linear, smooth
+    var title: String { self == .hold ? "시점에서 변경" : self == .linear ? "일정 전환" : "부드러운 전환" }
+}
+
 struct VideoDepthIntent: Codable, Equatable, Sendable {
     static let version = 1
     var version = Self.version
     var quality: VideoDepthQuality = .high
     var keyframes: [VideoDepthKeyframe]
+    var interpolation: VideoDepthInterpolation? = nil
     var valid: Bool {
         version == Self.version && !keyframes.isEmpty && keyframes.count <= 4096 && keyframes[0].time == 0 &&
             keyframes.allSatisfy(\.valid) && zip(keyframes, keyframes.dropFirst()).allSatisfy { $0.time < $1.time }
@@ -32,7 +38,22 @@ struct VideoDepthIntent: Codable, Equatable, Sendable {
     func parameters(at time: Double) -> VideoDepthKeyframe? {
         guard valid, time.isFinite, time >= 0 else { return nil }
         // Explicit changes apply at their timestamp; do not anticipate a future tap.
-        return keyframes.last(where: { $0.time <= time })
+        guard let index = keyframes.lastIndex(where: { $0.time <= time }) else { return nil }
+        var left = keyframes[index]
+        guard let curve = interpolation, curve != .hold, index+1 < keyframes.count else { return left }
+        let right = keyframes[index+1]
+        // A new target, profile, or tracking policy is a discrete user action.
+        // Never animate a box from the old person onto a different identity.
+        guard left.profile == right.profile, left.requiresTracking == right.requiresTracking,
+              left.selection == right.selection else { return left }
+        var t = min(1,max(0,(time-left.time)/(right.time-left.time)))
+        if curve == .smooth { t = t*t*(3-2*t) }
+        if left.selection == nil {
+            left.focus = CGPoint(x: left.focus.x+(right.focus.x-left.focus.x)*t, y: left.focus.y+(right.focus.y-left.focus.y)*t)
+        }
+        // CoC is proportional to reciprocal f-number: interpolate optical power.
+        left.aperture = 1 / ((1-t)/left.aperture+t/right.aperture)
+        return left
     }
     @discardableResult mutating func append(_ value: VideoDepthKeyframe) -> Bool {
         guard value.valid, let last = keyframes.last, value.time >= last.time else { return false }
