@@ -13,6 +13,7 @@ struct VideoDepthEditorView: View {
     @State private var interpolation: VideoDepthInterpolation = .smooth
     @State private var previewing = false
     @State private var previewRevision = UUID()
+    @State private var depthPreviewRequested = false
     @State private var focus = CGPoint(x: 0.5, y: 0.5)
     @State private var aperture = 2.8
     @State private var profile: DepthLensProfile = .natural
@@ -73,7 +74,7 @@ struct VideoDepthEditorView: View {
                                     if event.time > 0 { Button("삭제") { events.removeAll { $0.time == event.time } } }
                                 }.font(.caption)
                             }
-                            Button(previewing ? "미리보기 처리 중…" : "현재 시점 전환 미리보기") { previewRevision = UUID() }
+                            Button(previewing ? "미리보기 처리 중…" : "현재 시점 전환 미리보기") { depthPreviewRequested = true; previewRevision = UUID() }
                                 .disabled(previewing || tracking).accessibilityIdentifier("video.depth.preview")
                             Text("슬라이더는 원본의 해당 프레임을 표시합니다. 전환 미리보기는 현재 시점의 심도이며 추적 결과는 전체 처리 후 확인합니다. 대상/렌즈 변경은 해당 시점에서 적용합니다.").font(.caption2)
                         }
@@ -100,26 +101,30 @@ struct VideoDepthEditorView: View {
         }.navigationTitle("영상 심도").navigationBarTitleDisplayMode(.inline)
             .task { await load() }
             .onDisappear { task?.cancel() }
-            .task(id: playhead) {
-                guard timeline else { return }
-                do {
-                    try await Task.sleep(for: .milliseconds(150))
-                    let pixels = try await framePreview.image(url: item.url,time: playhead)
-                    try Task.checkCancellation(); thumbnail = UIImage(cgImage: try pixels.cgImage())
-                } catch { if !Task.isCancelled { message = error.localizedDescription } }
+            .onChange(of: playhead) { _, _ in
+                depthPreviewRequested = false; previewRevision = UUID()
             }
             .task(id: previewRevision) {
                 let time = playhead, revision = previewRevision, intent = editingIntent
-                guard timeline, let parameters = intent.parameters(at: time) else { return }
-                previewing = true; defer { previewing = false }
+                let depth = depthPreviewRequested
+                guard timeline else { return }
+                let parameters = depth ? intent.parameters(at: time) : nil
+                guard !depth || parameters != nil else { return }
+                previewing = depth
+                defer { if previewRevision == revision { previewing = false } }
                 do {
-                    let pixels = try await framePreview.image(url: item.url,time: time,parameters: parameters,transition: intent.focusTransition(at: time))
+                    try await Task.sleep(for: .milliseconds(150))
+                    let pixels = try await framePreview.image(url: item.url,time: time,parameters: parameters,
+                        transition: depth ? intent.focusTransition(at: time) : nil)
                     try Task.checkCancellation()
-                    guard playhead == time, previewRevision == revision, editingIntent == intent else { return }
-                    focus = parameters.focus; aperture = parameters.aperture; profile = parameters.profile
+                    guard playhead == time, previewRevision == revision, depthPreviewRequested == depth,
+                          !depth || editingIntent == intent else { return }
                     thumbnail = UIImage(cgImage: try pixels.cgImage())
-                    message = String(format: "전환 미리보기 · %.2f초 · f/%.1f",time,parameters.aperture)
-                } catch { if !Task.isCancelled { message = error.localizedDescription } }
+                    if let parameters {
+                        focus = parameters.focus; aperture = parameters.aperture; profile = parameters.profile
+                        message = String(format: "전환 미리보기 · %.2f초 · f/%.1f",time,parameters.aperture)
+                    }
+                } catch { if !Task.isCancelled, previewRevision == revision { message = error.localizedDescription } }
             }
             .sheet(item: $selected) { VideoDepthPlaybackView(result: $0, original: item.url) }
     }
