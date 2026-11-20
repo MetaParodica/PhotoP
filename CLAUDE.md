@@ -11,6 +11,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
+- 2026-11-20 차세대 심도 고도화는 [감사42](docs/42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](docs/43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[구현44](docs/44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존 엔진 재사용, shared Metal PSF·제한 매트 보정·영상 등록·v4 비파괴 brush/v2 영상 보간을 구현했다. 최종 SHA/CI·게시/미인수는08의60절·당일 일지가 우선한다. 실제100장/영상·기기 trace와 EfficientTAM whole tracker/runtime/ANE는 아직 인수되지 않았다.
+
 - 2026-11-20 사진·영상 심도/추적 검증 소스 `f140234`를 main에 push했다. 전체 CI44665022130(Xcode26.3)·UI CI44665022029(Xcode26.6) success, native392통과/Flow1skip·UI15·공통140·Python31. 최종 검증/게시 기록은08의59절과11월20일 일지를 따른다. 실기기27.2 인수는 대기다.
 - 사진·영상 공통 심도/선택 대상 추적의 새 구현은 [41 구현 기록](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 따른다. 조사39·사전 계획40을 먼저 작성했다. 최신 테스트/게시 상태는08과 당일 일지에 기록하며 실제 기기 품질·시간적 일관성 모델/네이티브 Cinematic은 후속 검증이다.
 

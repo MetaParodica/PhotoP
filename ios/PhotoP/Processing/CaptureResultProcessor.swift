@@ -159,9 +159,10 @@ actor CaptureResultProcessor {
     func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil,
                 depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil,
                 profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil, depthOrigin: String? = nil, corrections: DepthCorrections = .init()) async throws -> URL {
+        try Task.checkCancellation()
         guard corrections.valid else { throw CameraError.invalidSettings }
         let effectiveDepth: SoftwareDepthField?
-        if let depthOverride { effectiveDepth = corrections.applying(to: depthOverride); guard effectiveDepth != nil else { throw CameraError.invalidSettings } }
+        if let depthOverride { effectiveDepth = corrections.applying(to: depthOverride, isCancelled: { Task.isCancelled }); guard effectiveDepth != nil else { try Task.checkCancellation(); throw CameraError.invalidSettings } }
         else { guard corrections.strokes.isEmpty else { throw CameraError.invalidSettings }; effectiveDepth = nil }
         guard look != nil || aperture != nil else { return original }
         let settings = look.map { $0.preset ?? ProcessingLookSettings() }
@@ -182,10 +183,12 @@ actor CaptureResultProcessor {
                 aperture: aperture, focus: focus, credit: credit, depthSource: depthSource, depthOverride: effectiveDepth,
                 profile: profile, savedMatte: savedMatte)
             let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space lens depth layers (max64MP; reduced sample count above12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
+            let accuracyPrefix = corrections.strokes.isEmpty ? "" : "manual-corrected-"
+            let accuracy = accuracyPrefix + (result.absoluteDepth ? "absolute" : "relative")
             var recipe = CaptureResultRecipe(version: corrections.strokes.isEmpty ? 3 : 4, originalFilename: original.lastPathComponent,
                 originalSHA256: try LUTPhotoEditor.hashFile(original), aperture: aperture,
-                focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth ? result.focusDepth : nil,
-                focusDepthValue: result.focusDepth, depthAccuracy: aperture == nil ? nil : result.absoluteDepth ? "absolute" : "relative",
+                focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth && corrections.strokes.isEmpty ? result.focusDepth : nil,
+                focusDepthValue: result.focusDepth, depthAccuracy: aperture == nil ? nil : accuracy,
                 look: settings, lutSHA256: look.map { LUTPhotoEditor.hash($0.data) }, provenance: look?.provenance,
                 pipeline: "Oriented color-managed SDR → \(depthStep) → encoded-sRGB LUT/grain/finish halo tiles → disk-backed RGBA → JPEG; original preserved; derivatives omit original metadata")
             if !corrections.strokes.isEmpty { recipe.depthCorrections = corrections; recipe.depthMapRole = "uncorrected-base" }

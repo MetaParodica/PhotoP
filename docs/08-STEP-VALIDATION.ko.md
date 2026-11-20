@@ -463,3 +463,28 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - 11월20일 로컬 Python31·기본 LUT5/외부25·고정 모델3파일/Apache 고지, Markdown11개 로컬 링크·출처 JSON/Swift 포트 hash/앱 MIT 원문 일치·diff 검사를 직접 수행했다. iOS/native 재실행과 구분한다. 게시 문서는 앱/테스트·프로젝트·Package·CI·scripts·assets를 바꾸지 않는다.
 - `37eb109`가 검증 source의 조상임을 확인하고 **정상 fast-forward push**로 원격 main을 f140234에 반영했다. `git ls-remote origin refs/heads/main`의 정확한 SHA를 확인했다. 최종 게시 문서도 같은 main에 후속 반영한다. 강제 push는 하지 않았다.
 - iPhone15Pro/iOS27.2 실제 미리보기/촬영·4K/HEVC/AAC 동기·열/메모리/속도·중/원거리/가림 화질 및 SDK27 빌드는 미실행이다. 현재8비트 SDR 출력,1개 선택 bbox 추적과 후속 시계열 모델의 범위를 구분한다.
+
+
+## 60. 차세대 컴퓨테이셔널 심도 (2026-11-20 KST)
+
+[감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[사전 계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[구현44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md). 작업 시작 main9acbb258/CI44667252120 success·clean·PR0 확인 후 별도 브랜치에서 구현했다.
+
+### 60.1 직접 로컬 실행·모델 probe
+
+- Swift6.0.3 Linux/Debian13, strict concurrency portable 기준140→최종150 통과/실패0. 새 테스트는 실제 shipping core를 사용한다. Python31→33 통과. LUT5·외부25·고정 모델3파일/고지·Markdown42~44/일지 링크·연구 JSON·diff 확인.
+- 같은 17×17 linear RGB/정답 알파 fixture에서 git show main9acbb의 실제 구버전 함수를 따로 컴파일했다. 기존 boundary MAE0.0983785→0.014756747, hard seed0.000760964→0.0. prior0.1과 구버전 결과를 구분. [재현 harness](../scripts/measure_depth_synthetic_baseline.swift)·[JSON](research/depth-synthetic/baseline.json)과44참조. module cache read-only/HighResolutionPlan 의존성 누락은 /tmp cache·실제 의존 파일 포함으로 수정했다.
+- 등록된 synthetic30-frame 교대 noise MAE비0.5635766, cut/가림/등록 재사용 금지 통과. off-axis9개 PSF 에너지 최악 상대 편차0.0061486363, 허용3%; 광량 정규화 gather 근사이지 정확한 ray tracer가 아니다.
+- EfficientTAM/VDA 실제 다운로드 hash 확인, encoder-only fixed512 CoreML 생성13,328,126bytes/CPU positional bake maxerror0.0. whole tracker/runtime/ANE 인수 아님. torch.compile/MPS·bicubic unsupported·numpy scalar 변환 실패와 수정은44·연구 JSON에 보존했다. 생성 모델은 앱에 넣지 않았다.
+- 기존 사진 gate scene0와 새 영상 gate scene0은 모두 exit2 미인수. 실기기/경쟁 제품 blind 실측을 합성 수치로 대체하지 않았다.
+
+### 60.2 CI 실패·수정과 중간 검증
+
+- CI44670478257/44d8df2: apply(withExtent:) throws CIImage 반환값의 잘못된 Optional guard로 iPhone 빌드 실패 → let으로 수정.
+- CI44670809847/01e708f·CI44671513185/96337c6: 앱 iPhone 빌드는 통과, fixture의 CIColor(colorSpace:) Optional 미처리로 Simulator 테스트 빌드 실패 → XCTUnwrap 수정.
+- CI44672887574/28f4a24와44673271398/175125c: Xcode26.6 luma map의 type-check timeout → RGB Float 항으로 나누어48e5bf6에서 수정. 26.3 성공을26.6 성공으로 취급하지 않았다.
+- CI44671800000/d5b8774의 원시 단위 로그: **388개 중387통과/기존 flow1skip·0실패** 확인. 새 CPU–Metal PSF/linear premultiplication/far-only 확장/v4 base map·교정 재개 테스트 포함. skip은 기존 정확한 Vision backend error9에만 적용된다.
+- 폐기된 중간 full CI44673366859(48e5bf6 대기)·44673271068(175125c)을 취소하여 최종 source 자원을 확보했다. 취소를 통과로 계수하지 않으며 최종 전체 검증은 그대로 실행한다.
+
+### 60.3 최종 source·게시
+
+현재 `d0560e64cc8e51d4e575a419b19620756a4c4d6d`의 전체 CI44673646262 및 Xcode26.6 depth CI44673647392 진행 중이다. 성공/실패·실제 counts·UI 결과·main 게시 SHA는 확인 후 여기에 갱신한다. Xcode/Simulator 성공은 iPhone15Pro/iOS27.2·SDK27 빌드·실측 화질/발열 인수가 아니다.

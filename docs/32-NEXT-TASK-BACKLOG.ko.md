@@ -164,3 +164,21 @@
 | 5 | 편집/출력 운영 | 시간별 편집 정확도·결과 구분 UX, 중단 후 재개·저장 공간 예측/파생물 관리,10비트 SDR 파생 출력 검토 |
 
 현재 파생 영상은8비트 SDR이며 원본은 변경하지 않는다. native Cinematic/새 시계열 모델 통합·실기기 경쟁 화질 우위는 완료로 표시하지 않는다. AI 구도 추천/코치/자동 리뷰 중지와 HDR/Log/C2PA 제외 정책은 유지한다.
+
+
+## 2026-11-20 차세대 심도 후속 — 최신
+
+[감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[13항목 구현 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존29/30/41의 기능을 새로 만들었다고 집계하지 않는다. source `d0560e6`의 native/UI 전체 검증 진행 중이며 성공/게시 SHA는08·당일 일지에 확정한다.
+
+| 우선 | 실제 남은 작업 | 확보한 근거/범위 |
+|---|---|---|
+| P0 | 실제100장·10종 영상/기기 trace/3명 blind 인수 | 새 Metal PSF·far-only fill·color-line 매트·영상 등록·editor 자동 회귀와 별개. 두 evidence gate 실제자료0/exit2 |
+| P0 | neural matte ROI/경계 품질 비교 | 기존 Vision+제한 RGB 보정만 앱에 있음. alpha 합성 MAE 실제 구버전0.0983785→0.0147567, 실제 모발/유리 개선 미입증 |
+| P0 | streaming temporal 모델 고정 상태 CoreML PoC | VDA Small 실제116MB/SHA·29M tensor값 확인,32-frame cache 구조. 앱은 기존 모델+등록 검증 flow/affine |
+| P1 | EfficientTAM prompt/mask decoder·bounded memory/full tracking·ANE benchmark | Tiny51271.6MB 실물/encoder-only13.33MB MLProgram 생성·CPU bake error0.0. full tracker 채택/실기기fps 아님 |
+| P1 | 실측 광학 PSF·선택 색수차/구면수차·난해한 occlusion | shared Metal/CPU gather 근사·독자6스타일은 구현. 경쟁 렌즈 실측 복제 아님 |
+| P1 | priority inference scheduler·thermal fairness/p95 | single-job/reuse/취소·live0.75초 stale 조기 폐기 구현, 전역 lock 우선순위는 미구현 |
+| P1 | 10bitSDR reader/pool/HEVC Main10/색 검증 | 현8bitSDR 유지, HDR/Log/gainmap/C2PA 금지 유지 |
+| P2 | C1~3/빠른 설정/독립 수평계/확대 UX | 기존38 비교표와 현재 미구현을 먼저 대조. 심도 P0보다 우선하지 않음 |
+
+사진 brush는 base 지도·scale을 유지하는 v4 recipe이며 기존v2/v3 읽기/교정 해제를 지원한다. 영상 intent v2는 focus/reciprocal-f 보간을 명시하고 v1 hold를 유지한다. 원본 bytes·hash·공유 위치 정책을 바꾸지 않는다. metadata/위치 F12 등의 기존 미완료 정책도 이 심도 구현으로 완료했다고 간주하지 않는다.

@@ -290,6 +290,7 @@ final class NaturalDepthTests: XCTestCase {
             focus: CGPoint(x: 0.25,y: 0.5),documents: input.root,depthOverride: input.field,corrections: edits)
         let session = try await CaptureResultProcessor.shared.loadSession(result: result,original: input.photo,documents: input.root)
         XCTAssertEqual(session.recipe.version,4); XCTAssertEqual(session.corrections,edits)
+        XCTAssertEqual(session.recipe.depthAccuracy,"manual-corrected-relative"); XCTAssertNil(session.recipe.focusDistanceMetres)
         XCTAssertEqual(session.field.inverseDepth,input.field.inverseDepth,"Saved depth is immutable base, never a twice-corrected map")
         let next = try await CaptureResultProcessor.shared.reprocess(result: result,original: input.photo,aperture: 4,documents: input.root)
         let reopened = try await CaptureResultProcessor.shared.loadSession(result: next,original: input.photo,documents: input.root)

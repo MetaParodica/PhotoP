@@ -94,6 +94,7 @@ final class AdvancedDepthTests: XCTestCase {
         XCTAssertTrue(history.append(stroke)); XCTAssertTrue(history.canUndo)
         let corrected = try XCTUnwrap(history.current.applying(to: field))
         XCTAssertEqual(field.inverseDepth, values)
+        XCTAssertNil(history.current.applying(to: field,isCancelled: { true }),"Cancelled work cannot finish a partial correction")
         XCTAssertEqual(corrected.inverseDepth[0], values[0])
         XCTAssertGreaterThan(corrected.inverseDepth[10*20+10], values[10*20+10])
         XCTAssertEqual(corrected.bounds?.lower, field.bounds?.lower)

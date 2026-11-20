@@ -22,7 +22,9 @@ actor DepthPhotoEditor {
         guard let image else { throw CameraError.invalidPhotoData }
         let edits = corrections ?? session.corrections
         if corrected?.0 != edits {
-            guard let field = edits.applying(to: session.field) else { throw CameraError.invalidSettings }
+            guard let field = edits.applying(to: session.field, isCancelled: { Task.isCancelled }) else {
+                try Task.checkCancellation(); throw CameraError.invalidSettings
+            }
             corrected = (edits, field)
         }
         guard let field = corrected?.1 else { throw CameraError.invalidPhotoData }

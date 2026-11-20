@@ -23,8 +23,8 @@ struct DepthCorrections: Codable, Hashable, Sendable {
     var version = 1
     var strokes: [DepthBrushStroke] = []
     var valid: Bool { version == 1 && strokes.count <= 64 && strokes.reduce(0) { $0 + $1.points.count } <= 1024 && strokes.allSatisfy(\.valid) }
-    func applying(to base: SoftwareDepthField) -> SoftwareDepthField? {
-        guard valid else { return nil }
+    func applying(to base: SoftwareDepthField, isCancelled: () -> Bool = { false }) -> SoftwareDepthField? {
+        guard valid, !isCancelled() else { return nil }
         guard !strokes.isEmpty else { return base }
         guard let bounds = base.bounds else { return nil }
         var values = base.inverseDepth
@@ -38,7 +38,9 @@ struct DepthCorrections: Codable, Hashable, Sendable {
             let y0 = max(0, Int(floor((points.map(\.y).min()! - r) * edge)))
             let y1 = min(h-1, Int(ceil((points.map(\.y).max()! + r) * edge)))
             guard x0 <= x1, y0 <= y1 else { continue }
-            for y in y0...y1 { for x in x0...x1 {
+            for y in y0...y1 {
+                guard !isCancelled() else { return nil }
+                for x in x0...x1 {
                 let i = y*w+x
                 if let protected = stroke.protectedRange, protected.contains(base.inverseDepth[i]) { continue }
                 let p = SIMD2((Double(x)+0.5)/edge, (Double(y)+0.5)/edge)
