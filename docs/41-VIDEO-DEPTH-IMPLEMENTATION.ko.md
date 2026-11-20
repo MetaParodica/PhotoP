@@ -1,6 +1,6 @@
 # 사진·영상 심도와 선택 피사체 추적 구현
 
-2026-11-19 사용자 요청 기준. 조사 [39](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md) → 사전 계획 [40](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md) → 이 구현 순서다. 실제 빌드/테스트/게시 상태는 [08](08-STEP-VALIDATION.ko.md)와 [개발 일지](development-log/2026-11-19.md)에 정확한 SHA로 기록한다.
+2026-11-19 사용자 요청 기준. 조사 [39](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md) → 사전 계획 [40](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md) → 이 구현 순서다. 후속 source `c772c71`의 Xcode26.6 전체 CI 성공을11월20일 재개 시 확인했다. 버전별 UI 대기 보조를 보강한 `f140234`는 Xcode26.3 전체·26.6 UI 재검증에 성공했고 main에 반영했다. 실제 빌드/테스트/게시 상태는 [08](08-STEP-VALIDATION.ko.md)와 [개발 일지](development-log/2026-11-19.md)에 정확한 SHA로 기록한다.
 
 ## 사용 방법
 
@@ -35,3 +35,9 @@ ByteTrack `d1bf0191adff59bc8fcfeaa0b33d3d1642552a99`의 `matching.py:fuse_score`
 ## 후속 고도화
 
 EfficientTAM Core ML 변환·가림 기억, Video Depth Anything Small streaming/척도 정합, MatAnyone/RVM/SAM 경계 모델 비교, iOS26+ native Cinematic 다중 트랙 보존/AF 예외 처리, 실제 iPhone15Pro/iOS27.2의 화질/열/속도·동일 장면 경쟁 앱 비교가 남아 있다. 현재 단일 대상 bbox 추적은 머리카락/투명체 경계 추적 모델과 다르며 재등장 인물의 신원을 보장하지 않는다. 후속 모델과 실기기 인수 없이 업계 최고 수준을 달성했다고 표시하지 않는다.
+
+## 최종 검증과 게시
+
+검증 소스 `f140234`를 main에 정상 push하고 원격 SHA 일치를 확인했다. [Xcode26.3 전체 CI44665022130](https://github.com/MetaParodica/PhotoP/actions/runs/44665022130)와 [Xcode26.6 UI CI44665022029](https://github.com/MetaParodica/PhotoP/actions/runs/44665022029)는 모두 success다. 단위374통과/기존 Flow1skip + LUT18통과(native 합계392통과/1skip), 공통140·Python31·UI15통과다. 실제 Simulator는 각각26.2/26.5이며 iPhone15Pro/iOS27.2 실기기 인수는 미실행이다.
+
+근거·실패/수정 이력은 [08의59절](08-STEP-VALIDATION.ko.md)과 [11월20일 일지](development-log/2026-11-20.md)를 따른다. 원본/오디오/타임스탬프·방향·모델/MOV 테스트와 실제 경쟁 앱 화질 인수는 구분한다.

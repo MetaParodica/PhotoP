@@ -1,6 +1,8 @@
-> **최신 검증:** main 촬영 UI·심도 소스 `6b9b148`의 [전체 CI44505418877](https://github.com/MetaParodica/PhotoP/actions/runs/44505418877)가 성공했습니다. Xcode26.3·SDK/Simulator26.2, 네이티브377통과/기존 Flow1skip·UI14통과·공통134·Python31. iPhone 15 Pro/iOS27.2 실제 기기 인수는 대기이며 [최신 검증 기록](docs/08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과)을 확인하세요. 아래 과거 Phase 수치는 당시 결과입니다.
+> **최신 검증·main 반영:** 사진·영상 공통 심도/선택 대상 추적 소스 `f140234`의 [전체 CI44665022130](https://github.com/MetaParodica/PhotoP/actions/runs/44665022130)와 [Xcode26.6 UI CI44665022029](https://github.com/MetaParodica/PhotoP/actions/runs/44665022029)가 성공했습니다. Native392통과/기존 Flow1skip·UI15·공통140·Python31. Xcode26.3/Simulator26.2 및26.6/26.5이며 iPhone15Pro/iOS27.2 실기기 인수는 대기입니다. [최신 검증 기록](docs/08-STEP-VALIDATION.ko.md)·[구현/사용법](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 확인하세요. 아래 과거 Phase 수치는 당시 결과입니다.
 
 # PhotoP
+
+2026-11-20 main 반영 — 사진·영상 심도: [공식/오픈소스 조사](docs/39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md) → [개발 계획](docs/40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md) → [공통 대상 추적·별도 심도 영상 구현/한계](docs/41-VIDEO-DEPTH-IMPLEMENTATION.ko.md). 최신 검증·게시 상태는08과 개발 일지를 따른다. 실제 기기 품질/속도·시계열 모델·네이티브 Cinematic은 후속 인수다.
 
 2026-11-19 조사: [유명 카메라 앱7개·카메라5개 비교와 추가 개선 권장안](docs/38-CAMERA-APP-AND-CAMERA-FEATURE-COMPARISON.ko.md). 촬영 프리셋·간편 메뉴·독립 수평계·초점/심도 일치·고품질 저장을 우선 제안했다. 공식 자료 조사이며 새 앱 구현이나 화질 비교 촬영 결과가 아니다.
 

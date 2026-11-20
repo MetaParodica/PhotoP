@@ -444,3 +444,22 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - macOS26/Xcode26.6 첫 전체 CI44587096106(`49e310c`)은 공통138개 중 동일 bbox 추적의2개 assertion에서 실패했다. 실제 CoreGraphics intersection 반올림으로 IoU가1을 미세하게 초과하여 범위 검증이 거부했다. 계산 IoU만 clamp하고 외부 NaN/범위 거부는 유지했다. 재검증 CI44587628219(`6681a46`)의 공통139개와 iPhone 무서명 빌드는 통과한 단계까지 확인했으며 전체 결과는 아직 대기다.
 - 추가 회귀는 실제 MOV의 불규칙 PTS·해상도·세로 회전·원본 hash/AI metadata/GPS 미복사·취소/pending 정리·변조 거부·사진 엔진 흐림·PCM 오디오 sample passthrough·실제 Vision 시퀀스·미선택 추적 요구 시 원본 복귀, 보관 원본을 여는 실제 영상 편집 UI다. 합성 fixture와 실제 촬영/대형 시계열 모델 검증은 구분한다.
 - native 자동 검증 결과는 후속 절에 정확한 source SHA로 기록한다. iPhone15Pro/iOS27.2 실기기,4K 지속 부하/열/속도·중/원거리 전경/머리카락·빠른 팬/가림 화질과 SDK27 빌드는 미실행이다. 녹화 중 시간 설정은 서비스의 recordedDuration 표본 시각을 사용하며 하위 프레임 정확도의 하드웨어 타임코드 편집 기능이 아니다.
+
+
+## 59. 영상 심도 최종 source 검증과 환경 복구 후 재개
+
+- 2026-11-20 KST에 중단 작업을 재개하고 정확한 source `c772c71248343954574000192c74ddef613b8896`의 [CI44593155678](https://github.com/MetaParodica/PhotoP/actions/runs/44593155678) **success**를 확인했다. 당시 새 CI를 실행한 결과가 아니라 완료된 job/단위/LUT/UI artifact를 직접 확인한 것이다. 단위 로그의 실제 경로는 Xcode26.6, 실제 Simulator는 iOS26.5다. SDK27/실기기27.2 검증과 구분한다.
+- 단위375개 중374통과/기존 Vision Optical Flow1skip, 별도 LUT18통과로 native 합계393개 중392통과/1skip이다. UI15개(카메라12·사진 심도2·영상 심도1)도 모두 통과했다. 공통140·Python31·모델/LUT 자원·앱 내 ByteTrack MIT 고지 비교 단계까지 전체 success다. 공통140개를 native 수에 중복 합산하지 않는다.
+- 실제 Core ML 모델을 사용한 MOV 처리와 Vision 시퀀스, 합성 필드를 사용한 실제 전경 checker 대비 감소·비대칭 색상 방향 비교·불규칙 PTS·원본 hash/AI metadata/GPS 제외·취소/정리·변조 거부를 구분해 검사했다. PCM 오디오는 원본/결과 모두22400bytes, non-data marker2개를 끝까지 drain해 reader completed와 전체 payload 일치를 확인했다. marker를 EOF로 처리하던 이전 test helper 실패는 실제 회귀로 해결했다. 이 결과는 실기기 AAC 장시간 동기·화질/속도 인수가 아니다.
+- 성공 실행만 채택하지 않도록 같은 source의 [기본 Xcode26.3 CI44593155801](https://github.com/MetaParodica/PhotoP/actions/runs/44593155801)도 확인했다. 빌드·단위·LUT 단계는 통과했지만 영상 편집 UI1개에서2 assertion이 실패했고 이후 자산 검사는 skip됐다. 고정 Other 역할의 즉시 target 조회와 처리 중 문구/스크롤 상태를 실제 작업 종료로 오인한 보조 함수였다. identifier의 역할 독립 조회·썸네일 준비 대기·실제 종료 메시지/컨트롤 화면 복귀 검사로 보강한 `f140234`를 후속 검증한다. assertion/시나리오를 제거하거나 가짜 카메라 capability를 추가하지 않는다.
+- 환경 중단 직전의 README·온보딩·일지 미커밋 정리는 복구 후 보존했다. 11월19일 원시 UTC 기록을 유지하고 재개/최종 게시 기록은11월20일 KST [일지](development-log/2026-11-20.md)에 이어 기록한다. 후속 CI와 실제 main push 결과는 아래에 갱신한다.
+
+
+### 59.1 UI 보조 수정 재검증과 main 게시
+
+- 정확한 source **`f1402348764c73c2345bc55501e85d5f2eb04e51`**의 [전체 CI44665022130](https://github.com/MetaParodica/PhotoP/actions/runs/44665022130) **success**·SHA 일치와 모든 job 단계 결과를 확인했다. Xcode26.3 경로·실제 iOS Simulator26.2는 단위 artifact에서 확인했다. 단위375개 중374통과/기존 Flow1skip, 별도 LUT18·UI15통과다. native 합계393개 중392통과/1skip이며 공통140을 중복 합산하지 않는다. Python31·모델/LUT 및 실제 앱의 ByteTrack MIT 고지 비교·캡처/결과 보관 단계도 success다.
+- 같은 source [UI 집중 CI44665022029](https://github.com/MetaParodica/PhotoP/actions/runs/44665022029) **success**도 확인했고 원시 UI 로그에서15개 전부 통과를 읽었다. Xcode26.6의 집중 실행은 단위/LUT 실행을 생략하므로 이를 새로운 native393 실행으로 표기하지 않는다. 해당 버전의 전체 native 검증은 같은 앱/단위 source인 c772c71/CI44593155678를 따른다. f140234의 앱·단위·Package·CI·모델/자산·scripts·third-party는 c772c71과 같고 UI 보조와 일지만 다르다.
+- 두 버전 모두 실제 영상 편집 test case가 통과했다. 고정 AX Other 타입을 제거하고 썸네일 준비·실제 종료 메시지·스크롤 후 재실행 컨트롤을 확인했다. 인물/고품질 선택, 실제 처리/취소·원본 보존 결과 검사를 유지했으며 assertion 제거/skip/가짜 카메라 capability로 해결하지 않았다.
+- 11월20일 로컬 Python31·기본 LUT5/외부25·고정 모델3파일/Apache 고지, Markdown11개 로컬 링크·출처 JSON/Swift 포트 hash/앱 MIT 원문 일치·diff 검사를 직접 수행했다. iOS/native 재실행과 구분한다. 게시 문서는 앱/테스트·프로젝트·Package·CI·scripts·assets를 바꾸지 않는다.
+- `37eb109`가 검증 source의 조상임을 확인하고 **정상 fast-forward push**로 원격 main을 f140234에 반영했다. `git ls-remote origin refs/heads/main`의 정확한 SHA를 확인했다. 최종 게시 문서도 같은 main에 후속 반영한다. 강제 push는 하지 않았다.
+- iPhone15Pro/iOS27.2 실제 미리보기/촬영·4K/HEVC/AAC 동기·열/메모리/속도·중/원거리/가림 화질 및 SDK27 빌드는 미실행이다. 현재8비트 SDR 출력,1개 선택 bbox 추적과 후속 시계열 모델의 범위를 구분한다.

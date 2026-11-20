@@ -1,6 +1,8 @@
 # PhotoP 개발 온보딩
 
-> 후속 main 반영(2026-11-19): 촬영 UI·심도 소스 `6b9b148`의 전체 CI44505418877가 성공했다. 최신 상태는 [08의57절](08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과)·[37 구현 기록](37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md)을 따른다. 아래 커밋 분석/집계는 작성 당시 main 스냅샷이다.
+> 후속 사진·영상 심도 main 반영(2026-11-20): `f140234`, 전체 CI44665022130·UI CI44665022029 success(native392통과/Flow1skip·UI15). [39 조사](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md)·[40 계획](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md)·[41 구현](41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 먼저 읽는다. 새 진입점은 `SubjectTrackingPolicy/Analyzer`, `VideoDepthPolicy/Processor`, `VideoDepthEditorView`다. 원본 MOV는 보존하고8비트 SDR 심도 파생물을 만든다. 최신 검증/게시 상태는08의58절 이후와 당일 일지를 따른다. 아래 스냅샷에서 영상 원본만 보관하던 상태는 당시 기준이다.
+
+> 이전 촬영 UI main 반영(2026-11-19): 촬영 UI·심도 소스 `6b9b148`의 전체 CI44505418877가 성공했다. 당시 검증 상태는 [08의57절](08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과)·[37 구현 기록](37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md)을 따른다. 아래 커밋 분석/집계는 작성 당시 main 스냅샷이다.
 
 작성일: **2026-11-18**. 확인한 원격 `main`: **`2c1a7b3dbd381a56d6e5d34236cc3af62f9da0f6`**.
 이전 인계 기준 `004d869` 이후 **17개 커밋·30개 파일 변경**을 문서·실제 소스·CI 로그와 대조했다. 이 문서는 개발 인계이며 새 앱 기능을 구현한 기록이 아니다.
