@@ -1095,6 +1095,7 @@ final class CameraModel: ObservableObject {
         let aperture = depthEnabled && trackingTrusted ? depthAperture : nil
         let capturedDepthSource = depthSource
         let capturedDepthProfile = depthProfile
+        let experimentalPhoto = aperture == nil ? nil : ExperimentalDepthRuntime.shared.request(for: .photo)
         let fuseBracket = bracketEnabled && bracketFusionEnabled
         let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true
         let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)
@@ -1125,7 +1126,8 @@ final class CameraModel: ObservableObject {
             let center = urls[urls.count / 2]
             latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value
             savedToPhotos = false
-            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource, profile: capturedDepthProfile)
+            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource,
+                profile: capturedDepthProfile, experimentalPhoto: experimentalPhoto)
             if fuseBracket, let biases = series.requestedBiases {
                 do {
                     guard active else { throw CancellationError() }
@@ -1146,7 +1148,8 @@ final class CameraModel: ObservableObject {
     }
 
     private func renderCaptureResults(_ urls: [URL], look: ImportedLUT?, aperture: Double?, focus: CGPoint,
-                                      depthSource: SoftwareDepthSource = .measured, profile: DepthLensProfile = .natural) async {
+                                      depthSource: SoftwareDepthSource = .measured, profile: DepthLensProfile = .natural,
+                                      experimentalPhoto: ExperimentalPhotoRequest? = nil) async {
         guard look != nil || aperture != nil else { return }
         for (index, url) in urls.enumerated() {
             guard active, !Task.isCancelled else {
@@ -1156,7 +1159,7 @@ final class CameraModel: ObservableObject {
             do {
                 let task = Task {
                     try await CaptureResultProcessor.shared.render(original: url, look: look, aperture: aperture, focus: focus,
-                        depthSource: depthSource, profile: profile)
+                        depthSource: depthSource, profile: profile, experimentalRequest: experimentalPhoto)
                 }
                 photoEffectTask = task
                 let rendered = try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() })

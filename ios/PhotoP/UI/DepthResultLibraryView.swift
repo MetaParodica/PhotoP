@@ -44,6 +44,7 @@ struct DepthResultLibraryView: View {
 }
 
 private struct DepthPreviewRequest: Hashable {
+    var revision: UInt64 = 0
     let aperture: Double
     let x: Double
     let y: Double
@@ -77,6 +78,10 @@ struct DepthResultEditorView: View {
     @State private var strokePoints: [DepthBrushPoint] = []
     @State private var diagnostic: DepthDiagnostic = .result
     @State private var saveTask: Task<Void, Never>?
+    @ObservedObject private var experiments = ExperimentalDepthSettings.shared
+    @State private var previewRevision: UInt64 = 0
+    @State private var experimentRecord: ExperimentalDepthRecord?
+    @State private var hasSavedMatte: Bool
 
     init(session: DepthEditSession, beforeSave: (@Sendable () async throws -> Void)? = nil) {
         self.session = session; editor = DepthPhotoEditor(session: session)
@@ -85,9 +90,11 @@ struct DepthResultEditorView: View {
         _focus = State(initialValue: CGPoint(x: session.recipe.focusX, y: session.recipe.focusY))
         _profile = State(initialValue: session.recipe.lensProfile ?? .natural)
         _history = State(initialValue: DepthCorrectionHistory(session.corrections))
+        _experimentRecord = State(initialValue: session.recipe.experimentalDepth)
+        _hasSavedMatte = State(initialValue: session.matte != nil)
     }
     private var request: DepthPreviewRequest {
-        .init(aperture: aperture, x: Double(focus.x), y: Double(focus.y), profile: profile, original: compare, corrections: history.current, diagnostic: diagnostic)
+        .init(revision: previewRevision, aperture: aperture, x: Double(focus.x), y: Double(focus.y), profile: profile, original: compare, corrections: history.current, diagnostic: diagnostic)
     }
     var body: some View {
         NavigationStack {
@@ -128,7 +135,7 @@ struct DepthResultEditorView: View {
                     DisclosureGroup("심도 교정·진단") {
                         VStack(alignment: .leading, spacing: 8) {
                             Picker("보기", selection: $diagnostic) { ForEach(DepthDiagnostic.allCases, id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu).accessibilityIdentifier("editor.depth.diagnostic")
-                            if diagnostic == .matte, session.matte == nil { Text("저장된 선택 매트가 없습니다.").font(.caption) }
+                            if diagnostic == .matte, !hasSavedMatte { Text("저장된 선택 매트가 없습니다.").font(.caption) }
                             Toggle("깊이 교정 브러시", isOn: $brushEnabled).accessibilityIdentifier("editor.depth.brush")
                             if brushEnabled {
                                 Picker("교정", selection: $brushMode) { Text("전경").tag(DepthBrushMode.foreground); Text("배경").tag(DepthBrushMode.background) }.pickerStyle(.segmented)
@@ -142,12 +149,20 @@ struct DepthResultEditorView: View {
                                 Button("다시 실행") { history.redo() }.disabled(!history.canRedo).accessibilityIdentifier("editor.depth.redo")
                             }
                             Text("원본 깊이 지도 보존 · 전경/배경 값은 기존 지도 범위에서 결정합니다. 노란 진단은 결측/혼합 경계이며 모델 확률이 아닙니다.").font(.caption2)
+                            DisclosureGroup("실험실 · 추가 AI 기능") {
+                                ExperimentalDepthSettingsView()
+                                if experiments.preferences.photoSubjectSelection {
+                                    Button("터치한 피사체를 정밀 선택하여 새 사진 만들기") { reanalyse() }
+                                        .disabled(saving || compare).accessibilityIdentifier("editor.depth.reanalyse")
+                                }
+                            }.accessibilityIdentifier("editor.depth.experiments")
                         }.disabled(saving)
                     }.disabled(saving)
                     ProgressView("미리보기 갱신 중").frame(height: 24)
                         .opacity(rendering ? 1 : 0).accessibilityHidden(!rendering)
                         .allowsHitTesting(false)
                     if let message { Text(message).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("editor.depth.message") }
+                    if let experimentRecord { Text(experimentRecord.title).font(.caption).accessibilityIdentifier("editor.depth.experimentResult") }
                     if saving { Button("저장 취소") { saveTask?.cancel() }.accessibilityIdentifier("editor.depth.cancel") }
                     else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent).accessibilityIdentifier("editor.depth.save") }
                     Text("미리보기는 최대768px입니다. 재초점은 저장된 깊이의 정확도 범위에서 작동하며 최초 매트 밖의 피사체는 깊이만 사용합니다. 원본과 이전 결과는 보존합니다.").font(.caption2).foregroundStyle(.secondary)
@@ -175,11 +190,26 @@ struct DepthResultEditorView: View {
     }
     private func refresh(_ value: DepthPreviewRequest) async {
         do {
-            try await Task.sleep(for: .milliseconds(150)); rendering = true
+            try await Task.sleep(for: .milliseconds(150)); guard value == request else { return }; rendering = true
             let pixels = try await editor.preview(aperture: value.aperture, focus: CGPoint(x: value.x, y: value.y), profile: value.profile, original: value.original, corrections: value.corrections, diagnostic: value.diagnostic)
-            try Task.checkCancellation(); image = try pixels.cgImage(); rendering = false
+            try Task.checkCancellation(); guard value == request else { return }; image = try pixels.cgImage(); rendering = false
         } catch is CancellationError { }
-        catch { if !Task.isCancelled { message = error.localizedDescription; rendering = false } }
+        catch { if !Task.isCancelled, value == request { message = error.localizedDescription; rendering = false } }
+    }
+    private func reanalyse() {
+        guard !saving, let request = ExperimentalDepthRuntime.shared.request(for: .photo) else { return }
+        let f = aperture, point = focus, lens = profile, edits = history.current
+        saving = true; message = "사진 정밀 선택 분석 중"
+        saveTask = Task {
+            defer { saving = false; saveTask = nil }
+            do {
+                let update = try await editor.reanalyse(aperture: f, focus: point, profile: lens, corrections: edits, request: request)
+                try Task.checkCancellation()
+                experimentRecord = update.record; hasSavedMatte = update.hasMatte; previewRevision &+= 1
+                message = "새 심도 결과를 보관함에 저장했습니다."
+            } catch is CancellationError { message = "분석을 취소했습니다. 원본과 이전 결과는 보존됩니다." }
+            catch { message = error.localizedDescription }
+        }
     }
     private func save() {
         let f = aperture, point = focus, lens = profile, edits = history.current

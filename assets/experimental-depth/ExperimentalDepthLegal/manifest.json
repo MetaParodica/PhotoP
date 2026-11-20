@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "feature": "photo-subject-selection",
+  "modelID": "EdgeTAM-photo-jutsu-v1.2",
+  "license": "Apache-2.0",
+  "scope": "image encoder and initializer only; photo segmentation, no video memory or matting",
+  "upstreamRepository": "https://github.com/facebookresearch/EdgeTAM",
+  "upstreamRevision": "7711e012a30a2402c4eaab637bdb00a521302c91",
+  "conversionRepository": "https://github.com/jutsuhq/edgetam-coreml",
+  "inspectedConversionRevision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9",
+  "releaseURL": "https://github.com/jutsuhq/edgetam-coreml/releases/download/v1.2/edgetam-coreml-v1.2.zip",
+  "archiveSHA256": "9c35c1b6667a0dd80b093bbc20747628f304133ad2a531de049307beb3ae1401",
+  "minimumIOS": "18.0",
+  "specificationVersion": 9,
+  "precision": {
+    "encoder": "float16",
+    "initializer": "float32 compute, float16 IO"
+  },
+  "input": {
+    "image": 1024,
+    "pointOrigin": "top-left normalized source mapped to model pixels",
+    "normalization": "folded into encoder; raw RGB image input"
+  },
+  "output": {
+    "mask": [
+      1,
+      1,
+      256,
+      256
+    ],
+    "type": "segmentation logits, not physical alpha or metric depth"
+  },
+  "runtimeParityVerified": false,
+  "physicalDeviceVerified": false,
+  "files": [
+    {
+      "path": "ExperimentalPhotoEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "bytes": 205683,
+      "sha256": "a3bc99d7e2ff9e05b2f33cdbfec31a521af9d7985ac6270d2e58a181c5e93037"
+    },
+    {
+      "path": "ExperimentalPhotoEncoder.mlpackage/Data/com.apple.CoreML/weights/weight.bin",
+      "bytes": 9818944,
+      "sha256": "337900984a90039da4d26ad92abc32943ed920b4d8c7434f1ac717e2fbbc108b"
+    },
+    {
+      "path": "ExperimentalPhotoEncoder.mlpackage/Manifest.json",
+      "bytes": 617,
+      "sha256": "7f1854a3c68f8d5ecf537c2862dde4e8402e6610c6ad8c8f34f17b65e4e69ab4"
+    },
+    {
+      "path": "ExperimentalPhotoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "bytes": 143749,
+      "sha256": "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c"
+    },
+    {
+      "path": "ExperimentalPhotoInitializer.mlpackage/Data/com.apple.CoreML/weights/weight.bin",
+      "bytes": 26240768,
+      "sha256": "86d71536e489b5ae5c4388e1213d97921a4e7fc1ef88b76ac2e2e8e51f155a07"
+    },
+    {
+      "path": "ExperimentalPhotoInitializer.mlpackage/Manifest.json",
+      "bytes": 617,
+      "sha256": "b3931debb3033f9e807ea4174b0d83ac1540cc3a076c465aeb4fd936548c8ca7"
+    }
+  ],
+  "legalFiles": [
+    {
+      "path": "ExperimentalDepthLegal/LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "ExperimentalDepthLegal/NOTICE",
+      "sha256": "a3939384772e2737c140de5e11980ce8bc57b31c19b4cf17fe0e1b672b92a6a2"
+    }
+  ]
+}

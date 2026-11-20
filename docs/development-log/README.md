@@ -42,3 +42,4 @@ docs/development-log/
 | [2026-11-18](2026-11-18.md) | iOS18·융합/스코프 회고, 온보딩·일지, 정책 확정·구형3개 정리, 박스형 뷰파인더·간편 심도·전경 CoC·AI 구도 중지, Swift134/Python31 | 현재까지 정리 · 기존 UTC / 후속 KST |
 | [2026-11-19](2026-11-19.md) | 카메라 비교·main 게시/검증, 후속 사진·영상 심도/추적 조사·개발 계획,12개 오픈소스/13개 구현 소스·ByteTrack 복사/고지, 공통 대상 추적·별도 심도 MOV/오디오·보관함 편집 개발/회귀 | 현재까지 정리 · KST |
 | [2026-11-20](2026-11-20.md) | 환경 복구·영상 심도/추적 f140234 main push, Xcode26.3 전체·26.6 UI 재검증, native392통과/1skip·UI15·보고/일지 게시, 차세대 심도 감사42·계획43·구현44, Metal PSF/매트/영상 안정화·brush/v4/시간 편집, 모델 probe·77fa25f main push, 양 SDK 전체 native408통과/Flow1skip·UI17·portable150/Python34, 외부 전체 추적45·EdgeTAM/MatAnyone2/Swift/CoreAI 조사·7모델spec/전체EfficientTAM CPU3프레임 참조,46 기존 심도 기본 유지·신규 추가분만 실험실Off/사진 전용 독립 제공 기획, 실제 품질 인수 미완료 | 현재까지 정리 · KST |
+| [2026-11-21](2026-11-21.md) | 기획46 실험적 사진 AI 개발 시작·기존 기능 유지, 사진용 EdgeTAM2모델/독립Off 설정·명시적 재분석·recipe·native/UI 회귀 추가 | 진행 중 · KST |

@@ -6,7 +6,7 @@ import Foundation
 // This is not an iOS build and cannot exercise Vision, AVFoundation or SwiftUI.
 let testPath = "ios/PhotoPTests"
 let testURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(testPath)
-let coreTests = ["AdvancedDepthTests.swift", "SubjectVideoDepthPolicyTests.swift", "CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift", "FocusDepthPolicyTests.swift", "DepthPhaseTests.swift", "LUTTextEncoderTests.swift", "LUTBinaryCodecTests.swift", "ExposureFusionPolicyTests.swift", "ScopeAnalysisPolicyTests.swift"]
+let coreTests = ["ExperimentalDepthPolicyTests.swift", "AdvancedDepthTests.swift", "SubjectVideoDepthPolicyTests.swift", "CompositionTrackingTests.swift", "CaptureWorkflowTests.swift", "IntelligentCoachTests.swift", "PhotoReviewCoreTests.swift", "HighResolutionPolicyTests.swift", "LookEffectAssessmentTests.swift", "LiveLookPolicyTests.swift", "FocusDepthPolicyTests.swift", "DepthPhaseTests.swift", "LUTTextEncoderTests.swift", "LUTBinaryCodecTests.swift", "ExposureFusionPolicyTests.swift", "ScopeAnalysisPolicyTests.swift"]
 let excludedTests = try FileManager.default.contentsOfDirectory(atPath: testURL.path)
     .filter { !coreTests.contains($0) }
 let cameraPath = "ios/PhotoP/Camera"
@@ -18,7 +18,7 @@ let coreURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().append
 let excludedCoreSources = try FileManager.default.contentsOfDirectory(atPath: coreURL.path).filter { !coreSources.contains($0) }
 let imagePath = "ios/PhotoP/Processing"
 let imageURL = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appendingPathComponent(imagePath)
-let imageSources = ["DepthCorrections.swift", "SubjectTrackingPolicy.swift", "VideoDepthPolicy.swift", "HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift", "SoftwareDepthPolicy.swift", "DepthProcessingCore.swift", "LUTTextEncoder.swift", "LUTBinaryCodec.swift", "InferenceRetryBackoff.swift", "ExposureFusionPolicy.swift", "ScopeAnalysisPolicy.swift"]
+let imageSources = ["ExperimentalDepthPolicy.swift", "DepthCorrections.swift", "SubjectTrackingPolicy.swift", "VideoDepthPolicy.swift", "HighResolutionPolicy.swift", "CubeLUT.swift", "LookEffectAssessment.swift", "LiveLookPolicy.swift", "SoftwareDepthPolicy.swift", "DepthProcessingCore.swift", "LUTTextEncoder.swift", "LUTBinaryCodec.swift", "InferenceRetryBackoff.swift", "ExposureFusionPolicy.swift", "ScopeAnalysisPolicy.swift"]
 let excludedImageSources = try FileManager.default.contentsOfDirectory(atPath: imageURL.path).filter { !imageSources.contains($0) }
 
 let package = Package(

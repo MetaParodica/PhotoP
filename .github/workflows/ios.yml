@@ -97,6 +97,7 @@ jobs:
       - name: Verify pinned offline depth model
         run: |
           python3 scripts/check_depth_model.py
+          python3 scripts/check_experimental_depth_models.py
           python3 scripts/check_depth_acceptance.py docs/depth-acceptance/manifest.json --validate-only
       - name: Test portable composition and capture policies
         run: swift test
@@ -188,7 +189,7 @@ jobs:
           TEST_SCOPE: ${{ inputs.test_scope || 'all' }}
         run: |
           if [ "$TEST_SCOPE" = depth ]; then
-            test_flags=(-only-testing:PhotoPTests/AdvancedDepthTests -only-testing:PhotoPTests/DepthPSFMetalTests -only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
+            test_flags=(-only-testing:PhotoPTests/ExperimentalDepthPolicyTests -only-testing:PhotoPTests/ExperimentalPhotoTests -only-testing:PhotoPTests/AdvancedDepthTests -only-testing:PhotoPTests/DepthPSFMetalTests -only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
           else
             test_flags=(-only-testing:PhotoPTests -skip-testing:PhotoPTests/CompanyFilmLibraryTests -skip-testing:PhotoPTests/FilmStyleLibraryTests)
           fi

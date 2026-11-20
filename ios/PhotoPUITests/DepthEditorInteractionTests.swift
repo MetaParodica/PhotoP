@@ -2,6 +2,46 @@ import XCTest
 import UIKit
 
 final class DepthEditorInteractionTests: XCTestCase {
+    @MainActor func testPhotoExperimentPersistsAndReanalysisLeavesBaselineEditingAvailable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review", "--review-depth-editor"]
+        app.launch(); defer { app.terminate() }
+        func openExperiments() {
+            XCTAssertTrue(app.sliders["editor.depth.aperture"].waitForExistence(timeout: 25))
+            app.buttons["심도 교정·진단"].tap()
+            let lab = app.buttons["실험실 · 추가 AI 기능"]
+            reveal(lab, in: app); lab.tap()
+        }
+        openExperiments()
+        let toggle = app.switches["experiments.depth.photoSelection"]
+        reveal(toggle, in: app)
+        XCTAssertEqual(toggle.value as? String, "0")
+        toggle.tap(); XCTAssertEqual(toggle.value as? String, "1")
+        app.terminate(); app.launch(); openExperiments(); reveal(toggle, in: app)
+        XCTAssertEqual(toggle.value as? String, "1", "Only the new photo preference should persist")
+        let analyse = app.buttons["editor.depth.reanalyse"]
+        reveal(analyse, in: app); analyse.tap()
+        let outcome = app.staticTexts["editor.depth.experimentResult"]
+        XCTAssertTrue(outcome.waitForExistence(timeout: 90))
+        XCTAssertTrue(outcome.label.contains("실험적 사진 정밀 선택 적용") || outcome.label.contains("기존 심도 방식으로 처리"))
+        reveal(toggle, in: app); toggle.tap(); XCTAssertEqual(toggle.value as? String, "0")
+        XCTAssertTrue(app.sliders["editor.depth.aperture"].isEnabled)
+        XCTAssertTrue(app.segmentedControls["editor.depth.profile"].isEnabled)
+        XCTAssertTrue(app.switches["editor.depth.brush"].isEnabled)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "experimental-photo-selection-result"; attachment.lifetime = .keepAlways; add(attachment)
+    }
+    @MainActor private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(element.waitForExistence(timeout: 10))
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<8 {
+            let top = app.navigationBars.firstMatch.frame.maxY + 4
+            let bottom = app.windows.firstMatch.frame.maxY - 40
+            if element.isHittable, element.frame.minY >= top, element.frame.maxY <= bottom { return }
+            if element.frame.minY < top { scroll.swipeDown() } else { scroll.swipeUp() }
+        }
+        XCTAssertTrue(element.isHittable)
+    }
     @MainActor func testSavingLocksApertureAndProfileUntilRealSaveCompletes() {
         checkSaveLock(cancel: false)
     }

@@ -39,6 +39,15 @@ targets:
       - path: ../assets/depth-model/legal
         type: folder
         buildPhase: resources
+      - path: ../assets/experimental-depth/ExperimentalPhotoEncoder.mlpackage
+        type: file
+        buildPhase: sources
+      - path: ../assets/experimental-depth/ExperimentalPhotoInitializer.mlpackage
+        type: file
+        buildPhase: sources
+      - path: ../assets/experimental-depth/ExperimentalDepthLegal
+        type: folder
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: PhotoP/Info.plist
