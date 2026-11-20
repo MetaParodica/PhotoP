@@ -11,7 +11,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
-- 2026-11-20 사용자 후속 결정은 [46 실험적 AI 심도 기획](docs/46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)이 우선한다. 기능별 기본Off·설정을 통한 활성화, 사진/저장영상/라이브 독립 지원. 사진 전용 정밀 선택/인물 alpha/고해상도 편집은 사진부터 독립 제공하며 영상 전체 추적을 선행 조건으로 두지 않는다. 실험 공개의 기본 기능 검증과 정식 품질 인수를 구별한다. 현재는 기획이며 설정/새 모델 구현 완료가 아니다.
+- 2026-11-20 사용자 후속 결정은 [46 실험적 AI 심도 기획](docs/46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)이 우선한다. **기존 사진/영상/라이브 심도·Depth Anything/Vision·추적·64MP·편집은 기본 기능으로 유지하고 이번에 새로 추가하는 외부 AI 기능만 실험실에 둔다.** 신규 실험 항목만 기본Off·설정 활성화, 기존 설정은 보존한다. 사진 전용 신규 기능은 영상 전체 추적과 독립 제공한다. 실험 공개와 정식 품질 인수를 구별하며 현재는 기획 단계다.
 
 - 2026-11-20 외부 AI 전체 추적 도입의 최신 조사는 [45 보고서](docs/45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md)를 따른다. EdgeTAM 전체 masked Core ML 경로를 1차 PoC로 권고하고 EfficientTAM은 참조/차선으로 유지한다. 인물 alpha는 MatAnyone 2/Swift 포트를 별도 비교한다. 14개 저장소·7개 모델 spec·전체 EfficientTAM CPU 합성3프레임을 확인했으며 신규 앱 모델 채택·실기기 인수는 하지 않았다. Core AI iOS27 공식 API 조사와 SDK27/기기 실행을 구분한다.
 
