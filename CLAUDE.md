@@ -11,6 +11,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
+- 2026-11-20 사용자 후속 결정은 [46 실험적 AI 심도 기획](docs/46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)이 우선한다. 기능별 기본Off·설정을 통한 활성화, 사진/저장영상/라이브 독립 지원. 사진 전용 정밀 선택/인물 alpha/고해상도 편집은 사진부터 독립 제공하며 영상 전체 추적을 선행 조건으로 두지 않는다. 실험 공개의 기본 기능 검증과 정식 품질 인수를 구별한다. 현재는 기획이며 설정/새 모델 구현 완료가 아니다.
+
 - 2026-11-20 외부 AI 전체 추적 도입의 최신 조사는 [45 보고서](docs/45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md)를 따른다. EdgeTAM 전체 masked Core ML 경로를 1차 PoC로 권고하고 EfficientTAM은 참조/차선으로 유지한다. 인물 alpha는 MatAnyone 2/Swift 포트를 별도 비교한다. 14개 저장소·7개 모델 spec·전체 EfficientTAM CPU 합성3프레임을 확인했으며 신규 앱 모델 채택·실기기 인수는 하지 않았다. Core AI iOS27 공식 API 조사와 SDK27/기기 실행을 구분한다.
 
 - 2026-11-20 차세대 심도 고도화는 [감사42](docs/42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](docs/43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[구현44](docs/44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존 엔진 재사용, shared Metal PSF·제한 매트 보정·영상 등록·v4 비파괴 brush/v2 영상 보간을 구현했다. 검증 소스77fa25f를 두 전체 CI44687571347(26.3)/44687571198(26.6) success 후 main push했다. native409중408통과/Flow1skip·UI17·portable150·Python34. 정확한 SHA·게시/미인수는08의60절·당일 일지가 우선한다. 실제100장/영상·기기 trace와 EfficientTAM whole tracker/runtime/ANE는 아직 인수되지 않았다.

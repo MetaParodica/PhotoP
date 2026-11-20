@@ -1,5 +1,7 @@
 # PhotoP 개발 온보딩
 
+> 최신 제품 기획(2026-11-20): [46 실험적 AI 심도](46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md). 외부 AI는 설정에서 기능별로 켜며 기본Off다. 사진에서 가능한 정밀 선택/인물 경계/고해상도 개선을 사진 전용으로 먼저 제공하고 저장영상·라이브는 독립 옵션으로 확대한다. 현재 기획 단계이며 기존45의영상 우선 권고보다 이 사용자 결정이 우선한다.
+
 > 외부 전체 추적 조사 추가(2026-11-20): [45 도입 조사](45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md). EdgeTAM 공식 image-only exporter와 커뮤니티 full-memory 변환을 구별하고, masked 경로·정밀도 parity부터 검증한다. MatAnyone 2 Swift 포트·iOS27 Core AI도 조사했으며 앱 채택/실기기 실행은 후속이다.
 
 > 후속 사진·영상 심도 main 반영(2026-11-20): `f140234`, 전체 CI44665022130·UI CI44665022029 success(native392통과/Flow1skip·UI15). [39 조사](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md)·[40 계획](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md)·[41 구현](41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 먼저 읽는다. 새 진입점은 `SubjectTrackingPolicy/Analyzer`, `VideoDepthPolicy/Processor`, `VideoDepthEditorView`다. 원본 MOV는 보존하고8비트 SDR 심도 파생물을 만든다. 최신 검증/게시 상태는08의58절 이후와 당일 일지를 따른다. 아래 스냅샷에서 영상 원본만 보관하던 상태는 당시 기준이다.

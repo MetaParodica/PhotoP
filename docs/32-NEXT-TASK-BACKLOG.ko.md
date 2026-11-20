@@ -170,12 +170,14 @@
 
 [감사42](42-COMPUTATIONAL-DEPTH-AUDIT.ko.md)·[계획43](43-COMPUTATIONAL-DEPTH-PLAN.ko.md)·[13항목 구현 보고44](44-COMPUTATIONAL-DEPTH-IMPLEMENTATION.ko.md)를 따른다. 기존29/30/41의 기능을 새로 만들었다고 집계하지 않는다. source **77fa25f**를 Xcode26.3/26.6 두 전체 CI로 검증하고 main에 push했다(각 native409중408통과/Flow1skip·UI17·portable150·Python34). 정확한 URL/범위는08·44·당일 일지를 따른다. 실제 품질 인수는 미완료다.
 
+외부 AI의 최신 제품 결정은 [46 실험적 기능 기획](46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)을 따른다. 기능별 기본Off·설정 활성화, 사진/저장영상/라이브 독립 지원. 사진 정밀 선택/인물 alpha/고해상도 편집은 사진부터 제공하고, 전체 실사 품질 인수와 실험 공개의 기능 검증을 구별한다. 이 결정은 현재 기획이며 모델/설정 구현 완료를 뜻하지 않는다.
+
 | 우선 | 실제 남은 작업 | 확보한 근거/범위 |
 |---|---|---|
 | P0 | 실제100장·10종 영상/기기 trace/3명 blind 인수 | 새 Metal PSF·far-only fill·color-line 매트·영상 등록·editor 자동 회귀와 별개. 두 evidence gate 실제자료0/exit2 |
 | P0 | neural matte ROI/경계 품질 비교 | 기존 Vision+제한 RGB 보정만 앱에 있음. alpha 합성 MAE 실제 구버전0.0983785→0.0147567, 실제 모발/유리 개선 미입증. 최신45의 MatAnyone 2/Swift 저수준 Float alpha·선택 인물 seed를 독립 비교 |
 | P0 | streaming temporal 모델 고정 상태 CoreML PoC | VDA Small 실제116MB/SHA·29M tensor값 확인,32-frame cache 구조. 앱은 기존 모델+등록 검증 flow/affine |
-| P1 | EdgeTAM 전체 masked 추적 PoC·정밀도/ANE benchmark | 최신45에서 공식 모델/전체 커뮤니티 변환·빈 슬롯·FP16 parity 실패 확인. 고정 참조→저장 영상 단일 대상→iPhone15Pro 순서. EfficientTAM은 encoder-only13.33MB 변환 및 전체 CPU 합성3프레임 참조를 유지하는 차선 후보. 앱 채택/실기기fps 아님 |
+| P1 | 실험실 설정·사진 외부 AI 우선, EdgeTAM 전체 masked 추적 후속 | 최신46: 기본Off·사진/영상/라이브 독립. 사진용 image/prompt/mask·인물 매팅부터 실제 지원 범위 공개, 전체 memory 추적은 저장영상 별도 옵션. 45의빈 슬롯/FP16 parity·기기 검증은 각 해당 경로에 유지. EfficientTAM은 기존 변환/CPU 참조 차선 후보 |
 | P1 | 실측 광학 PSF·선택 색수차/구면수차·난해한 occlusion | shared Metal/CPU gather 근사·독자6스타일은 구현. 경쟁 렌즈 실측 복제 아님 |
 | P1 | priority inference scheduler·thermal fairness/p95 | single-job/reuse/취소·live0.75초 stale 조기 폐기 구현, 전역 lock 우선순위는 미구현 |
 | P1 | 10bitSDR reader/pool/HEVC Main10/색 검증 | 현8bitSDR 유지, HDR/Log/gainmap/C2PA 금지 유지 |

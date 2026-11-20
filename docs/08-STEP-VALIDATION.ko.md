@@ -511,3 +511,9 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 - EfficientTAM abcd061 + 기존 Tiny512 checkpoint로 전체 CPU 합성3프레임 실행. image/prompt/mask/memory encoder3회·memory attention2회, 기록 tensor finite assertion 통과. source/weights SHA도 검사했다. [실행 결과](research/tracker-adoption/efficienttam-reference.json)·[재현 코드](research/tracker-adoption/probe_efficienttam_reference.py). Torch2.5.1+cpu/2threads, CPU 단발 시간을 phone FPS로 쓰지 않는다.
 - Jutsu의 fp16 masked ANE parity `pass=false`, FP32 masked CPU도 전체 `pass=false`임을 실제 원시 JSON으로 확인했다. M4 speed 자료·A18 MatAnyone2Kit30fps는 작성자의 공개 측정이며 직접 재현 결과가 아니다.
 - Apple 공식 CoreAI DocC의 iOS27.0 availability와 MLState18/MLComputePlan17.4 확인. SDK27 컴파일·CoreAI/ANE/실기기 실행 없음. 앱·모델·CI 변경 없는 조사로 기존 CI를 다시 실행할 필요는 없으며 새 모델 통과로 인용하지 않는다.
+
+## 62. 실험적 AI 심도 제품 기획 — 2026-11-20
+
+[46 기획](46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)에 사용자 결정인 설정 활성화·기능별 기본Off·사진 전용 기능의 독립 제공을 반영했다. 사진 정밀 선택/인물 alpha는 전체 영상 memory 추적 완료와 분리하고, 저장영상/라이브는 각각 별도 옵션으로 도입한다. 기존45의영상 우선은 조사 당시 권고로 남기고 최신46이 우선함을 표시했다.
+
+이번에는 문서/제품 정책만 변경한다. 설정 영구 저장·native 모델 통합·UI 동작 검사는 아직 실행할 구현이 없으며,46의회귀 항목은 향후 검사 계획이다. 문서 링크·변경 범위·diff 형식만 확인하고 새 기능/모델이 CI를 통과했다고 표시하지 않는다. 실험 공개의 기본 기능 검사와 정식 승격의 실사/기기 품질 평가를 별도로 정의했다.
