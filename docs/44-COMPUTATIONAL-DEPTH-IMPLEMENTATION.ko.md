@@ -15,7 +15,7 @@ signed CoC·가상50mm thin-lens·9/17 depth layers·near coverage 합산·초�
 - CPU와 Metal의 동일한 공간 가변 PSF. aperture polygon/주변부 cat-eye, 선형 premultiplied RGB/alpha와 정규화 tap. 기존 large-radius pyramid와 bounded ROI 지원 유지.
 - far-only normalized convolution 배경 확장. 관측되지 않은 큰 구멍은 원본으로 유지하고 전경 전체 blur를 배경 seed로 쓰지 않는다.
 - 확실한 matte seed 고정, 대비/잔차 검증을 통과한 unknown만 제한 color-line alpha 보정. 새로운 neural matte 모델 추가는 아니다.
-- 저장 영상에도 기존 flow/affine temporal 상태 연결. 대응 실패·컷·가림/깊이 불일치·0.25초 gap·대상 변경·추적 실패 시 history 폐기. flow 없는 무조건 평균 없음. 영상 매트256px, 사진 고품질 경로와 분리.
+- 저장 영상에도 기존 flow/affine temporal 상태 연결. 대응 실패·컷·가림/깊이 불일치·0.25초 gap·대상 변경·추적 실패 시 history 폐기. flow 없는 무조건 평균 없음. 라이브160px·영상256px·최종 사진512px 매트 분석 canvas를 분리했다. Vision 내부 네트워크 precision/실제 품질 개선 수치를 뜻하지 않는다.
 - 독자6스타일 Vista28/Street35/Standard50/Studio75/Velvet85/Reach90. 기존3개 보존. 가상 CoC 특성이며 실제 카메라 focal length/광학 줌/브랜드 복제가 아니다.
 - 사진 비파괴 교정 brush(전경/배경·크기·softness·초점 범위 보호·undo/redo), depth/선택 매트/결측·혼합 경계/초점면 보기. v4 recipe는 원본 base depth와 명령 분리, v2/v3 복원 및 교정 해제 지원.
 - 영상 intent v2(v1의 hold 복원 유지), 키프레임 추가/삭제·실제 시점의 원본 frame·hold/linear/smooth focus 및 reciprocal f값 보간. 초점 XY 이동과 함께 현재 프레임 양 끝 지점의 역깊이를 보간하므로 깊이 경계에서 초점면이 계단처럼 뛰지 않게 한다. 대상/추적 정책/프로필 변경을 앞당기지 않는다. 단일 시점 심도 미리보기는 전체 추적 replay가 아님을 UI에 표시한다.

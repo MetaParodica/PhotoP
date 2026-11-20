@@ -60,7 +60,7 @@ final class NaturalDepthEngine {
             throw ImageEditingError.invalid("사진과 센서 깊이 좌표 비율이 다릅니다. 원본은 보존됩니다.")
         }
         let embedded = try Self.portraitMatte(original, extent: color.extent)
-        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded) : nil)
+        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded, maximumDimension: 512) : nil)
         return try renderField(color: color, field: field, aperture: aperture, focus: focus, profile: profile,
             matte: matte, embedded: embedded, source: origin, fusionError: fusionError, qualityPairs: qualityPairs)
     }
