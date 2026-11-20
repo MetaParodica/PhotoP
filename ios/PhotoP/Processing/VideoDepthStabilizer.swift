@@ -19,7 +19,10 @@ final class VideoDepthStabilizer {
         let current = try motion.image(image, width: w, height: h)
         let pixels = try SDRImage.rasterize(current)
         let smallLuma: [Float] = (0..<(w*h)).map { i in
-            (Float(pixels.rgba[4*i]) * 0.2126 + Float(pixels.rgba[4*i+1]) * 0.7152 + Float(pixels.rgba[4*i+2]) * 0.0722) / 255
+            let r = Float(pixels.rgba[4*i]) * Float(0.2126)
+            let g = Float(pixels.rgba[4*i+1]) * Float(0.7152)
+            let b = Float(pixels.rgba[4*i+2]) * Float(0.0722)
+            return (r + g + b) / 255
         }
         let luma: [Float] = (0..<field.inverseDepth.count).map { i in
             DepthGrid.sample(smallLuma, width: w, height: h,
