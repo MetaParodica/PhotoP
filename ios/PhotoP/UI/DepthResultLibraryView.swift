@@ -102,6 +102,7 @@ struct DepthResultEditorView: View {
                                 Rectangle().stroke(.yellow, lineWidth: 2).frame(width: 36, height: 36)
                                     .position(x: focus.x * size.width, y: focus.y * size.height).allowsHitTesting(false)
                             }
+                            .accessibilityElement(children: .ignore).accessibilityLabel("심도 편집 화면").accessibilityIdentifier("editor.depth.canvas")
                             .contentShape(Rectangle())
                             .gesture(SpatialTapGesture().onEnded { value in
                                 guard !saving, !compare, !brushEnabled else { return }
@@ -115,7 +116,7 @@ struct DepthResultEditorView: View {
                             .position(x: origin.x + size.width / 2, y: origin.y + size.height / 2)
                     } else { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
                 }
-                VStack(alignment: .leading, spacing: 10) {
+                ScrollView { VStack(alignment: .leading, spacing: 10) {
                     Text("사진을 터치하여 재초점 · " + String(format: "f/%.1f", aperture))
                         .accessibilityIdentifier("editor.depth.apertureValue")
                     Group {
@@ -126,7 +127,7 @@ struct DepthResultEditorView: View {
                     }.disabled(saving)
                     DisclosureGroup("심도 교정·진단") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Picker("보기", selection: $diagnostic) { ForEach(DepthDiagnostic.allCases, id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu)
+                            Picker("보기", selection: $diagnostic) { ForEach(DepthDiagnostic.allCases, id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu).accessibilityIdentifier("editor.depth.diagnostic")
                             if diagnostic == .matte, session.matte == nil { Text("저장된 선택 매트가 없습니다.").font(.caption) }
                             Toggle("깊이 교정 브러시", isOn: $brushEnabled).accessibilityIdentifier("editor.depth.brush")
                             if brushEnabled {
@@ -135,9 +136,10 @@ struct DepthResultEditorView: View {
                                 Text("경계 부드러움").font(.caption); Slider(value: $softness, in: 0...1)
                                 Toggle("현재 초점 깊이 범위 보호", isOn: $protectFocus)
                             }
+                            Text("교정 \(history.current.strokes.count)개").font(.caption).accessibilityIdentifier("editor.depth.strokeCount")
                             HStack {
-                                Button("실행 취소") { history.undo() }.disabled(!history.canUndo)
-                                Button("다시 실행") { history.redo() }.disabled(!history.canRedo)
+                                Button("실행 취소") { history.undo() }.disabled(!history.canUndo).accessibilityIdentifier("editor.depth.undo")
+                                Button("다시 실행") { history.redo() }.disabled(!history.canRedo).accessibilityIdentifier("editor.depth.redo")
                             }
                             Text("원본 깊이 지도 보존 · 전경/배경 값은 기존 지도 범위에서 결정합니다. 노란 진단은 결측/혼합 경계이며 모델 확률이 아닙니다.").font(.caption2)
                         }.disabled(saving)
@@ -147,7 +149,7 @@ struct DepthResultEditorView: View {
                     if saving { Button("저장 취소") { saveTask?.cancel() }.accessibilityIdentifier("editor.depth.cancel") }
                     else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent).accessibilityIdentifier("editor.depth.save") }
                     Text("미리보기는 최대768px입니다. 재초점은 저장된 깊이의 정확도 범위에서 작동하며 최초 매트 밖의 피사체는 깊이만 사용합니다. 원본과 이전 결과는 보존합니다.").font(.caption2).foregroundStyle(.secondary)
-                }.padding(.horizontal)
+                }.padding(.horizontal) }.frame(maxHeight: 330)
             }.padding(.bottom)
                 .navigationTitle("사진 재초점")
                 .toolbar { Button("닫기") { dismiss() }.disabled(saving) }

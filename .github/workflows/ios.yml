@@ -185,7 +185,7 @@ jobs:
           TEST_SCOPE: ${{ inputs.test_scope || 'all' }}
         run: |
           if [ "$TEST_SCOPE" = depth ]; then
-            test_flags=(-only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
+            test_flags=(-only-testing:PhotoPTests/AdvancedDepthTests -only-testing:PhotoPTests/DepthPSFMetalTests -only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
           else
             test_flags=(-only-testing:PhotoPTests -skip-testing:PhotoPTests/CompanyFilmLibraryTests -skip-testing:PhotoPTests/FilmStyleLibraryTests)
           fi

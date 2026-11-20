@@ -8,6 +8,32 @@ final class DepthEditorInteractionTests: XCTestCase {
     @MainActor func testCancellingSaveUnlocksApertureAndProfile() {
         checkSaveLock(cancel: true)
     }
+    @MainActor func testCorrectionBrushUndoRedoAndDepthDiagnostic() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review", "--review-depth-editor"]
+        app.launch(); defer { app.terminate() }
+        XCTAssertTrue(app.sliders["editor.depth.aperture"].waitForExistence(timeout: 20))
+        app.buttons["심도 교정·진단"].tap()
+        let brush = app.switches["editor.depth.brush"]
+        XCTAssertTrue(brush.waitForExistence(timeout: 5)); brush.tap()
+        let canvas = app.descendants(matching: .any)["editor.depth.canvas"].firstMatch
+        XCTAssertTrue(canvas.waitForExistence(timeout: 15))
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.55,dy: 0.5)).press(forDuration: 0.15,
+            thenDragTo: canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.7,dy: 0.5)))
+        let count = app.staticTexts["editor.depth.strokeCount"]
+        let undo = app.buttons["editor.depth.undo"], redo = app.buttons["editor.depth.redo"]
+        let controls = app.scrollViews.firstMatch
+        for _ in 0..<4 where !undo.isHittable { controls.swipeUp() }
+        XCTAssertEqual(count.label,"교정 1개"); XCTAssertTrue(undo.isEnabled)
+        undo.tap(); XCTAssertEqual(count.label,"교정 0개"); XCTAssertTrue(redo.isEnabled)
+        redo.tap(); XCTAssertEqual(count.label,"교정 1개")
+        for _ in 0..<4 where !brush.isHittable { controls.swipeDown() }
+        brush.tap()
+        let diagnostic = app.buttons["editor.depth.diagnostic"]
+        diagnostic.tap(); app.buttons["깊이 지도"].tap()
+        XCTAssertTrue(canvas.exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = "depth-correction-diagnostic"; attachment.lifetime = .keepAlways; add(attachment)
+    }
     @MainActor private func checkSaveLock(cancel: Bool) {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-review", "--review-depth-editor"]
