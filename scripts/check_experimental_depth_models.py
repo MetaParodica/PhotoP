@@ -23,6 +23,9 @@ def check(root=None):
     records = manifest["files"]
     if len(records) != 6 or {entry["path"] for entry in records} != expected:
         raise ValueError("Unexpected model files")
+    decoder = next(entry for entry in records if entry["path"] == "ExperimentalPhotoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel")
+    if decoder["sha256"] != derived["derivedSpecificationSHA256"]:
+        raise ValueError("Decoder file must match its recorded derivation")
     legal = manifest["legalFiles"]
     if {entry["path"] for entry in legal} != {"ExperimentalDepthLegal/LICENSE", "ExperimentalDepthLegal/NOTICE"} or len(legal) != 2:
         raise ValueError("Missing license or notice")

@@ -15,6 +15,11 @@ on:
         type: choice
         options: ['all', 'depth', 'ui']
         default: 'all'
+      runner_arch:
+        description: 'Xcode 26.6 host; Intel is a standard-runner fallback when the arm64 pool has no capacity'
+        type: choice
+        options: ['arm64', 'intel']
+        default: 'arm64'
       diagnostic_run:
         description: 'Existing run ID to inspect; leave empty for normal validation'
         type: string
@@ -78,7 +83,7 @@ jobs:
           path: diagnostics/
   ios:
     if: inputs.diagnostic_run == ''
-    runs-on: ${{ (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}
+    runs-on: ${{ inputs.xcode == '26.6' && inputs.runner_arch == 'intel' && 'macos-26-intel' || (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
