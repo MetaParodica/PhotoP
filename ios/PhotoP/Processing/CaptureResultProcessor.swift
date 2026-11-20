@@ -233,6 +233,8 @@ actor CaptureResultProcessor {
                 catch {
                     portrait = .init(outcome: .fallback, failure: error as? ExperimentalSelectionFailure ?? .inferenceFailed,
                                      focusX: Double(focus.x), focusY: Double(focus.y))
+                    let failure = error as NSError
+                    portrait?.diagnosticCode = String((failure.domain + ":" + String(failure.code)).prefix(160))
                 }
             }
             var credits = look?.provenance.map { ["\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)"] } ?? []

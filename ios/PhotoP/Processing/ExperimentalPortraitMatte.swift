@@ -12,27 +12,29 @@ final class ExperimentalPortraitMatte {
         return MatAnyoneCoreML.modelNames.allSatisfy { FileManager.default.fileExists(atPath: root.appendingPathComponent($0 + ".mlmodelc").path) }
     }
     private let context = CIContext(options: [.cacheIntermediates: false])
+    private struct Seed {
+        let width: Int, height: Int
+        let alpha: [Float]
+        let modelID: String
+    }
 
     func refine(original: URL, focus: CGPoint, request: ExperimentalPhotoRequest) throws -> (DepthMatteSurface, ExperimentalPortraitRecord) {
         try check(request)
         guard let folder = Self.modelFolder, Self.isBundled else { throw ExperimentalSelectionFailure.unavailable }
-        // The selection initializer is a seed dependency, even when the generic
-        // photo-selection option is off. Pick a larger valid candidate for the
-        // explicit person intent, rather than a nested garment mask.
-        let seed = try ExperimentalPhotoSubjectSelector().refine(original: original, focus: focus, request: request, preferWholeSubject: true).0
         guard let color = CIImage(contentsOf: original, options: [.applyOrientationProperty: true]),
               color.extent.width.isFinite, color.extent.height.isFinite,
               color.extent.width > 0, color.extent.height > 0, color.extent.width <= 16384, color.extent.height <= 16384,
+              focus.x.isFinite, focus.y.isFinite, (0...1).contains(focus.x), (0...1).contains(focus.y),
               let geometry = ExperimentalPortraitGeometry(sourceWidth: Int(color.extent.width), sourceHeight: Int(color.extent.height)) else {
             throw ExperimentalSelectionFailure.invalidOutput
         }
+        let seed = try makeSeed(color: color, original: original, focus: focus, request: request)
         OnDeviceInferenceGate.lock.lock()
         defer { OnDeviceInferenceGate.lock.unlock(); context.clearCaches() }
         try check(request)
         let span = ProcessingTrace.begin("Experimental photo portrait matte")
         defer { ProcessingTrace.end("Experimental photo portrait matte", span) }
         return try autoreleasepool {
-            try confirmPerson(color: color, focus: focus, seed: seed)
             try check(request)
             #if targetEnvironment(simulator)
             let units = MLComputeUnits.cpuOnly
@@ -101,7 +103,7 @@ final class ExperimentalPortraitMatte {
                 throw ExperimentalSelectionFailure.invalidOutput
             }
             try check(request)
-            return (surface, ExperimentalPortraitRecord(outcome: .applied, focusX: Double(focus.x), focusY: Double(focus.y)))
+            return (surface, ExperimentalPortraitRecord(outcome: .applied, focusX: Double(focus.x), focusY: Double(focus.y), seedModel: seed.modelID))
         }
     }
 
@@ -109,7 +111,37 @@ final class ExperimentalPortraitMatte {
         try Task.checkCancellation()
         guard request.isCurrent else { throw ExperimentalSelectionFailure.disabled }
     }
-    private func confirmPerson(color: CIImage, focus: CGPoint, seed: DepthMatteSurface) throws {
+    private func makeSeed(color: CIImage, original: URL, focus: CGPoint, request: ExperimentalPhotoRequest) throws -> Seed {
+        do {
+            OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }
+            try check(request)
+            let scale = min(1, 512 / max(color.extent.width, color.extent.height))
+            let small = color.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            guard let cg = context.createCGImage(small, from: small.extent, format: .RGBA8,
+                colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else { throw ExperimentalSelectionFailure.invalidOutput }
+            let person = VNGeneratePersonInstanceMaskRequest()
+            let handler = VNImageRequestHandler(cgImage: cg, orientation: .up)
+            try handler.perform([person])
+            guard let result = person.results?.first,
+                  let instance = DepthMatteRefiner.instance(at: focus, mask: result.instanceMask),
+                  result.allInstances.contains(instance) else { throw ExperimentalSelectionFailure.notPerson }
+            let buffer = try result.generateScaledMaskForImage(forInstances: IndexSet(integer: instance), from: handler)
+            let alpha = try DepthMatteRefiner.alpha(CIImage(cvPixelBuffer: buffer), width: cg.width, height: cg.height, context: context)
+            try check(request)
+            return Seed(width: cg.width, height: cg.height, alpha: alpha, modelID: "Vision-person-instance")
+        } catch is CancellationError { throw CancellationError() }
+        catch {
+            try check(request)
+            // A runtime without the person-instance request can still use a
+            // confirmed person seed. Never accept a nearby face automatically.
+            let selected = try ExperimentalPhotoSubjectSelector().refine(original: original, focus: focus, request: request, preferWholeSubject: true).0
+            let seed = Seed(width: selected.width, height: selected.height, alpha: selected.alpha, modelID: ExperimentalDepthRecord.modelID)
+            OnDeviceInferenceGate.lock.lock(); defer { OnDeviceInferenceGate.lock.unlock() }
+            try confirmPerson(color: color, focus: focus, seed: seed)
+            return seed
+        }
+    }
+    private func confirmPerson(color: CIImage, focus: CGPoint, seed: Seed) throws {
         let scale = min(1, 1024 / max(color.extent.width, color.extent.height))
         let image = color.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         let people = VNDetectHumanRectanglesRequest(); people.upperBodyOnly = true

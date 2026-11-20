@@ -1,0 +1,42 @@
+{
+  "source": "facebookresearch/EdgeTAM",
+  "revision": "7711e012a30a2402c4eaab637bdb00a521302c91",
+  "checkpointSHA256": "ed2d4850b8792c239689b043c47046ec239b6e808a3d9b6ae676c803fd8780df",
+  "fixtureSHA256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+  "runtime": "PyTorch2.7.0+cpu, 2 threads, FP32 reference; not CoreML/device parity",
+  "points": [
+    {
+      "x": 0.45,
+      "y": 0.6,
+      "objectScore": 29.3209228515625,
+      "candidateIoU": [
+        0.01659233681857586,
+        0.41059601306915283,
+        0.27842792868614197
+      ],
+      "note": "uncertain hand/garment point; keep >=0.5 guard and test fallback"
+    },
+    {
+      "x": 0.43,
+      "y": 0.2,
+      "objectScore": 29.022079467773438,
+      "candidateIoU": [
+        0.08556709438562393,
+        0.6695732474327087,
+        0.9019084572792053
+      ],
+      "note": "clear face, positive contract fixture"
+    },
+    {
+      "x": 0.4,
+      "y": 0.45,
+      "objectScore": 29.253854751586914,
+      "candidateIoU": [
+        0.1144292801618576,
+        0.5206649899482727,
+        0.611500084400177
+      ]
+    }
+  ],
+  "qualityAcceptance": false
+}

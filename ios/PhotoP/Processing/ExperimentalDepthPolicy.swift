@@ -104,13 +104,14 @@ struct ExperimentalPortraitRecord: Codable, Equatable, Sendable {
     var workingWidth = 288
     var workingHeight = 512
     var warmupPredictions = 10
-    var seedModel = ExperimentalDepthRecord.modelID
+    var seedModel = "Vision-person-instance"
+    var diagnosticCode: String?
     var valid: Bool {
         guard version == 1, model == Self.modelID, revision == "d85a029870b5149af6aa122cbc13c90db11e5b35",
               resourceSHA256 == "7e970a2ad50c5bf91b9df155d2bcc54151d496ce3fc5431bfcc3b6877be05b32",
               workingWidth == 288, workingHeight == 512, warmupPredictions == 10,
-              seedModel == ExperimentalDepthRecord.modelID, focusX.isFinite, focusY.isFinite,
-              (0...1).contains(focusX), (0...1).contains(focusY) else { return false }
+              ["Vision-person-instance", ExperimentalDepthRecord.modelID].contains(seedModel), focusX.isFinite, focusY.isFinite,
+              (0...1).contains(focusX), (0...1).contains(focusY), (diagnosticCode?.count ?? 0) <= 160 else { return false }
         return outcome == .applied ? failure == nil : failure != nil
     }
     var title: String {
@@ -153,7 +154,7 @@ struct ExperimentalDepthRecord: Codable, Equatable, Sendable {
         (outcome == .applied ? failure == nil && (predictedIoU ?? 0) >= 0.5 && (objectScore ?? 0) > 0 : failure != nil)
     }
     var title: String {
-        outcome == .applied ? "실험적 사진 정밀 선택 적용" : "기존 심도 방식으로 처리 · " + (failure?.title ?? "")
+        outcome == .applied ? "실험적 사진 정밀 선택 적용" : "정밀 선택은 기존 방식으로 처리 · " + (failure?.title ?? "")
     }
 }
 

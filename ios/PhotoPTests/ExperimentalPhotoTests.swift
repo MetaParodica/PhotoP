@@ -26,11 +26,11 @@ final class ExperimentalPhotoTests: XCTestCase {
         let input = try fixture(); input.runtime.setPhotoSelection(true)
         let request = try XCTUnwrap(input.runtime.request(for: .photo))
         let selected = try ExperimentalPhotoSubjectSelector(diagnostics: { print("PhotoP photo-model diagnostic: " + $0) }).refine(original: input.photo,
-            focus: CGPoint(x: 0.45, y: 0.6), request: request)
+            focus: CGPoint(x: 0.43, y: 0.2), request: request)
         XCTAssertEqual(selected.1.outcome, .applied); XCTAssertTrue(selected.1.valid)
         XCTAssertEqual(selected.0.width, 512); XCTAssertEqual(selected.0.height, 512)
         XCTAssertTrue(selected.0.alpha.allSatisfy { $0.isFinite && (0...1).contains($0) })
-        XCTAssertGreaterThan(selected.0.alpha[307 * 512 + 230], 0.5)
+        XCTAssertGreaterThan(selected.0.alpha[102 * 512 + 220], 0.5)
         XCTAssertTrue(selected.0.alpha.contains { $0 < 0.1 })
     }
     func testSavedSelectionReopensAndReprocessesAfterExperimentIsDisabled() async throws {
@@ -38,7 +38,7 @@ final class ExperimentalPhotoTests: XCTestCase {
         input.runtime.setPhotoSelection(true)
         let request = try XCTUnwrap(input.runtime.request(for: .photo))
         let result = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil, aperture: 2.8,
-            focus: CGPoint(x: 0.45, y: 0.6), documents: input.root, depthOverride: input.field, experimentalRequest: request)
+            focus: CGPoint(x: 0.43, y: 0.2), documents: input.root, depthOverride: input.field, experimentalRequest: request)
         let session = try await CaptureResultProcessor.shared.loadSession(result: result, original: input.photo, documents: input.root)
         XCTAssertEqual(session.recipe.experimentalDepth?.outcome, .applied)
         XCTAssertTrue(session.recipe.experimentalDepth?.valid == true)
@@ -78,11 +78,11 @@ final class ExperimentalPhotoTests: XCTestCase {
         let request = try XCTUnwrap(input.runtime.request(for: .photo))
         XCTAssertFalse(request.preferences.photoSubjectSelection)
         let output = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil, aperture: 2.8,
-            focus: CGPoint(x: 0.45, y: 0.6), documents: input.root, depthOverride: input.field, experimentalRequest: request)
+            focus: CGPoint(x: 0.43, y: 0.2), documents: input.root, depthOverride: input.field, experimentalRequest: request)
         let session = try await CaptureResultProcessor.shared.loadSession(result: output, original: input.photo, documents: input.root)
         XCTAssertNil(session.recipe.experimentalDepth)
         let record = try XCTUnwrap(session.recipe.experimentalPortrait)
-        XCTAssertEqual(record.outcome, .applied, record.failure?.title ?? "")
+        XCTAssertEqual(record.outcome, .applied, (record.failure?.title ?? "") + " " + (record.diagnosticCode ?? ""))
         XCTAssertTrue(record.valid); XCTAssertEqual(record.warmupPredictions, 10)
         let matte = try XCTUnwrap(session.matte)
         XCTAssertTrue(matte.alpha.allSatisfy { $0.isFinite && (0...1).contains($0) })
@@ -93,5 +93,15 @@ final class ExperimentalPhotoTests: XCTestCase {
         XCTAssertEqual(restored.recipe.experimentalPortrait, session.recipe.experimentalPortrait)
         XCTAssertEqual(restored.recipe.matteSHA256, session.recipe.matteSHA256)
         XCTAssertEqual(try Data(contentsOf: input.photo), original)
+    }
+    func testUncertainHandPointUsesBaselineInsteadOfWeakeningModelThreshold() async throws {
+        let input = try fixture(); input.runtime.setPhotoSelection(true)
+        let request = try XCTUnwrap(input.runtime.request(for: .photo))
+        let result = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil, aperture: 2.8,
+            focus: CGPoint(x: 0.45, y: 0.6), documents: input.root, depthOverride: input.field, experimentalRequest: request)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: result, original: input.photo, documents: input.root)
+        XCTAssertEqual(session.recipe.experimentalDepth?.outcome, .fallback)
+        XCTAssertEqual(session.recipe.experimentalDepth?.failure, .noSubject)
+        XCTAssertEqual(session.field.inverseDepth, input.field.inverseDepth)
     }
 }
