@@ -123,11 +123,13 @@ final class AdvancedDepthTests: XCTestCase {
         let keys: [VideoDepthKeyframe] = [
             .init(time: 0,focus: CGPoint(x: 0.2,y: 0.4),aperture: 2,profile: .natural),
             .init(time: 2,focus: CGPoint(x: 0.8,y: 0.6),aperture: 8,profile: .natural)]
-        let legacy = VideoDepthIntent(keyframes: keys)
+        var legacy = VideoDepthIntent(keyframes: keys); legacy.version = 1
         XCTAssertEqual(legacy.parameters(at: 1),keys[0])
         let old = try JSONDecoder().decode(VideoDepthIntent.self,from: JSONEncoder().encode(legacy))
-        XCTAssertNil(old.interpolation); XCTAssertEqual(old.parameters(at: 1),keys[0])
+        XCTAssertNil(old.interpolation); XCTAssertEqual(old.parameters(at: 1),keys[0]); XCTAssertTrue(old.valid)
+        var invalidLegacy = old; invalidLegacy.interpolation = .smooth; XCTAssertFalse(invalidLegacy.valid)
         let animated = VideoDepthIntent(keyframes: keys,interpolation: .smooth)
+        XCTAssertEqual(animated.version,2)
         let mid = try XCTUnwrap(animated.parameters(at: 1))
         XCTAssertEqual(mid.focus.x,0.5,accuracy: 1e-8); XCTAssertEqual(mid.aperture,3.2,accuracy: 1e-8)
         XCTAssertEqual(animated.parameters(at: 0)?.focus,keys[0].focus)

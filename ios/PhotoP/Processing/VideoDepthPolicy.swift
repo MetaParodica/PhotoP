@@ -26,13 +26,13 @@ enum VideoDepthInterpolation: String, Codable, CaseIterable, Sendable {
 }
 
 struct VideoDepthIntent: Codable, Equatable, Sendable {
-    static let version = 1
+    static let version = 2
     var version = Self.version
     var quality: VideoDepthQuality = .high
     var keyframes: [VideoDepthKeyframe]
     var interpolation: VideoDepthInterpolation? = nil
     var valid: Bool {
-        version == Self.version && !keyframes.isEmpty && keyframes.count <= 4096 && keyframes[0].time == 0 &&
+        [1, Self.version].contains(version) && (version != 1 || interpolation == nil || interpolation == .hold) && !keyframes.isEmpty && keyframes.count <= 4096 && keyframes[0].time == 0 &&
             keyframes.allSatisfy(\.valid) && zip(keyframes, keyframes.dropFirst()).allSatisfy { $0.time < $1.time }
     }
     func parameters(at time: Double) -> VideoDepthKeyframe? {
