@@ -73,24 +73,27 @@ final class ExperimentalPhotoSubjectSelector {
                   let score = result.featureValue(for: "object_score")?.multiArrayValue else { throw ExperimentalSelectionFailure.invalidOutput }
             var predicted = Self.number(iou, index: 0)
             let visible = Self.number(score, index: 0)
-            let sy = logits.strides[2].intValue, sx = logits.strides[3].intValue
-            var values = (0..<(256 * 256)).map { Self.number(logits, index: ($0 / 256) * sy + ($0 % 256) * sx) }
+            var values = Self.mask(logits, channel: 0)
             if diagnostics != nil {
                 let px = min(255, Int(focus.x * 256)), py = min(255, Int(focus.y * 256))
-                diagnostics?("mask q=\(predicted) score=\(visible) dtype=\(logits.dataType.rawValue) point=\(values[py * 256 + px]) area=\(values.filter { $0 > 0 }.count) finite=\(values.allSatisfy(\.isFinite))")
+                diagnostics?("mask q=\(predicted) score=\(visible) dtype=\(logits.dataType.rawValue) strides=\(logits.strides) point=\(values[py * 256 + px]) area=\(values.filter { $0 > 0 }.count) finite=\(values.allSatisfy(\.isFinite))")
             }
-            if preferWholeSubject,
-               let candidates = result.featureValue(for: "candidate_masks")?.multiArrayValue,
+            if let candidates = result.featureValue(for: "candidate_masks")?.multiArrayValue,
                candidates.shape.map(\.intValue) == [1, 3, 256, 256],
                let qualities = result.featureValue(for: "candidate_ious")?.multiArrayValue {
                 var largest = 0
+                var bestQuality: Float = -.infinity
                 for candidate in 0..<3 {
-                    let offset = candidate * candidates.strides[1].intValue
-                    let cy = candidates.strides[2].intValue, cx = candidates.strides[3].intValue
-                    let trial = (0..<(256 * 256)).map { Self.number(candidates, index: offset + ($0 / 256) * cy + ($0 % 256) * cx) }
-                    let quality = Self.number(qualities, index: candidate * qualities.strides[1].intValue)
+                    let trial = Self.mask(candidates, channel: candidate)
+                    let quality = qualities[[0, NSNumber(value: candidate)]].floatValue
                     let area = trial.reduce(0) { $0 + ($1 > 0 ? 1 : 0) }
-                    if area > largest, ExperimentalPhotoMaskPolicy.alpha(logits: trial, width: 256, height: 256,
+                    diagnostics?("candidate \(candidate) q=\(quality) area=\(area) min=\(trial.min() ?? .nan) max=\(trial.max() ?? .nan)")
+                    // Select the best candidate explicitly, preserving SAM2's first
+                    // maximum rule without depending on the conversion's reduced
+                    // mask output. All candidates still pass the same quality gate.
+                    if !preferWholeSubject, quality > bestQuality {
+                        bestQuality = quality; values = trial; predicted = quality
+                    } else if preferWholeSubject, area > largest, ExperimentalPhotoMaskPolicy.alpha(logits: trial, width: 256, height: 256,
                         x: Double(focus.x), y: Double(focus.y), predictedIoU: quality, objectScore: visible) != nil {
                         values = trial; predicted = quality; largest = area
                     }
@@ -129,6 +132,14 @@ final class ExperimentalPhotoSubjectSelector {
         case .float32: return values.dataPointer.assumingMemoryBound(to: Float.self)[index]
         case .double: return Float(values.dataPointer.assumingMemoryBound(to: Double.self)[index])
         default: return .nan
+        }
+    }
+    private static func mask(_ values: MLMultiArray, channel: Int) -> [Float] {
+        // Core ML owns prediction storage, including its strides/materialization.
+        // Use logical coordinates rather than retaining offsets across raw-pointer
+        // access. These photo-only 256² outputs do not run on the live-frame path.
+        (0..<(256 * 256)).map {
+            values[[0, NSNumber(value: channel), NSNumber(value: $0 / 256), NSNumber(value: $0 % 256)]].floatValue
         }
     }
     private func load() throws -> (MLModel, MLModel) {
