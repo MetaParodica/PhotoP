@@ -18,7 +18,7 @@ signed CoC·가상50mm thin-lens·9/17 depth layers·near coverage 합산·초�
 - 저장 영상에도 기존 flow/affine temporal 상태 연결. 대응 실패·컷·가림/깊이 불일치·0.25초 gap·대상 변경·추적 실패 시 history 폐기. flow 없는 무조건 평균 없음. 영상 매트256px, 사진 고품질 경로와 분리.
 - 독자6스타일 Vista28/Street35/Standard50/Studio75/Velvet85/Reach90. 기존3개 보존. 가상 CoC 특성이며 실제 카메라 focal length/광학 줌/브랜드 복제가 아니다.
 - 사진 비파괴 교정 brush(전경/배경·크기·softness·초점 범위 보호·undo/redo), depth/선택 매트/결측·혼합 경계/초점면 보기. v4 recipe는 원본 base depth와 명령 분리, v2/v3 복원 및 교정 해제 지원.
-- 영상 intent v2(v1의 hold 복원 유지), 키프레임 추가/삭제·실제 시점의 원본 frame·hold/linear/smooth focus 및 reciprocal f값 보간. 대상/추적 정책/프로필 변경을 앞당기지 않는다. 단일 시점 심도 미리보기는 전체 추적 replay가 아님을 UI에 표시한다.
+- 영상 intent v2(v1의 hold 복원 유지), 키프레임 추가/삭제·실제 시점의 원본 frame·hold/linear/smooth focus 및 reciprocal f값 보간. 초점 XY 이동과 함께 현재 프레임 양 끝 지점의 역깊이를 보간하므로 깊이 경계에서 초점면이 계단처럼 뛰지 않게 한다. 대상/추적 정책/프로필 변경을 앞당기지 않는다. 단일 시점 심도 미리보기는 전체 추적 replay가 아님을 UI에 표시한다.
 - 라이브 stale/generation/deadline 조기 폐기, 실제10종 영상 evidence gate, 재현 가능한 synthetic baseline/외부 encoder 변환 probe.
 
 ## 4. 변경 파일과 주요 함수

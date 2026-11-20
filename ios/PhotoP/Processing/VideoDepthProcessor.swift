@@ -148,9 +148,12 @@ actor VideoDepthProcessor {
                             if previousSelection != parameters.selection?.id { stabilizer.reset() }
                             previousSelection = parameters.selection?.id
                             let field = try stabilizer.update(image: image, field: estimate, time: seconds)
+                            let transition = intent.focusTransition(at: seconds)
+                            let focusInverse = transition?.inverse(in: field)
+                            guard transition == nil || focusInverse != nil else { throw CameraError.invalidPhotoData }
                             let refined = try? matte.refine(color: image, focus: focus, embedded: nil, maximumDimension: 256)
                             result = try engine.renderField(color: image, field: field, aperture: parameters.aperture, focus: focus,
-                                profile: parameters.profile, matte: refined, source: "video-ai", qualityPairs: intent.quality.pairs).image
+                                profile: parameters.profile, matte: refined, source: "video-ai", qualityPairs: intent.quality.pairs, focusInverseOverride: focusInverse).image
                         } catch is CancellationError { throw CancellationError() }
                         catch { stabilizer.reset(); result = nil } // Invalid/flat field: retain original frame, count and disclose.
                     } else { stabilizer.reset(); result = nil }

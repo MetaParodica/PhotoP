@@ -136,9 +136,21 @@ final class AdvancedDepthTests: XCTestCase {
         XCTAssertEqual(animated.parameters(at: 0)?.focus,keys[0].focus)
         XCTAssertEqual(animated.parameters(at: 2),keys[1])
         XCTAssertEqual(try JSONDecoder().decode(VideoDepthIntent.self,from: JSONEncoder().encode(animated)),animated)
+        let values = (0..<256).map { Float($0 % 16 < 8 ? 2 : 1) }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 16,height: 16,inverseDepth: values,units: .inverseMetres))
+        let plane = try XCTUnwrap(animated.focusTransition(at: 1)?.inverse(in: field))
+        XCTAssertEqual(plane,1.5,accuracy: 1e-6)
+        XCTAssertNotEqual(plane,field.focusValue(x: Double(mid.focus.x),y: Double(mid.focus.y)),"Actual focus plane must not step with the XY cursor")
+        var last: Float = 2
+        for step in 0...20 {
+            let time = Double(step)/10
+            let value = animated.focusTransition(at: time)?.inverse(in: field) ?? field.focusValue(x: 0.8,y: 0.6)!
+            XCTAssertLessThanOrEqual(value,last+1e-6); last = value
+        }
         var targetChange = keys
         targetChange[1].selection = .init(point: CGPoint(x: 0.8,y: 0.6),mode: .person)
         let safe = VideoDepthIntent(keyframes: targetChange,interpolation: .smooth)
+        XCTAssertNil(safe.focusTransition(at: 1))
         XCTAssertEqual(safe.parameters(at: 1),keys[0],"New target must never be anticipated or interpolated")
     }
 

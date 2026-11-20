@@ -9,7 +9,7 @@ actor VideoDepthFramePreview {
     private let estimator = ExternalDepthEstimator()
     private let context = CIContext(options: [.cacheIntermediates: false,
         .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
-    func image(url: URL, time: Double, parameters: VideoDepthKeyframe? = nil) throws -> SDRImage {
+    func image(url: URL, time: Double, parameters: VideoDepthKeyframe? = nil, transition: VideoDepthFocusTransition? = nil) throws -> SDRImage {
         try Task.checkCancellation()
         if cached?.0 != url || cached?.1 != time {
             let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
@@ -25,8 +25,10 @@ actor VideoDepthFramePreview {
             guard parameters.selection == nil, !parameters.requiresTracking else { throw ImageEditingError.invalid("추적 전환은 전체 심도 영상을 만든 후 확인하세요.") }
             if snapshot.3 == nil { snapshot.3 = try estimator.estimate(image); cached = snapshot }
             guard let field = snapshot.3 else { throw CameraError.invalidPhotoData }
+            let focusInverse = transition?.inverse(in: field)
+            guard transition == nil || focusInverse != nil else { throw CameraError.invalidPhotoData }
             image = try engine.renderField(color: image,field: field,aperture: parameters.aperture,
-                focus: parameters.focus,profile: parameters.profile,source: "video-timeline-preview",qualityPairs: 8).image
+                focus: parameters.focus,profile: parameters.profile,source: "video-timeline-preview",qualityPairs: 8,focusInverseOverride: focusInverse).image
         }
         try Task.checkCancellation()
         guard let cg = context.createCGImage(image,from: image.extent,format: .RGBA8,colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) else { throw CameraError.invalidPhotoData }

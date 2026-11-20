@@ -113,7 +113,7 @@ struct VideoDepthEditorView: View {
                 guard timeline, let parameters = intent.parameters(at: time) else { return }
                 previewing = true; defer { previewing = false }
                 do {
-                    let pixels = try await framePreview.image(url: item.url,time: time,parameters: parameters)
+                    let pixels = try await framePreview.image(url: item.url,time: time,parameters: parameters,transition: intent.focusTransition(at: time))
                     try Task.checkCancellation()
                     guard playhead == time, previewRevision == revision, editingIntent == intent else { return }
                     focus = parameters.focus; aperture = parameters.aperture; profile = parameters.profile

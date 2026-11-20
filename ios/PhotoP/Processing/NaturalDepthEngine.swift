@@ -67,13 +67,15 @@ final class NaturalDepthEngine {
 
     func renderField(color: CIImage, field: SoftwareDepthField, aperture: Double, focus: CGPoint,
                      profile: DepthLensProfile = .natural, matte: DepthMatteSurface? = nil, embedded: CIImage? = nil,
-                     source: String = "live-ai", fusionError: Double? = nil, qualityPairs: Int = 16) throws -> NaturalDepthResult {
+                     source: String = "live-ai", fusionError: Double? = nil, qualityPairs: Int = 16, focusInverseOverride: Float? = nil) throws -> NaturalDepthResult {
         guard color.extent.width.isFinite, color.extent.height.isFinite,
               color.extent.width > 0, color.extent.height > 0,
               color.extent.width <= 16384, color.extent.height <= 16384 else { throw CameraError.invalidPhotoData }
         let width = Int(color.extent.width), height = Int(color.extent.height)
         guard SoftwareDepthPolicy.supports(width: width, height: height), aperture.isFinite, (1.4...16).contains(aperture) else { throw CameraError.invalidSettings }
-        guard let focusValue = field.focusValue(x: Double(focus.x), y: Double(focus.y)), let bounds = field.bounds else {
+        guard focus.x.isFinite, focus.y.isFinite, (0...1).contains(focus.x), (0...1).contains(focus.y),
+              let focusValue = focusInverseOverride ?? field.focusValue(x: Double(focus.x), y: Double(focus.y)),
+              focusValue.isFinite, focusValue > 0, let bounds = field.bounds else {
             throw ImageEditingError.invalid("초점 위치 또는 깊이 대비가 불확실합니다. 다른 위치를 선택하세요. 원본은 보존됩니다.")
         }
         let span = bounds.upper - bounds.lower

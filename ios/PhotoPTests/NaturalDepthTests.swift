@@ -305,4 +305,23 @@ final class NaturalDepthTests: XCTestCase {
         do { _ = try await CaptureResultProcessor.shared.loadSession(result: next,original: input.photo,documents: input.root); XCTFail("v4 missing base-map contract accepted") } catch { }
     }
 
+    func testRackFocusInterpolatesActualPlaneAcrossDepthBoundary() throws {
+        let extent = CGRect(x: 0,y: 0,width: 128,height: 64)
+        let generator = try XCTUnwrap(CIFilter(name: "CICheckerboardGenerator",parameters: ["inputWidth": 4,"inputSharpness": 1]))
+        let color = try XCTUnwrap(generator.outputImage).cropped(to: extent)
+        let field = try XCTUnwrap(SoftwareDepthField(width: 16,height: 8,
+            inverseDepth: (0..<128).map { Float($0 % 16 < 8 ? 2 : 1) },units: .inverseMetres))
+        let result = try NaturalDepthEngine().renderField(color: color,field: field,aperture: 2.8,
+            focus: CGPoint(x: 0.5,y: 0.5),focusInverseOverride: 1.5)
+        XCTAssertEqual(result.focusInverse,1.5)
+        let stepped = try NaturalDepthEngine().renderField(color: color,field: field,aperture: 2.8,focus: CGPoint(x: 0.5,y: 0.5))
+        let context = CIContext(), space = CGColorSpace(name: CGColorSpace.sRGB)!
+        let smoothCG = try XCTUnwrap(context.createCGImage(result.image,from: extent,format: .RGBA8,colorSpace: space))
+        let steppedCG = try XCTUnwrap(context.createCGImage(stepped.image,from: extent,format: .RGBA8,colorSpace: space))
+        XCTAssertNotEqual(try SDRImage.rasterize(smoothCG).rgba,try SDRImage.rasterize(steppedCG).rgba,
+            "Interpolated focus plane must affect actual pixels, not just the cursor or metadata")
+        XCTAssertThrowsError(try NaturalDepthEngine().renderField(color: color,field: field,aperture: 2.8,
+            focus: CGPoint(x: 0.5,y: 0.5),focusInverseOverride: .nan))
+    }
+
 }

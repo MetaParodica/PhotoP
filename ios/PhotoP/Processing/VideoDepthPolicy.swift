@@ -25,6 +25,23 @@ enum VideoDepthInterpolation: String, Codable, CaseIterable, Sendable {
     var title: String { self == .hold ? "시점에서 변경" : self == .linear ? "일정 전환" : "부드러운 전환" }
 }
 
+struct VideoDepthFocusTransition: Sendable {
+    let start: CGPoint
+    let end: CGPoint
+    let fraction: Double
+    // Interpolate inverse distance in THIS frame's coordinate/scale. Scanning
+    // XY alone would jump the focal plane at an object-depth discontinuity.
+    func inverse(in field: SoftwareDepthField) -> Float? {
+        guard fraction.isFinite, (0...1).contains(fraction) else { return nil }
+        let a = field.focusValue(x: Double(start.x), y: Double(start.y))
+        let b = field.focusValue(x: Double(end.x), y: Double(end.y))
+        if fraction == 0 { return a }
+        if fraction == 1 { return b }
+        guard let a, let b, a > 0, b > 0 else { return nil }
+        return a * Float(1-fraction) + b * Float(fraction)
+    }
+}
+
 struct VideoDepthIntent: Codable, Equatable, Sendable {
     static let version = 2
     var version = Self.version
@@ -40,20 +57,28 @@ struct VideoDepthIntent: Codable, Equatable, Sendable {
         // Explicit changes apply at their timestamp; do not anticipate a future tap.
         guard let index = keyframes.lastIndex(where: { $0.time <= time }) else { return nil }
         var left = keyframes[index]
-        guard let curve = interpolation, curve != .hold, index+1 < keyframes.count else { return left }
-        let right = keyframes[index+1]
-        // A new target, profile, or tracking policy is a discrete user action.
-        // Never animate a box from the old person onto a different identity.
-        guard left.profile == right.profile, left.requiresTracking == right.requiresTracking,
-              left.selection == right.selection else { return left }
-        var t = min(1,max(0,(time-left.time)/(right.time-left.time)))
-        if curve == .smooth { t = t*t*(3-2*t) }
+        guard let transition = transition(from: index, at: time) else { return left }
+        let right = keyframes[index+1], t = transition
         if left.selection == nil {
             left.focus = CGPoint(x: left.focus.x+(right.focus.x-left.focus.x)*t, y: left.focus.y+(right.focus.y-left.focus.y)*t)
         }
         // CoC is proportional to reciprocal f-number: interpolate optical power.
         left.aperture = 1 / ((1-t)/left.aperture+t/right.aperture)
         return left
+    }
+    private func transition(from index: Int, at time: Double) -> Double? {
+        guard let curve = interpolation, curve != .hold, index+1 < keyframes.count else { return nil }
+        let left = keyframes[index], right = keyframes[index+1]
+        guard left.profile == right.profile, left.requiresTracking == right.requiresTracking,
+              left.selection == right.selection else { return nil }
+        let t = min(1,max(0,(time-left.time)/(right.time-left.time)))
+        return curve == .smooth ? t*t*(3-2*t) : t
+    }
+    func focusTransition(at time: Double) -> VideoDepthFocusTransition? {
+        guard valid, time.isFinite, time >= 0, let index = keyframes.lastIndex(where: { $0.time <= time }),
+              keyframes[index].selection == nil, !keyframes[index].requiresTracking,
+              let fraction = transition(from: index, at: time) else { return nil }
+        return .init(start: keyframes[index].focus, end: keyframes[index+1].focus, fraction: fraction)
     }
     @discardableResult mutating func append(_ value: VideoDepthKeyframe) -> Bool {
         guard value.valid, let last = keyframes.last, value.time >= last.time else { return false }
