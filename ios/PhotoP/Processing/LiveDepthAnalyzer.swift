@@ -72,6 +72,10 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
                     let space = try LivePreviewImageProcessor.inputColorSpace(owner.buffer, negotiatedSRGB: true)
                     let image = CIImage(cvPixelBuffer: owner.buffer, options: [.colorSpace: space])
                     let prediction = try estimator.estimate(image)
+                    // An expired model result cannot become a usable live snapshot.
+                    // Avoid optional flow/matte work for a stopped or stale capture.
+                    guard ProcessInfo.processInfo.systemUptime - now <= 0.75,
+                          lock.withLock({ running && settings.enabled && generation == epoch && !settings.comparingOriginal }) else { return }
                     let scale = min(1, 160 / max(image.extent.width, image.extent.height))
                     let w = max(3, Int(image.extent.width * scale)), h = max(3, Int(image.extent.height * scale))
                     guard let field = DepthGrid.resized(prediction, width: w, height: h) else { return }
@@ -86,9 +90,12 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
                             flowRetry.reset()
                         } catch { flowRetry.failed(at: ProcessInfo.processInfo.systemUptime) }
                     }
+                    guard ProcessInfo.processInfo.systemUptime - now <= 0.75,
+                          lock.withLock({ running && settings.enabled && generation == epoch && !settings.comparingOriginal }) else { return }
                     let refined = try? matteRefiner.refine(color: image, focus: config.focus, embedded: nil, maximumDimension: 160)
                     let accepted = lock.withLock { () -> Bool in
-                        guard running, settings.enabled, generation == epoch else { return false }
+                        guard running, settings.enabled, generation == epoch, !settings.comparingOriginal,
+                              ProcessInfo.processInfo.systemUptime - now <= 0.75 else { return false }
                         if let flow { _ = temporal.alignHistory(backwardFlow: flow, currentLuma: luma) }
                         _ = temporal.update(field, luma: luma, time: now, generation: epoch, requireRegistration: true)
                         if settings.focus == config.focus { matte = refined }

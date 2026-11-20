@@ -1,0 +1,75 @@
+[
+  {
+    "sourceSHA": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+    "checkpointSHA256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+    "scope": "image-encoder-only-fixed-512",
+    "coremlPackageWritten": false,
+    "fullMaskTrackerConverted": false,
+    "runtimeParityVerified": false,
+    "aneVerified": false,
+    "shippedInApp": false,
+    "totalParameters": 17866018,
+    "encoderParameters": 6163840,
+    "error": "Unsupported: 'skip function is_available in file /tmp/photop-depth-poc/lib/python3.12/site-packages/torch/mps/__init__.py'\n\nfrom user code:\n   File \"/tmp/photop-efficienttam/efficient_track_anything/modeling/backbones/image_encoder.py\", line 33, in forward\n    features, pos = self.neck(self.trunk(sample))\n  File \"/tmp/photop-efficienttam/efficient_track_anything/modeling/backbones/vitdet.py\", line 286, in forward\n    x = x + get_abs_pos(\n  File \"/tmp/photop-efficienttam/efficient_track_anything/modeling/backbones/utils.py\", line 117, in get_abs_pos\n    if not torch.cuda.is_available() and torch.mps.is_available():\n\nSet TORCH_LOGS=\"+dynamo\" and TORCHDYNAMO_VERBOSE=1 for more information\n\n\nYou can suppress this exception and fall back to eager by setting:\n    import torch._dynamo\n    torch._dynamo.config.suppress_errors = True\n"
+  },
+  {
+    "sourceSHA": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+    "checkpointSHA256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+    "scope": "image-encoder-only-fixed-512",
+    "coremlPackageWritten": false,
+    "fullMaskTrackerConverted": false,
+    "runtimeParityVerified": false,
+    "aneVerified": false,
+    "shippedInApp": false,
+    "torchCompileDisabledForExport": true,
+    "totalParameters": 17866018,
+    "encoderParameters": 6163840,
+    "cpuFixtureSeconds": 0.22568703399974765,
+    "outputShapes": [
+      [
+        1,
+        256,
+        32,
+        32
+      ],
+      [
+        1,
+        256,
+        32,
+        32
+      ]
+    ],
+    "error": "RuntimeError: PyTorch convert function for op 'upsample_bicubic2d' not implemented."
+  },
+  {
+    "sourceSHA": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+    "checkpointSHA256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+    "scope": "image-encoder-only-fixed-512",
+    "coremlPackageWritten": false,
+    "fullMaskTrackerConverted": false,
+    "runtimeParityVerified": false,
+    "aneVerified": false,
+    "shippedInApp": false,
+    "torchCompileDisabledForExport": true,
+    "totalParameters": 17866018,
+    "encoderParameters": 6163840,
+    "cpuFixtureSeconds": 0.17428768299987496,
+    "outputShapes": [
+      [
+        1,
+        256,
+        32,
+        32
+      ],
+      [
+        1,
+        256,
+        32,
+        32
+      ]
+    ],
+    "bakedPositionCPUError": 0.0,
+    "positionEmbeddingBakedForFixed512": true,
+    "error": "TypeError: only 0-dimensional arrays can be converted to Python scalars"
+  }
+]

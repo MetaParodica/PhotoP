@@ -1,0 +1,474 @@
+{
+  "retrieved_at_utc": "2026-11-20T03:43:02.846670+00:00",
+  "sources": [
+    {
+      "repository": "ShengCN/DrBokeh-Src",
+      "commit": "24d96e4fb76a698494e86835c84a7c45ae2ebc10",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/README.md",
+          "sha256": "70531df5016f0ca7d6870d54dc3c1673b7a3d3f57f5b077375914c66183e73aa",
+          "bytes": 6731
+        },
+        {
+          "path": "app/Render/DScatter/CPU_scatter.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/DScatter/CPU_scatter.py",
+          "sha256": "2ee02543a2b6eb140ebfcd82c7f58ba90cdffd2cc69aae21da645c52c4750931",
+          "bytes": 6467
+        },
+        {
+          "path": "app/Render/DScatter/GPU_scatter.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/DScatter/GPU_scatter.py",
+          "sha256": "9830b60ba624726af0649b9dc44897a1dba7cc243a017bf6e79bf69d262053ad",
+          "bytes": 2803
+        },
+        {
+          "path": "app/Render/DScatter/__init__.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/DScatter/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "app/Render/DScatter/scatter.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/DScatter/scatter.py",
+          "sha256": "96e9ae43e51be78123f57c2f6d89574fbf3ff8985bd3d6bccfc92c78b36a177e",
+          "bytes": 8345
+        },
+        {
+          "path": "app/Render/Depth/DPT/EVALUATION.md",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/EVALUATION.md",
+          "sha256": "3baa28045c155fb7c1fc8562b00b04db660bcfac7f33767655cc0294b59be5d3",
+          "bytes": 3590
+        },
+        {
+          "path": "app/Render/Depth/DPT/README.md",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/README.md",
+          "sha256": "00769201e24beec625bde3df364c28eec9daf514fdeaf999b63578c22f93298e",
+          "bytes": 3588
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/__init__.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/base_model.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/base_model.py",
+          "sha256": "21e8d5b256b8ea6cd539e23b101c1a7a96efc9ced6b94ec95778675e88535d27",
+          "bytes": 367
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/blocks.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/blocks.py",
+          "sha256": "16ce2f53322a7d912ced6057c90bbaf8f2fa12ac1304d4fd6f4c358ff710be6a",
+          "bytes": 9090
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/midas_net.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/midas_net.py",
+          "sha256": "dd31aad725ba940ddb60cc11619512be037c82b80a7f5b5d72b80fbe18877752",
+          "bytes": 2738
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/models.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/models.py",
+          "sha256": "e0425c0e33c2225b584817334c3d9524df71e9bc71d995e999e34e3f74fb573b",
+          "bytes": 4563
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/transforms.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/transforms.py",
+          "sha256": "a84532eec3ee64d073c4e32ff175201362d99974e1ef075200001023620e21ed",
+          "bytes": 7854
+        },
+        {
+          "path": "app/Render/Depth/DPT/dpt/vit.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/dpt/vit.py",
+          "sha256": "c09888bdaf526893640a818d389fbb898a2c9dbb191b6b82e5cd17792a348efa",
+          "bytes": 17106
+        },
+        {
+          "path": "app/Render/Depth/DPT/run_monodepth.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/run_monodepth.py",
+          "sha256": "20876a3bb8ef812561e3f868275045fa411cc90661cbdac6ffed1e902cf0cb28",
+          "bytes": 7020
+        },
+        {
+          "path": "app/Render/Depth/DPT/run_segmentation.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/run_segmentation.py",
+          "sha256": "cfe4445097c50dbbd24d0ec893b9e461097c918d7c26e58d85b238eb37f328aa",
+          "bytes": 4538
+        },
+        {
+          "path": "app/Render/Depth/DPT/setup.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/setup.py",
+          "sha256": "2364ff07e09b422d1896038e684797707782fa427b8396e329d94155b96320db",
+          "bytes": 243
+        },
+        {
+          "path": "app/Render/Depth/DPT/util/__init__.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/util/__init__.py",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "app/Render/Depth/DPT/util/io.py",
+          "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/Render/Depth/DPT/util/io.py",
+          "sha256": "81b6edf09cf6664507a07d2f529c27d7eaae2848f0c661a9bd14a5c606a076e1",
+          "bytes": 5310
+        }
+      ],
+      "model_related_paths": [
+        "app/Render/Depth/DPT/LICENSE",
+        "app/Render/Inpainting/lama/LICENSE",
+        "app/Render/Inpainting/lama/bin/make_checkpoint.py",
+        "app/Render/Inpainting/lama/bin/paper_runfiles/find_best_checkpoint.py"
+      ]
+    },
+    {
+      "repository": "ShengCN/DrBokeh",
+      "commit": "f9d21542679505f700c9f7a909865e2a2f027914",
+      "files": [],
+      "model_related_paths": []
+    },
+    {
+      "repository": "TimSeizinger/Bokehlicious",
+      "commit": "0d2c45824de076ffc57ce222b60578302fb80923",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/TimSeizinger/Bokehlicious/0d2c45824de076ffc57ce222b60578302fb80923/README.md",
+          "sha256": "59fe6642b70900c8fe4ac8046a25758523716db6e5e32b437f0394cf4b79fef6",
+          "bytes": 4102
+        }
+      ],
+      "model_related_paths": [
+        "checkpoints/defocus_deblur.zpaq",
+        "checkpoints/large.zpaq",
+        "checkpoints/large_bin.zpaq",
+        "checkpoints/small.pt",
+        "checkpoints/small_EBB400.pt",
+        "checkpoints/small_EBB_Val294.pt",
+        "checkpoints/small_bin.pt"
+      ]
+    },
+    {
+      "repository": "JuewenPeng/BokehMe",
+      "commit": "8b3ed556dc146207c9bb39fccd078a113f8d1bd8",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/JuewenPeng/BokehMe/8b3ed556dc146207c9bb39fccd078a113f8d1bd8/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/JuewenPeng/BokehMe/8b3ed556dc146207c9bb39fccd078a113f8d1bd8/README.md",
+          "sha256": "84d40b88f64c0391633ec41508c5393d86a65ae5912cf76f507d762262cdd94c",
+          "bytes": 4667
+        },
+        {
+          "path": "classical_renderer/scatter.py",
+          "url": "https://raw.githubusercontent.com/JuewenPeng/BokehMe/8b3ed556dc146207c9bb39fccd078a113f8d1bd8/classical_renderer/scatter.py",
+          "sha256": "a4b2c9d3908ca61fa1e6fdf31b2bfb6820f31db4d706b7448942e3f4995a47f1",
+          "bytes": 6661
+        },
+        {
+          "path": "classical_renderer/scatter_ex.py",
+          "url": "https://raw.githubusercontent.com/JuewenPeng/BokehMe/8b3ed556dc146207c9bb39fccd078a113f8d1bd8/classical_renderer/scatter_ex.py",
+          "sha256": "5015e2254cf9f413ef75806316f47a6a3fba112ba4c161ee06ddbbd976d7849f",
+          "bytes": 7710
+        },
+        {
+          "path": "neural_renderer.py",
+          "url": "https://raw.githubusercontent.com/JuewenPeng/BokehMe/8b3ed556dc146207c9bb39fccd078a113f8d1bd8/neural_renderer.py",
+          "sha256": "cecdec77a9b0bd5b93b0bd2ea7deadf6862f36a86945643521003c3672c8ac2a",
+          "bytes": 8064
+        }
+      ],
+      "model_related_paths": [
+        "LICENSE",
+        "checkpoints/arnet.pth",
+        "checkpoints/iunet.pth"
+      ]
+    },
+    {
+      "repository": "yformer/EfficientTAM",
+      "commit": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/README.md",
+          "sha256": "68907f37a1fadc48778b5544412577af7beb889690392195aa5641290c981daa",
+          "bytes": 4942
+        },
+        {
+          "path": "efficient_track_anything/efficienttam_video_predictor.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/efficienttam_video_predictor.py",
+          "sha256": "d06d78e799c5529c7d1e6012676f9dccdccba9e63781a5f50e357658a94152cc",
+          "bytes": 58712
+        },
+        {
+          "path": "efficient_track_anything/modeling/memory_attention.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/modeling/memory_attention.py",
+          "sha256": "d98b5561a71f088235812edca0b82dbf4a6fc2ef4d66f7f4c6aa4c3091b84af2",
+          "bytes": 6015
+        }
+      ],
+      "model_related_paths": [
+        "LICENSE",
+        "checkpoints/download_checkpoints.sh"
+      ]
+    },
+    {
+      "repository": "DepthAnything/Video-Depth-Anything",
+      "commit": "4f5ae23172ba60fd7bc11ef671cca678842c7072",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/LICENSE",
+          "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+          "bytes": 11356
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/README.md",
+          "sha256": "cb786de4a6ef8f344cd8212dd9e51a6c08923fa5ccafc91dd6c96ee4f4af4d88",
+          "bytes": 9452
+        },
+        {
+          "path": "run_streaming.py",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/run_streaming.py",
+          "sha256": "3a7d62d5103ecd2fc8c77d6d4f65855717f695ad828f8db80af28870c94b0e71",
+          "bytes": 4485
+        },
+        {
+          "path": "video_depth_anything/video_depth_stream.py",
+          "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/video_depth_anything/video_depth_stream.py",
+          "sha256": "23ebab70525f318cf0bfeba38dfcac3f1c345ba50aaa1bb5c6dbae671b0caa6d",
+          "bytes": 6833
+        }
+      ],
+      "model_related_paths": [
+        "LICENSE"
+      ]
+    },
+    {
+      "repository": "pq-yang/MatAnyone",
+      "commit": "e5ddc534c1fff9bb9e54cf476095d29071b7cb4f",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/LICENSE",
+          "sha256": "dec3847228f2b16bb699a93c46be8c6c4131b90bb4181a14735f1e0006269903",
+          "bytes": 1928
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/README.md",
+          "sha256": "cf9fa7343e59411edc485db95afc5eb7289e40f371c94ac6ab5c1c1a7d580687",
+          "bytes": 11485
+        },
+        {
+          "path": "matanyone/inference/inference_core.py",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/matanyone/inference/inference_core.py",
+          "sha256": "6a6bb2a1d8a4141bbed01949681e7f6e39e59f0492b81664da7644dc5893d8b6",
+          "bytes": 24044
+        }
+      ],
+      "model_related_paths": [
+        "LICENSE"
+      ]
+    },
+    {
+      "repository": "PeterL1n/RobustVideoMatting",
+      "commit": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/LICENSE",
+          "sha256": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+          "bytes": 35148
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+          "sha256": "239354ea615b768de0be7f17a703d784dd1eccd9f773b6be76cacbdde3a4aa06",
+          "bytes": 12297
+        },
+        {
+          "path": "README_zh_Hans.md",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README_zh_Hans.md",
+          "sha256": "3aae62b8bbf37203e52e830734584ec0bc391014884fe4756158f01bbdf747b9",
+          "bytes": 12066
+        }
+      ],
+      "model_related_paths": [
+        "LICENSE"
+      ]
+    }
+  ],
+  "copied_into_app": [],
+  "additional_source_files": [
+    {
+      "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/cuda-src/scatter_cuda_kernel.cu",
+      "sha256": "4c0a4c7d5c14a965782908ca86c8d909679d04add1bcb745115e52cf737d89d1",
+      "bytes": 33257,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh-Src/24d96e4fb76a698494e86835c84a7c45ae2ebc10/app/cuda-src/scatter_cuda.cpp",
+      "sha256": "b843211839dd52c814096663e43b2df78fbe72d4799de975b4f9b0199cfac426",
+      "bytes": 3429,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TimSeizinger/Bokehlicious/0d2c45824de076ffc57ce222b60578302fb80923/method/model.py",
+      "sha256": "f6aaede777c26c6ad3854c6330fd0c231533421c35cbc63c8345275944c54855",
+      "bytes": 14344,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/TimSeizinger/Bokehlicious/0d2c45824de076ffc57ce222b60578302fb80923/method/blocks.py",
+      "sha256": "42d2f2834b3bc65fdbe2fe4edaafe1c41a31e0335223f05c898d921dd7f45588",
+      "bytes": 11925,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/video_depth_anything/video_depth_stream.py",
+      "sha256": "23ebab70525f318cf0bfeba38dfcac3f1c345ba50aaa1bb5c6dbae671b0caa6d",
+      "bytes": 6833,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/video_depth_anything/dpt_temporal.py",
+      "sha256": "b80c448f4fe66d0ca7092be887c0ea3925a4ce7c03cffa0083480e7e2f55805d",
+      "bytes": 5909,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/build_efficienttam.py",
+      "sha256": "458fbbd1ca9202d705cc1d43de4d1e2b864bcd66abad7079b9af4bb863614310",
+      "bytes": 6286,
+      "copied_into_app": false
+    },
+    {
+      "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/checkpoints/download_checkpoints.sh",
+      "sha256": "c69fccdde35a21f140406ecea9a3af8be74ffd53cf47a14ae708cc05a38c4d61",
+      "bytes": 2725,
+      "copied_into_app": false
+    }
+  ],
+  "official_projects": [
+    {
+      "key": "drbokeh-bib",
+      "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh/f9d21542679505f700c9f7a909865e2a2f027914/bib.txt",
+      "sha256": "6621f3ae3a4a5314791d1da888856afe4f87eccd8963f6cfacdd11e4832cbaf8",
+      "bytes": 208,
+      "copied_into_app": false
+    },
+    {
+      "key": "drbokeh-project",
+      "url": "https://raw.githubusercontent.com/ShengCN/DrBokeh/f9d21542679505f700c9f7a909865e2a2f027914/index.html",
+      "sha256": "176dc48ee798e1f60c47955f8ac45a07035f0068c6fa3e6c5db38aa43a4e80c7",
+      "bytes": 10543,
+      "copied_into_app": false
+    },
+    {
+      "key": "bokehmeplus",
+      "url": "https://juewenpeng.github.io/BokehMe/",
+      "sha256": "4b1f5810addfe3fe7fd97addab13f42e0fef020ff041dee78f2ea1e1ffaf5e34",
+      "bytes": 56011,
+      "copied_into_app": false
+    },
+    {
+      "key": "bokehlicious-project",
+      "url": "https://timseizinger.github.io/BokehliciousProjectPage/",
+      "sha256": "f86efa11d22bee7711d3c0fdd4c2effe5802000030f8ae9b8e3972274ae8ed03",
+      "bytes": 18358,
+      "copied_into_app": false
+    },
+    {
+      "key": "efficienttam-hf",
+      "url": "https://huggingface.co/api/models/yunyangx/efficient-track-anything?blobs=true",
+      "sha256": "082006216fa718e801c2263a8edb5e2b108a86653db999b6c6b5a2248bda81ab",
+      "bytes": 2501,
+      "copied_into_app": false
+    },
+    {
+      "key": "vda-hf",
+      "url": "https://huggingface.co/api/models/depth-anything/Video-Depth-Anything-Small?blobs=true",
+      "sha256": "c354709741b59f50a238d42c199c4a382b7e0def01a327e99b8992287b594a9d",
+      "bytes": 1144,
+      "copied_into_app": false
+    },
+    {
+      "key": "matanyone-hf",
+      "url": "https://huggingface.co/api/models/PeiqingYang/MatAnyone?blobs=true",
+      "sha256": "4975b14770fe5771e50a3df94fe31bf030f0b301f055bbb264ab29f06129d3b6",
+      "bytes": 2764,
+      "copied_into_app": false
+    },
+    {
+      "file": "drbokeh-arxiv.html",
+      "sha256": "9eff427a4c0c5063ce5118bc152b06bd7c6e4e869001f6b4362e3337d0acfc96",
+      "bytes": 42336,
+      "url": "https://arxiv.org/abs/2308.08843"
+    },
+    {
+      "file": "bokehme-author.html",
+      "sha256": "2906689468b0ce6d3aae42fdade498f3dd921b8b48d6c7e1dfb9b0887536ebd4",
+      "bytes": 33436,
+      "url": "https://juewenpeng.github.io/"
+    }
+  ],
+  "verified_downloaded_weights": [
+    {
+      "repository": "yunyangx/efficient-track-anything",
+      "revision": "9bdd8ab585b19ef95f9c9ed847ac9478301890b4",
+      "path": "efficienttam_ti_512x512.pt",
+      "url": "https://huggingface.co/yunyangx/efficient-track-anything/resolve/9bdd8ab585b19ef95f9c9ed847ac9478301890b4/efficienttam_ti_512x512.pt",
+      "bytes": 71620052,
+      "sha256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+      "storage_bytes": 71465096,
+      "pickle_globals": [
+        "collections OrderedDict",
+        "torch FloatStorage",
+        "torch._utils _rebuild_tensor_v2"
+      ],
+      "loaded_with_pickle": false,
+      "coreml_conversion_verified": false,
+      "iphone_runtime_verified": false,
+      "copied_into_app": false
+    },
+    {
+      "repository": "depth-anything/Video-Depth-Anything-Small",
+      "revision": "256875362cff76724b920335dfb4b29dd611f66e",
+      "path": "video_depth_anything_vits.pth",
+      "url": "https://huggingface.co/depth-anything/Video-Depth-Anything-Small/resolve/256875362cff76724b920335dfb4b29dd611f66e/video_depth_anything_vits.pth",
+      "bytes": 116440756,
+      "sha256": "13379300b739e659f076a59d52e9801bd8d38c541a7e71f73bbca4dcfb013609",
+      "storage_bytes": 116320772,
+      "pickle_globals": [
+        "collections OrderedDict",
+        "torch FloatStorage",
+        "torch._utils _rebuild_tensor_v2"
+      ],
+      "loaded_with_pickle": false,
+      "coreml_conversion_verified": false,
+      "iphone_runtime_verified": false,
+      "copied_into_app": false
+    }
+  ],
+  "conversion_scope": "EfficientTAM image encoder only; generated package in /tmp, no app model addition or runtime parity/ANE validation",
+  "code_reuse": "No new third-party implementation copied into app. Independently implemented shared PSF, normalized background convolution and constrained color-line refinement; existing ByteTrack MIT port unchanged."
+}

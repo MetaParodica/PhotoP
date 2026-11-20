@@ -1,0 +1,22 @@
+{
+  "checkpoint": "video_depth_anything_vits.pth",
+  "tensor_count": 351,
+  "parameter_values": 29080193,
+  "temporal_key_count": 112,
+  "sample_temporal_keys": [
+    "head.motion_modules.0.temporal_transformer.norm.weight",
+    "head.motion_modules.0.temporal_transformer.norm.bias",
+    "head.motion_modules.0.temporal_transformer.proj_in.weight",
+    "head.motion_modules.0.temporal_transformer.proj_in.bias",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.to_q.weight",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.to_k.weight",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.to_v.weight",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.to_out.0.weight",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.to_out.0.bias",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.0.pos_encoder.pe",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.1.to_q.weight",
+    "head.motion_modules.0.temporal_transformer.transformer_blocks.0.attention_blocks.1.to_k.weight"
+  ],
+  "model_inferred": false,
+  "coreml_converted": false
+}

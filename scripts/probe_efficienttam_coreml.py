@@ -2,7 +2,7 @@
 """Reproducible encoder-only conversion probe, never installs or ships a model.
 
 Use an isolated environment with torch2.5.1+cpu, torchvision0.20.1+cpu,
-coremltools8.3, hydra-core, iopath, timm1.0.12. Supply the pinned upstream checkout
+coremltools8.3, numpy1.26.4, hydra-core, iopath, timm1.0.12. Supply the pinned upstream checkout
 and verified checkpoint. Linux conversion is not Core ML runtime/ANE validation.
 """
 import argparse

@@ -1,0 +1,48 @@
+{
+  "sourceSHA": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+  "checkpointSHA256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+  "scope": "image-encoder-only-fixed-512",
+  "coremlPackageWritten": true,
+  "fullMaskTrackerConverted": false,
+  "runtimeParityVerified": false,
+  "aneVerified": false,
+  "shippedInApp": false,
+  "torchCompileDisabledForExport": true,
+  "totalParameters": 17866018,
+  "encoderParameters": 6163840,
+  "cpuFixtureSeconds": 0.31294022500060237,
+  "outputShapes": [
+    [
+      1,
+      256,
+      32,
+      32
+    ],
+    [
+      1,
+      256,
+      32,
+      32
+    ]
+  ],
+  "bakedPositionCPUError": 0.0,
+  "positionEmbeddingBakedForFixed512": true,
+  "convertedBytes": 13328126,
+  "files": [
+    {
+      "path": "Data/com.apple.CoreML/model.mlmodel",
+      "bytes": 146901,
+      "sha256": "7d464305be5fcc5ab84b8e830b5c0375412ab7d0c8518a0adeadb932c36a37c9"
+    },
+    {
+      "path": "Data/com.apple.CoreML/weights/weight.bin",
+      "bytes": 13180608,
+      "sha256": "77e0e2116b00f8e4e04208ff665ae39012d31fccacaa53668767f4b94cafa98f"
+    },
+    {
+      "path": "Manifest.json",
+      "bytes": 617,
+      "sha256": "eea0f59018632c86da5838a601fe9c749d8c524c2eecbe15f2167526feac6d76"
+    }
+  ]
+}

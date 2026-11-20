@@ -149,7 +149,7 @@ struct DepthResultEditorView: View {
                     if saving { Button("저장 취소") { saveTask?.cancel() }.accessibilityIdentifier("editor.depth.cancel") }
                     else { Button("원래 해상도로 새 결과 저장") { save() }.buttonStyle(.borderedProminent).accessibilityIdentifier("editor.depth.save") }
                     Text("미리보기는 최대768px입니다. 재초점은 저장된 깊이의 정확도 범위에서 작동하며 최초 매트 밖의 피사체는 깊이만 사용합니다. 원본과 이전 결과는 보존합니다.").font(.caption2).foregroundStyle(.secondary)
-                }.padding(.horizontal) }.frame(maxHeight: 330)
+                }.padding(.horizontal) }.frame(maxHeight: 430)
             }.padding(.bottom)
                 .navigationTitle("사진 재초점")
                 .toolbar { Button("닫기") { dismiss() }.disabled(saving) }

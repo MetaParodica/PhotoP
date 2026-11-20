@@ -1,0 +1,29 @@
+{
+  "alphaMiddleRow" : [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.0038048013,
+    0.24756768,
+    0.4,
+    0.5572969,
+    0.9931513,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "boundaryMAE" : 0.0983785,
+  "deviceBenchmark" : false,
+  "hardSeedMAE" : 0.000760964,
+  "height" : 17,
+  "kind" : "synthetic-color-line-ground-truth",
+  "realCaptureCount" : 0,
+  "source" : "9acbb2581b677bfb868f00d55b35d7dba366888f",
+  "width" : 17
+}
