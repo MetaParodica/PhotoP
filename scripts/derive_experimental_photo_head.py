@@ -1,7 +1,8 @@
-"""Expose the pinned decoder's FP32 linear mask head for native reconstruction.
+"""Expose the pinned decoder's FP32 terminal mask head for native reconstruction.
 
 Run with coremltools 9 and a pristine v1.2 initializer model.mlmodel as argv[1].
 No weights, encoder, learned layers, prompts or quality heads are changed.
+The terminal exact GELU and linear product are reconstructed natively.
 """
 import hashlib
 from pathlib import Path
@@ -17,7 +18,7 @@ def derive(source: Path, destination: Path):
         raise ValueError("Expected pristine Jutsu v1.2 initializer specification")
     spec = ct.utils.load_spec(str(source))
     block = next(iter(spec.mlProgram.functions["main"].block_specializations.values()))
-    shapes = {"upscaled_embedding": [1, 32, 256, 256], "hyper_in": [1, 4, 32]}
+    shapes = {"input_93": [1, 32, 256, 256], "hyper_in": [1, 4, 32]}
     for name, shape in shapes.items():
         variable = next(output for operation in block.operations for output in operation.outputs if output.name == name)
         if [dim.constant.size for dim in variable.type.tensorType.dimensions] != shape:
@@ -28,12 +29,12 @@ def derive(source: Path, destination: Path):
     for name, shape in shapes.items():
         output = spec.description.output.add()
         output.name = name
-        output.shortDescription = "Unchanged FP32 SAM2 linear mask head; PhotoP reconstructs logits with vDSP"
+        output.shortDescription = "Unchanged FP32 SAM2 preactivation/coefficients; native exact GELU and vDSP logits"
         output.type.multiArrayType.shape.extend(shape)
         output.type.multiArrayType.dataType = FeatureTypes_pb2.ArrayFeatureType.FLOAT32
     del block.outputs[:]
     block.outputs.extend(output.name for output in spec.description.output)
-    spec.description.metadata.userDefined["PhotoP.maskHead"] = "v1: expose unchanged FP32 embeddings/coefficients; native linear product; weights unchanged"
+    spec.description.metadata.userDefined["PhotoP.maskHead"] = "v2: expose unchanged FP32 preactivation/coefficients; native exact GELU and linear product; weights unchanged"
     destination.write_bytes(spec.SerializeToString(deterministic=True))
     print(hashlib.sha256(destination.read_bytes()).hexdigest())
 

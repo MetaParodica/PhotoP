@@ -134,7 +134,7 @@ struct ExperimentalDepthRecord: Codable, Equatable, Sendable {
     enum Outcome: String, Codable, Sendable { case applied, fallback }
     static let modelID = "EdgeTAM-photo-jutsu-v1.2"
     static let modelFingerprint = "9c35c1b6667a0dd80b093bbc20747628f304133ad2a531de049307beb3ae1401"
-    static let decoderGraphFingerprint = "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a"
+    static let decoderGraphFingerprint = "a3e0ca6334727c633e3185262f4b2dca888a5ebaec6349166dff4fa9b167f373"
     var version = 1
     var outcome: Outcome
     var failure: ExperimentalSelectionFailure?

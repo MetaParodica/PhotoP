@@ -68,12 +68,13 @@ final class ExperimentalPhotoSubjectSelector {
             }
             let result = try models.1.prediction(from: MLDictionaryFeatureProvider(dictionary: arguments))
             try check(request)
-            guard let embeddings = result.featureValue(for: "upscaled_embedding")?.multiArrayValue,
+            guard let embeddings = result.featureValue(for: "input_93")?.multiArrayValue,
                   let coefficients = result.featureValue(for: "hyper_in")?.multiArrayValue,
                   let qualities = result.featureValue(for: "candidate_ious")?.multiArrayValue,
                   qualities.shape.map(\.intValue) == [1, 3],
                   let score = result.featureValue(for: "object_score")?.multiArrayValue else { throw ExperimentalSelectionFailure.invalidOutput }
-            let dense = try Self.floats(embeddings, shape: [1, 32, 256, 256])
+            let preactivation = try Self.floats(embeddings, shape: [1, 32, 256, 256])
+            let dense = try Self.exactGELU(preactivation)
             let weights = try Self.floats(coefficients, shape: [1, 4, 32])
             let candidates = try Self.reconstructMasks(embeddings: dense, coefficients: weights)
             let visible = Self.number(score, index: 0)
@@ -144,6 +145,20 @@ final class ExperimentalPhotoSubjectSelector {
                 return pointer[offset]
             }
         }
+    }
+    /// SAM2's exact terminal GELU, using vector erf without changing weights.
+    static func exactGELU(_ values: [Float]) throws -> [Float] {
+        guard !values.isEmpty, values.count <= 32 * 256 * 256, values.allSatisfy(\.isFinite) else {
+            throw ExperimentalSelectionFailure.invalidOutput
+        }
+        var scaled = [Float](repeating: 0, count: values.count)
+        var result = scaled
+        var scale: Float = 1 / sqrt(2)
+        vDSP_vsmul(values, 1, &scale, &scaled, 1, vDSP_Length(values.count))
+        var count = Int32(values.count)
+        vverff(&result, &scaled, &count)
+        for index in values.indices { result[index] = 0.5 * values[index] * (1 + result[index]) }
+        return result
     }
     /// SAM2's unchanged final linear head: [3,32] × [32,pixels]. The
     /// single-mask token (row zero) is intentionally excluded for one-point SAM2.

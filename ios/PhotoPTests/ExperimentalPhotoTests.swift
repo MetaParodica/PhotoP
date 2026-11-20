@@ -5,6 +5,11 @@ import ImageIO
 
 final class ExperimentalPhotoTests: XCTestCase {
     func testLinearMaskHeadUsesMultimaskTokensAndChannelMajorPixels() throws {
+        let activated = try ExperimentalPhotoSubjectSelector.exactGELU([-2, -1, 0, 1, 2])
+        for (actual, expected) in zip(activated, [-0.04550026, -0.15865525, 0, 0.84134475, 1.95449974]) {
+            XCTAssertEqual(Double(actual), expected, accuracy: 0.000001)
+        }
+        XCTAssertThrowsError(try ExperimentalPhotoSubjectSelector.exactGELU([.nan]))
         var embeddings = [Float](repeating: 0, count: 32 * 2)
         embeddings[0] = 2; embeddings[1] = 3
         embeddings[2] = 5; embeddings[3] = 7

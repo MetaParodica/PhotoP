@@ -14,7 +14,7 @@ def check(root=None):
     if manifest["schemaVersion"] != 1 or manifest["archiveSHA256"] != ARCHIVE or manifest["license"] != "Apache-2.0":
         raise ValueError("Experimental model requires a new provenance audit")
     derived = manifest["derivation"]
-    if derived["sourceSpecificationSHA256"] != "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c" or derived["derivedSpecificationSHA256"] != "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a":
+    if derived["sourceSpecificationSHA256"] != "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c" or derived["derivedSpecificationSHA256"] != "a3e0ca6334727c633e3185262f4b2dca888a5ebaec6349166dff4fa9b167f373":
         raise ValueError("Changed decoder output adaptation")
     script = Path(__file__).resolve().parent / "derive_experimental_photo_head.py"
     if derived["script"] != "scripts/derive_experimental_photo_head.py" or hashlib.sha256(script.read_bytes()).hexdigest() != derived["scriptSHA256"]:
