@@ -12,9 +12,12 @@ final class DepthEditorInteractionTests: XCTestCase {
             let lab = app.buttons["실험실 · 추가 AI 기능"]
             reveal(lab, in: app); lab.tap()
         }
-        openExperiments()
+        XCTAssertTrue(app.sliders["editor.depth.aperture"].waitForExistence(timeout: 25))
         let originalValue = app.staticTexts["editor.depth.apertureValue"].label
-        let originalProfile = app.segmentedControls["editor.depth.profile"].buttons.matching(NSPredicate(format: "isSelected == true")).firstMatch.label
+        let selectedProfile = app.segmentedControls["editor.depth.profile"].buttons.matching(NSPredicate(format: "isSelected == true")).firstMatch
+        XCTAssertTrue(selectedProfile.waitForExistence(timeout: 5))
+        let originalProfile = selectedProfile.label
+        openExperiments()
         let toggle = app.switches["experiments.depth.photoSelection"]
         reveal(toggle, in: app)
         XCTAssertEqual(toggle.value as? String, "0")

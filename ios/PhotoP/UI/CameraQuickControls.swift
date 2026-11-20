@@ -343,6 +343,8 @@ struct CameraQuickControls: View {
                 Button("영상 심도 처리 취소") { model.cancelVideoDepth() }.buttonStyle(.bordered)
             }
             if let message = model.videoDepthMessage { Text(message).font(.caption2).accessibilityIdentifier("camera.video.depth.status") }
+            DisclosureGroup("실험실 · 사진 전용 AI") { ExperimentalDepthSettingsView().padding(.top, 8) }
+                .accessibilityIdentifier("camera.video.depth.photoExperiments")
         }.onChange(of: model.depthAperture) { _, _ in model.updateDepthPreview() }
             .onChange(of: model.depthProfile) { _, _ in model.updateDepthPreview() }
     }
