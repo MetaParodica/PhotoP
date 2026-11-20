@@ -6,6 +6,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 import run_test_process
 
@@ -38,6 +39,20 @@ class TestProcessTests(unittest.TestCase):
             self.assertEqual(result, 124)
             self.assertLess(time.monotonic() - start, 3)
             self.assert_stopped(int(pidfile.read_text()))
+
+    def test_darwin_dead_group_permission_error_is_distinct_from_live_group(self):
+        process = mock.Mock(pid=12345)
+        denied = PermissionError(1, 'Operation not permitted')
+        with mock.patch.object(run_test_process.os, 'killpg', side_effect=denied):
+            with mock.patch.object(run_test_process.subprocess, 'check_output', return_value='12345 Z+\n77 S\n'):
+                run_test_process.stop_group(process, 0.1)
+                process.wait.assert_called_once()
+            with mock.patch.object(run_test_process.subprocess, 'check_output', return_value='12345 S\n'):
+                with self.assertRaises(PermissionError):
+                    run_test_process.stop_group(process, 0.1)
+            with mock.patch.object(run_test_process.subprocess, 'check_output', side_effect=OSError('ps failed')):
+                with self.assertRaises(OSError):
+                    run_test_process.stop_group(process, 0.1)
 
     def test_cancellation_signal_is_forwarded_to_the_test_group(self):
         with tempfile.TemporaryDirectory() as folder:

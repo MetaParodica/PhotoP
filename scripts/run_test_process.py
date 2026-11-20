@@ -8,11 +8,25 @@ import subprocess
 import sys
 
 
+def group_has_live_members(pgid):
+    # Darwin may report EPERM for a group containing only zombies after the
+    # leader exits. Do not confuse that with permission to ignore a live group.
+    output = subprocess.check_output(['ps', '-A', '-o', 'pgid=,stat='], text=True)
+    return any(int(parts[0]) == pgid and not parts[1].startswith('Z')
+               for line in output.splitlines() if len(parts := line.split()) == 2)
+
+
 def stop_group(process, grace):
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
         try:
             os.killpg(process.pid, sig)
         except ProcessLookupError:
+            break
+        except PermissionError:
+            # Fail closed if ps fails or a live member remains. A dead child
+            # awaiting reaping cannot overlap the next test suite.
+            if group_has_live_members(process.pid):
+                raise
             break
         try:
             process.wait(timeout=grace)
@@ -40,9 +54,11 @@ def run(command, log, timeout, grace=5):
                 print(f'Test process exceeded {timeout}s; stopping its process group.', file=sys.stderr)
                 return 124
         finally:
-            stop_group(process, grace)
-            for sig, handler in previous.items():
-                signal.signal(sig, handler)
+            try:
+                stop_group(process, grace)
+            finally:
+                for sig, handler in previous.items():
+                    signal.signal(sig, handler)
 
 
 def main():

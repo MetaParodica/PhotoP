@@ -470,5 +470,176 @@
     }
   ],
   "conversion_scope": "EfficientTAM image encoder only; generated package in /tmp, no app model addition or runtime parity/ANE validation",
-  "code_reuse": "No new third-party implementation copied into app. Independently implemented shared PSF, normalized background convolution and constrained color-line refinement; existing ByteTrack MIT port unchanged."
+  "code_reuse": "No new third-party implementation copied into app. Independently implemented shared PSF, normalized background convolution and constrained color-line refinement; existing ByteTrack MIT port unchanged.",
+  "official_apple_api_requests": [
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avvideoprofilelevelhevcmain10autolevel.json",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/corevideo/kcvpixelformattype_420ypcbcr10biplanarvideorange.json",
+      "sha256": "8bfc9cd147598f012433a049c882d9ce851f346a945505217e8b267c0b017779",
+      "bytes": 25742,
+      "title": "kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange",
+      "platforms": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "4.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.4",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "4.0",
+          "name": "watchOS"
+        }
+      ]
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vngenerateopticalflowrequest.json",
+      "sha256": "41f3b4e0b7fbf77a4a4bca4945c0ad1c57cba2e9aff210f180e26d439ffe38b9",
+      "bytes": 24815,
+      "title": "VNGenerateOpticalFlowRequest",
+      "platforms": [
+        {
+          "introducedAt": "14.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ]
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan.json",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeunits/cpuandneuralengine.json",
+      "sha256": "dd1f20915e2fe71728b15be812c6ee565164229f85ca268372ae130e3be5a1b6",
+      "bytes": 9918,
+      "title": "MLComputeUnits.cpuAndNeuralEngine",
+      "platforms": [
+        {
+          "introducedAt": "16.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "16.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "16.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "13.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "16.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "watchOS"
+        }
+      ]
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreimage/ciimageprocessorkernel.json",
+      "sha256": "f34af706a1fdc48d5c331c1bd8f3958929f449ad7195b02dae0b6cd123f6bd25",
+      "bytes": 53362,
+      "title": "CIImageProcessorKernel",
+      "platforms": [
+        {
+          "introducedAt": "10.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "10.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.12",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "10.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ]
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/videotoolbox/kvtprofilelevel_hevc_main10_autolevel.json",
+      "sha256": "d3e43ff465042e7d66255f6ad5eecb8b41e1b9b57a9d82f894968fd38e40782f",
+      "bytes": 12640,
+      "title": "kVTProfileLevel_HEVC_Main10_AutoLevel"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml.json",
+      "sha256": "06b54c785334abe76d4909a8b37913f345322a3d122871c19dcd455118c31185",
+      "bytes": 61861,
+      "title": "Core ML"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan-1w21n.json",
+      "sha256": "ef2f0361aa8135bd5243e47447af0eb60564fe2b0b78c3242bc067df39393227",
+      "bytes": 18757,
+      "title": "MLComputePlan"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan-85vdw.json",
+      "sha256": "68fd98daade79b90d6761252ac5df7125ecbe6dcbf066f3d906d2a915fda8c79",
+      "bytes": 12048,
+      "title": "MLComputePlan"
+    }
+  ],
+  "api_note": "404 attempts are retained as lookup failures, not API-unavailability evidence. HEVC Main10 uses VideoToolbox kVTProfileLevel_HEVC_Main10_AutoLevel. Actual SDK/build/device support must be verified separately."
 }

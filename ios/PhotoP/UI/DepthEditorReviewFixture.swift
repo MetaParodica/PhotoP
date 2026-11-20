@@ -29,6 +29,7 @@ struct DepthEditorReviewFixture: View {
             else { ProgressView("검증용 사진 준비") }
         }.task {
             guard session == nil else { return }
+            Self.removePriorFixtures()
             do { session = try await makeSession() } catch { failure = error.localizedDescription }
         }
     }
