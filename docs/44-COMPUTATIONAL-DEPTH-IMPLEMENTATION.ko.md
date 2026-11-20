@@ -136,3 +136,5 @@ EfficientTAM의 Linux CPU random fixture encoder1회 약0.313초는 graph 확인
 감사/계획 c0036f8 → PSF44d8df2 → matte/temporal01e708f → editor96337c6 → timeline/원본 보존·상태/호환/취소 보강 → rack focus d2078f7 → 최종사진512 cbbdc9b → 검증 root/watchdog fa713e7 → 완전 노출 UI helper cf8a62e → 단일 preview revision **77fa25f**. 전체18개 작업 커밋을 별도 브랜치에서 검증했다.
 
 `main`/`origin/main`의 기존9acbb258이 검증 소스의 조상임을 fetch/merge-base로 확인하고 **정상 fast-forward main push**를 수행했다. 원격 main **77fa25ff97d578e3c96ac4846adacbba42089882** 확인. 작업 브랜치 `codex/computational-depth-20261120`는 검증 소스 보존용으로 유지한다. 강제 push·원본/기존 결과 삭제 없음. 이후 정리 커밋은 문서만 변경하고 실제 최종 문서 SHA는 채팅/원격 ref로 확인한다.
+
+후속 외부 전체 추적 조사는 [45 보고서](45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md)를 따른다. EdgeTAM 전체 masked 변환/MatAnyone 2 Swift 포트·Core AI 공식 API를 추가 확인했으며 EfficientTAM 전체 CPU 참조3프레임도 실행했다. 이 후속 조사는 위 앱 소스의 모델 채택·Core ML 전체 변환·실기기 인수 상태를 바꾸지 않는다.

@@ -1,0 +1,607 @@
+[
+  {
+    "file": "apple/SAM2_1TinyImageEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "6cbc50301ee3ff4a9366083f9647e1f06762759542d8dd0fac394ebc3682cce7",
+    "bytes": 154372,
+    "specificationVersion": 8,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "image",
+        "kind": "imageType",
+        "width": 1024,
+        "height": 1024,
+        "colorSpace": 20
+      }
+    ],
+    "outputs": [
+      {
+        "name": "image_embedding",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "feats_s0",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          32,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "feats_s1",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          64,
+          128,
+          128
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "apple/SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "4601f302d4c6936e15de3a22089c2afe1fa009ef703f82147ff829b4be677577",
+    "bytes": 75167,
+    "specificationVersion": 8,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "image_embedding",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "sparse_embedding",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          2,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "dense_embedding",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "feats_s0",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          32,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "feats_s1",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          64,
+          128,
+          128
+        ],
+        "dataType": 65552
+      }
+    ],
+    "outputs": [
+      {
+        "name": "low_res_masks",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          3,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "scores",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          3
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "apple/SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "3a83c167d8bd63e80f86349a78c2ab0527ce97eca1f848a4ce57fe5351241fa3",
+    "bytes": 20618,
+    "specificationVersion": 8,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "points",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          2
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "labels",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1
+        ],
+        "dataType": 65552
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sparse_embeddings",
+        "kind": "multiArrayType",
+        "shape": [],
+        "dataType": 65552
+      },
+      {
+        "name": "dense_embeddings",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "community/models/EdgeTAMVideoImageEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "3f2ae60d50317272cddcd2f0332822d41feafa675f2ff8b785000248ca05c571",
+    "bytes": 206807,
+    "specificationVersion": 9,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "image",
+        "kind": "imageType",
+        "width": 1024,
+        "height": 1024,
+        "colorSpace": 20
+      }
+    ],
+    "outputs": [
+      {
+        "name": "raw_vision_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "initial_vision_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_0",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          32,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_1",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          64,
+          128,
+          128
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "community/models/EdgeTAMVideoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "9f3d8a15689bb26aa66f1df60f945e64c405dea8c50fc178ebfe8a6fd062119d",
+    "bytes": 118000,
+    "specificationVersion": 9,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "initial_vision_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_0",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          32,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_1",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          64,
+          128,
+          128
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "point_coords",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          2
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "point_labels",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1
+        ],
+        "dataType": 131104
+      }
+    ],
+    "outputs": [
+      {
+        "name": "low_res_mask",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_mask",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          1024,
+          1024
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "best_iou",
+        "kind": "multiArrayType",
+        "shape": [
+          1
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "object_pointer",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "object_score",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "community/models/EdgeTAMVideoMemoryEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "b563553e5148ba8eb75012ea807a18ea809e1399108efd7834fe57f2fb0130dd",
+    "bytes": 99581,
+    "specificationVersion": 9,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "raw_vision_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_mask",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          1024,
+          1024
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "object_score",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1
+        ],
+        "dataType": 65552
+      }
+    ],
+    "outputs": [
+      {
+        "name": "memory_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          512,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "memory_positions",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          512,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "temporal_positions",
+        "kind": "multiArrayType",
+        "shape": [
+          7,
+          64
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  },
+  {
+    "file": "community/models/EdgeTAMVideoPropagator.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+    "sha256": "2818760b9a5e08a9a551dfd077384001d50311f59c09b199d49045e613491671",
+    "bytes": 281206,
+    "specificationVersion": 9,
+    "modelType": "mlProgram",
+    "inputs": [
+      {
+        "name": "raw_vision_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_0",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          32,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_feature_1",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          64,
+          128,
+          128
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "spatial_bank",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          7,
+          512,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "spatial_positions",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          7,
+          512,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "pointer_bank",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          16,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "attention_bias",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          1,
+          3648
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "rotary_weight",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1792
+        ],
+        "dataType": 65552
+      }
+    ],
+    "outputs": [
+      {
+        "name": "low_res_mask",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          256,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "high_res_mask",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1,
+          1024,
+          1024
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "best_iou",
+        "kind": "multiArrayType",
+        "shape": [
+          1
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "object_pointer",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          256
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "object_score",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          1
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "memory_features",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          512,
+          64
+        ],
+        "dataType": 65552
+      },
+      {
+        "name": "memory_positions",
+        "kind": "multiArrayType",
+        "shape": [
+          1,
+          512,
+          64
+        ],
+        "dataType": 65552
+      }
+    ],
+    "weightsDownloaded": false,
+    "runtimeExecuted": false
+  }
+]

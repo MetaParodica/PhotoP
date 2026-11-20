@@ -501,3 +501,13 @@ CameraChrome/CameraQuickControls로 뷰파인더 중심 UI와 같은 화면 패�
 기존 main9acbb258을 fetch하고 검증 소스의 조상임을 확인한 후 **77fa25f로 정상 fast-forward push**했다. `git ls-remote origin refs/heads/main`에서 정확한77fa25ff97d578e3c96ac4846adacbba42089882 확인. 후속 보고/일지 커밋은 앱·테스트·Package·CI·scripts·모델/자산을 수정하지 않는다.
 
 실제 사진0장/영상0개/physical trace0건. 기존100장/3기기10분/3명 blind gate 및 영상10종 gate는 **exit2 미인수**이며 낮추지 않았다. iPhone15Pro/iOS27.2 실제 화질·AF/추적/가림·4K60·latency/memory/thermal·SDK27 검증 없음. EfficientTAM encoder-only 변환을 whole tracker/ANE 배포 성공으로 표기하지 않는다. 단계별 구현/미완료는44·32에 구분했다.
+
+## 61. 외부 AI 전체 추적 도입 조사 — 2026-11-20
+
+기준 main b4ba194. [45 조사](45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md)의 새 직접 실행은 앱 회귀와 분리한다.
+
+- 고정 EdgeTAM 공식 checkpoint56,116,523bytes를 다운로드하고 SHA256 `ed2d4850b8792c239689b043c47046ec239b6e808a3d9b6ae676c803fd8780df` 일치 확인. 앱에는 넣지 않았다.
+- Apple SAM2.1 Tiny3개와 AhmadYarAI EdgeTAM4개의 `model.mlmodel` protobuf를 직접 읽었다. memory/pointer가 있는 full tracker와 image-only 모델을 구별하고 이름·shape·정밀도·spec version·hash를 [JSON](research/tracker-adoption/coreml-model-interfaces.json)에 보존했다. 가중치 로드/추론은 하지 않았다.
+- EfficientTAM abcd061 + 기존 Tiny512 checkpoint로 전체 CPU 합성3프레임 실행. image/prompt/mask/memory encoder3회·memory attention2회, 기록 tensor finite assertion 통과. source/weights SHA도 검사했다. [실행 결과](research/tracker-adoption/efficienttam-reference.json)·[재현 코드](research/tracker-adoption/probe_efficienttam_reference.py). Torch2.5.1+cpu/2threads, CPU 단발 시간을 phone FPS로 쓰지 않는다.
+- Jutsu의 fp16 masked ANE parity `pass=false`, FP32 masked CPU도 전체 `pass=false`임을 실제 원시 JSON으로 확인했다. M4 speed 자료·A18 MatAnyone2Kit30fps는 작성자의 공개 측정이며 직접 재현 결과가 아니다.
+- Apple 공식 CoreAI DocC의 iOS27.0 availability와 MLState18/MLComputePlan17.4 확인. SDK27 컴파일·CoreAI/ANE/실기기 실행 없음. 앱·모델·CI 변경 없는 조사로 기존 CI를 다시 실행할 필요는 없으며 새 모델 통과로 인용하지 않는다.

@@ -1,5 +1,7 @@
 # PhotoP 개발 온보딩
 
+> 외부 전체 추적 조사 추가(2026-11-20): [45 도입 조사](45-EXTERNAL-AI-TRACKER-ADOPTION-RESEARCH.ko.md). EdgeTAM 공식 image-only exporter와 커뮤니티 full-memory 변환을 구별하고, masked 경로·정밀도 parity부터 검증한다. MatAnyone 2 Swift 포트·iOS27 Core AI도 조사했으며 앱 채택/실기기 실행은 후속이다.
+
 > 후속 사진·영상 심도 main 반영(2026-11-20): `f140234`, 전체 CI44665022130·UI CI44665022029 success(native392통과/Flow1skip·UI15). [39 조사](39-VIDEO-DEPTH-AND-TRACKING-RESEARCH.ko.md)·[40 계획](40-VIDEO-DEPTH-IMPLEMENTATION-PLAN.ko.md)·[41 구현](41-VIDEO-DEPTH-IMPLEMENTATION.ko.md)을 먼저 읽는다. 새 진입점은 `SubjectTrackingPolicy/Analyzer`, `VideoDepthPolicy/Processor`, `VideoDepthEditorView`다. 원본 MOV는 보존하고8비트 SDR 심도 파생물을 만든다. 최신 검증/게시 상태는08의58절 이후와 당일 일지를 따른다. 아래 스냅샷에서 영상 원본만 보관하던 상태는 당시 기준이다.
 
 > 이전 촬영 UI main 반영(2026-11-19): 촬영 UI·심도 소스 `6b9b148`의 전체 CI44505418877가 성공했다. 당시 검증 상태는 [08의57절](08-STEP-VALIDATION.ko.md#57-main-촬영-ui심도-전체-ci-통과)·[37 구현 기록](37-CAMERA-DEPTH-QUICK-CONTROLS.ko.md)을 따른다. 아래 커밋 분석/집계는 작성 당시 main 스냅샷이다.

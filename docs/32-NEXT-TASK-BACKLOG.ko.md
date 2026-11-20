@@ -173,9 +173,9 @@
 | 우선 | 실제 남은 작업 | 확보한 근거/범위 |
 |---|---|---|
 | P0 | 실제100장·10종 영상/기기 trace/3명 blind 인수 | 새 Metal PSF·far-only fill·color-line 매트·영상 등록·editor 자동 회귀와 별개. 두 evidence gate 실제자료0/exit2 |
-| P0 | neural matte ROI/경계 품질 비교 | 기존 Vision+제한 RGB 보정만 앱에 있음. alpha 합성 MAE 실제 구버전0.0983785→0.0147567, 실제 모발/유리 개선 미입증 |
+| P0 | neural matte ROI/경계 품질 비교 | 기존 Vision+제한 RGB 보정만 앱에 있음. alpha 합성 MAE 실제 구버전0.0983785→0.0147567, 실제 모발/유리 개선 미입증. 최신45의 MatAnyone 2/Swift 저수준 Float alpha·선택 인물 seed를 독립 비교 |
 | P0 | streaming temporal 모델 고정 상태 CoreML PoC | VDA Small 실제116MB/SHA·29M tensor값 확인,32-frame cache 구조. 앱은 기존 모델+등록 검증 flow/affine |
-| P1 | EfficientTAM prompt/mask decoder·bounded memory/full tracking·ANE benchmark | Tiny51271.6MB 실물/encoder-only13.33MB MLProgram 생성·CPU bake error0.0. full tracker 채택/실기기fps 아님 |
+| P1 | EdgeTAM 전체 masked 추적 PoC·정밀도/ANE benchmark | 최신45에서 공식 모델/전체 커뮤니티 변환·빈 슬롯·FP16 parity 실패 확인. 고정 참조→저장 영상 단일 대상→iPhone15Pro 순서. EfficientTAM은 encoder-only13.33MB 변환 및 전체 CPU 합성3프레임 참조를 유지하는 차선 후보. 앱 채택/실기기fps 아님 |
 | P1 | 실측 광학 PSF·선택 색수차/구면수차·난해한 occlusion | shared Metal/CPU gather 근사·독자6스타일은 구현. 경쟁 렌즈 실측 복제 아님 |
 | P1 | priority inference scheduler·thermal fairness/p95 | single-job/reuse/취소·live0.75초 stale 조기 폐기 구현, 전역 lock 우선순위는 미구현 |
 | P1 | 10bitSDR reader/pool/HEVC Main10/색 검증 | 현8bitSDR 유지, HDR/Log/gainmap/C2PA 금지 유지 |

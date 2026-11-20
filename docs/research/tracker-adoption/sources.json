@@ -1,0 +1,871 @@
+{
+  "retrievedAtUTC": "2026-11-20T08:04:30.959674+00:00",
+  "sources": [
+    {
+      "repository": "yformer/EfficientTAM",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/README.md",
+          "sha256": "68907f37a1fadc48778b5544412577af7beb889690392195aa5641290c981daa",
+          "bytes": 4942
+        },
+        {
+          "path": "efficient_track_anything/configs/efficienttam/efficienttam_ti_512x512.yaml",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/configs/efficienttam/efficienttam_ti_512x512.yaml",
+          "sha256": "55a0142a2d0076d3c434a8a35c23ccc16e7e42ef06153b571f147615befa070d",
+          "bytes": 3860
+        },
+        {
+          "path": "efficient_track_anything/modeling/memory_attention.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/modeling/memory_attention.py",
+          "sha256": "d98b5561a71f088235812edca0b82dbf4a6fc2ef4d66f7f4c6aa4c3091b84af2",
+          "bytes": 6015
+        },
+        {
+          "path": "efficient_track_anything/modeling/memory_encoder.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/modeling/memory_encoder.py",
+          "sha256": "ff7e66bcf002ece9f19827aa33e73cf31cade23f7653fa60111a8830ebd31334",
+          "bytes": 5702
+        },
+        {
+          "path": "efficient_track_anything/modeling/efficienttam_base.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/modeling/efficienttam_base.py",
+          "sha256": "0c45f4c2e31b62a084a01dbe60a33ddc6bc69ef66b8dce699120236c19e56c7a",
+          "bytes": 46830
+        },
+        {
+          "path": "efficient_track_anything/modeling/sam/transformer.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/modeling/sam/transformer.py",
+          "sha256": "60841b896aabbe5e67fef2ed6cc2bb0f2703657a9fadb99955d1a81dd732a1c4",
+          "bytes": 18933
+        },
+        {
+          "path": "efficient_track_anything/efficienttam_video_predictor.py",
+          "url": "https://raw.githubusercontent.com/yformer/EfficientTAM/abcd061ebd3cc6e7527d152d75b890126aaa53f6/efficient_track_anything/efficienttam_video_predictor.py",
+          "sha256": "d06d78e799c5529c7d1e6012676f9dccdccba9e63781a5f50e357658a94152cc",
+          "bytes": 58712
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+      "committedAt": "2025-01-06T00:02:58Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "facebookresearch/EdgeTAM",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/README.md",
+          "sha256": "9c29d6ec68ee541e53203d1f6e0fb8a7d4a407691062ad2f33b970f0a379bca1",
+          "bytes": 10491
+        },
+        {
+          "path": "coreml/README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/coreml/README.md",
+          "sha256": "6ebc53265f174c7fe127fc450784e5e71b72882ddcc1c0245fe9db0a57f182ee",
+          "bytes": 2083
+        },
+        {
+          "path": "coreml/export_to_coreml.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/coreml/export_to_coreml.py",
+          "sha256": "fab9a909d4c0410bfa5cdb7dad3a4f16c1c6cb9b7b812c6d0fb0dfa5dc9cba57",
+          "bytes": 11657
+        },
+        {
+          "path": "coreml/inference_example.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/coreml/inference_example.py",
+          "sha256": "7b1f31e0a473ef656a80e963d90a0276729559c9697b51049a6de4893f74c9bf",
+          "bytes": 14849
+        },
+        {
+          "path": "coreml/benchmark_coreml.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/coreml/benchmark_coreml.py",
+          "sha256": "08db686dd3c432fefb67931bfd49701dc4135420d65b90c2bb20ed4b9e9c4c88",
+          "bytes": 9219
+        },
+        {
+          "path": "sam2/configs/edgetam.yaml",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/configs/edgetam.yaml",
+          "sha256": "25c2fda8490e7684f924abba130775487ca6eccee87b1d9cf92ddccf2436afe1",
+          "bytes": 4105
+        },
+        {
+          "path": "sam2/modeling/memory_attention.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/memory_attention.py",
+          "sha256": "1c5f4636cef88a1418f04a2c0c992976a5bd3f16c28973f71e017b34cb81060d",
+          "bytes": 6103
+        },
+        {
+          "path": "sam2/modeling/sam2_base.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/sam2_base.py",
+          "sha256": "cbf4a59d14a46ea544acf9af3c61c4a5ad629462c01ff861b3bc7b6070faa669",
+          "bytes": 47741
+        },
+        {
+          "path": "sam2/sam2_video_predictor.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/sam2_video_predictor.py",
+          "sha256": "ea88564e2ce17df7971ca8b3320c2648f7530aa0b43d42f4ca288f12c336dbd6",
+          "bytes": 59084
+        },
+        {
+          "path": "sam2/modeling/sam/transformer.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/sam/transformer.py",
+          "sha256": "7a15ee01c0673ad03843dbae422deb1c74f10edc582cd739001ae2729ed6295b",
+          "bytes": 15459
+        },
+        {
+          "path": "sam2/modeling/backbones/rep_vit.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/backbones/rep_vit.py",
+          "error": "HTTP Error 404: Not Found"
+        },
+        {
+          "path": "setup.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/setup.py",
+          "sha256": "bb56f8448ee08dcd729660b7205dcc2147ff817140a21f6d94222731d2d977fd",
+          "bytes": 5169
+        },
+        {
+          "path": "checkpoints/edgetam.pt",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/checkpoints/edgetam.pt",
+          "sha256": "ed2d4850b8792c239689b043c47046ec239b6e808a3d9b6ae676c803fd8780df",
+          "bytes": 56116523
+        },
+        {
+          "path": "sam2/modeling/perceiver.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/perceiver.py",
+          "sha256": "15e5d74ccf14f11b5e44dde4a30edee6597b22746a7e46a8efc6e0e2c7e54e73",
+          "bytes": 9747
+        },
+        {
+          "path": "sam2/utils/transforms.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/utils/transforms.py",
+          "sha256": "ba3a64f4600c62f209206a6df3b40e3fcf133edae32fad658831bb0c2a6d1146",
+          "bytes": 4885
+        },
+        {
+          "path": "sam2/modeling/position_encoding.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/sam2/modeling/position_encoding.py",
+          "sha256": "ccf4f4245e805f24de0db727c09cc8049c98274e7de81881daf5125bf82fe0d2",
+          "bytes": 10397
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "7711e012a30a2402c4eaab637bdb00a521302c91",
+      "committedAt": "2026-01-27T00:40:05Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "facebookresearch/sam2",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "LICENSE_cctorch",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/LICENSE_cctorch",
+          "sha256": "687d4f65ffe399358b170e22572564a16689e496f85a79dc5385fccf6bbc9558",
+          "bytes": 1566
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam2/2b90b9f5ceec907a1c18123530e92e794ad901a4/README.md",
+          "sha256": "eea69ee1042fb30933c5ca5019fbf0f6f9366cec5e792109281b5023a4f1589c",
+          "bytes": 16249
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+      "committedAt": "2024-12-16T00:47:17Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "facebookresearch/sam3",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/LICENSE",
+          "sha256": "4dea99bfaa016e21bc860d73f344236bd1e5c4977d1a9a8fd32f822b500ae1be",
+          "bytes": 7353
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/README.md",
+          "sha256": "da3dd047d18ef9a4b33557bf6f8187cf166218dc8aef40f2e18a67cc5249a502",
+          "bytes": 21417
+        },
+        {
+          "path": "RELEASE_SAM3p1.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/RELEASE_SAM3p1.md",
+          "sha256": "15816fdd90f809aa6853e9a584ad8c40ed022ba9c6d63ba2aef326da0281a9fa",
+          "bytes": 9080
+        },
+        {
+          "path": "sam3/model_builder.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/sam3/model_builder.py",
+          "sha256": "60cef72b1f7e4a2162d1c3f1ad2c0451bbbdc10e3484433a9aa2d016fed6b448",
+          "bytes": 42839
+        },
+        {
+          "path": "sam3/model/sam3_multiplex_base.py",
+          "url": "https://raw.githubusercontent.com/facebookresearch/sam3/31cb7e624e4fe95301b1be1d4e809111593d2e45/sam3/model/sam3_multiplex_base.py",
+          "sha256": "c637bd4b11bd9ab40bb5b2c7b270b495fdfd1cd6ff7e34653cb3cfc089904b94",
+          "bytes": 141071
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "31cb7e624e4fe95301b1be1d4e809111593d2e45",
+      "committedAt": "2026-11-17T09:32:39Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "hkchengrex/Cutie",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/LICENSE",
+          "sha256": "8cffbcfb631bbe76caa147bc2515ea47c81042a5dedaeaadce6652bbbbaf7f71",
+          "bytes": 1069
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/README.md",
+          "sha256": "3755e83338cdbb292b8f251bcf304ad6f720165afdfe5dc097ec36f08f4be202",
+          "bytes": 5391
+        },
+        {
+          "path": "cutie/inference/inference_core.py",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/cutie/inference/inference_core.py",
+          "sha256": "8df9f952195779447baad7087788b071ff48c1f65265c169f1affb9c1d11afdc",
+          "bytes": 15217
+        },
+        {
+          "path": "cutie/inference/memory_manager.py",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/cutie/inference/memory_manager.py",
+          "sha256": "101485daaa28a94376489889a54ab3482119b4fda10d25fade3dccbc7b07e85e",
+          "bytes": 17311
+        },
+        {
+          "path": "cutie/config/eval_config.yaml",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/cutie/config/eval_config.yaml",
+          "sha256": "5fb2311d42ed7e0575e4313037abe7e92e8960d8a130511a4813c817aa370da3",
+          "bytes": 4074
+        },
+        {
+          "path": "cutie/config/model/small.yaml",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/cutie/config/model/small.yaml",
+          "sha256": "4ea0c61d6d1c1305b18c7e390da9dc4fe72062a3e4ff1d8fab95b33d4e3a6377",
+          "bytes": 79
+        },
+        {
+          "path": "cutie/config/model/base.yaml",
+          "url": "https://raw.githubusercontent.com/hkchengrex/Cutie/ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a/cutie/config/model/base.yaml",
+          "sha256": "01cb84984ff7d7e4075985293fd19bd86d0c130666c61e5b9ee071671b954e2f",
+          "bytes": 1165
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a",
+      "committedAt": "2024-11-08T21:38:38Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "hkchengrex/XMem",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/LICENSE",
+          "sha256": "8cffbcfb631bbe76caa147bc2515ea47c81042a5dedaeaadce6652bbbbaf7f71",
+          "bytes": 1069
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/hkchengrex/XMem/f3b841d50df058910bbf690229ddc15fb1aef7d6/README.md",
+          "sha256": "1f1f1e95ce45d77c5fa8e6bba52edb69acba95358adea4d076f8e0a53f3adc00",
+          "bytes": 7063
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "f3b841d50df058910bbf690229ddc15fb1aef7d6",
+      "committedAt": "2024-11-15T19:28:38Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "pq-yang/MatAnyone",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/LICENSE",
+          "sha256": "dec3847228f2b16bb699a93c46be8c6c4131b90bb4181a14735f1e0006269903",
+          "bytes": 1928
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/README.md",
+          "sha256": "cf9fa7343e59411edc485db95afc5eb7289e40f371c94ac6ab5c1c1a7d580687",
+          "bytes": 11485
+        },
+        {
+          "path": "matanyone/inference/inference_core.py",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f/matanyone/inference/inference_core.py",
+          "sha256": "6a6bb2a1d8a4141bbed01949681e7f6e39e59f0492b81664da7644dc5893d8b6",
+          "bytes": 24044
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "e5ddc534c1fff9bb9e54cf476095d29071b7cb4f",
+      "committedAt": "2026-03-04T15:52:40Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "PeterL1n/RobustVideoMatting",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/LICENSE",
+          "sha256": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+          "bytes": 35148
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+          "sha256": "239354ea615b768de0be7f17a703d784dd1eccd9f773b6be76cacbdde3a4aa06",
+          "bytes": 12297
+        },
+        {
+          "path": "documentation/inference.md",
+          "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/documentation/inference.md",
+          "sha256": "0e18a712ca85ecc46f76c6587dd2d0b76ab7831ec92f1321fd07eab30b08fe0b",
+          "bytes": 11834
+        }
+      ],
+      "defaultBranch": "master",
+      "commit": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "committedAt": "2023-03-13T23:53:45Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "facebookresearch/co-tracker",
+      "files": [
+        {
+          "path": "LICENSE.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/co-tracker/82e02e8029753ad4ef13cf06be7f4fc5facdda4d/LICENSE.md",
+          "sha256": "1d8ca66080a2701508a70be4ddad4be28c509bcc3397a682fb8edf767fdd7a00",
+          "bytes": 19332
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/facebookresearch/co-tracker/82e02e8029753ad4ef13cf06be7f4fc5facdda4d/README.md",
+          "sha256": "214ec02decccf2b5d10477398018f7b6b69d20e2b9e16d483f130595424adabf",
+          "bytes": 17804
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "82e02e8029753ad4ef13cf06be7f4fc5facdda4d",
+      "committedAt": "2025-01-21T21:30:41Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "jutsuhq/edgetam-coreml",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "bytes": 11357
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/README.md",
+          "sha256": "c9902184ddfabd469963ced59405547846d63b3cf8fd8d1cc7a09908674b08df",
+          "bytes": 17401
+        },
+        {
+          "path": "NOTICE",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/NOTICE",
+          "sha256": "e4e5146f34236dc370925b97ce122037d8b0a87c839fefc6d53bfc9dc276159c",
+          "bytes": 780
+        },
+        {
+          "path": "convert.sh",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/convert.sh",
+          "sha256": "ad4a391db7ab37f9172a25a7aefbffd872ef8de5ad299e1be951300fd226a727",
+          "bytes": 2746
+        },
+        {
+          "path": "requirements.txt",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/requirements.txt",
+          "sha256": "17f3346cd85e14abc3938580d0b520d5859f3246c9301276543e951f874b6771",
+          "bytes": 2447
+        },
+        {
+          "path": "edgetam_coreml/upstream.py",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/edgetam_coreml/upstream.py",
+          "sha256": "ac3bedb641bc4c97e6db8567270280b14796b7919f74778a1d2c746ad8abccb8",
+          "bytes": 1534
+        },
+        {
+          "path": "edgetam_coreml/convert.py",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/edgetam_coreml/convert.py",
+          "sha256": "bde570fd86083b04ff98dfc7445417ffb60f0359c647371316f49cd39001c06e",
+          "bytes": 26769
+        },
+        {
+          "path": "edgetam_coreml/parity.py",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/edgetam_coreml/parity.py",
+          "sha256": "a5765c3552e3b675f9c241dc33fea96be797ace953e8951730e6abde871c9e48",
+          "bytes": 19327
+        },
+        {
+          "path": "edgetam_coreml/speed.py",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/edgetam_coreml/speed.py",
+          "sha256": "3310a2d7edcd9cccfc6391703f62100e80f4cbc522fa7b2b402f03ef08e9e3ae",
+          "bytes": 4979
+        },
+        {
+          "path": "examples/track.py",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/examples/track.py",
+          "sha256": "ab8363ecfd8a07ce3b4867d47f49359df8b1acc14f336a14163dfb8c6dce62cf",
+          "bytes": 6631
+        },
+        {
+          "path": "results/speed.jsonl",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/speed.jsonl",
+          "sha256": "60c8bf55a9590c17ea20355caf6fe98dbe6942ea1a97a2629e0cafe4466f7b87",
+          "bytes": 1261
+        },
+        {
+          "path": "results/parity-fp16-ane-masked-vs-stock.json",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp16-ane-masked-vs-stock.json",
+          "sha256": "9e43a7bd6593bf41f9bb9f255ddb6e10378ad7408115a6dd9ff7d11baa3fed91",
+          "bytes": 10779
+        },
+        {
+          "path": "results/parity-fp32-cpu-masked-vs-stock.json",
+          "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu-masked-vs-stock.json",
+          "sha256": "897941248c674733f09858c1faa0c8c872e57727435bb7a7136d1d2f183b0586",
+          "bytes": 10288
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9",
+      "committedAt": "2026-10-31T07:04:53Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "mikeesto/sam2-coreml-python",
+      "files": [
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/mikeesto/sam2-coreml-python/694b5acff222c418aa236fd9082845e02c450891/README.md",
+          "sha256": "24db0fa0b25df943b14f7c6fea3854bfc164798e54c2b4a8cbfd6aae6b3a4276",
+          "bytes": 1548
+        },
+        {
+          "path": "script.py",
+          "url": "https://raw.githubusercontent.com/mikeesto/sam2-coreml-python/694b5acff222c418aa236fd9082845e02c450891/script.py",
+          "sha256": "5daf65aef7e33b8046481ca07cb9dff084244f4e39049118241be7b10b2c0507",
+          "bytes": 11573
+        }
+      ],
+      "defaultBranch": "master",
+      "commit": "694b5acff222c418aa236fd9082845e02c450891",
+      "committedAt": "2025-01-06T06:00:32Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "arraypress/swift-object-cutout",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/arraypress/swift-object-cutout/4b524abf8f5e2ced7b1f85137fb0f6674a36ff01/LICENSE",
+          "sha256": "361c063b953fec296483b0b2479adbf323d1aa1022e5258adeab8a2542d45efc",
+          "bytes": 1084
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/arraypress/swift-object-cutout/4b524abf8f5e2ced7b1f85137fb0f6674a36ff01/README.md",
+          "sha256": "6b98589db762edbfa140d3a28ce0c2781da6e7849054981e4f0144be12fd0aaf",
+          "bytes": 10924
+        },
+        {
+          "path": "Sources/ObjectCutout/ObjectTrack.swift",
+          "url": "https://raw.githubusercontent.com/arraypress/swift-object-cutout/4b524abf8f5e2ced7b1f85137fb0f6674a36ff01/Sources/ObjectCutout/ObjectTrack.swift",
+          "sha256": "b5f3a332c7ec0de71fae783d073f9dfe36f817fb957d485bc79a2eaa93189536",
+          "bytes": 6097
+        },
+        {
+          "path": "Sources/ObjectCutout/Core/SAM2Segmenter.swift",
+          "url": "https://raw.githubusercontent.com/arraypress/swift-object-cutout/4b524abf8f5e2ced7b1f85137fb0f6674a36ff01/Sources/ObjectCutout/Core/SAM2Segmenter.swift",
+          "sha256": "964ae0f948062cecce8faaad4b1981821c483a88f91498bfa74a69e6af1729d7",
+          "bytes": 9094
+        },
+        {
+          "path": "Tools/export_sam2.py",
+          "url": "https://raw.githubusercontent.com/arraypress/swift-object-cutout/4b524abf8f5e2ced7b1f85137fb0f6674a36ff01/Tools/export_sam2.py",
+          "sha256": "4df3bedb3db485cf448967949f9c5c389ad10e63097023fa609b4a0d826edeec",
+          "bytes": 8799
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "4b524abf8f5e2ced7b1f85137fb0f6674a36ff01",
+      "committedAt": "2026-10-17T06:48:22Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "pq-yang/MatAnyone2",
+      "files": [
+        {
+          "path": "LICENSE.txt",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/LICENSE.txt",
+          "sha256": "dec3847228f2b16bb699a93c46be8c6c4131b90bb4181a14735f1e0006269903",
+          "bytes": 1928
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/README.md",
+          "sha256": "b8c0f4df37725a703c4236fea721316a84c11491da21ba4348df3af298277a44",
+          "bytes": 8549
+        },
+        {
+          "path": "matanyone2/config/model/base.yaml",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/matanyone2/config/model/base.yaml",
+          "sha256": "e585eb2b4b5f708ac56e47d938e31a14f3438e98f0a1e2a5a4d2e1fb07b79f4e",
+          "bytes": 1202
+        },
+        {
+          "path": "matanyone2/config/eval_matanyone_config.yaml",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/matanyone2/config/eval_matanyone_config.yaml",
+          "sha256": "031ef1d85c96dac48833c30facd3c49de4d47c4235c4f46b7ffc96934b2487eb",
+          "bytes": 1368
+        },
+        {
+          "path": "matanyone2/inference/inference_core.py",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/matanyone2/inference/inference_core.py",
+          "sha256": "c916993372b31e9c98789faf15b9d4d71614f351338b6ac3cebcc5748f21988d",
+          "bytes": 24055
+        },
+        {
+          "path": "docs/EVAL.md",
+          "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/docs/EVAL.md",
+          "sha256": "638d0051d28f4783bfff04b69035d0f66cd64a79d32818954db59935a544616d",
+          "bytes": 5008
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "0079197acd6d16a741f71558809c06c586c579e0",
+      "committedAt": "2026-07-28T03:04:17Z",
+      "treeTruncated": false
+    },
+    {
+      "repository": "flowtyone/MatAnyone2Kit",
+      "files": [
+        {
+          "path": "LICENSE",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/LICENSE",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "bytes": 35149
+        },
+        {
+          "path": "README.md",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/README.md",
+          "sha256": "5c09ef586e76daa87dca65efae83ca9afd763fbff733c42a1c0272bdbe31e549",
+          "bytes": 9106
+        },
+        {
+          "path": "NOTICE.md",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/NOTICE.md",
+          "sha256": "311683d73149d71dfbc5cddb68c3cc707d8c23178ee61b29e3173eb7dece97b1",
+          "bytes": 1263
+        },
+        {
+          "path": "Package.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Package.swift",
+          "sha256": "56f914a233088f9b715a124e315d94986ac00b6edce8bcfb420f6e67a1a53c41",
+          "bytes": 785
+        },
+        {
+          "path": "scripts/README.md",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/scripts/README.md",
+          "sha256": "fd364acc23a752f389ccd1e2c09407477cc4e5120ed300c1e312dde91ece9d8e",
+          "bytes": 8794
+        },
+        {
+          "path": "scripts/export.py",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/scripts/export.py",
+          "sha256": "de7fdf5350543d27b75325ad0c45e855fc6aec4890090f3d1c8d3a937c515d73",
+          "bytes": 15181
+        },
+        {
+          "path": "scripts/harness.py",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/scripts/harness.py",
+          "sha256": "25d4f53aef93457018390e470e6e141cfd700bd7dc1cad45aee0e749affeffa7",
+          "bytes": 7254
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/MatAnyoneCoreML.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/MatAnyoneCoreML.swift",
+          "sha256": "129239b7a87193153c4baf2b9db2d1a646077d20ae6befc29758cdc94da7da87",
+          "bytes": 11626
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/MatAnyoneCoreMLEngine.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/MatAnyoneCoreMLEngine.swift",
+          "sha256": "78edc52d3b6ef70c3d56d1da468208d25bfe41c2aa34755cf42bca7f7e2a39b4",
+          "bytes": 11340
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/MatAnyoneMatte.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/MatAnyoneMatte.swift",
+          "sha256": "2e0dcd007ed3a3a0e9a4ab17c9c55714ab581ddb7ad17e105bb05a4824bb2697",
+          "bytes": 9416
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/MemoryBank.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/MemoryBank.swift",
+          "sha256": "fa4e18a84d6b0998a6c9ba16dc757d4f5456f7828851f643cbdfd6ef118ffe99",
+          "bytes": 11594
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/CoreMLFrameBridge.swift",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/CoreMLFrameBridge.swift",
+          "sha256": "95bc0dc16108f96623fc2226c3dd842eedd058f9fc784a3f2b1802fffc8e4beb",
+          "bytes": 9106
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/LICENSE",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/LICENSE",
+          "sha256": "2ff94185d79c9790609b21df530533ed693ea77c444e4cae6a06ac4657a88e3c",
+          "bytes": 1905
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/NOTICE.md",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/NOTICE.md",
+          "sha256": "1e8ee4b13475ea574a3875684a6f119a9f517938344476d3825d7700697f087d",
+          "bytes": 996
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/manifest.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/manifest.json",
+          "sha256": "39b2c25a5b0b7d4be263443522d7bc2722cc7fde7ce207c687cdf6776c5a46c8",
+          "bytes": 4857
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/encoder.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/encoder.mlmodelc/metadata.json",
+          "sha256": "085322485c526c484201d8185aafa456c553b8bb336dc6b6e61beb1ca5db8bfd",
+          "bytes": 4270
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/maskencoder.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/maskencoder.mlmodelc/metadata.json",
+          "sha256": "3051f6efd03be1b6a62b1e857e46c3789d2b13a62f43067f728bc19cae334308",
+          "bytes": 3220
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/objsummary.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/objsummary.mlmodelc/metadata.json",
+          "sha256": "b547f981404de5da0b43f96a396fcb6d9e158c09dc143a8f1294f5371880da6d",
+          "bytes": 2276
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/readout.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/readout.mlmodelc/metadata.json",
+          "sha256": "c4ff4038b407c7c961352e5ce0b3691b5059664e9e9c4e22fe1554f350d90334",
+          "bytes": 3722
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/uncert.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/uncert.mlmodelc/metadata.json",
+          "sha256": "5ebd39f4a7c51517e6678f6af32d9e6133901f3150b23f643ca33486e60d62d4",
+          "bytes": 2668
+        },
+        {
+          "path": "Sources/MatAnyoneKitCoreML/Resources/MatAnyone/decoder.mlmodelc/metadata.json",
+          "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/Sources/MatAnyoneKitCoreML/Resources/MatAnyone/decoder.mlmodelc/metadata.json",
+          "sha256": "247ab331e105bd740837869a2ccceeaf8b3cad0f1ecb4318de7acc79771cadc0",
+          "bytes": 4182
+        }
+      ],
+      "defaultBranch": "main",
+      "commit": "d85a029870b5149af6aa122cbc13c90db11e5b35",
+      "committedAt": "2026-06-17T06:00:44Z",
+      "treeTruncated": false
+    }
+  ],
+  "webSources": [
+    {
+      "name": "apple-sam2-tiny-api",
+      "url": "https://huggingface.co/api/models/apple/coreml-sam2.1-tiny?blobs=true",
+      "sha256": "fd30174bb1821078b74609fb50a086571181623d8c03dc1e38d41edc251c0d67",
+      "bytes": 2981
+    },
+    {
+      "name": "apple-sam2-tiny-readme",
+      "url": "https://huggingface.co/apple/coreml-sam2.1-tiny/raw/main/README.md",
+      "sha256": "4c08ea911cf81e7f14f0017d18530b7b2c3360604618754849ee985473575c17",
+      "bytes": 1508
+    },
+    {
+      "name": "stateful-models",
+      "url": "https://apple.github.io/coremltools/docs-guides/source/stateful-models.html",
+      "sha256": "478ef49424161c96e9af9dff3da289ad8b7156dffffa3a9cb94e32230c312698",
+      "bytes": 90551
+    },
+    {
+      "name": "mlstate",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlstate.json",
+      "sha256": "6544e11a3eefd03f518939873f31aca9d23b3baea69cdd6808c2dffb431a601b",
+      "bytes": 18483
+    },
+    {
+      "name": "mlcomputeplan",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan-1w21n.json",
+      "sha256": "ef2f0361aa8135bd5243e47447af0eb60564fe2b0b78c3242bc067df39393227",
+      "bytes": 18757
+    },
+    {
+      "name": "community-edgetam-api",
+      "url": "https://huggingface.co/api/models/AhmadYarAI/EdgeTAM-CoreML-Video?blobs=true",
+      "sha256": "7960c8465eb1202ce4b62ca4d821ceab4ad709e16460b9c57c82b4ec7d348bc2",
+      "bytes": 4208
+    },
+    {
+      "name": "community-edgetam-readme",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/raw/main/README.md",
+      "sha256": "c69dc9cf92247750ee1eac7994b1eb1da49a77e633da51ef88645646380584e1",
+      "bytes": 5146
+    },
+    {
+      "name": "coreai",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai.json",
+      "sha256": "40aaa6329b67dbff4d57dd5e37941564440d45c8e6f323edbcc9f9f712885dbb",
+      "bytes": 19593
+    },
+    {
+      "name": "jutsu-releases",
+      "url": "https://api.github.com/repos/jutsuhq/edgetam-coreml/releases/latest",
+      "sha256": "ab18b4fce14ef93eef6edf9387e6b9346ebf56c445906af7735d2be371d63701",
+      "bytes": 7052
+    },
+    {
+      "name": "apple/README.md",
+      "url": "https://huggingface.co/apple/coreml-sam2.1-tiny/resolve/39ae0a8a83e5e6cd196e804bf7cccc5f8171f306/README.md",
+      "revision": "39ae0a8a83e5e6cd196e804bf7cccc5f8171f306",
+      "sha256": "4c08ea911cf81e7f14f0017d18530b7b2c3360604618754849ee985473575c17",
+      "bytes": 1508
+    },
+    {
+      "name": "apple/SAM2_1TinyImageEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/apple/coreml-sam2.1-tiny/resolve/39ae0a8a83e5e6cd196e804bf7cccc5f8171f306/SAM2_1TinyImageEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "39ae0a8a83e5e6cd196e804bf7cccc5f8171f306",
+      "sha256": "6cbc50301ee3ff4a9366083f9647e1f06762759542d8dd0fac394ebc3682cce7",
+      "bytes": 154372
+    },
+    {
+      "name": "apple/SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/apple/coreml-sam2.1-tiny/resolve/39ae0a8a83e5e6cd196e804bf7cccc5f8171f306/SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "39ae0a8a83e5e6cd196e804bf7cccc5f8171f306",
+      "sha256": "4601f302d4c6936e15de3a22089c2afe1fa009ef703f82147ff829b4be677577",
+      "bytes": 75167
+    },
+    {
+      "name": "apple/SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/apple/coreml-sam2.1-tiny/resolve/39ae0a8a83e5e6cd196e804bf7cccc5f8171f306/SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "39ae0a8a83e5e6cd196e804bf7cccc5f8171f306",
+      "sha256": "3a83c167d8bd63e80f86349a78c2ab0527ce97eca1f848a4ce57fe5351241fa3",
+      "bytes": 20618
+    },
+    {
+      "name": "community/LICENSE",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/LICENSE",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357
+    },
+    {
+      "name": "community/NOTICE",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/NOTICE",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "721f0e357be336a9caaa3f90ce0cf81c4b02ed8afb3b3e582187455541468cb5",
+      "bytes": 716
+    },
+    {
+      "name": "community/README.md",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/README.md",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "c69dc9cf92247750ee1eac7994b1eb1da49a77e633da51ef88645646380584e1",
+      "bytes": 5146
+    },
+    {
+      "name": "community/models/EdgeTAMVideoImageEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/models/EdgeTAMVideoImageEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "3f2ae60d50317272cddcd2f0332822d41feafa675f2ff8b785000248ca05c571",
+      "bytes": 206807
+    },
+    {
+      "name": "community/models/EdgeTAMVideoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/models/EdgeTAMVideoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "9f3d8a15689bb26aa66f1df60f945e64c405dea8c50fc178ebfe8a6fd062119d",
+      "bytes": 118000
+    },
+    {
+      "name": "community/models/EdgeTAMVideoMemoryEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/models/EdgeTAMVideoMemoryEncoder.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "b563553e5148ba8eb75012ea807a18ea809e1399108efd7834fe57f2fb0130dd",
+      "bytes": 99581
+    },
+    {
+      "name": "community/models/EdgeTAMVideoPropagator.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "url": "https://huggingface.co/AhmadYarAI/EdgeTAM-CoreML-Video/resolve/6bfdd4765e42508c7707566fff52e65add8b8e3a/models/EdgeTAMVideoPropagator.mlpackage/Data/com.apple.CoreML/model.mlmodel",
+      "revision": "6bfdd4765e42508c7707566fff52e65add8b8e3a",
+      "sha256": "2818760b9a5e08a9a551dfd077384001d50311f59c09b199d49045e613491671",
+      "bytes": 281206
+    },
+    {
+      "name": "apple-doc/integrating-on-device-ai-models-in-your-app-with-core-ai",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai/integrating-on-device-ai-models-in-your-app-with-core-ai.json",
+      "revision": null,
+      "sha256": "92180fdd32854c1decbdde3ff549d1621dbacc01f9189f5725ce5fbf87f65957",
+      "bytes": 47871
+    },
+    {
+      "name": "apple-doc/inspecting-debugging-and-profiling-core-ai-models",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai/inspecting-debugging-and-profiling-core-ai-models.json",
+      "revision": null,
+      "sha256": "8f1cdcb4a1a6ea4235cb721d49e1cb46de10bff2fec5ff0d17fc75f3055c3b13",
+      "bytes": 12258
+    },
+    {
+      "name": "apple-doc/aimodel",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai/aimodel.json",
+      "revision": null,
+      "sha256": "2eb62c8eab4159ace83afaa798829cd77bb7dda4bf1ccf4ae793d96e5d6438f1",
+      "bytes": 17705
+    }
+  ],
+  "retrievalCompletedAtUTC": "2026-11-20T08:14:15.628332+00:00",
+  "applicationSourceBaseline": "b4ba1943b206cb4bffd99fd5a8d5a21c45ec5299",
+  "newThirdPartyCodeCopiedIntoApplication": false,
+  "newModelsShippedInApplication": false,
+  "scopeNote": "Files record retrieval and hashes; targeted inspection is described in report 45. Third-party published benchmarks were read, not reproduced on Apple hardware."
+}

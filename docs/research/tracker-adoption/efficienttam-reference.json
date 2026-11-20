@@ -1,0 +1,1149 @@
+{
+  "scope": "Complete CPU reference; three synthetic frames, not quality/device validation",
+  "sourceSHA": "abcd061ebd3cc6e7527d152d75b890126aaa53f6",
+  "checkpointSHA256": "7d4d652a465f0081391050932f45d8a66768ccc99c8ea393ce8a5927e83f3b9b",
+  "torch": "2.5.1+cpu",
+  "coremlRuntimeExecuted": false,
+  "deviceExecuted": false,
+  "shippedInApp": false,
+  "parametersByChild": {
+    "image_encoder": 6163840,
+    "mask_downsample": 17,
+    "memory_attention": 5922304,
+    "memory_encoder": 1384608,
+    "sam_prompt_encoder": 6220,
+    "sam_mask_decoder": 4190437,
+    "obj_ptr_proj": 197376,
+    "obj_ptr_tpos_proj": 0
+  },
+  "frames": [
+    {
+      "index": 0,
+      "cpuSecondsSinglePass": 0.2619020689999161,
+      "outputs": {
+        "point_inputs": {
+          "point_coords": {
+            "shape": [
+              1,
+              1,
+              2
+            ],
+            "dtype": "torch.float32",
+            "bytes": 8,
+            "finite": true
+          },
+          "point_labels": {
+            "shape": [
+              1,
+              1
+            ],
+            "dtype": "torch.int64",
+            "bytes": 8,
+            "finite": true
+          }
+        },
+        "mask_inputs": null,
+        "pred_masks": {
+          "shape": [
+            1,
+            1,
+            128,
+            128
+          ],
+          "dtype": "torch.float32",
+          "bytes": 65536,
+          "finite": true
+        },
+        "pred_masks_high_res": {
+          "shape": [
+            1,
+            1,
+            512,
+            512
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1048576,
+          "finite": true
+        },
+        "obj_ptr": {
+          "shape": [
+            1,
+            256
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1024,
+          "finite": true
+        },
+        "object_score_logits": {
+          "shape": [
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "bytes": 4,
+          "finite": true
+        },
+        "maskmem_features": {
+          "shape": [
+            1,
+            64,
+            32,
+            32
+          ],
+          "dtype": "torch.float32",
+          "bytes": 262144,
+          "finite": true
+        },
+        "maskmem_pos_enc": [
+          {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 1,
+      "cpuSecondsSinglePass": 0.32385732399779954,
+      "outputs": {
+        "point_inputs": null,
+        "mask_inputs": null,
+        "pred_masks": {
+          "shape": [
+            1,
+            1,
+            128,
+            128
+          ],
+          "dtype": "torch.float32",
+          "bytes": 65536,
+          "finite": true
+        },
+        "pred_masks_high_res": {
+          "shape": [
+            1,
+            1,
+            512,
+            512
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1048576,
+          "finite": true
+        },
+        "obj_ptr": {
+          "shape": [
+            1,
+            256
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1024,
+          "finite": true
+        },
+        "object_score_logits": {
+          "shape": [
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "bytes": 4,
+          "finite": true
+        },
+        "maskmem_features": {
+          "shape": [
+            1,
+            64,
+            32,
+            32
+          ],
+          "dtype": "torch.float32",
+          "bytes": 262144,
+          "finite": true
+        },
+        "maskmem_pos_enc": [
+          {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          }
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "cpuSecondsSinglePass": 0.4656356240011519,
+      "outputs": {
+        "point_inputs": null,
+        "mask_inputs": null,
+        "pred_masks": {
+          "shape": [
+            1,
+            1,
+            128,
+            128
+          ],
+          "dtype": "torch.float32",
+          "bytes": 65536,
+          "finite": true
+        },
+        "pred_masks_high_res": {
+          "shape": [
+            1,
+            1,
+            512,
+            512
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1048576,
+          "finite": true
+        },
+        "obj_ptr": {
+          "shape": [
+            1,
+            256
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1024,
+          "finite": true
+        },
+        "object_score_logits": {
+          "shape": [
+            1,
+            1
+          ],
+          "dtype": "torch.float32",
+          "bytes": 4,
+          "finite": true
+        },
+        "maskmem_features": {
+          "shape": [
+            1,
+            64,
+            32,
+            32
+          ],
+          "dtype": "torch.float32",
+          "bytes": 262144,
+          "finite": true
+        },
+        "maskmem_pos_enc": [
+          {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          }
+        ]
+      }
+    }
+  ],
+  "moduleCalls": {
+    "image_encoder": [
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3145728,
+            "finite": true
+          }
+        ],
+        "kwargs": {},
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "backbone_fpn": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ]
+        }
+      },
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3145728,
+            "finite": true
+          }
+        ],
+        "kwargs": {},
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "backbone_fpn": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ]
+        }
+      },
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              3,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3145728,
+            "finite": true
+          }
+        ],
+        "kwargs": {},
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "backbone_fpn": [
+            {
+              "shape": [
+                1,
+                256,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ]
+        }
+      }
+    ],
+    "sam_prompt_encoder": [
+      {
+        "inputs": [],
+        "kwargs": {
+          "points": [
+            {
+              "shape": [
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "bytes": 8,
+              "finite": true
+            },
+            {
+              "shape": [
+                1,
+                1
+              ],
+              "dtype": "torch.int64",
+              "bytes": 8,
+              "finite": true
+            }
+          ],
+          "boxes": null,
+          "masks": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ]
+      },
+      {
+        "inputs": [],
+        "kwargs": {
+          "points": [
+            {
+              "shape": [
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "bytes": 8,
+              "finite": true
+            },
+            {
+              "shape": [
+                1,
+                1
+              ],
+              "dtype": "torch.int32",
+              "bytes": 4,
+              "finite": true
+            }
+          ],
+          "boxes": null,
+          "masks": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ]
+      },
+      {
+        "inputs": [],
+        "kwargs": {
+          "points": [
+            {
+              "shape": [
+                1,
+                1,
+                2
+              ],
+              "dtype": "torch.float32",
+              "bytes": 8,
+              "finite": true
+            },
+            {
+              "shape": [
+                1,
+                1
+              ],
+              "dtype": "torch.int32",
+              "bytes": 4,
+              "finite": true
+            }
+          ],
+          "boxes": null,
+          "masks": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ]
+      }
+    ],
+    "sam_mask_decoder": [
+      {
+        "inputs": [],
+        "kwargs": {
+          "image_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "image_pe": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "sparse_prompt_embeddings": {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          "dense_prompt_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "multimask_output": true,
+          "repeat_image": false,
+          "high_res_features": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              3,
+              128,
+              128
+            ],
+            "dtype": "torch.float32",
+            "bytes": 196608,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3
+            ],
+            "dtype": "torch.float32",
+            "bytes": 12,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3072,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1
+            ],
+            "dtype": "torch.float32",
+            "bytes": 4,
+            "finite": true
+          }
+        ]
+      },
+      {
+        "inputs": [],
+        "kwargs": {
+          "image_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "image_pe": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "sparse_prompt_embeddings": {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          "dense_prompt_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "multimask_output": true,
+          "repeat_image": false,
+          "high_res_features": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              3,
+              128,
+              128
+            ],
+            "dtype": "torch.float32",
+            "bytes": 196608,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3
+            ],
+            "dtype": "torch.float32",
+            "bytes": 12,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3072,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1
+            ],
+            "dtype": "torch.float32",
+            "bytes": 4,
+            "finite": true
+          }
+        ]
+      },
+      {
+        "inputs": [],
+        "kwargs": {
+          "image_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "image_pe": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "sparse_prompt_embeddings": {
+            "shape": [
+              1,
+              2,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 2048,
+            "finite": true
+          },
+          "dense_prompt_embeddings": {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          "multimask_output": true,
+          "repeat_image": false,
+          "high_res_features": null
+        },
+        "outputs": [
+          {
+            "shape": [
+              1,
+              3,
+              128,
+              128
+            ],
+            "dtype": "torch.float32",
+            "bytes": 196608,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3
+            ],
+            "dtype": "torch.float32",
+            "bytes": 12,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              3,
+              256
+            ],
+            "dtype": "torch.float32",
+            "bytes": 3072,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1
+            ],
+            "dtype": "torch.float32",
+            "bytes": 4,
+            "finite": true
+          }
+        ]
+      }
+    ],
+    "memory_encoder": [
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ],
+        "kwargs": {
+          "skip_mask_sigmoid": true
+        },
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                64,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 262144,
+              "finite": true
+            }
+          ]
+        }
+      },
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ],
+        "kwargs": {
+          "skip_mask_sigmoid": true
+        },
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                64,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 262144,
+              "finite": true
+            }
+          ]
+        }
+      },
+      {
+        "inputs": [
+          {
+            "shape": [
+              1,
+              256,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          },
+          {
+            "shape": [
+              1,
+              1,
+              512,
+              512
+            ],
+            "dtype": "torch.float32",
+            "bytes": 1048576,
+            "finite": true
+          }
+        ],
+        "kwargs": {
+          "skip_mask_sigmoid": true
+        },
+        "outputs": {
+          "vision_features": {
+            "shape": [
+              1,
+              64,
+              32,
+              32
+            ],
+            "dtype": "torch.float32",
+            "bytes": 262144,
+            "finite": true
+          },
+          "vision_pos_enc": [
+            {
+              "shape": [
+                1,
+                64,
+                32,
+                32
+              ],
+              "dtype": "torch.float32",
+              "bytes": 262144,
+              "finite": true
+            }
+          ]
+        }
+      }
+    ],
+    "memory_attention": [
+      {
+        "inputs": [],
+        "kwargs": {
+          "curr": [
+            {
+              "shape": [
+                1024,
+                1,
+                256
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "curr_pos": [
+            {
+              "shape": [
+                1024,
+                1,
+                256
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "memory": {
+            "shape": [
+              1028,
+              1,
+              64
+            ],
+            "dtype": "torch.float32",
+            "bytes": 263168,
+            "finite": true
+          },
+          "memory_pos": {
+            "shape": [
+              1028,
+              1,
+              64
+            ],
+            "dtype": "torch.float32",
+            "bytes": 263168,
+            "finite": true
+          },
+          "num_obj_ptr_tokens": 4
+        },
+        "outputs": {
+          "shape": [
+            1024,
+            1,
+            256
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1048576,
+          "finite": true
+        }
+      },
+      {
+        "inputs": [],
+        "kwargs": {
+          "curr": [
+            {
+              "shape": [
+                1024,
+                1,
+                256
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "curr_pos": [
+            {
+              "shape": [
+                1024,
+                1,
+                256
+              ],
+              "dtype": "torch.float32",
+              "bytes": 1048576,
+              "finite": true
+            }
+          ],
+          "memory": {
+            "shape": [
+              2056,
+              1,
+              64
+            ],
+            "dtype": "torch.float32",
+            "bytes": 526336,
+            "finite": true
+          },
+          "memory_pos": {
+            "shape": [
+              2056,
+              1,
+              64
+            ],
+            "dtype": "torch.float32",
+            "bytes": 526336,
+            "finite": true
+          },
+          "num_obj_ptr_tokens": 8
+        },
+        "outputs": {
+          "shape": [
+            1024,
+            1,
+            256
+          ],
+          "dtype": "torch.float32",
+          "bytes": 1048576,
+          "finite": true
+        }
+      }
+    ]
+  },
+  "completeReferenceRan": true
+}
