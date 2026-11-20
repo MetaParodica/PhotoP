@@ -25,5 +25,10 @@
   "kind" : "synthetic-color-line-ground-truth",
   "realCaptureCount" : 0,
   "source" : "9acbb2581b677bfb868f00d55b35d7dba366888f",
+  "thinStructure" : {
+    "boundaryMAE" : 0.15071633,
+    "hardSeedMAE" : 3.859566e-05,
+    "kind" : "one-pixel-strand-with-fractional-edges-and-background-gaps"
+  },
   "width" : 17
 }

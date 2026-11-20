@@ -14,12 +14,15 @@ def evaluate(data, root):
     if data.get("version") != 1:
         raise ValueError("Unsupported video depth evidence format")
     pending, categories, seen = [], set(), set()
+    real_count = 0
     for scene in data.get("scenes", []):
         if not scene.get("id") or scene["id"] in seen:
             raise ValueError("Scene IDs must be unique")
         seen.add(scene["id"])
         if scene.get("kind") != "real-capture" or scene.get("consented") is not True:
             pending.append("Real capture/consent missing: " + scene["id"])
+        else:
+            real_count += 1
         categories.update(scene.get("categories", []))
         for key in ["original", "baseline", "candidate", "blindReview"]:
             artifact(root, scene.get(key))
@@ -48,7 +51,7 @@ def evaluate(data, root):
         pending.append("At least 10 real video scenes required")
     if CATEGORIES - categories:
         pending.append("Missing video categories: " + ", ".join(sorted(CATEGORIES - categories)))
-    return {"accepted": not pending, "realEvidenceRecords": len(seen), "pending": pending,
+    return {"accepted": not pending, "realEvidenceRecords": real_count, "pending": pending,
             "note": "This validates evidence integrity; human visual review remains required."}
 
 

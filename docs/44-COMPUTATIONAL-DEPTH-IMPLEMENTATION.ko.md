@@ -50,7 +50,7 @@ signed CoC·가상50mm thin-lens·9/17 depth layers·near coverage 합산·초�
 | [BokehMe++ 저자 서지](https://juewenpeng.github.io/), [IEEE10756626](https://ieeexplore.ieee.org/document/10756626) | TPAMI2024 확장 논문 존재 확인. 별도 공식 공개 구현/가중치는 이번 조사에서 확인되지 않아 CVPR2022 code를 ++ 구현이라 부르지 않음 |
 | [Bokehlicious](https://github.com/TimSeizinger/Bokehlicious/tree/0d2c45824de076ffc57ce222b60578302fb80923) | ICCV2025, U-shaped/Transformer neural rendering, aperture/position conditioning과 RealBokeh3MP 데이터. 코드/데이터 상용 조건 확인·연락 요청 문구, 루트 LICENSE 미확인. 앱 미포함·자체 평가 없음 |
 | [EfficientTAM](https://github.com/yformer/EfficientTAM/tree/abcd061ebd3cc6e7527d152d75b890126aaa53f6) | Apache2 code, 공식 HF apache2 card. 512 tiny checkpoint 실제71,620,052 bytes/SHA 일치. image encoder-only CoreML probe 아래 참조. 저자의 iPhone15 >10fps 문구를 자체 재현 성능으로 쓰지 않음 |
-| [Video Depth Anything](https://github.com/DepthAnything/Video-Depth-Anything/tree/4f5ae23172ba60fd7bc11ef671cca678842c7072) | Small Apache2, Base/Large CC-BY-NC4 구분. streaming32 history/41gap, tensor cache concatenation과 초기/후속 frame 분기. checkpoint 실제116,440,756 bytes·29,080,193 tensor값/351 tensors. single-frame 모델을 바꾸는 것만으로 streaming이 되지 않음; 아직 CoreML 변환/영상 품질 비교 미실행 |
+| [Video Depth Anything](https://github.com/DepthAnything/Video-Depth-Anything/tree/4f5ae23172ba60fd7bc11ef671cca678842c7072) | Small Apache2, Base/Large CC-BY-NC4 구분. streaming32-frame window/41gap·최대42 cache entries, tensor cache concatenation과 초기/후속 frame 분기. checkpoint 실제116,440,756 bytes·29,080,193 tensor값/351 tensors. single-frame 모델을 바꾸는 것만으로 streaming이 되지 않음; 아직 CoreML 변환/영상 품질 비교 미실행 |
 | [MatAnyone](https://github.com/pq-yang/MatAnyone/tree/e5ddc534c1fff9bb9e54cf476095d29071b7cb4f) | S-Lab non-commercial code; HF model card 별도 명시 미확인, safetensors141,199,924 bytes는 API metadata 수치. human matte+memory/초기 mask 요구. 이번에 다운로드/변환/앱 채택하지 않음 |
 | [RVM](https://github.com/PeterL1n/RobustVideoMatting/tree/53d74c6826735f01f4406b5ca9075eee27bec094) | GPL3 code, recurrent human matting·ONNX/TorchScript 경로. 임의 물체 segmentation 대체가 아님. 앱 미포함·기존 Vision 대비 실제 alpha 평가 없음 |
 
@@ -66,7 +66,7 @@ signed CoC·가상50mm thin-lens·9/17 depth layers·near coverage 합산·초�
 
 기존 GPU에만 있던 주변부 transform을 CPU 참조에도 포함하고 같은 tap/좌표식을 Metal에서 실행한다. 가상 focal은 CoC 계산에만 적용한다. 정규화 gather는 상수장을 보존하지만 공간 가변 PSF 전체를 정확하게 적분한 ray tracer가 아니다. 점광원 에너지 근사 오차를 별도로 측정하며 밝기 boost·색 LUT로 개선을 가장하지 않았다. 선택 색수차/구면수차·실측 비네팅·정확한 렌즈 PSF 캘리브레이션은 아직 추가하지 않았다.
 
-matte alpha는 입력의 확실한0/1 seed를 고정하고 주변 foreground/background의 색 대비와 관측 RGB의 직선 residual이 충분할 때만 최대0.35×confidence×0.85 보정한다. seed가 없거나 유리/반사처럼 관측이 모호하면 입력을 유지한다. 없는 털/머리카락을 신경망으로 새로 복원한 구현은 아니다. 기존 linear RGB 입력·F/B unmix를 재사용한다.
+matte alpha는 입력의 확실한0/1 seed를 고정하고 주변 foreground/background의 색 대비와 관측 RGB의 직선 residual이 충분할 때만 최대0.35×confidence×0.85 보정한다. seed가 없거나 색 대비가 부족하거나 color-line 잔차가 크면 입력을 유지한다. 이 조건이 유리/반사를 분류하는 것은 아니다. 없는 털/머리카락을 신경망으로 새로 복원한 구현은 아니다. 기존 linear RGB 입력·F/B unmix를 재사용한다.
 
 temporal은 현재→이전 flow의 광도 대응이 충분할 때만 이전 깊이를 워프하고 기존 robust affine으로 상대 scale/shift를 맞춘다. 깊이 불일치 pixel은 섞지 않는다. flow 유효성만으로 장기 객체 identity/가림 후 재식별을 보장하지 않는다. 원래 bbox 추적 정책과 낮은 confidence 원본 fallback은 유지한다.
 
@@ -75,6 +75,7 @@ temporal은 현재→이전 flow의 광도 대응이 충분할 때만 이전 깊
 | 실제 실행 | 결과 / 범위 |
 |---|---|
 | 같은 synthetic color-line fixture의 실제 main9acbb 함수 vs 변경 함수 | boundary MAE **0.0983785→0.014756747**, hard seed MAE **0.000760964→0.0**. prior 입력 오차0.1과 구버전 결과를 구분. [baseline](research/depth-synthetic/baseline.json)/[candidate](research/depth-synthetic/candidate.json), Swift harness 보존 |
+| 같은 구버전/현재 함수의 one-pixel strand+fractional edges+background gaps 합성 | boundary MAE **0.15071633→0.022607395**, hard-seed **0.000038596→0.0**. 실제 모발/유리 신경망 평가가 아닌 관측색 혼합 fixture |
 | 등록된 정지 synthetic30-frame 교대 깊이 noise | raw estimate 대비 MAE 비율 **0.5635766**. 새 컷/가림/등록 만료는 averaging 없이 현재값. 실제 움직이는 인물 성능 수치 아님 |
 | 공간 가변 CPU PSF impulse | nine profiles, off-axis 밝기8 impulse/radius4, 최악 상대 에너지 편차 **0.00614864**(약0.615%, 허용3%). DC/중심/지원 반경 검증 |
 | native Metal–CPU linear RGB | nine profiles 전체 canvas 비교/alpha 검증, 허용 maxabs0.006. 실제 native 결과는08에 기록 |
@@ -84,6 +85,8 @@ temporal은 현재→이전 flow의 광도 대응이 충분할 때만 이전 깊
 합성 fixture를 실제 사진100장·상용 앱/DSLR blind 결과로 계수하지 않는다. 어느 결과도 Leica보다 우수하다는 증거가 아니다.
 
 ## 8. 성능·메모리·발열
+
+수동 교정 결과는 accuracy에 manual-corrected를 표시하고 focusDistanceMetres를 비워 실측 거리로 오인하지 않도록 한다.
 
 기존64MP halo/디스크 raster·large-radius pyramid·CIContext/pool 재사용을 유지했다. Metal pipeline cache는 device4개 한도, 프레임 history는 이전 small RGB1장과 depth1개, 교정은64 strokes/총1024 points/32 undo 한도다. 화면의 expanded editor controls는 스크롤 한도로 canvas를 보존한다. 모델/flow 뒤 stale live job은0.75초를 넘기면 추가 매트/게시를 폐기한다.
 

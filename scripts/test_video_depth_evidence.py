@@ -24,7 +24,9 @@ class VideoDepthEvidenceTests(unittest.TestCase):
             measure = {"path": "metrics", "sha256": sha256((root / "metrics").read_bytes()).hexdigest()}
             scene = dict(id="fixture", kind="synthetic", consented=True, categories=sorted(CATEGORIES),
                          original=sample, baseline=sample, candidate=sample, blindReview=sample, measurements=measure, humanAccepted=True)
-            self.assertFalse(evaluate({"version": 1, "scenes": [scene]},root)["accepted"])
+            result = evaluate({"version": 1, "scenes": [scene]},root)
+            self.assertFalse(result["accepted"])
+            self.assertEqual(result["realEvidenceRecords"], 0)
             metrics["ptsSeconds"][3] = -1
             (root / "metrics").write_text(json.dumps(metrics))
             measure["sha256"] = sha256((root / "metrics").read_bytes()).hexdigest()

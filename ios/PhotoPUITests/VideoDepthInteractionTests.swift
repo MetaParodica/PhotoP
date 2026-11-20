@@ -39,4 +39,32 @@ final class VideoDepthInteractionTests: XCTestCase {
         XCTAssertTrue(render.isEnabled)
         XCTAssertTrue(message.label.contains("원본"))
     }
+    @MainActor func testTimelineKeyframesAndActualDepthFramePreview() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-review", "--review-video-depth-editor"]
+        app.launch(); defer { app.terminate() }
+        XCTAssertTrue(app.descendants(matching: .any)["video.depth.target"].waitForExistence(timeout: 25))
+        let disclosure = app.buttons["시간별 초점·f값 전환"]
+        for _ in 0..<4 where !disclosure.isHittable { app.swipeUp() }
+        disclosure.tap()
+        let toggle = app.switches["video.depth.timeline"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5)); toggle.tap()
+        let slider = app.sliders["video.depth.time"]
+        for _ in 0..<4 where !slider.isHittable { app.swipeUp() }
+        slider.adjust(toNormalizedSliderPosition: 0.7)
+        app.buttons["video.depth.setKeyframe"].tap()
+        XCTAssertEqual(app.staticTexts["video.depth.keyframeCount"].label,"키프레임 2개")
+        let preview = app.buttons["video.depth.preview"]
+        for _ in 0..<4 where !preview.isHittable { app.swipeUp() }
+        preview.tap()
+        let message = app.staticTexts["video.depth.message"]
+        let complete = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label BEGINSWITH %@","전환 미리보기"),object: message)
+        XCTAssertEqual(XCTWaiter.wait(for: [complete],timeout: 45),.completed)
+        let remove = app.buttons["삭제"].firstMatch
+        for _ in 0..<4 where !remove.isHittable { app.swipeDown() }
+        remove.tap()
+        XCTAssertEqual(app.staticTexts["video.depth.keyframeCount"].label,"키프레임 1개")
+        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = "video-focus-timeline"; attachment.lifetime = .keepAlways; add(attachment)
+    }
+
 }

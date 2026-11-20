@@ -181,6 +181,19 @@ final class VideoDepthTests: XCTestCase {
         XCTAssertEqual(result.recipe.processedFrames + result.recipe.fallbackFrames, 6)
         XCTAssertTrue(result.recipe.aiProcessing.contains("Depth Anything"))
     }
+    func testTimelineFramePreviewUsesRealMovieAndModelWithoutWritingOriginal() async throws {
+        let root = try directory(); defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("source.mov"); try await movie(url,rotated: false)
+        let original = try Data(contentsOf: url), editor = VideoDepthFramePreview()
+        let frame = try await editor.image(url: url,time: 1.0/30)
+        let parameters = VideoDepthKeyframe(time: 0,focus: CGPoint(x: 0.5,y: 0.5),aperture: 2.8,profile: .portrait)
+        let rendered = try await editor.image(url: url,time: 1.0/30,parameters: parameters)
+        XCTAssertEqual(rendered.width,frame.width); XCTAssertEqual(rendered.height,frame.height)
+        XCTAssertEqual(rendered.rgba.count,frame.rgba.count)
+        var untrusted = parameters; untrusted.requiresTracking = true
+        do { _ = try await editor.image(url: url,time: 1.0/30,parameters: untrusted); XCTFail("Single-frame preview cannot claim a tracking replay") } catch { }
+        XCTAssertEqual(try Data(contentsOf: url),original)
+    }
     private func timestamps(_ url: URL) async throws -> [Double] {
         let asset = AVURLAsset(url: url)
         let reader = try AVAssetReader(asset: asset)

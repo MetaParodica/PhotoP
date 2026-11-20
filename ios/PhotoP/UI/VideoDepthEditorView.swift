@@ -56,7 +56,7 @@ struct VideoDepthEditorView: View {
                 Picker("출력 품질", selection: $quality) { ForEach(VideoDepthQuality.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).accessibilityIdentifier("video.depth.quality")
                 DisclosureGroup("시간별 초점·f값 전환") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle("키프레임 사용", isOn: $timeline).onChange(of: timeline) { _, enabled in
+                        Toggle("키프레임 사용", isOn: $timeline).accessibilityIdentifier("video.depth.timeline").onChange(of: timeline) { _, enabled in
                             if enabled, events.isEmpty { events = [.init(time: 0,focus: focus,aperture: aperture,profile: profile,selection: tracking ? selection : nil,requiresTracking: tracking)] }
                         }
                         if timeline {
@@ -64,7 +64,8 @@ struct VideoDepthEditorView: View {
                             Slider(value: $playhead,in: 0...max(0.01,item.manifest.actual.durationSeconds-0.05))
                                 .accessibilityIdentifier("video.depth.time")
                             Picker("전환",selection: $interpolation) { ForEach(VideoDepthInterpolation.allCases,id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu)
-                            Button("현재 초점·f값을 이 시점에 저장") { setKeyframe() }.disabled(events.count >= 64)
+                            Button("현재 초점·f값을 이 시점에 저장") { setKeyframe() }.disabled(events.count >= 64).accessibilityIdentifier("video.depth.setKeyframe")
+                            Text("키프레임 \(events.count)개").font(.caption).accessibilityIdentifier("video.depth.keyframeCount")
                             ForEach(events, id: \.time) { event in
                                 HStack {
                                     Button(String(format: "%.2f초 · f/%.1f",event.time,event.aperture)) { playhead = event.time; focus = event.focus; aperture = event.aperture; profile = event.profile }
@@ -73,7 +74,7 @@ struct VideoDepthEditorView: View {
                                 }.font(.caption)
                             }
                             Button(previewing ? "미리보기 처리 중…" : "현재 시점 전환 미리보기") { previewRevision = UUID() }
-                                .disabled(previewing || tracking)
+                                .disabled(previewing || tracking).accessibilityIdentifier("video.depth.preview")
                             Text("슬라이더는 원본의 해당 프레임을 표시합니다. 전환 미리보기는 현재 시점의 심도이며 추적 결과는 전체 처리 후 확인합니다. 대상/렌즈 변경은 해당 시점에서 적용합니다.").font(.caption2)
                         }
                     }.disabled(progress != nil || thumbnail == nil)
@@ -117,6 +118,7 @@ struct VideoDepthEditorView: View {
                     guard playhead == time, previewRevision == revision, editingIntent == intent else { return }
                     focus = parameters.focus; aperture = parameters.aperture; profile = parameters.profile
                     thumbnail = UIImage(cgImage: try pixels.cgImage())
+                    message = String(format: "전환 미리보기 · %.2f초 · f/%.1f",time,parameters.aperture)
                 } catch { if !Task.isCancelled { message = error.localizedDescription } }
             }
             .sheet(item: $selected) { VideoDepthPlaybackView(result: $0, original: item.url) }

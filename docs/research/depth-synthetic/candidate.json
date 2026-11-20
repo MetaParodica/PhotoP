@@ -24,6 +24,11 @@
   "height" : 17,
   "kind" : "synthetic-color-line-ground-truth",
   "realCaptureCount" : 0,
-  "source" : "8ddd968bfb5ad8ff782430dc0991447bcfd2008f",
+  "source" : "e8d8c9032c52ef333a780f4c7db1094e4972e71e",
+  "thinStructure" : {
+    "boundaryMAE" : 0.022607395,
+    "hardSeedMAE" : 0,
+    "kind" : "one-pixel-strand-with-fractional-edges-and-background-gaps"
+  },
   "width" : 17
 }
