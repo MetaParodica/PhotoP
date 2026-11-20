@@ -13,8 +13,10 @@ final class ExperimentalPhotoSubjectSelector {
     private let context = CIContext(options: [.cacheIntermediates: false])
     private var encoder: MLModel?
     private var initializer: MLModel?
+    private let diagnostics: (@Sendable (String) -> Void)?
+    init(diagnostics: (@Sendable (String) -> Void)? = nil) { self.diagnostics = diagnostics }
 
-    func refine(original: URL, focus: CGPoint, request: ExperimentalPhotoRequest) throws -> (DepthMatteSurface, ExperimentalDepthRecord) {
+    func refine(original: URL, focus: CGPoint, request: ExperimentalPhotoRequest, preferWholeSubject: Bool = false) throws -> (DepthMatteSurface, ExperimentalDepthRecord) {
         try check(request)
         guard let image = CIImage(contentsOf: original, options: [.applyOrientationProperty: true]),
               image.extent.width.isFinite, image.extent.height.isFinite, image.extent.width > 0, image.extent.height > 0,
@@ -40,6 +42,14 @@ final class ExperimentalPhotoSubjectSelector {
             let resized = color.transformed(by: CGAffineTransform(scaleX: 1024 / color.extent.width, y: 1024 / color.extent.height))
             context.render(resized, to: input, bounds: CGRect(x: 0, y: 0, width: 1024, height: 1024),
                            colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
+            if diagnostics != nil, CVPixelBufferLockBaseAddress(input, .readOnly) == kCVReturnSuccess {
+                if let pointer = CVPixelBufferGetBaseAddress(input) {
+                    let offset = min(1023, Int(focus.y * 1024)) * CVPixelBufferGetBytesPerRow(input) + min(1023, Int(focus.x * 1024)) * 4
+                    let bytes = pointer.assumingMemoryBound(to: UInt8.self)
+                    diagnostics?("input RGB at point: \(bytes[offset + 2]),\(bytes[offset + 1]),\(bytes[offset])")
+                }
+                CVPixelBufferUnlockBaseAddress(input, .readOnly)
+            }
             let features = try models.0.prediction(from: MLDictionaryFeatureProvider(dictionary: ["image": MLFeatureValue(pixelBuffer: input)]))
             try check(request)
             let points = try MLMultiArray(shape: [1, 1, 2], dataType: .float16)
@@ -61,9 +71,31 @@ final class ExperimentalPhotoSubjectSelector {
                   logits.shape.map(\.intValue) == [1, 1, 256, 256],
                   let iou = result.featureValue(for: "best_iou")?.multiArrayValue,
                   let score = result.featureValue(for: "object_score")?.multiArrayValue else { throw ExperimentalSelectionFailure.invalidOutput }
-            let predicted = Self.number(iou, index: 0), visible = Self.number(score, index: 0)
+            var predicted = Self.number(iou, index: 0)
+            let visible = Self.number(score, index: 0)
             let sy = logits.strides[2].intValue, sx = logits.strides[3].intValue
-            let values = (0..<(256 * 256)).map { Self.number(logits, index: ($0 / 256) * sy + ($0 % 256) * sx) }
+            var values = (0..<(256 * 256)).map { Self.number(logits, index: ($0 / 256) * sy + ($0 % 256) * sx) }
+            if diagnostics != nil {
+                let px = min(255, Int(focus.x * 256)), py = min(255, Int(focus.y * 256))
+                diagnostics?("mask q=\(predicted) score=\(visible) dtype=\(logits.dataType.rawValue) point=\(values[py * 256 + px]) area=\(values.filter { $0 > 0 }.count) finite=\(values.allSatisfy(\.isFinite))")
+            }
+            if preferWholeSubject,
+               let candidates = result.featureValue(for: "candidate_masks")?.multiArrayValue,
+               candidates.shape.map(\.intValue) == [1, 3, 256, 256],
+               let qualities = result.featureValue(for: "candidate_ious")?.multiArrayValue {
+                var largest = 0
+                for candidate in 0..<3 {
+                    let offset = candidate * candidates.strides[1].intValue
+                    let cy = candidates.strides[2].intValue, cx = candidates.strides[3].intValue
+                    let trial = (0..<(256 * 256)).map { Self.number(candidates, index: offset + ($0 / 256) * cy + ($0 % 256) * cx) }
+                    let quality = Self.number(qualities, index: candidate * qualities.strides[1].intValue)
+                    let area = trial.reduce(0) { $0 + ($1 > 0 ? 1 : 0) }
+                    if area > largest, ExperimentalPhotoMaskPolicy.alpha(logits: trial, width: 256, height: 256,
+                        x: Double(focus.x), y: Double(focus.y), predictedIoU: quality, objectScore: visible) != nil {
+                        values = trial; predicted = quality; largest = area
+                    }
+                }
+            }
             guard let alpha = ExperimentalPhotoMaskPolicy.alpha(logits: values, width: 256, height: 256,
                 x: Double(focus.x), y: Double(focus.y), predictedIoU: predicted, objectScore: visible) else {
                 throw ExperimentalSelectionFailure.noSubject
@@ -77,6 +109,7 @@ final class ExperimentalPhotoSubjectSelector {
             }
             let seed = CIImage(cgImage: cg, options: [.colorSpace: NSNull()])
             guard let refined = try DepthMatteRefiner().refine(color: color, focus: focus, embedded: seed, maximumDimension: 512) else {
+                diagnostics?("selected mask rejected by guided matte at original focus")
                 throw ExperimentalSelectionFailure.noSubject
             }
             try check(request)

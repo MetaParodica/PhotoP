@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/flowtyone/MatAnyone2Kit",
+  "revision": "d85a029870b5149af6aa122cbc13c90db11e5b35",
+  "scope": "single-photo selected-person alpha; static first-frame refinement, no live/video integration",
+  "codeLicense": "GPL-3.0",
+  "weightsLicense": "NTU S-Lab License 1.0",
+  "changes": "Three Swift files copied with provenance header; cooperative Task cancellation checks added to seed/step. Model files unchanged. Photo adaptation and selected-person policy are PhotoP code.",
+  "files": [
+    {
+      "path": "GPL-SWIFT-LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1905,
+      "sha256": "2ff94185d79c9790609b21df530533ed693ea77c444e4cae6a06ac4657a88e3c"
+    },
+    {
+      "path": "NOTICE.md",
+      "bytes": 996,
+      "sha256": "1e8ee4b13475ea574a3875684a6f119a9f517938344476d3825d7700697f087d"
+    },
+    {
+      "path": "SWIFT-NOTICE.md",
+      "bytes": 1263,
+      "sha256": "311683d73149d71dfbc5cddb68c3cc707d8c23178ee61b29e3173eb7dece97b1"
+    },
+    {
+      "path": "decoder.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "a1275570ade531298c44761bafe65e0a32908af642b3a5b1bd3baee7f2bfc268"
+    },
+    {
+      "path": "decoder.mlmodelc/coremldata.bin",
+      "bytes": 552,
+      "sha256": "3bc31d180cfb4924393f52e7015252a6869d5c7605c3d18bd86f0e040b72b297"
+    },
+    {
+      "path": "decoder.mlmodelc/metadata.json",
+      "bytes": 4182,
+      "sha256": "247ab331e105bd740837869a2ccceeaf8b3cad0f1ecb4318de7acc79771cadc0"
+    },
+    {
+      "path": "decoder.mlmodelc/model.mil",
+      "bytes": 59668,
+      "sha256": "6dc7bde905f853957b0990dafbeab0f8ffa91efb27e7d21594e05a87c7807906"
+    },
+    {
+      "path": "decoder.mlmodelc/weights/weight.bin",
+      "bytes": 9538944,
+      "sha256": "9029dd3c2a9789c7922726f94307047bfaf63a1b8cd44a22410887389230533b"
+    },
+    {
+      "path": "encoder.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "21d12859f97647f93340ab408d7410c5c4587f666e174d234a4c725ffd6ddb17"
+    },
+    {
+      "path": "encoder.mlmodelc/coremldata.bin",
+      "bytes": 561,
+      "sha256": "d964c80241147198648d9aeb82caf8488f1d2bd5dc0c8864cc2a897a570e1303"
+    },
+    {
+      "path": "encoder.mlmodelc/metadata.json",
+      "bytes": 4270,
+      "sha256": "085322485c526c484201d8185aafa456c553b8bb336dc6b6e61beb1ca5db8bfd"
+    },
+    {
+      "path": "encoder.mlmodelc/model.mil",
+      "bytes": 76131,
+      "sha256": "dde3063e83108afc595c07bafc0fa341e1a51acce2d00df187ebcf0e3842b1f0"
+    },
+    {
+      "path": "encoder.mlmodelc/weights/weight.bin",
+      "bytes": 18706432,
+      "sha256": "9784f386918e9aa3c1b10a615677b77feb943f254ac8cda22d047b5d693eff8b"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 4857,
+      "sha256": "39b2c25a5b0b7d4be263443522d7bc2722cc7fde7ce207c687cdf6776c5a46c8"
+    },
+    {
+      "path": "maskencoder.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "aadedb967c56f760e28f96a94754b658ebe3bd65fb1621f8f328cbcc682427fa"
+    },
+    {
+      "path": "maskencoder.mlmodelc/coremldata.bin",
+      "bytes": 490,
+      "sha256": "c5cbe5976ecfc9a28a9211865001d1d3b58dedfddd9065766a50b6e978629fd1"
+    },
+    {
+      "path": "maskencoder.mlmodelc/metadata.json",
+      "bytes": 3220,
+      "sha256": "3051f6efd03be1b6a62b1e857e46c3789d2b13a62f43067f728bc19cae334308"
+    },
+    {
+      "path": "maskencoder.mlmodelc/model.mil",
+      "bytes": 46896,
+      "sha256": "31b0b9800ff49ff754a454401466c1908cace3d4e4c4fad38f97ac298cb56096"
+    },
+    {
+      "path": "maskencoder.mlmodelc/weights/weight.bin",
+      "bytes": 17633472,
+      "sha256": "ac9b6af26e060a40f7afdb0a5485fa1b0c60039e21c754aa75742e1cbe69f7b5"
+    },
+    {
+      "path": "objsummary.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "2a7cacff6302b3c11fd7f69a2a3eaeac793e2e31b88543c7eedc943f5948dc0e"
+    },
+    {
+      "path": "objsummary.mlmodelc/coremldata.bin",
+      "bytes": 412,
+      "sha256": "915442e9f65b588cf091fdb396a23aeb8695d3798e6f649ec39cc67936732714"
+    },
+    {
+      "path": "objsummary.mlmodelc/metadata.json",
+      "bytes": 2276,
+      "sha256": "b547f981404de5da0b43f96a396fcb6d9e158c09dc143a8f1294f5371880da6d"
+    },
+    {
+      "path": "objsummary.mlmodelc/model.mil",
+      "bytes": 10904,
+      "sha256": "401c8d22fcd5cb1d9b85d6a7d2711ca6ad2dabc04a8fc21610408b3fedc7407a"
+    },
+    {
+      "path": "objsummary.mlmodelc/weights/weight.bin",
+      "bytes": 830240,
+      "sha256": "05ec0183424ab30121ace0caa78712c4dc316caf42f4abcbde3228c3c1c2a238"
+    },
+    {
+      "path": "readout.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "63594857f7edde1d96d3541a9a67579b685ecfdf38db61875cf4591e85ba7f81"
+    },
+    {
+      "path": "readout.mlmodelc/coremldata.bin",
+      "bytes": 494,
+      "sha256": "c23ac704f6894969ae0992bce8dba0e27035a206c10bd4ca4c982d7479de4b77"
+    },
+    {
+      "path": "readout.mlmodelc/metadata.json",
+      "bytes": 3722,
+      "sha256": "c4ff4038b407c7c961352e5ce0b3691b5059664e9e9c4e22fe1554f350d90334"
+    },
+    {
+      "path": "readout.mlmodelc/model.mil",
+      "bytes": 173337,
+      "sha256": "ff56a207d585304ca7b73df769eb893a3443fb9ba700765efe6a23d22102a922"
+    },
+    {
+      "path": "readout.mlmodelc/weights/weight.bin",
+      "bytes": 24244224,
+      "sha256": "73d1fc840e11a6f93bd0589d6375cebc2ea8f244fb267e7c8471875d2190fa8d"
+    },
+    {
+      "path": "uncert.mlmodelc/analytics/coremldata.bin",
+      "bytes": 243,
+      "sha256": "f65a1298a1298883aae605772886a5c875d9424a632daf6f362422a0c54b6149"
+    },
+    {
+      "path": "uncert.mlmodelc/coremldata.bin",
+      "bytes": 470,
+      "sha256": "bff4de963bfc140961e341c54f2fa95412f5cfe1109a88ec940219f99f5b9445"
+    },
+    {
+      "path": "uncert.mlmodelc/metadata.json",
+      "bytes": 2668,
+      "sha256": "5ebd39f4a7c51517e6678f6af32d9e6133901f3150b23f643ca33486e60d62d4"
+    },
+    {
+      "path": "uncert.mlmodelc/model.mil",
+      "bytes": 6242,
+      "sha256": "d8716b7f95661b2a75f683cfeeb96f90e6385135a148737f54f4337b306c8580"
+    },
+    {
+      "path": "uncert.mlmodelc/weights/weight.bin",
+      "bytes": 136448,
+      "sha256": "a4558cbbe7dac241e77c3d44fd2d28eb4dab7cfcb6eadc6d877ab2f242aa8183"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "ios/PhotoP/External/MatAnyone2/MatAnyoneCoreML.swift",
+      "upstreamFileSHA256": "129239b7a87193153c4baf2b9db2d1a646077d20ae6befc29758cdc94da7da87",
+      "adaptedFileSHA256": "27051547bfc3cc0f3d2f12b0a4b329970b0201c23d51593d5c0aeb0920ec37b9"
+    },
+    {
+      "file": "ios/PhotoP/External/MatAnyone2/MatAnyoneCoreMLEngine.swift",
+      "upstreamFileSHA256": "78edc52d3b6ef70c3d56d1da468208d25bfe41c2aa34755cf42bca7f7e2a39b4",
+      "adaptedFileSHA256": "d7fcea2949dd2803e81c7c131ea547350ec427d69d191078a0fd81fd6bb5b0a5"
+    },
+    {
+      "file": "ios/PhotoP/External/MatAnyone2/MemoryBank.swift",
+      "upstreamFileSHA256": "fa4e18a84d6b0998a6c9ba16dc757d4f5456f7828851f643cbdfd6ef118ffe99",
+      "adaptedFileSHA256": "08e660406052c9d3e81b746ff31e689bdc6c7818db0a28f31ebeebcf8a1e2586"
+    }
+  ],
+  "runtimeParityVerified": false,
+  "deviceVerified": false,
+  "resourceFingerprint": "7e970a2ad50c5bf91b9df155d2bcc54151d496ce3fc5431bfcc3b6877be05b32"
+}

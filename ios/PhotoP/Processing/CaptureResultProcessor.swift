@@ -35,6 +35,11 @@ struct CaptureResultRecipe: Codable, Sendable {
     var depthCorrections: DepthCorrections? = nil
     var depthMapRole: String? = nil
     var experimentalDepth: ExperimentalDepthRecord? = nil
+    var experimentalPortrait: ExperimentalPortraitRecord? = nil
+    var experimentalSummary: String? {
+        let titles = [experimentalDepth?.title, experimentalPortrait?.title].compactMap { $0 }
+        return titles.isEmpty ? nil : titles.joined(separator: "\n")
+    }
 }
 
 struct DepthEditSession: Identifiable, Sendable {
@@ -61,7 +66,7 @@ actor CaptureResultProcessor {
     static let shared = CaptureResultProcessor()
     private var activePending: Set<URL> = []
 
-    func experimentalRecord(result: URL, documents: URL? = nil) throws -> ExperimentalDepthRecord? {
+    func experimentalStatus(result: URL, documents: URL? = nil) throws -> String? {
         let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         let folder = result.deletingLastPathComponent()
         guard result.lastPathComponent == "photo.jpg", UUID(uuidString: folder.lastPathComponent) != nil,
@@ -70,8 +75,8 @@ actor CaptureResultProcessor {
         }
         let recipe = try JSONDecoder().decode(CaptureResultRecipe.self,
             from: bounded(folder.appendingPathComponent("recipe.json"), limit: 131_072))
-        guard recipe.experimentalDepth?.valid != false else { throw CameraError.invalidPhotoData }
-        return recipe.experimentalDepth
+        guard recipe.experimentalDepth?.valid != false, recipe.experimentalPortrait?.valid != false else { throw CameraError.invalidPhotoData }
+        return recipe.experimentalSummary
     }
 
     func reprocess(result: URL, original: URL, aperture: Double, documents: URL? = nil,
@@ -81,7 +86,8 @@ actor CaptureResultProcessor {
         return try await render(original: original, look: session.look, aperture: aperture,
             focus: focus ?? CGPoint(x: recipe.focusX, y: recipe.focusY), documents: documents, depthOverride: session.field,
             profile: profile ?? recipe.lensProfile ?? .natural, savedMatte: session.matte, depthOrigin: recipe.depthSource,
-            corrections: corrections ?? session.corrections, inheritedExperimentalRecord: recipe.experimentalDepth)
+            corrections: corrections ?? session.corrections, inheritedExperimentalRecord: recipe.experimentalDepth,
+            inheritedPortraitRecord: recipe.experimentalPortrait)
     }
 
     /// Explicit user action; opening/reprocessing a saved recipe never infers.
@@ -142,7 +148,8 @@ actor CaptureResultProcessor {
         guard let field = SoftwareDepthField(width: w, height: h, inverseDepth: values, units: unit) else { throw CameraError.invalidPhotoData }
         let corrections = recipe.depthCorrections ?? DepthCorrections()
         guard corrections.valid, (recipe.version != 4 || (recipe.depthMapRole == "uncorrected-base" && recipe.depthCorrections != nil)),
-              (recipe.version == 4 || corrections.strokes.isEmpty), recipe.experimentalDepth?.valid != false else { throw CameraError.invalidPhotoData }
+              (recipe.version == 4 || corrections.strokes.isEmpty), recipe.experimentalDepth?.valid != false,
+              recipe.experimentalPortrait?.valid != false else { throw CameraError.invalidPhotoData }
         var matte: DepthMatteSurface?
         if let hash = recipe.matteSHA256 {
             guard let mw = recipe.matteWidth, let mh = recipe.matteHeight, (3...512).contains(mw), (3...512).contains(mh) else { throw CameraError.invalidPhotoData }
@@ -184,7 +191,8 @@ actor CaptureResultProcessor {
     func render(original: URL, look: ImportedLUT?, aperture: Double?, focus: CGPoint, documents: URL? = nil,
                 depthSource: SoftwareDepthSource = .measured, depthOverride: SoftwareDepthField? = nil,
                 profile: DepthLensProfile = .natural, savedMatte: DepthMatteSurface? = nil, depthOrigin: String? = nil, corrections: DepthCorrections = .init(),
-                experimentalRequest: ExperimentalPhotoRequest? = nil, inheritedExperimentalRecord: ExperimentalDepthRecord? = nil) async throws -> URL {
+                experimentalRequest: ExperimentalPhotoRequest? = nil, inheritedExperimentalRecord: ExperimentalDepthRecord? = nil,
+                inheritedPortraitRecord: ExperimentalPortraitRecord? = nil) async throws -> URL {
         try Task.checkCancellation()
         guard corrections.valid else { throw CameraError.invalidSettings }
         let effectiveDepth: SoftwareDepthField?
@@ -206,7 +214,8 @@ actor CaptureResultProcessor {
             let options: Data.WritingOptions = [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             var matte = savedMatte
             var experiment = inheritedExperimentalRecord
-            if let request = experimentalRequest, aperture != nil {
+            var portrait = inheritedPortraitRecord
+            if let request = experimentalRequest, request.preferences.photoSubjectSelection, aperture != nil {
                 do {
                     let selected = try ExperimentalPhotoSubjectSelector().refine(original: original, focus: focus, request: request)
                     matte = selected.0; experiment = selected.1
@@ -216,8 +225,19 @@ actor CaptureResultProcessor {
                     experiment = .init(outcome: .fallback, failure: failure, focusX: Double(focus.x), focusY: Double(focus.y))
                 }
             }
+            if let request = experimentalRequest, request.preferences.photoPortraitMatte, aperture != nil {
+                do {
+                    let refined = try ExperimentalPortraitMatte().refine(original: original, focus: focus, request: request)
+                    matte = refined.0; portrait = refined.1
+                } catch is CancellationError { throw CancellationError() }
+                catch {
+                    portrait = .init(outcome: .fallback, failure: error as? ExperimentalSelectionFailure ?? .inferenceFailed,
+                                     focusX: Double(focus.x), focusY: Double(focus.y))
+                }
+            }
             var credits = look?.provenance.map { ["\($0.requiredCredit)\nSource: \($0.source)\n\($0.previewDescription)"] } ?? []
             if experiment?.outcome == .applied { credits.append("PhotoP AI photo selection (experimental) · \(ExperimentalDepthRecord.modelID) · original preserved") }
+            if portrait?.outcome == .applied { credits.append("PhotoP AI portrait matte (experimental) · \(ExperimentalPortraitRecord.modelID) · original preserved") }
             let credit = credits.isEmpty ? nil : credits.joined(separator: "\n")
             let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original,
                 destination: pending.appendingPathComponent("photo.jpg"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),
@@ -226,20 +246,24 @@ actor CaptureResultProcessor {
             // Disabling/re-enabling invalidates this selection. Re-render only
             // the baseline; do not publish an old experimental image or cancel
             // the user's normal depth effect along with the experiment.
-            if experiment?.outcome == .applied, let request = experimentalRequest, !request.isCurrent {
-                try FileManager.default.removeItem(at: pending)
-                let fallback = ExperimentalDepthRecord(outcome: .fallback, failure: .disabled, focusX: Double(focus.x), focusY: Double(focus.y))
-                return try await render(original: original, look: look, aperture: aperture, focus: focus, documents: documents,
-                    depthSource: depthSource, depthOverride: depthOverride, profile: profile, savedMatte: savedMatte,
-                    depthOrigin: depthOrigin, corrections: corrections, inheritedExperimentalRecord: fallback)
-            }
-            let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space lens depth layers (max64MP; reduced sample count above12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
-            let accuracyPrefix = corrections.strokes.isEmpty ? "" : "manual-corrected-"
-            let accuracy = accuracyPrefix + (result.absoluteDepth ? "absolute" : "relative")
             let originalHash = try LUTPhotoEditor.hashFile(original)
             guard initialOriginalHash == nil || initialOriginalHash == originalHash else {
                 throw ImageEditingError.invalid("분석 중 원본이 변경되어 결과를 저장하지 않았습니다.")
             }
+            let appliedExperiment = experiment?.outcome == .applied || portrait?.outcome == .applied
+            if appliedExperiment, let request = experimentalRequest, !request.isCurrent {
+                try FileManager.default.removeItem(at: pending)
+                let fallback = ExperimentalDepthRecord(outcome: .fallback, failure: .disabled, focusX: Double(focus.x), focusY: Double(focus.y))
+                let portraitFallback = ExperimentalPortraitRecord(outcome: .fallback, failure: .disabled, focusX: Double(focus.x), focusY: Double(focus.y))
+                return try await render(original: original, look: look, aperture: aperture, focus: focus, documents: documents,
+                    depthSource: depthSource, depthOverride: depthOverride, profile: profile, savedMatte: savedMatte,
+                    depthOrigin: depthOrigin, corrections: corrections,
+                    inheritedExperimentalRecord: request.preferences.photoSubjectSelection ? fallback : nil,
+                    inheritedPortraitRecord: request.preferences.photoPortraitMatte ? portraitFallback : nil)
+            }
+            let depthStep = aperture == nil ? "no depth effect" : result.depthField != nil ? "linear-working-space lens depth layers (max64MP; reduced sample count above12.6MP)" : "legacy measured variable blur (high-resolution baseline)"
+            let accuracyPrefix = corrections.strokes.isEmpty ? "" : "manual-corrected-"
+            let accuracy = accuracyPrefix + (result.absoluteDepth ? "absolute" : "relative")
             var recipe = CaptureResultRecipe(version: corrections.strokes.isEmpty ? 3 : 4, originalFilename: original.lastPathComponent,
                 originalSHA256: originalHash, aperture: aperture,
                 focusX: Double(focus.x), focusY: Double(focus.y), focusDistanceMetres: result.absoluteDepth && corrections.strokes.isEmpty ? result.focusDepth : nil,
@@ -249,6 +273,7 @@ actor CaptureResultProcessor {
             if !corrections.strokes.isEmpty { recipe.depthCorrections = corrections; recipe.depthMapRole = "uncorrected-base" }
             recipe.outputWidth = result.width; recipe.outputHeight = result.height
             recipe.experimentalDepth = experiment
+            recipe.experimentalPortrait = portrait
             recipe.depthSource = depthOrigin ?? result.depthSource; recipe.portraitMatteUsed = result.matteUsed
             recipe.lensProfile = aperture == nil ? nil : profile; recipe.fusionNormalizedError = result.fusionError
             if let matte = result.matte {
@@ -265,7 +290,7 @@ actor CaptureResultProcessor {
             try Task.checkCancellation()
             try JSONEncoder().encode(recipe).write(to: pending.appendingPathComponent("recipe.json"), options: options)
             if let look { try look.data.write(to: pending.appendingPathComponent("look.cube"), options: options) }
-            if experiment?.outcome == .applied, let request = experimentalRequest {
+            if appliedExperiment, let request = experimentalRequest {
                 let published = try request.publishIfCurrent {
                     try Task.checkCancellation()
                     try FileManager.default.moveItem(at: pending, to: final)
@@ -273,9 +298,12 @@ actor CaptureResultProcessor {
                 if !published {
                     try FileManager.default.removeItem(at: pending)
                     let fallback = ExperimentalDepthRecord(outcome: .fallback, failure: .disabled, focusX: Double(focus.x), focusY: Double(focus.y))
+                    let portraitFallback = ExperimentalPortraitRecord(outcome: .fallback, failure: .disabled, focusX: Double(focus.x), focusY: Double(focus.y))
                     return try await render(original: original, look: look, aperture: aperture, focus: focus, documents: documents,
                         depthSource: depthSource, depthOverride: depthOverride, profile: profile, savedMatte: savedMatte,
-                        depthOrigin: depthOrigin, corrections: corrections, inheritedExperimentalRecord: fallback)
+                        depthOrigin: depthOrigin, corrections: corrections,
+                        inheritedExperimentalRecord: request.preferences.photoSubjectSelection ? fallback : nil,
+                        inheritedPortraitRecord: request.preferences.photoPortraitMatte ? portraitFallback : nil)
                 }
             } else { try FileManager.default.moveItem(at: pending, to: final) }
             return final.appendingPathComponent("photo.jpg")

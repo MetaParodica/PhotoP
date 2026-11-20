@@ -54,13 +54,13 @@ actor DepthPhotoEditor {
             aperture: aperture, focus: focus, profile: profile, corrections: corrections ?? session.corrections)
     }
     func reanalyse(aperture: Double, focus: CGPoint, profile: DepthLensProfile, corrections: DepthCorrections,
-                   request: ExperimentalPhotoRequest) async throws -> (record: ExperimentalDepthRecord?, hasMatte: Bool) {
+                   request: ExperimentalPhotoRequest) async throws -> (status: String?, hasMatte: Bool) {
         let result = try await CaptureResultProcessor.shared.reanalyse(result: session.result, original: session.original,
             aperture: aperture, focus: focus, profile: profile, corrections: corrections, request: request)
         let updated = try await CaptureResultProcessor.shared.loadSession(result: result, original: session.original)
         try Task.checkCancellation()
         session = updated; corrected = nil
-        return (updated.recipe.experimentalDepth, updated.matte != nil)
+        return (updated.recipe.experimentalSummary, updated.matte != nil)
     }
     private func diagnosticPixels(image: CIImage, field: SoftwareDepthField, focus: CGPoint, aperture: Double,
                                   profile: DepthLensProfile, mode: DepthDiagnostic) throws -> SDRImage {

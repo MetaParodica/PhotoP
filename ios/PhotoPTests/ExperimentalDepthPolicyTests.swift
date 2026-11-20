@@ -31,6 +31,33 @@ final class ExperimentalDepthPolicyTests: XCTestCase {
         defaults.set(Data("{\"version\":99,\"photoSubjectSelection\":true}".utf8), forKey: ExperimentalDepthRuntime.preferenceKey)
         XCTAssertFalse(ExperimentalDepthRuntime(defaults: defaults).current.photoSubjectSelection)
     }
+    func testPortraitIsIndependentAndExistingV1SelectionSettingIsPreserved() throws {
+        let (_, defaults) = try store()
+        defaults.set(Data("{\"version\":1,\"photoSubjectSelection\":true}".utf8), forKey: ExperimentalDepthRuntime.preferenceKey)
+        let upgraded = ExperimentalDepthRuntime(defaults: defaults)
+        XCTAssertTrue(upgraded.current.photoSubjectSelection); XCTAssertFalse(upgraded.current.photoPortraitMatte)
+        upgraded.setPhotoSelection(false); upgraded.setPortraitMatte(true)
+        let request = try XCTUnwrap(upgraded.request(for: .photo))
+        XCTAssertFalse(request.preferences.photoSubjectSelection); XCTAssertTrue(request.preferences.photoPortraitMatte)
+        XCTAssertNil(upgraded.request(for: .live)); XCTAssertNil(upgraded.request(for: .savedVideo))
+        upgraded.setPortraitMatte(false); XCTAssertFalse(request.isCurrent)
+    }
+    func testPortraitLetterboxPreservesSquareAndLandscapeGeometry() throws {
+        let square = try XCTUnwrap(ExperimentalPortraitGeometry(sourceWidth: 512, sourceHeight: 512))
+        XCTAssertEqual(square.width, 288); XCTAssertEqual(square.height, 288); XCTAssertEqual(square.y, 112)
+        let wide = try XCTUnwrap(ExperimentalPortraitGeometry(sourceWidth: 4000, sourceHeight: 2250))
+        XCTAssertEqual(wide.width, 288); XCTAssertEqual(wide.height, 162); XCTAssertEqual(wide.y, 175)
+        XCTAssertNil(ExperimentalPortraitGeometry(sourceWidth: 0, sourceHeight: 10))
+        XCTAssertNil(ExperimentalPortraitGeometry(sourceWidth: 20_000, sourceHeight: 10))
+    }
+    func testNeuralAlphaIsKeptWhileBoundaryColorsAreUnmixed() throws {
+        let width = 17, height = 17
+        let alpha = (0..<(width * height)).map { Float($0 % width) / Float(width - 1) }
+        let colors = alpha.map { SIMD3<Float>(0.2 + $0 * 0.6, 0.3, 0.1) }
+        let result = try XCTUnwrap(DepthMatteCore.refine(alpha: alpha, color: colors, width: width, height: height, preserveAlpha: true))
+        XCTAssertEqual(result.alpha, alpha)
+        XCTAssertTrue(result.foreground.allSatisfy { $0.x.isFinite && $0.y.isFinite && $0.z.isFinite })
+    }
     func testDisablingAndReenablingRejectsOldWorkAtPublication() throws {
         let (runtime, _) = try store(); runtime.setPhotoSelection(true)
         let old = try XCTUnwrap(runtime.request(for: .photo))

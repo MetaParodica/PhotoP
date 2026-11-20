@@ -30,5 +30,36 @@ def check(root=None):
     print("Experimental EdgeTAM photo: 6 pinned model files and 2 rights records intact")
 
 
+def check_portrait():
+    repository = Path(__file__).resolve().parents[1]
+    root = repository / "assets/experimental-matte/ExperimentalPortraitMatte"
+    record = json.loads((repository / "third-party/MatAnyone2Kit/provenance.json").read_text())
+    if record["schemaVersion"] != 1 or record["revision"] != "d85a029870b5149af6aa122cbc13c90db11e5b35":
+        raise ValueError("Portrait model requires a new provenance audit")
+    if record["codeLicense"] != "GPL-3.0" or record["weightsLicense"] != "NTU S-Lab License 1.0":
+        raise ValueError("Changed portrait rights records")
+    actual = {str(path.relative_to(root)) for path in root.rglob("*") if path.is_file()}
+    if len(record["files"]) != 35 or actual != {entry["path"] for entry in record["files"]}:
+        raise ValueError("Changed portrait resource inventory")
+    for entry in record["files"]:
+        path = root / entry["path"]
+        if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
+            raise ValueError("Unsafe portrait resource")
+        data = path.read_bytes()
+        if len(data) != entry["bytes"] or hashlib.sha256(data).hexdigest() != entry["sha256"]:
+            raise ValueError("Changed portrait resource: " + entry["path"])
+    expected = {f"ios/PhotoP/External/MatAnyone2/{name}.swift" for name in ["MatAnyoneCoreML", "MatAnyoneCoreMLEngine", "MemoryBank"]}
+    if len(record["sourceFiles"]) != 3 or {entry["file"] for entry in record["sourceFiles"]} != expected:
+        raise ValueError("Changed portrait source scope")
+    for entry in record["sourceFiles"]:
+        if hashlib.sha256((repository / entry["file"]).read_bytes()).hexdigest() != entry["adaptedFileSHA256"]:
+            raise ValueError("Portrait adapter changes require a provenance update")
+    fingerprint = hashlib.sha256(json.dumps(record["files"], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    if fingerprint != record["resourceFingerprint"]:
+        raise ValueError("Changed portrait fingerprint")
+    print("Experimental MatAnyone2 photo: 35 resource and 3 adapted-source hashes intact")
+
+
 if __name__ == "__main__":
     check()
+    check_portrait()

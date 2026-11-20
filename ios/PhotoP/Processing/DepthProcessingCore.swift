@@ -234,7 +234,7 @@ enum DepthMatteCore {
         guard alpha.isFinite, alpha > 0.05, alpha < 0.98 else { return clamp(image) }
         return clamp((image - background * (1 - alpha)) / alpha)
     }
-    static func refine(alpha: [Float], color: [SIMD3<Float>], width: Int, height: Int) -> DepthMatteSurface? {
+    static func refine(alpha: [Float], color: [SIMD3<Float>], width: Int, height: Int, preserveAlpha: Bool = false) -> DepthMatteSurface? {
         guard width >= 3, height >= 3, width <= 1024, height <= 1024, width * height == alpha.count,
               alpha.count == color.count, alpha.allSatisfy(\.isFinite),
               color.allSatisfy({ $0.x.isFinite && $0.y.isFinite && $0.z.isFinite }) else { return nil }
@@ -251,7 +251,7 @@ enum DepthMatteCore {
                 let w = exp(-distance / 0.025 - Float(dx * dx + dy * dy) / 3)
                 sum += a[j] * w; weight += w
             } }
-            refined[i] = min(1, max(0, a[i] * 0.5 + sum / max(0.0001, weight) * 0.5))
+            if !preserveAlpha { refined[i] = min(1, max(0, a[i] * 0.5 + sum / max(0.0001, weight) * 0.5)) }
             guard refined[i] > 0.03, refined[i] < 0.97 else { continue }
             var bg = SIMD3<Float>.zero, bgWeight: Float = 0
             var fg = SIMD3<Float>.zero, fgWeight: Float = 0
@@ -267,7 +267,7 @@ enum DepthMatteCore {
             } }
             if bgWeight > 0 {
                 bg /= bgWeight; background[i] = bg
-                if fgWeight > 0 {
+                if fgWeight > 0, !preserveAlpha {
                     fg /= fgWeight
                     let line = fg - bg, observed = color[i] - bg
                     let contrast = line.x * line.x + line.y * line.y + line.z * line.z

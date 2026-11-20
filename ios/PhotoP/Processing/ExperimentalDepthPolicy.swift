@@ -7,6 +7,15 @@ enum ExperimentalDepthMode: String, Sendable { case photo, savedVideo, live }
 struct ExperimentalDepthPreferences: Codable, Equatable, Sendable {
     var version = 1
     var photoSubjectSelection = false
+    var photoPortraitMatte = false
+    init() {}
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        version = try values.decode(Int.self, forKey: .version)
+        photoSubjectSelection = try values.decodeIfPresent(Bool.self, forKey: .photoSubjectSelection) ?? false
+        photoPortraitMatte = try values.decodeIfPresent(Bool.self, forKey: .photoPortraitMatte) ?? false
+    }
+    var hasPhotoExperiment: Bool { photoSubjectSelection || photoPortraitMatte }
     var valid: Bool { version == 1 }
 }
 
@@ -34,18 +43,25 @@ final class ExperimentalDepthRuntime: @unchecked Sendable {
             if let data = try? JSONEncoder().encode(preferences) { defaults.set(data, forKey: Self.preferenceKey) }
         }
     }
+    func setPortraitMatte(_ enabled: Bool) {
+        lock.withLock {
+            guard preferences.photoPortraitMatte != enabled else { return }
+            preferences.photoPortraitMatte = enabled; generation &+= 1
+            if let data = try? JSONEncoder().encode(preferences) { defaults.set(data, forKey: Self.preferenceKey) }
+        }
+    }
     func request(for mode: ExperimentalDepthMode) -> ExperimentalPhotoRequest? {
         lock.withLock {
-            guard mode == .photo, preferences.photoSubjectSelection else { return nil }
-            return ExperimentalPhotoRequest(owner: self, generation: generation)
+            guard mode == .photo, preferences.hasPhotoExperiment else { return nil }
+            return ExperimentalPhotoRequest(owner: self, generation: generation, preferences: preferences)
         }
     }
     fileprivate func current(_ epoch: UInt64) -> Bool {
-        lock.withLock { preferences.photoSubjectSelection && generation == epoch }
+        lock.withLock { preferences.hasPhotoExperiment && generation == epoch }
     }
     fileprivate func publish(_ epoch: UInt64, _ action: () throws -> Void) rethrows -> Bool {
         try lock.withLock {
-            guard preferences.photoSubjectSelection, generation == epoch else { return false }
+            guard preferences.hasPhotoExperiment, generation == epoch else { return false }
             try action()
             return true
         }
@@ -55,12 +71,13 @@ final class ExperimentalDepthRuntime: @unchecked Sendable {
 struct ExperimentalPhotoRequest: Sendable {
     fileprivate let owner: ExperimentalDepthRuntime
     fileprivate let generation: UInt64
+    let preferences: ExperimentalDepthPreferences
     var isCurrent: Bool { owner.current(generation) }
     func publishIfCurrent(_ action: () throws -> Void) rethrows -> Bool { try owner.publish(generation, action) }
 }
 
 enum ExperimentalSelectionFailure: String, Codable, Sendable, Error {
-    case unavailable, noSubject, invalidOutput, inferenceFailed, disabled
+    case unavailable, noSubject, invalidOutput, inferenceFailed, disabled, notPerson, ambiguousPerson
     var title: String {
         switch self {
         case .unavailable: return "정밀 선택 모델을 준비하지 못했습니다."
@@ -68,7 +85,47 @@ enum ExperimentalSelectionFailure: String, Codable, Sendable, Error {
         case .invalidOutput: return "정밀 선택 결과를 사용할 수 없습니다."
         case .inferenceFailed: return "정밀 선택 처리를 완료하지 못했습니다."
         case .disabled: return "실험 기능을 꺼 기존 방식으로 처리했습니다."
+        case .notPerson: return "선택한 위치에서 인물을 확인하지 못했습니다."
+        case .ambiguousPerson: return "인물이 겹쳐 경계를 확실하게 구분하지 못했습니다."
         }
+    }
+}
+
+struct ExperimentalPortraitRecord: Codable, Equatable, Sendable {
+    static let modelID = "MatAnyone2Kit-photo-d85a029"
+    var version = 1
+    var model = Self.modelID
+    var revision = "d85a029870b5149af6aa122cbc13c90db11e5b35"
+    var resourceSHA256 = "7e970a2ad50c5bf91b9df155d2bcc54151d496ce3fc5431bfcc3b6877be05b32"
+    var outcome: ExperimentalDepthRecord.Outcome
+    var failure: ExperimentalSelectionFailure?
+    var focusX: Double
+    var focusY: Double
+    var workingWidth = 288
+    var workingHeight = 512
+    var warmupPredictions = 10
+    var seedModel = ExperimentalDepthRecord.modelID
+    var valid: Bool {
+        guard version == 1, model == Self.modelID, revision == "d85a029870b5149af6aa122cbc13c90db11e5b35",
+              resourceSHA256 == "7e970a2ad50c5bf91b9df155d2bcc54151d496ce3fc5431bfcc3b6877be05b32",
+              workingWidth == 288, workingHeight == 512, warmupPredictions == 10,
+              seedModel == ExperimentalDepthRecord.modelID, focusX.isFinite, focusY.isFinite,
+              (0...1).contains(focusX), (0...1).contains(focusY) else { return false }
+        return outcome == .applied ? failure == nil : failure != nil
+    }
+    var title: String {
+        outcome == .applied ? "실험적 사진 인물 경계 개선 적용" : "인물 경계는 기존 방식으로 처리 · " + (failure?.title ?? "")
+    }
+}
+
+struct ExperimentalPortraitGeometry: Equatable, Sendable {
+    let x: Int, y: Int, width: Int, height: Int
+    init?(sourceWidth: Int, sourceHeight: Int) {
+        guard sourceWidth > 0, sourceHeight > 0, sourceWidth <= 16384, sourceHeight <= 16384 else { return nil }
+        let scale = min(288 / Double(sourceWidth), 512 / Double(sourceHeight))
+        width = max(1, min(288, Int((Double(sourceWidth) * scale).rounded())))
+        height = max(1, min(512, Int((Double(sourceHeight) * scale).rounded())))
+        x = (288 - width) / 2; y = (512 - height) / 2
     }
 }
 

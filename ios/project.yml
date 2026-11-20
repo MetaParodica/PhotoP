@@ -48,6 +48,9 @@ targets:
       - path: ../assets/experimental-depth/ExperimentalDepthLegal
         type: folder
         buildPhase: resources
+      - path: ../assets/experimental-matte/ExperimentalPortraitMatte
+        type: folder
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: PhotoP/Info.plist

@@ -9,7 +9,7 @@ struct CaptureReviewView: View {
     @State private var preview: PhotoThumbnailImage?
     @State private var index = 0
     @State private var previewURL: URL?
-    @State private var experimentRecord: ExperimentalDepthRecord?
+    @State private var experimentStatus: String?
 
     private var originals: [URL] {
         let source = model.latestOriginals.isEmpty ? (model.latestOriginal.map { [$0] } ?? []) : model.latestOriginals
@@ -67,8 +67,8 @@ struct CaptureReviewView: View {
             if let current {
                 Text(model.latestFusion == current ? "SDR 노출 융합 · LUT 미적용" : model.latestRenderedSeries.contains(current) ? "효과 적용 결과 · \(model.latestCaptureLook?.displayName ?? "심도")" : "무보정 원본 · 룩 미적용")
                     .font(.caption.weight(.semibold)).accessibilityIdentifier("camera.review.effectStatus")
-                if let experimentRecord {
-                    Text(experimentRecord.title).font(.caption).accessibilityIdentifier("camera.review.experimentStatus")
+                if let experimentStatus {
+                    Text(experimentStatus).font(.caption).accessibilityIdentifier("camera.review.experimentStatus")
                 }
                 if let failure = model.latestFusionFailure { Text("노출 융합 중단 · " + failure).font(.caption).foregroundStyle(.orange) }
                 if let failure = model.latestRenderErrors[current] {
@@ -109,12 +109,14 @@ struct CaptureReviewView: View {
     }
 
     private func load() async {
-        preview = nil; previewURL = nil; experimentRecord = nil
+        preview = nil; previewURL = nil; experimentStatus = nil
         guard let current else { return }
         let task = Task.detached(priority: .userInitiated) { PhotoThumbnail.make(current, maxPixel: 2048) }
         let image = await task.value
-        let record = model.latestRenderedSeries.contains(current) ? try? await CaptureResultProcessor.shared.experimentalRecord(result: current) : nil
+        let status: String?
+        if model.latestRenderedSeries.contains(current) { status = try? await CaptureResultProcessor.shared.experimentalStatus(result: current) }
+        else { status = nil }
         guard !Task.isCancelled, self.current == current else { return }
-        preview = image; previewURL = current; experimentRecord = record
+        preview = image; previewURL = current; experimentStatus = status
     }
 }

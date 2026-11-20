@@ -17,13 +17,17 @@ final class DepthEditorInteractionTests: XCTestCase {
         reveal(toggle, in: app)
         XCTAssertEqual(toggle.value as? String, "0")
         toggle.tap(); XCTAssertEqual(toggle.value as? String, "1")
+        let portrait = app.switches["experiments.depth.portraitMatte"]
+        reveal(portrait, in: app); XCTAssertEqual(portrait.value as? String, "0"); portrait.tap()
         app.terminate(); app.launch(); openExperiments(); reveal(toggle, in: app)
         XCTAssertEqual(toggle.value as? String, "1", "Only the new photo preference should persist")
+        XCTAssertEqual(portrait.value as? String, "1")
         let analyse = app.buttons["editor.depth.reanalyse"]
         reveal(analyse, in: app); analyse.tap()
         let outcome = app.staticTexts["editor.depth.experimentResult"]
         XCTAssertTrue(outcome.waitForExistence(timeout: 90))
         XCTAssertTrue(outcome.label.contains("실험적 사진 정밀 선택 적용") || outcome.label.contains("기존 심도 방식으로 처리"))
+        reveal(portrait, in: app); portrait.tap(); XCTAssertEqual(portrait.value as? String, "0")
         reveal(toggle, in: app); toggle.tap(); XCTAssertEqual(toggle.value as? String, "0")
         XCTAssertTrue(app.sliders["editor.depth.aperture"].isEnabled)
         XCTAssertTrue(app.segmentedControls["editor.depth.profile"].isEnabled)

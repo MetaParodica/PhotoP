@@ -25,7 +25,7 @@ final class ExperimentalPhotoTests: XCTestCase {
         XCTAssertTrue(ExperimentalPhotoSubjectSelector.isBundled)
         let input = try fixture(); input.runtime.setPhotoSelection(true)
         let request = try XCTUnwrap(input.runtime.request(for: .photo))
-        let selected = try ExperimentalPhotoSubjectSelector().refine(original: input.photo,
+        let selected = try ExperimentalPhotoSubjectSelector(diagnostics: { print("PhotoP photo-model diagnostic: " + $0) }).refine(original: input.photo,
             focus: CGPoint(x: 0.45, y: 0.6), request: request)
         XCTAssertEqual(selected.1.outcome, .applied); XCTAssertTrue(selected.1.valid)
         XCTAssertEqual(selected.0.width, 512); XCTAssertEqual(selected.0.height, 512)
@@ -70,5 +70,28 @@ final class ExperimentalPhotoTests: XCTestCase {
         let saved = try await CaptureResultProcessor.shared.loadSession(result: normal, original: input.photo, documents: input.root)
         XCTAssertNil(saved.recipe.experimentalDepth)
         XCTAssertEqual(saved.recipe.depthMapSHA256, baseline.recipe.depthMapSHA256)
+    }
+    func testPhotoOnlyPortraitNeuralMatteIsSavedAndRestoredWithExperimentsOff() async throws {
+        XCTAssertTrue(ExperimentalPortraitMatte.isBundled)
+        let input = try fixture(), original = try Data(contentsOf: input.photo)
+        input.runtime.setPortraitMatte(true)
+        let request = try XCTUnwrap(input.runtime.request(for: .photo))
+        XCTAssertFalse(request.preferences.photoSubjectSelection)
+        let output = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil, aperture: 2.8,
+            focus: CGPoint(x: 0.45, y: 0.6), documents: input.root, depthOverride: input.field, experimentalRequest: request)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: output, original: input.photo, documents: input.root)
+        XCTAssertNil(session.recipe.experimentalDepth)
+        let record = try XCTUnwrap(session.recipe.experimentalPortrait)
+        XCTAssertEqual(record.outcome, .applied, record.failure?.title ?? "")
+        XCTAssertTrue(record.valid); XCTAssertEqual(record.warmupPredictions, 10)
+        let matte = try XCTUnwrap(session.matte)
+        XCTAssertTrue(matte.alpha.allSatisfy { $0.isFinite && (0...1).contains($0) })
+        XCTAssertTrue(matte.alpha.contains { $0 > 0.01 && $0 < 0.99 }, "Neural alpha must retain fractional boundary values")
+        input.runtime.setPortraitMatte(false)
+        let reprocessed = try await CaptureResultProcessor.shared.reprocess(result: output, original: input.photo, aperture: 5.6, documents: input.root)
+        let restored = try await CaptureResultProcessor.shared.loadSession(result: reprocessed, original: input.photo, documents: input.root)
+        XCTAssertEqual(restored.recipe.experimentalPortrait, session.recipe.experimentalPortrait)
+        XCTAssertEqual(restored.recipe.matteSHA256, session.recipe.matteSHA256)
+        XCTAssertEqual(try Data(contentsOf: input.photo), original)
     }
 }
