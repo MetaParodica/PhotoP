@@ -60,7 +60,7 @@ struct VideoDepthEditorView: View {
                             if enabled, events.isEmpty { events = [.init(time: 0,focus: focus,aperture: aperture,profile: profile,selection: tracking ? selection : nil,requiresTracking: tracking)] }
                         }
                         if timeline {
-                            Text(String(format: "현재 %.2f초 / %.2f초",playhead,item.manifest.actual.durationSeconds)).font(.caption)
+                            Text(String(format: "현재 %.2f초 / %.2f초",playhead,item.manifest.actual.durationSeconds)).font(.caption).accessibilityIdentifier("video.depth.timeValue")
                             Slider(value: $playhead,in: 0...max(0.01,item.manifest.actual.durationSeconds-0.05))
                                 .accessibilityIdentifier("video.depth.time")
                             Picker("전환",selection: $interpolation) { ForEach(VideoDepthInterpolation.allCases,id: \.self) { Text($0.title).tag($0) } }.pickerStyle(.menu)
