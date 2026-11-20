@@ -23,6 +23,7 @@ final class DepthPSFMetalTests: XCTestCase {
                 worst = max(worst, abs(rgba[4*i] - expected[i].x), abs(rgba[4*i+1] - expected[i].y), abs(rgba[4*i+2] - expected[i].z))
                 XCTAssertEqual(rgba[4*i+3], 1, accuracy: 0.002)
             }
+            print("PSF MetalCPU maxabs \(profile.rawValue)=\(worst)")
             XCTAssertLessThan(worst, 0.006, profile.rawValue)
         }
     }

@@ -76,7 +76,7 @@ struct VideoDepthEditorView: View {
                                 .disabled(previewing || tracking)
                             Text("슬라이더는 원본의 해당 프레임을 표시합니다. 전환 미리보기는 현재 시점의 심도이며 추적 결과는 전체 처리 후 확인합니다. 대상/렌즈 변경은 해당 시점에서 적용합니다.").font(.caption2)
                         }
-                    }.disabled(progress != nil)
+                    }.disabled(progress != nil || thumbnail == nil)
                 }
                 if let progress {
                     ProgressView(value: progress).accessibilityIdentifier("video.depth.progress")
@@ -108,11 +108,15 @@ struct VideoDepthEditorView: View {
                 } catch { if !Task.isCancelled { message = error.localizedDescription } }
             }
             .task(id: previewRevision) {
-                guard timeline, let parameters = editingIntent.parameters(at: playhead) else { return }
+                let time = playhead, revision = previewRevision, intent = editingIntent
+                guard timeline, let parameters = intent.parameters(at: time) else { return }
                 previewing = true; defer { previewing = false }
                 do {
-                    let pixels = try await framePreview.image(url: item.url,time: playhead,parameters: parameters)
-                    try Task.checkCancellation(); thumbnail = UIImage(cgImage: try pixels.cgImage())
+                    let pixels = try await framePreview.image(url: item.url,time: time,parameters: parameters)
+                    try Task.checkCancellation()
+                    guard playhead == time, previewRevision == revision, editingIntent == intent else { return }
+                    focus = parameters.focus; aperture = parameters.aperture; profile = parameters.profile
+                    thumbnail = UIImage(cgImage: try pixels.cgImage())
                 } catch { if !Task.isCancelled { message = error.localizedDescription } }
             }
             .sheet(item: $selected) { VideoDepthPlaybackView(result: $0, original: item.url) }

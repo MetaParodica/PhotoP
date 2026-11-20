@@ -139,4 +139,18 @@ final class AdvancedDepthTests: XCTestCase {
         XCTAssertEqual(safe.parameters(at: 1),keys[0],"New target must never be anticipated or interpolated")
     }
 
+    func testSpatialPointEnergyStaysWithinDocumentedApproximation() throws {
+        let w = 65
+        var image = [SIMD3<Float>](repeating: .zero,count: w*w)
+        image[16*w+16] = SIMD3(repeating: 8)
+        var worst: Float = 0
+        for profile in DepthLensProfile.allCases {
+            let output = try XCTUnwrap(DepthLensKernel.reference(image,width: w,height: w,radius: 4,profile: profile,aperture: 8))
+            let ratio = output.reduce(Float(0)) { $0+$1.x } / 8
+            worst = max(worst,abs(ratio-1))
+            XCTAssertEqual(ratio,1,accuracy: 0.03,"Spatial gather PSF is an energy-bounded approximation, not exact ray tracing: \(profile.rawValue)")
+        }
+        print("SYNTHETIC spatial point energy worst relative deviation=\(worst)")
+    }
+
 }
