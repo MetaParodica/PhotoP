@@ -242,6 +242,8 @@ enum DepthMatteCore {
         var refined = a, foreground = color, background = color
         for y in 0..<height { for x in 0..<width {
             let i = y * width + x
+            // Reliable seeds are constraints, not samples to blur across an edge.
+            guard a[i] > 0.02, a[i] < 0.98 else { continue }
             var sum: Float = 0, weight: Float = 0
             for dy in -1...1 { for dx in -1...1 {
                 let px = min(width - 1, max(0, x + dx)), py = min(height - 1, max(0, y + dy)), j = py * width + px
@@ -252,15 +254,34 @@ enum DepthMatteCore {
             refined[i] = min(1, max(0, a[i] * 0.5 + sum / max(0.0001, weight) * 0.5))
             guard refined[i] > 0.03, refined[i] < 0.97 else { continue }
             var bg = SIMD3<Float>.zero, bgWeight: Float = 0
+            var fg = SIMD3<Float>.zero, fgWeight: Float = 0
             for dy in -4...4 { for dx in -4...4 {
                 let px = min(width - 1, max(0, x + dx)), py = min(height - 1, max(0, y + dy)), j = py * width + px
                 if a[j] < 0.08 {
                     let w = 1 / Float(1 + dx * dx + dy * dy)
                     bg += color[j] * w; bgWeight += w
+                } else if a[j] > 0.98 {
+                    let w = 1 / Float(1 + dx * dx + dy * dy)
+                    fg += color[j] * w; fgWeight += w
                 }
             } }
             if bgWeight > 0 {
                 bg /= bgWeight; background[i] = bg
+                if fgWeight > 0 {
+                    fg /= fgWeight
+                    let line = fg - bg, observed = color[i] - bg
+                    let contrast = line.x * line.x + line.y * line.y + line.z * line.z
+                    if contrast > 0.04 {
+                        let candidate = min(1, max(0, (observed.x * line.x + observed.y * line.y + observed.z * line.z) / contrast))
+                        let residual = observed - line * candidate
+                        let error = residual.x * residual.x + residual.y * residual.y + residual.z * residual.z
+                        // Only an observed foreground/background color line supplies
+                        // evidence. Ambiguous glass/reflections keep the input mask.
+                        let confidence = max(0, 1 - error / 0.015) * min(1, contrast / 0.2)
+                        let correction = min(0.35, max(-0.35, candidate - refined[i]))
+                        refined[i] = min(1, max(0, refined[i] + correction * confidence * 0.85))
+                    }
+                }
                 foreground[i] = color[i] * 0.25 + unmix(image: color[i], background: bg, alpha: refined[i]) * 0.75
             }
         } }
@@ -273,11 +294,13 @@ struct DepthTemporalState: Sendable {
     private var luma: [Float] = []
     private var time = -Double.infinity
     private var generation: UInt64 = 0
-    mutating func reset() { field = nil; luma = []; time = -Double.infinity }
+    private var historyRegistered = false
+    mutating func reset() { field = nil; luma = []; time = -Double.infinity; historyRegistered = false }
     // Backward pixel flow: each CURRENT pixel points into the PREVIOUS image.
     // Out-of-view/newly occluded or photometrically inconsistent pixels get no
     // history. Warping never creates metric information or extends its age.
     mutating func alignHistory(backwardFlow: [SIMD2<Float>], currentLuma: [Float]) -> Bool {
+        historyRegistered = false
         guard let previous = field, backwardFlow.count == previous.inverseDepth.count,
               luma.count == backwardFlow.count, currentLuma.count == luma.count,
               currentLuma.allSatisfy(\.isFinite) else { return false }
@@ -298,12 +321,13 @@ struct DepthTemporalState: Sendable {
         }
         guard accepted * 3 >= data.count * 2,
               let aligned = SoftwareDepthField(width: w, height: h, inverseDepth: data, units: previous.units) else { return false }
-        field = aligned; luma = alignedLuma
+        field = aligned; luma = alignedLuma; historyRegistered = true
         return true
     }
-    mutating func update(_ next: SoftwareDepthField, luma nextLuma: [Float], time nextTime: Double, generation: UInt64) -> SoftwareDepthField? {
+    mutating func update(_ next: SoftwareDepthField, luma nextLuma: [Float], time nextTime: Double, generation: UInt64, requireRegistration: Bool = false) -> SoftwareDepthField? {
         guard nextTime.isFinite, nextLuma.count == next.inverseDepth.count, nextLuma.allSatisfy(\.isFinite) else { return nil }
-        if generation == self.generation, let previous = field, previous.width == next.width, previous.height == next.height,
+        defer { historyRegistered = false }
+        if (!requireRegistration || historyRegistered), generation == self.generation, let previous = field, previous.width == next.width, previous.height == next.height,
            previous.units == next.units, nextTime >= time, nextTime - time <= 1, luma.count == nextLuma.count {
             var old = previous.inverseDepth
             if next.units == .relativeInverse {

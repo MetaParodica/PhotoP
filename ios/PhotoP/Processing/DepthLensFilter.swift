@@ -25,8 +25,8 @@ final class DepthLensFilter {
         let arguments: [String: Any] = ["radius": radius, "catEye": profile.catEye,
             "extent": CIVector(cgRect: image.extent),
             "taps": taps.map { SIMD4<Float>(Float($0.x), Float($0.y), Float($0.weight), 0) }]
-        guard let output = try DepthPSFProcessor.apply(withExtent: image.extent,
-            inputs: [image.clampedToExtent()], arguments: arguments) else { throw CameraError.configuration }
+        let output = try DepthPSFProcessor.apply(withExtent: image.extent,
+            inputs: [image.clampedToExtent()], arguments: arguments)
         return output.cropped(to: image.extent)
     }
 }

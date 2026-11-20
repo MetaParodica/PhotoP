@@ -14,6 +14,8 @@ struct VideoDepthRecipe: Codable, Sendable {
     let processedFrames: Int
     let fallbackFrames: Int
     let aiProcessing: String
+    var temporalRegisteredFrames: Int? = nil
+    var temporalRejectedHistoryFrames: Int? = nil
 }
 struct VideoDepthResult: Identifiable, Sendable {
     let id: UUID
@@ -104,6 +106,8 @@ actor VideoDepthProcessor {
         let outputSpace = CGColorSpace(name: CGColorSpace.itur_709)!
         let estimator = ExternalDepthEstimator(), matte = DepthMatteRefiner(), engine = NaturalDepthEngine()
         let tracker = SubjectTrackingVisionEngine()
+        let stabilizer = VideoDepthStabilizer()
+        var previousSelection: UUID?
         var videoSample = videoOutput.copyNextSampleBuffer(), audioSample = audioOutput?.copyNextSampleBuffer()
         var frames = 0, applied = 0, fallback = 0
         var lastPTS = -Double.infinity
@@ -140,12 +144,16 @@ actor VideoDepthProcessor {
                     }
                     if trusted {
                         do {
-                            let field = try estimator.estimate(image)
-                            let refined = try? matte.refine(color: image, focus: focus, embedded: nil, maximumDimension: intent.quality == .high ? 512 : 256)
+                            let estimate = try estimator.estimate(image)
+                            if previousSelection != parameters.selection?.id { stabilizer.reset() }
+                            previousSelection = parameters.selection?.id
+                            let field = try stabilizer.update(image: image, field: estimate, time: seconds)
+                            let refined = try? matte.refine(color: image, focus: focus, embedded: nil, maximumDimension: 256)
                             result = try engine.renderField(color: image, field: field, aperture: parameters.aperture, focus: focus,
                                 profile: parameters.profile, matte: refined, source: "video-ai", qualityPairs: intent.quality.pairs).image
-                        } catch { result = nil } // Invalid/flat field: retain original frame, count and disclose.
-                    } else { result = nil }
+                        } catch is CancellationError { throw CancellationError() }
+                        catch { stabilizer.reset(); result = nil } // Invalid/flat field: retain original frame, count and disclose.
+                    } else { stabilizer.reset(); result = nil }
                 }
                 context.render(result ?? image, to: renderedBuffer, bounds: CGRect(x: 0, y: 0, width: info.displayWidth, height: info.displayHeight), colorSpace: outputSpace)
                 return result != nil
@@ -167,9 +175,11 @@ actor VideoDepthProcessor {
         let hashAfter = try VideoStore.hashFile(original.url)
         guard hashBefore == hashAfter else { throw ImageEditingError.invalid("처리 중 원본이 변경되어 결과를 게시하지 않았습니다.") }
         let digest = try VideoStore.hashFile(output)
-        let recipe = VideoDepthRecipe(originalSHA256: hashBefore.sha256, resultSHA256: digest.sha256, resultBytes: digest.bytes,
+        var recipe = VideoDepthRecipe(originalSHA256: hashBefore.sha256, resultSHA256: digest.sha256, resultBytes: digest.bytes,
             intent: intent, original: info, result: actual, frames: frames, processedFrames: applied, fallbackFrames: fallback,
             aiProcessing: "Depth Anything V2 Small / NaturalDepthEngine / Vision selected-target tracking")
+        recipe.temporalRegisteredFrames = stabilizer.registeredFrames
+        recipe.temporalRejectedHistoryFrames = stabilizer.rejectedHistoryFrames
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try encoder.encode(recipe).write(to: pending.appendingPathComponent("recipe.json"), options: .atomic)
         let final = root.appendingPathComponent(id.uuidString, isDirectory: true)

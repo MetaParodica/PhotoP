@@ -90,7 +90,7 @@ final class LiveDepthAnalyzer: @unchecked Sendable {
                     let accepted = lock.withLock { () -> Bool in
                         guard running, settings.enabled, generation == epoch else { return false }
                         if let flow { _ = temporal.alignHistory(backwardFlow: flow, currentLuma: luma) }
-                        _ = temporal.update(field, luma: luma, time: now, generation: epoch)
+                        _ = temporal.update(field, luma: luma, time: now, generation: epoch, requireRegistration: true)
                         if settings.focus == config.focus { matte = refined }
                         size = CGSize(width: w, height: h)
                         lastError = nil

@@ -104,8 +104,7 @@ struct DepthResultEditorView: View {
                     Group {
                         Slider(value: $aperture, in: 1.4...16)
                             .accessibilityIdentifier("editor.depth.aperture")
-                        DepthLensPicker(selection: $profile)
-                            .accessibilityIdentifier("editor.depth.profile")
+                        DepthLensPicker(selection: $profile, identifier: "editor.depth.profile")
                         Toggle("원본 비교", isOn: $compare).accessibilityIdentifier("editor.depth.compare")
                     }.disabled(saving)
                     if rendering { ProgressView("미리보기 갱신 중") }
