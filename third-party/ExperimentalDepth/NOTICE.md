@@ -15,7 +15,12 @@ policy, saved recipe handling and rendering integration are implemented here.
   it is not asserted to have generated the release byte for byte.
 - `EdgeTAMVideoImageEncoder.mlpackage` and `EdgeTAMVideoInitializer.mlpackage`
   are renamed to `ExperimentalPhotoEncoder.mlpackage` and
-  `ExperimentalPhotoInitializer.mlpackage`. Their contents are unchanged.
+  `ExperimentalPhotoInitializer.mlpackage`. Encoder and all weight bytes are unchanged.
+  PhotoP exposes the initializer’s unchanged FP32 `upscaled_embedding`/`hyper_in`
+  tensors and reconstructs the same final linear mask product with native vDSP.
+  The release returned zero masks on the tested Core ML CPU runtime. Original
+  and derived specification hashes, reproducible script and method are recorded
+  in the manifest; this is an output-graph adaptation, not retrained weights.
 - The original Apache-2.0 LICENSE and NOTICE, with PhotoP's redistribution scope,
   are retained under
   [ExperimentalDepthLegal](../../assets/experimental-depth/ExperimentalDepthLegal/NOTICE).
@@ -24,8 +29,9 @@ policy, saved recipe handling and rendering integration are implemented here.
   Xcode compiles the ML Program models for the iOS18+ app; native runtime checks
   are separate from source hash checks. No manufacturer endorsement is claimed.
 
-No memory encoder, propagator, MatAnyone2 weights or new streaming depth model is
-included in this change. Existing Depth Anything V2/Vision features retain their
+No memory encoder, propagator or new streaming depth model is included in this
+photo-selection resource group. MatAnyone2 is recorded separately under
+`third-party/MatAnyone2Kit` and `assets/experimental-matte`. Existing Depth Anything V2/Vision features retain their
 own implementation and records.
 
 ## Reference photograph for tests

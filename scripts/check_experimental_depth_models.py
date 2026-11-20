@@ -13,6 +13,12 @@ def check(root=None):
     manifest = json.loads((root / "ExperimentalDepthLegal/manifest.json").read_text())
     if manifest["schemaVersion"] != 1 or manifest["archiveSHA256"] != ARCHIVE or manifest["license"] != "Apache-2.0":
         raise ValueError("Experimental model requires a new provenance audit")
+    derived = manifest["derivation"]
+    if derived["sourceSpecificationSHA256"] != "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c" or derived["derivedSpecificationSHA256"] != "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a":
+        raise ValueError("Changed decoder output adaptation")
+    script = Path(__file__).resolve().parent / "derive_experimental_photo_head.py"
+    if derived["script"] != "scripts/derive_experimental_photo_head.py" or hashlib.sha256(script.read_bytes()).hexdigest() != derived["scriptSHA256"]:
+        raise ValueError("Changed decoder derivation script")
     expected = {f"{package}/{suffix}" for package in PACKAGES for suffix in SUFFIXES}
     records = manifest["files"]
     if len(records) != 6 or {entry["path"] for entry in records} != expected:

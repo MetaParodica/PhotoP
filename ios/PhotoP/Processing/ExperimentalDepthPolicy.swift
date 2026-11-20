@@ -134,11 +134,13 @@ struct ExperimentalDepthRecord: Codable, Equatable, Sendable {
     enum Outcome: String, Codable, Sendable { case applied, fallback }
     static let modelID = "EdgeTAM-photo-jutsu-v1.2"
     static let modelFingerprint = "9c35c1b6667a0dd80b093bbc20747628f304133ad2a531de049307beb3ae1401"
+    static let decoderGraphFingerprint = "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a"
     var version = 1
     var outcome: Outcome
     var failure: ExperimentalSelectionFailure?
     var model = Self.modelID
     var archiveSHA256 = Self.modelFingerprint
+    var decoderGraphSHA256: String? = Self.decoderGraphFingerprint
     var focusX: Double
     var focusY: Double
     var analysisWidth = 256
@@ -147,6 +149,7 @@ struct ExperimentalDepthRecord: Codable, Equatable, Sendable {
     var objectScore: Float?
     var valid: Bool {
         version == 1 && model == Self.modelID && archiveSHA256 == Self.modelFingerprint &&
+        (decoderGraphSHA256 == nil || decoderGraphSHA256 == Self.decoderGraphFingerprint) &&
         focusX.isFinite && focusY.isFinite && (0...1).contains(focusX) && (0...1).contains(focusY) &&
         analysisWidth == 256 && analysisHeight == 256 &&
         (predictedIoU.map { $0.isFinite && (0...1).contains($0) } ?? true) &&

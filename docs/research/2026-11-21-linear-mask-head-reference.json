@@ -1,0 +1,22 @@
+{
+  "runtime": "PyTorch2.7 CPU and NumPy linear head; not CoreML execution",
+  "maxAbsoluteClampedLogitDifference": 0.0,
+  "embeddingRange": [
+    -0.16997122764587402,
+    0.9854839444160461
+  ],
+  "coefficientRange": [
+    -16.570388793945312,
+    15.008903503417969
+  ],
+  "candidateArea": [
+    21377,
+    3807,
+    1841
+  ],
+  "candidateIoU": [
+    0.08556709438562393,
+    0.6695732474327087,
+    0.9019084572792053
+  ]
+}

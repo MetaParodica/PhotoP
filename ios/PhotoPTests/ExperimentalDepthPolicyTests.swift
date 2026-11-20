@@ -88,6 +88,8 @@ final class ExperimentalDepthPolicyTests: XCTestCase {
         record.failure = nil; record.predictedIoU = 0.9; record.objectScore = 5
         XCTAssertTrue(record.valid)
         XCTAssertEqual(record, try JSONDecoder().decode(ExperimentalDepthRecord.self, from: JSONEncoder().encode(record)))
+        record.decoderGraphSHA256 = "unknown"; XCTAssertFalse(record.valid)
+        record.decoderGraphSHA256 = ExperimentalDepthRecord.decoderGraphFingerprint
         record.archiveSHA256 = "unknown"; XCTAssertFalse(record.valid)
     }
 }

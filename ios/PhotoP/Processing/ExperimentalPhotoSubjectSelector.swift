@@ -2,6 +2,7 @@
 @preconcurrency import CoreImage
 import CoreVideo
 import Foundation
+import Accelerate
 
 /// Photo-only initializer of the pinned EdgeTAM conversion. No temporal memory,
 /// autofocus, live/video hooks or state shared with the baseline depth estimator.
@@ -67,36 +68,29 @@ final class ExperimentalPhotoSubjectSelector {
             }
             let result = try models.1.prediction(from: MLDictionaryFeatureProvider(dictionary: arguments))
             try check(request)
-            guard let logits = result.featureValue(for: "low_res_mask")?.multiArrayValue,
-                  logits.shape.map(\.intValue) == [1, 1, 256, 256],
-                  let iou = result.featureValue(for: "best_iou")?.multiArrayValue,
+            guard let embeddings = result.featureValue(for: "upscaled_embedding")?.multiArrayValue,
+                  let coefficients = result.featureValue(for: "hyper_in")?.multiArrayValue,
+                  let qualities = result.featureValue(for: "candidate_ious")?.multiArrayValue,
+                  qualities.shape.map(\.intValue) == [1, 3],
                   let score = result.featureValue(for: "object_score")?.multiArrayValue else { throw ExperimentalSelectionFailure.invalidOutput }
-            var predicted = Self.number(iou, index: 0)
+            let dense = try Self.floats(embeddings, shape: [1, 32, 256, 256])
+            let weights = try Self.floats(coefficients, shape: [1, 4, 32])
+            let candidates = try Self.reconstructMasks(embeddings: dense, coefficients: weights)
             let visible = Self.number(score, index: 0)
-            var values = Self.mask(logits, channel: 0)
-            if diagnostics != nil {
-                let px = min(255, Int(focus.x * 256)), py = min(255, Int(focus.y * 256))
-                diagnostics?("mask q=\(predicted) score=\(visible) dtype=\(logits.dataType.rawValue) strides=\(logits.strides) point=\(values[py * 256 + px]) area=\(values.filter { $0 > 0 }.count) finite=\(values.allSatisfy(\.isFinite))")
-            }
-            if let candidates = result.featureValue(for: "candidate_masks")?.multiArrayValue,
-               candidates.shape.map(\.intValue) == [1, 3, 256, 256],
-               let qualities = result.featureValue(for: "candidate_ious")?.multiArrayValue {
-                var largest = 0
-                var bestQuality: Float = -.infinity
-                for candidate in 0..<3 {
-                    let trial = Self.mask(candidates, channel: candidate)
-                    let quality = qualities[[0, NSNumber(value: candidate)]].floatValue
-                    let area = trial.reduce(0) { $0 + ($1 > 0 ? 1 : 0) }
-                    diagnostics?("candidate \(candidate) q=\(quality) area=\(area) min=\(trial.min() ?? .nan) max=\(trial.max() ?? .nan)")
-                    // Select the best candidate explicitly, preserving SAM2's first
-                    // maximum rule without depending on the conversion's reduced
-                    // mask output. All candidates still pass the same quality gate.
-                    if !preferWholeSubject, quality > bestQuality {
-                        bestQuality = quality; values = trial; predicted = quality
-                    } else if preferWholeSubject, area > largest, ExperimentalPhotoMaskPolicy.alpha(logits: trial, width: 256, height: 256,
-                        x: Double(focus.x), y: Double(focus.y), predictedIoU: quality, objectScore: visible) != nil {
-                        values = trial; predicted = quality; largest = area
-                    }
+            diagnostics?("linear head embedding=\(dense.min() ?? .nan)...\(dense.max() ?? .nan) coefficients=\(weights.min() ?? .nan)...\(weights.max() ?? .nan)")
+            var predicted: Float = -.infinity
+            var values = candidates[0]
+            var largest = 0
+            for candidate in 0..<3 {
+                let trial = candidates[candidate]
+                let quality = Self.number(qualities, index: candidate * qualities.strides[1].intValue)
+                let area = trial.reduce(0) { $0 + ($1 > 0 ? 1 : 0) }
+                diagnostics?("candidate \(candidate) q=\(quality) area=\(area) min=\(trial.min() ?? .nan) max=\(trial.max() ?? .nan)")
+                if !preferWholeSubject, quality > predicted {
+                    values = trial; predicted = quality
+                } else if preferWholeSubject, area > largest, ExperimentalPhotoMaskPolicy.alpha(logits: trial, width: 256, height: 256,
+                    x: Double(focus.x), y: Double(focus.y), predictedIoU: quality, objectScore: visible) != nil {
+                    values = trial; predicted = quality; largest = area
                 }
             }
             guard let alpha = ExperimentalPhotoMaskPolicy.alpha(logits: values, width: 256, height: 256,
@@ -134,13 +128,40 @@ final class ExperimentalPhotoSubjectSelector {
         default: return .nan
         }
     }
-    private static func mask(_ values: MLMultiArray, channel: Int) -> [Float] {
-        // Core ML owns prediction storage, including its strides/materialization.
-        // Use logical coordinates rather than retaining offsets across raw-pointer
-        // access. These photo-only 256² outputs do not run on the live-frame path.
-        (0..<(256 * 256)).map {
-            values[[0, NSNumber(value: channel), NSNumber(value: $0 / 256), NSNumber(value: $0 % 256)]].floatValue
+    private static func floats(_ values: MLMultiArray, shape: [Int]) throws -> [Float] {
+        guard values.dataType == .float32, values.shape.map(\.intValue) == shape else { throw ExperimentalSelectionFailure.invalidOutput }
+        return try values.withUnsafeBytes { raw in
+            let strides = values.strides.map(\.intValue)
+            let last = zip(shape, strides).reduce(0) { $0 + ($1.0 - 1) * $1.1 }
+            guard strides.allSatisfy({ $0 >= 0 }), last >= 0, last < raw.count / 4 else { throw ExperimentalSelectionFailure.invalidOutput }
+            let pointer = raw.bindMemory(to: Float.self)
+            var contiguous = true, step = 1
+            for d in shape.indices.reversed() { if shape[d] > 1 && strides[d] != step { contiguous = false }; step *= shape[d] }
+            if contiguous { return Array(pointer.prefix(step)) }
+            return (0..<step).map { index in
+                var remaining = index, offset = 0
+                for d in shape.indices.reversed() { offset += (remaining % shape[d]) * strides[d]; remaining /= shape[d] }
+                return pointer[offset]
+            }
         }
+    }
+    /// SAM2's unchanged final linear head: [3,32] × [32,pixels]. The
+    /// single-mask token (row zero) is intentionally excluded for one-point SAM2.
+    /// Reconstructing FP32 logits avoids the released model's zero mask output
+    /// on the tested Core ML CPU runtime; no learned parameters are replaced.
+    static func reconstructMasks(embeddings: [Float], coefficients: [Float], spatialCount: Int = 256 * 256) throws -> [[Float]] {
+        guard spatialCount > 0, spatialCount <= 256 * 256, embeddings.count == 32 * spatialCount,
+              coefficients.count == 4 * 32, embeddings.allSatisfy(\.isFinite), coefficients.allSatisfy(\.isFinite) else {
+            throw ExperimentalSelectionFailure.invalidOutput
+        }
+        var output = [Float](repeating: 0, count: 3 * spatialCount)
+        coefficients.withUnsafeBufferPointer { c in embeddings.withUnsafeBufferPointer { e in
+            output.withUnsafeMutableBufferPointer { out in
+                vDSP_mmul(c.baseAddress!.advanced(by: 32), 1, e.baseAddress!, 1, out.baseAddress!, 1,
+                          3, vDSP_Length(spatialCount), 32)
+            }
+        } }
+        return (0..<3).map { Array(output[($0 * spatialCount)..<(($0 + 1) * spatialCount)]) }
     }
     private func load() throws -> (MLModel, MLModel) {
         if let encoder, let initializer { return (encoder, initializer) }

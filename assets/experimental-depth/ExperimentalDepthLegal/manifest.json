@@ -14,7 +14,7 @@
   "specificationVersion": 9,
   "precision": {
     "encoder": "float16",
-    "initializer": "float32 compute, float16 IO"
+    "initializer": "float32 compute; float16 feature inputs/scalar outputs, exposed linear mask head float32"
   },
   "input": {
     "image": 1024,
@@ -28,7 +28,8 @@
       256,
       256
     ],
-    "type": "segmentation logits, not physical alpha or metric depth"
+    "type": "segmentation logits, not physical alpha or metric depth",
+    "maskHead": "FP32 learned embeddings/coefficients; native unchanged linear product before quality/point/area gates"
   },
   "runtimeParityVerified": false,
   "physicalDeviceVerified": false,
@@ -50,8 +51,8 @@
     },
     {
       "path": "ExperimentalPhotoInitializer.mlpackage/Data/com.apple.CoreML/model.mlmodel",
-      "bytes": 143749,
-      "sha256": "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c"
+      "bytes": 143864,
+      "sha256": "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a"
     },
     {
       "path": "ExperimentalPhotoInitializer.mlpackage/Data/com.apple.CoreML/weights/weight.bin",
@@ -71,7 +72,14 @@
     },
     {
       "path": "ExperimentalDepthLegal/NOTICE",
-      "sha256": "a3939384772e2737c140de5e11980ce8bc57b31c19b4cf17fe0e1b672b92a6a2"
+      "sha256": "6162154eb11161c6512320190ad03869f2e63d72c3a4c61b06f5de816c3c6e70"
     }
-  ]
+  ],
+  "derivation": {
+    "method": "Expose unchanged FP32 upscaled_embedding [1,32,256,256] and hyper_in [1,4,32]; reconstruct last linear mask head with native vDSP; no weight changes",
+    "sourceSpecificationSHA256": "7d128934363e8f5771ff4ac1f90f2ea4fedc9b5e99c28e075199aee02381ef9c",
+    "derivedSpecificationSHA256": "2b53c9007612dbfff8606de547ee180287700ea1c0b3c109e592d94fbae8d15a",
+    "script": "scripts/derive_experimental_photo_head.py",
+    "scriptSHA256": "d4b3fd3eae5705288d4b7b030fe6feb8f6e2ea125ec6770225c2b75c277015ea"
+  }
 }

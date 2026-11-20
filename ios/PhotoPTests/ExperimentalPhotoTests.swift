@@ -4,6 +4,20 @@ import ImageIO
 @testable import PhotoP
 
 final class ExperimentalPhotoTests: XCTestCase {
+    func testLinearMaskHeadUsesMultimaskTokensAndChannelMajorPixels() throws {
+        var embeddings = [Float](repeating: 0, count: 32 * 2)
+        embeddings[0] = 2; embeddings[1] = 3
+        embeddings[2] = 5; embeddings[3] = 7
+        embeddings[4] = -1; embeddings[5] = 4
+        var coefficients = [Float](repeating: 0, count: 4 * 32)
+        coefficients[0] = 999 // single-mask token must be excluded
+        coefficients[32] = 1; coefficients[65] = 2
+        coefficients[96] = -1; coefficients[98] = 0.5
+        let result = try ExperimentalPhotoSubjectSelector.reconstructMasks(embeddings: embeddings, coefficients: coefficients, spatialCount: 2)
+        XCTAssertEqual(result, [[2, 3], [10, 14], [-2.5, -1]])
+        embeddings[0] = .nan
+        XCTAssertThrowsError(try ExperimentalPhotoSubjectSelector.reconstructMasks(embeddings: embeddings, coefficients: coefficients, spatialCount: 2))
+    }
     private func fixture() throws -> (root: URL, photo: URL, runtime: ExperimentalDepthRuntime, field: SoftwareDepthField) {
         let suite = "photop.tests.photo-experiment." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
