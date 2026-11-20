@@ -13,6 +13,8 @@ final class DepthEditorInteractionTests: XCTestCase {
             reveal(lab, in: app); lab.tap()
         }
         openExperiments()
+        let originalValue = app.staticTexts["editor.depth.apertureValue"].label
+        let originalProfile = app.segmentedControls["editor.depth.profile"].buttons.matching(NSPredicate(format: "isSelected == true")).firstMatch.label
         let toggle = app.switches["experiments.depth.photoSelection"]
         reveal(toggle, in: app)
         XCTAssertEqual(toggle.value as? String, "0")
@@ -32,6 +34,8 @@ final class DepthEditorInteractionTests: XCTestCase {
         XCTAssertTrue(app.sliders["editor.depth.aperture"].isEnabled)
         XCTAssertTrue(app.segmentedControls["editor.depth.profile"].isEnabled)
         XCTAssertTrue(app.switches["editor.depth.brush"].isEnabled)
+        XCTAssertEqual(app.staticTexts["editor.depth.apertureValue"].label, originalValue)
+        XCTAssertTrue(app.segmentedControls["editor.depth.profile"].buttons[originalProfile].isSelected)
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "experimental-photo-selection-result"; attachment.lifetime = .keepAlways; add(attachment)
     }

@@ -5,7 +5,7 @@
   "scope": "single-photo selected-person alpha; static first-frame refinement, no live/video integration",
   "codeLicense": "GPL-3.0",
   "weightsLicense": "NTU S-Lab License 1.0",
-  "changes": "Three Swift files copied with provenance header; cooperative Task cancellation checks added to seed/step. Model files unchanged. Photo adaptation and selected-person policy are PhotoP code.",
+  "changes": "Three Swift files copied with provenance header. Seed/step add cooperative Task cancellation; seed accepts a photo-lease cancellation check and drains temporary Objective-C outputs per static refinement pass. Numeric model/state algorithms and compiled resources are unchanged. Photo/person/geometry adapters are PhotoP code.",
   "files": [
     {
       "path": "GPL-SWIFT-LICENSE",
@@ -192,7 +192,7 @@
     {
       "file": "ios/PhotoP/External/MatAnyone2/MatAnyoneCoreMLEngine.swift",
       "upstreamFileSHA256": "78edc52d3b6ef70c3d56d1da468208d25bfe41c2aa34755cf42bca7f7e2a39b4",
-      "adaptedFileSHA256": "d7fcea2949dd2803e81c7c131ea547350ec427d69d191078a0fd81fd6bb5b0a5"
+      "adaptedFileSHA256": "f4e888a1352cb89a3a2a7b746ba6dc19eb03d805b9b753ddf95fb596556f54b8"
     },
     {
       "file": "ios/PhotoP/External/MatAnyone2/MemoryBank.swift",

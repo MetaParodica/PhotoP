@@ -71,7 +71,8 @@ final class ExperimentalPortraitMatte {
             } }
             try check(request)
             let engine = MatAnyoneCoreMLEngine(model: model)
-            let alpha = try engine.seed(image: .init(data: rgb, shape: [1, 3, 512, 288]), seedMask: mask, warmup: 10)
+            let alpha = try engine.seed(image: .init(data: rgb, shape: [1, 3, 512, 288]), seedMask: mask, warmup: 10,
+                                       checkCancellation: { try self.check(request) })
             try check(request)
             guard alpha.count == count, alpha.allSatisfy({ $0.isFinite && (-0.001...1.001).contains($0) }) else {
                 throw ExperimentalSelectionFailure.invalidOutput

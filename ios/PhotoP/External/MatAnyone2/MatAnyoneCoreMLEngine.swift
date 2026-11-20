@@ -79,13 +79,16 @@ public final class MatAnyoneCoreMLEngine {
     // ------------------------------------------------------------------- public
     /// image: [1,3,H,W] RGB in [0,1]. seedMask: [H*W] in [0,1]. Returns refined alpha [H*W].
     @discardableResult
-    public func seed(image: Tensor, seedMask: [Float], warmup: Int = 10) throws -> [Float] {
+    public func seed(image: Tensor, seedMask: [Float], warmup: Int = 10,
+                     checkCancellation: (() throws -> Void)? = nil) throws -> [Float] {
         try Task.checkCancellation()
-        _ = try step(image, seedMask: seedMask)
-        var alpha = try step(image, firstFramePred: true)!
+        try checkCancellation?()
+        _ = try autoreleasepool { try step(image, seedMask: seedMask) }
+        var alpha = try autoreleasepool { try step(image, firstFramePred: true)! }
         for _ in 0..<max(0, warmup - 1) {
             try Task.checkCancellation()
-            alpha = try step(image, firstFramePred: true)!
+            try checkCancellation?()
+            alpha = try autoreleasepool { try step(image, firstFramePred: true)! }
         }
         return alpha
     }
