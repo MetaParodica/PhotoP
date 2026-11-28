@@ -1,0 +1,1052 @@
+{
+  "observedAtUTC": "2026-11-24T07:43:21.662028+00:00",
+  "scope": "Direct official DocC/runner image and upstream source review; no iOS build, model inference or phone benchmark",
+  "sources": [
+    {
+      "id": "compute-plan",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan-1w21n.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/coreml/mlcomputeplan-1w21n.json",
+      "bytes": 18757,
+      "sha256": "ef2f0361aa8135bd5243e47447af0eb60564fe2b0b78c3242bc067df39393227",
+      "status": "fetched",
+      "title": "MLComputePlan",
+      "platforms": [
+        {
+          "introducedAt": "17.4",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.4",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "17.4",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.4",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.4",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "10.4",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "A class representing the compute plan of a model."
+    },
+    {
+      "id": "model-configuration",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreml/mlmodelconfiguration.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/coreml/mlmodelconfiguration.json",
+      "bytes": 35313,
+      "sha256": "1d7d90b7e28ee072fab6268be3dfd103c9be4326cdee8d479b04b12abd0dfe78",
+      "status": "fetched",
+      "title": "MLModelConfiguration",
+      "platforms": [
+        {
+          "introducedAt": "12.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "12.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.14",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "12.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "5.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "The settings for creating or updating a machine learning model."
+    },
+    {
+      "id": "vision-instance",
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vngeneratepersoninstancemaskrequest.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/vision/vngeneratepersoninstancemaskrequest.json",
+      "bytes": 23299,
+      "sha256": "62e9793bcb94ebbbfbbaf6f5627ca4aacf62e6578398c48631dc841dcfa9b626",
+      "status": "fetched",
+      "title": "VNGeneratePersonInstanceMaskRequest",
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "abstract": "An object that produces a mask of individual people it finds in the input image."
+    },
+    {
+      "id": "vision-track",
+      "url": "https://developer.apple.com/tutorials/data/documentation/vision/vntrackobjectrequest.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/vision/vntrackobjectrequest.json",
+      "bytes": 23307,
+      "sha256": "96edaa51324993e09e65665804ebc3cfc642632ba43de4c95fd1ecd682e9b4a5",
+      "status": "fetched",
+      "title": "VNTrackObjectRequest",
+      "platforms": [
+        {
+          "introducedAt": "11.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.13",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "11.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "abstract": "An image-analysis request that tracks the movement of a previously identified object across multiple images or video frames."
+    },
+    {
+      "id": "cinematic-support",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/iscinematicvideocapturesupported.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/iscinematicvideocapturesupported.json",
+      "bytes": 21475,
+      "sha256": "8c73bc453694ea089726027c45349b7aa9dec507202af9ad2dae2b570da45f38",
+      "status": "fetched",
+      "title": "isCinematicVideoCaptureSupported",
+      "platforms": [
+        {
+          "introducedAt": "26.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "26.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "Indicates whether the format supports Cinematic Video capture."
+    },
+    {
+      "id": "cinematic-session",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnrenderingsession.json",
+      "status": "failed",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "core-ai",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/coreai.json",
+      "bytes": 19593,
+      "sha256": "40aaa6329b67dbff4d57dd5e37941564440d45c8e6f323edbcc9f9f712885dbb",
+      "status": "fetched",
+      "title": "Core AI",
+      "platforms": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "Run AI models in your app on Apple silicon."
+    },
+    {
+      "id": "core-ai-integration",
+      "url": "https://developer.apple.com/tutorials/data/documentation/coreai/integrating-on-device-ai-models-in-your-app-with-core-ai.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/coreai/integrating-on-device-ai-models-in-your-app-with-core-ai.json",
+      "bytes": 47871,
+      "sha256": "92180fdd32854c1decbdde3ff549d1621dbacc01f9189f5725ce5fbf87f65957",
+      "status": "fetched",
+      "title": "Integrating on-device AI models in your app with Core AI",
+      "platforms": [],
+      "abstract": "Power your app’s intelligent features with an on-device AI model."
+    },
+    {
+      "id": "photo-location",
+      "url": "https://developer.apple.com/tutorials/data/documentation/photokit/phassetcreationrequest.json",
+      "status": "failed",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "asset-location",
+      "url": "https://developer.apple.com/tutorials/data/documentation/photokit/phassetchangerequest/location.json",
+      "status": "failed",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "imageio-destination",
+      "url": "https://developer.apple.com/tutorials/data/documentation/imageio/cgimagedestinationaddimage(_:_:_:).json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/imageio/cgimagedestinationaddimage(_:_:_:).json",
+      "bytes": 15640,
+      "sha256": "03a93dd6449bad655c171f5467d5f33a0e275e38825759f5f2a284834f712d12",
+      "status": "fetched",
+      "title": "CGImageDestinationAddImage(_:_:_:)",
+      "platforms": [
+        {
+          "introducedAt": "4.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "4.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.4",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "2.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "Adds an image to an image destination."
+    },
+    {
+      "id": "metric-kit",
+      "url": "https://developer.apple.com/tutorials/data/documentation/metrickit/mxmetricmanager.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/metrickit/mxmetricmanager.json",
+      "bytes": 34419,
+      "sha256": "abe0649c52d45ebaa5a4b1626fb935f68b8d701708008b23e3c2fa35fb1c2128",
+      "status": "fetched",
+      "title": "MXMetricManager",
+      "platforms": [
+        {
+          "deprecatedAt": "27.3",
+          "introducedAt": "13.0",
+          "message": "Use MetricManager instead.",
+          "name": "iOS"
+        },
+        {
+          "deprecatedAt": "27.3",
+          "introducedAt": "13.0",
+          "message": "Use MetricManager instead.",
+          "name": "iPadOS"
+        },
+        {
+          "deprecatedAt": "27.0",
+          "introducedAt": "13.1",
+          "message": "Use MetricManager instead.",
+          "name": "Mac Catalyst"
+        },
+        {
+          "deprecatedAt": "27.3",
+          "introducedAt": "12.0",
+          "message": "Use MetricManager instead.",
+          "name": "macOS"
+        },
+        {
+          "deprecatedAt": "27.3",
+          "introducedAt": "1.0",
+          "message": "Use MetricManager instead.",
+          "name": "visionOS"
+        }
+      ],
+      "abstract": "The shared object that registers you to receive metrics, creates logs for custom metrics, and gives access to past reports."
+    },
+    {
+      "id": "photo-quality",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotoqualityprioritization.json",
+      "status": "failed",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "runner27",
+      "url": "https://raw.githubusercontent.com/actions/runner-images/main/images/macos/xcode-27-arm64-Readme.md",
+      "resolvedURL": "https://raw.githubusercontent.com/actions/runner-images/main/images/macos/xcode-27-arm64-Readme.md",
+      "bytes": 14909,
+      "sha256": "96e11336d7b1776475cefd2bbf274d9e12c9efdffeaf37e2aeac2c49413e2033",
+      "status": "fetched"
+    },
+    {
+      "id": "runner26",
+      "url": "https://raw.githubusercontent.com/actions/runner-images/main/images/macos/macos-26-arm64-Readme.md",
+      "resolvedURL": "https://raw.githubusercontent.com/actions/runner-images/main/images/macos/macos-26-arm64-Readme.md",
+      "bytes": 18032,
+      "sha256": "38e0e086edd9d5479967b659c8b72901731f8b23e2b89adfe6e4f145a275b56b",
+      "status": "fetched"
+    },
+    {
+      "id": "EdgeTAM-readme",
+      "url": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/facebookresearch/EdgeTAM/7711e012a30a2402c4eaab637bdb00a521302c91/README.md",
+      "bytes": 10491,
+      "sha256": "9c29d6ec68ee541e53203d1f6e0fb8a7d4a407691062ad2f33b970f0a379bca1",
+      "status": "fetched",
+      "repository": "facebookresearch/EdgeTAM",
+      "revision": "7711e012a30a2402c4eaab637bdb00a521302c91",
+      "commitDate": "2026-01-27T00:40:05Z",
+      "commitTitle": "Add copyright headers"
+    },
+    {
+      "id": "edgetam-coreml-readme",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/README.md",
+      "bytes": 17401,
+      "sha256": "c9902184ddfabd469963ced59405547846d63b3cf8fd8d1cc7a09908674b08df",
+      "status": "fetched",
+      "repository": "jutsuhq/edgetam-coreml",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9",
+      "commitDate": "2026-10-31T07:04:53Z",
+      "commitTitle": "README: link each project to its page on jutsustudio.com"
+    },
+    {
+      "id": "MatAnyone2-readme",
+      "url": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/pq-yang/MatAnyone2/0079197acd6d16a741f71558809c06c586c579e0/README.md",
+      "bytes": 8549,
+      "sha256": "b8c0f4df37725a703c4236fea721316a84c11491da21ba4348df3af298277a44",
+      "status": "fetched",
+      "repository": "pq-yang/MatAnyone2",
+      "revision": "0079197acd6d16a741f71558809c06c586c579e0",
+      "commitDate": "2026-07-28T03:04:17Z",
+      "commitTitle": "Update EVAL.md"
+    },
+    {
+      "id": "MatAnyone2Kit-readme",
+      "url": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/flowtyone/MatAnyone2Kit/d85a029870b5149af6aa122cbc13c90db11e5b35/README.md",
+      "bytes": 9106,
+      "sha256": "5c09ef586e76daa87dca65efae83ca9afd763fbff733c42a1c0272bdbe31e549",
+      "status": "fetched",
+      "repository": "flowtyone/MatAnyone2Kit",
+      "revision": "d85a029870b5149af6aa122cbc13c90db11e5b35",
+      "commitDate": "2026-06-17T06:00:44Z",
+      "commitTitle": "Add licensing information and fix repo links"
+    },
+    {
+      "id": "Video-Depth-Anything-readme",
+      "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/README.md",
+      "bytes": 9452,
+      "sha256": "cb786de4a6ef8f344cd8212dd9e51a6c08923fa5ccafc91dd6c96ee4f4af4d88",
+      "status": "fetched",
+      "repository": "DepthAnything/Video-Depth-Anything",
+      "revision": "4f5ae23172ba60fd7bc11ef671cca678842c7072",
+      "commitDate": "2025-10-07T06:00:12Z",
+      "commitTitle": "Update README.md (#96)"
+    },
+    {
+      "id": "ViTMatte-readme",
+      "url": "https://raw.githubusercontent.com/hustvl/ViTMatte/8cd7ef068380977c3962c4cb733cb1fe7f2241a5/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/hustvl/ViTMatte/8cd7ef068380977c3962c4cb733cb1fe7f2241a5/README.md",
+      "bytes": 6610,
+      "sha256": "85ee45b8db8be97110560b8de9af5d765b1eead5bbe941a6fdf1b8451a2c2d14",
+      "status": "fetched",
+      "repository": "hustvl/ViTMatte",
+      "revision": "8cd7ef068380977c3962c4cb733cb1fe7f2241a5",
+      "commitDate": "2025-08-13T13:14:48Z",
+      "commitTitle": "Rename"
+    },
+    {
+      "id": "RobustVideoMatting-readme",
+      "url": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+      "resolvedURL": "https://raw.githubusercontent.com/PeterL1n/RobustVideoMatting/53d74c6826735f01f4406b5ca9075eee27bec094/README.md",
+      "bytes": 12297,
+      "sha256": "239354ea615b768de0be7f17a703d784dd1eccd9f773b6be76cacbdde3a4aa06",
+      "status": "fetched",
+      "repository": "PeterL1n/RobustVideoMatting",
+      "revision": "53d74c6826735f01f4406b5ca9075eee27bec094",
+      "commitDate": "2023-03-13T23:53:45Z",
+      "commitTitle": "Merge pull request #227 from dcyoung/master"
+    },
+    {
+      "id": "photos-creation",
+      "url": "https://developer.apple.com/tutorials/data/documentation/photos/phassetcreationrequest.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/photos/phassetcreationrequest.json",
+      "bytes": 35340,
+      "sha256": "122011f8f3664e195110697d726c3934d2be4500c81623b6eb9a0115fc21e148",
+      "status": "fetched",
+      "title": "PHAssetCreationRequest",
+      "platforms": [
+        {
+          "introducedAt": "9.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.15",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "10.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "abstract": "A request to create a new Photos asset from underlying data resources, for use in a photo library change block."
+    },
+    {
+      "id": "photos-location",
+      "url": "https://developer.apple.com/tutorials/data/documentation/photos/phassetchangerequest/location.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/photos/phassetchangerequest/location.json",
+      "bytes": 20500,
+      "sha256": "34daf4a06fd7d6a1e6c490ebeb9641d1b1aa77b3cb0bc1484cf99b3292d61e73",
+      "status": "fetched",
+      "title": "location",
+      "platforms": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "8.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.15",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "10.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        }
+      ],
+      "abstract": "The location information saved with the asset."
+    },
+    {
+      "id": "file-customizer",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotofiledatarepresentationcustomizer.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotofiledatarepresentationcustomizer.json",
+      "bytes": 36977,
+      "sha256": "ab8a4e191daf73c178ff821884ce2d9fcdd1236c3fd30a1add7d0bda30354a83",
+      "status": "fetched",
+      "title": "AVCapturePhotoFileDataRepresentationCustomizer",
+      "platforms": [
+        {
+          "introducedAt": "12.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "12.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "A protocol that defines the methods to implement to customize the packaging of photo data."
+    },
+    {
+      "id": "replacement-metadata",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotofiledatarepresentationcustomizer/replacementmetadata(for:).json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotofiledatarepresentationcustomizer/replacementmetadata(for:).json",
+      "bytes": 26532,
+      "sha256": "a3d3dac80d8ab914ce9bc5029bc4c86c2e43160d572eba459e66d5199026de68",
+      "status": "fetched",
+      "title": "replacementMetadata(for:)",
+      "platforms": [
+        {
+          "introducedAt": "12.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "12.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "A callback in which you can provide replacement metadata or direct    to strip existing metadata from the flattened file."
+    },
+    {
+      "id": "location-authorization",
+      "url": "https://developer.apple.com/tutorials/data/documentation/corelocation/cllocationmanager/requestwheninuseauthorization().json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/corelocation/cllocationmanager/requestwheninuseauthorization().json",
+      "bytes": 28944,
+      "sha256": "87e1410b9489ecdac8d32d6a9f7c94c4f81fe184134806cc52eb0a8691eb7b21",
+      "status": "fetched",
+      "title": "requestWhenInUseAuthorization()",
+      "platforms": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "8.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.15",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "2.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "Requests the user’s permission to use location services while the app is in use."
+    },
+    {
+      "id": "photo-quality-enum",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/qualityprioritization.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/qualityprioritization.json",
+      "bytes": 19289,
+      "sha256": "9415f8bcac016f8a734846954c11d104b93362f30ddd9b52f2360aa21c0036db",
+      "status": "fetched",
+      "title": "AVCapturePhotoOutput.QualityPrioritization",
+      "platforms": [
+        {
+          "introducedAt": "13.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "13.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "13.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "Constants that indicate how to prioritize photo quality relative to capture speed."
+    },
+    {
+      "id": "cinematic-root",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/cinematic.json",
+      "bytes": 36980,
+      "sha256": "35450f026fd98c19cb8f59dbec8a2b4640571bb43168c8293adc8f6d9fcd9267",
+      "status": "fetched",
+      "title": "Cinematic",
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "Integrate playback and editing of assets captured in Cinematic mode into your app."
+    },
+    {
+      "id": "copy-image-source",
+      "url": "https://developer.apple.com/tutorials/data/documentation/imageio/cgimagedestinationcopyimagesource(_:_:_:_:).json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/imageio/cgimagedestinationcopyimagesource(_:_:_:_:).json",
+      "bytes": 22366,
+      "sha256": "f8387900c64bd972149156438f3811fc6d641cfd68d33d01feb7df622aeda5ca",
+      "status": "fetched",
+      "title": "CGImageDestinationCopyImageSource(_:_:_:_:)",
+      "platforms": [
+        {
+          "introducedAt": "7.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "7.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.8",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "2.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": ""
+    },
+    {
+      "id": "cinematic-rendering",
+      "url": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnrenderingsession-1hzh8.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/cinematic/cnrenderingsession-1hzh8.json",
+      "bytes": 28094,
+      "sha256": "a1b7f43760def4df58a5b1948ad505f764dec729b2f61a7c6d5a866e3780a3fe",
+      "status": "fetched",
+      "title": "CNRenderingSession",
+      "platforms": [
+        {
+          "introducedAt": "17.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "iPadOS"
+        },
+        {
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "14.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "17.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "An object representing the context in which rendering occurs."
+    },
+    {
+      "id": "exclude-gps",
+      "url": "https://developer.apple.com/tutorials/data/documentation/imageio/kcgimagemetadatashouldexcludegps.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/imageio/kcgimagemetadatashouldexcludegps.json",
+      "bytes": 24950,
+      "sha256": "da785d923278e7133d7a0d115111b81351acb8c29cd989d3d3669b57ccb5b2f9",
+      "status": "fetched",
+      "title": "kCGImageMetadataShouldExcludeGPS",
+      "platforms": [
+        {
+          "introducedAt": "8.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "8.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "13.1",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "10.10",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "9.0",
+          "name": "tvOS"
+        },
+        {
+          "introducedAt": "1.0",
+          "name": "visionOS"
+        },
+        {
+          "introducedAt": "2.0",
+          "name": "watchOS"
+        }
+      ],
+      "abstract": "A Boolean value that indicates whether to exclude GPS metadata from EXIF data or the corresponding XMP tags."
+    },
+    {
+      "id": "jutsu-results-parity-fp16-ane-masked-vs-stock",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp16-ane-masked-vs-stock.json",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp16-ane-masked-vs-stock.json",
+      "bytes": 10779,
+      "sha256": "9e43a7bd6593bf41f9bb9f255ddb6e10378ad7408115a6dd9ff7d11baa3fed91",
+      "status": "fetched",
+      "title": null,
+      "platforms": [],
+      "abstract": "",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9"
+    },
+    {
+      "id": "jutsu-results-parity-fp16-gpu-masked-vs-stock",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp16-gpu-masked-vs-stock.json",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp16-gpu-masked-vs-stock.json",
+      "bytes": 10751,
+      "sha256": "9c574a8091ed93cede7e14cce2bfb4ea6e8bbc9c60c3202cb05cfd5dc621a81f",
+      "status": "fetched",
+      "title": null,
+      "platforms": [],
+      "abstract": "",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9"
+    },
+    {
+      "id": "jutsu-results-parity-fp32-cpu-masked-vs-stock",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu-masked-vs-stock.json",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu-masked-vs-stock.json",
+      "bytes": 10288,
+      "sha256": "897941248c674733f09858c1faa0c8c872e57727435bb7a7136d1d2f183b0586",
+      "status": "fetched",
+      "title": null,
+      "platforms": [],
+      "abstract": "",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9"
+    },
+    {
+      "id": "jutsu-results-parity-fp32-cpu-vs-stock",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu-vs-stock.json",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu-vs-stock.json",
+      "bytes": 10675,
+      "sha256": "ea797dfa45ab56482790b5891946159d843628ee8096443a1a6c89a520c2a459",
+      "status": "fetched",
+      "title": null,
+      "platforms": [],
+      "abstract": "",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9"
+    },
+    {
+      "id": "jutsu-results-parity-fp32-cpu",
+      "url": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu.json",
+      "resolvedURL": "https://raw.githubusercontent.com/jutsuhq/edgetam-coreml/3c36c37f93a3106375aa33c14fd7ec426b9e1fa9/results/parity-fp32-cpu.json",
+      "bytes": 10251,
+      "sha256": "51b0f619a1a64e1b1413e120e87fc500c2dcf5fdcb9c921a268af9c8170345b1",
+      "status": "fetched",
+      "title": null,
+      "platforms": [],
+      "abstract": "",
+      "revision": "3c36c37f93a3106375aa33c14fd7ec426b9e1fa9"
+    },
+    {
+      "id": "vda-streaming-code",
+      "url": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/run_streaming.py",
+      "resolvedURL": "https://raw.githubusercontent.com/DepthAnything/Video-Depth-Anything/4f5ae23172ba60fd7bc11ef671cca678842c7072/run_streaming.py",
+      "bytes": 4485,
+      "sha256": "3a7d62d5103ecd2fc8c77d6d4f65855717f695ad828f8db80af28870c94b0e71",
+      "status": "fetched",
+      "revision": "4f5ae23172ba60fd7bc11ef671cca678842c7072"
+    },
+    {
+      "id": "hosted-runner-guide",
+      "url": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+      "resolvedURL": "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+      "bytes": 440154,
+      "sha256": "07d2c8b1b9781fcf2dad949552dfc053dc5f389d1215c70dd43f87bc9d69585b",
+      "status": "fetched"
+    },
+    {
+      "id": "native-af-support",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/iscontinuousautofocustrackingsupported.json",
+      "resolvedURL": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/format/iscontinuousautofocustrackingsupported.json",
+      "bytes": 12087,
+      "sha256": "be38d5aebcad91272baee0de41bcdaeb5843dd78402457d5c3ab045795049fb1",
+      "status": "fetched",
+      "title": "isContinuousAutoFocusTrackingSupported",
+      "platforms": [
+        {
+          "introducedAt": "27.0",
+          "name": "iOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "iPadOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "Mac Catalyst"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "macOS"
+        },
+        {
+          "introducedAt": "27.0",
+          "name": "tvOS"
+        }
+      ],
+      "abstract": "Indicates whether the device format supports continuous autofocus tracking."
+    },
+    {
+      "id": "native-af-object",
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturedevice/focustrackedobject.json",
+      "status": "failed",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "completedAtUTC": "2026-11-24T07:48:42.425632+00:00",
+  "baselineMainSHA": "7f0f6c0ebaa80d38451238b8815e12e6d62199ea",
+  "validatedAppSourceSHA": "19b343ac42f95555790ca75f60bcd53270d83d6c",
+  "limits": [
+    "Read-only official web/source audit; no new native build or inference",
+    "README performance is author-reported, not measured on iPhone 15 Pro",
+    "Failed URL attempts retained; corrected canonical URLs recorded separately",
+    "Existing local 2026-11-21 journal edits preserved; no app changes"
+  ],
+  "localEvidence": [
+    {
+      "id": "capture-busy",
+      "path": "ios/PhotoP/Camera/CameraModel.swift",
+      "sha256": "305d89a0aa4fea5b033ff861ae189a3bdabb9f686311837f3ac2525364262360",
+      "startLine": 1089,
+      "endLine": 1146,
+      "excerpt": "        guard canCapture else { return }\n        pausePhotoReview()\n        let reference = captureGuideReference()\n        var capturedReviewURL: URL?\n        let look = rawMode == .processed ? liveLookForRestoration : nil\n        let trackingTrusted = !depthTrackingEnabled || depthTrackingSnapshot?.focus(at: ProcessInfo.processInfo.systemUptime) != nil\n        let aperture = depthEnabled && trackingTrusted ? depthAperture : nil\n        let capturedDepthSource = depthSource\n        let capturedDepthProfile = depthProfile\n        let experimentalPhoto = aperture == nil ? nil : ExperimentalDepthRuntime.shared.request(for: .photo)\n        let fuseBracket = bracketEnabled && bracketFusionEnabled\n        let front = snapshot.lenses.first { $0.id == snapshot.selectedLens }?.isFront == true\n        let focus = CGPoint(x: front ? 1 - depthFocusPoint.x : depthFocusPoint.x, y: depthFocusPoint.y)\n        busy = true\n        compositionCaptureSuspended = true\n        updateDepthPreview()\n        livePreview?.setComposition(enabled: false, scene: guideScene); cameraCoach = nil\n        if (rawMode != .processed || bracketEnabled) && livePreview != nil { tearDownLivePreview() }\n        defer {\n            busy = false; compositionCaptureSuspended = false; updateComposition(); monitoringChanged()\n            if photoReviewEnabled, let url = capturedReviewURL { requestPhotoReview(url) }\n        }\n        do {\n            let series = try await service.captureSeries(format: photoFormat, rawMode: rawMode, bracketStep: bracketEnabled ? bracketStep : nil,\n                resolution: rawMode == .processed && !bracketEnabled ? photoResolution : nil, flash: effectiveFlash,\n                depth: aperture != nil && snapshot.capabilities?.depthDeliveryEnabled == true)\n            latestPhotoResolution = series.photos.first?.pixelDimensions\n            let urls = try await CaptureSeriesStore.preserve(series)\n            latestOriginals = urls\n            latestOriginal = urls[urls.count / 2]\n            latestCaptureLook = look; latestRenderErrors = [:]; latestRenderedSources = [:]; editorSelection = nil\n            latestFusion = nil; latestFusionFailure = nil\n            capturedReviewURL = latestOriginal\n            reviewReferences = [:]\n            for url in urls { reviewReferences[url] = reference }\n            recordCoachPreference()\n            latestRendered = nil; latestRenderedSeries = []\n            let center = urls[urls.count / 2]\n            latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(center, maxPixel: 240) }.value\n            savedToPhotos = false\n            await renderCaptureResults(urls, look: look, aperture: aperture, focus: focus, depthSource: capturedDepthSource,\n                profile: capturedDepthProfile, experimentalPhoto: experimentalPhoto)\n            if fuseBracket, let biases = series.requestedBiases {\n                do {\n                    guard active else { throw CancellationError() }\n                    let fused = try await ExposureFusionProcessor.shared.fuse(originals: urls, biases: biases)\n                    latestFusion = fused; latestRendered = fused; latestRenderedSeries.append(fused)\n                    latestRenderedSources[fused] = center; reviewReferences[fused] = reference\n                    latestThumbnail = await Task.detached(priority: .utility) { PhotoThumbnail.make(fused, maxPixel: 240) }.value\n                } catch {\n                    latestFusionFailure = error.localizedDescription\n                    latestRenderErrors[center] = \"SDR 노출 융합 중단 · \" + error.localizedDescription\n                }\n            }\n            try await PhotoStore.addToPhotos(urls + latestRenderedSeries)\n            savedToPhotos = true\n            message = \"원본 \\(urls.count)장과 사진 보관함에 저장했습니다.\"\n                + (latestFusion != nil ? \" SDR 노출 융합 결과도 별도 저장했습니다.\" : latestFusionFailure.map { \" 융합 중단: \" + $0 } ?? \"\")"
+    },
+    {
+      "id": "share-original",
+      "path": "ios/PhotoP/UI/CaptureReviewView.swift",
+      "sha256": "28cb7a29b9cd98bbc77e06a2cdd6a65d4fde46eb3fdb938bb9fc4b3289de3967",
+      "startLine": 15,
+      "endLine": 17,
+      "excerpt": "        let source = model.latestOriginals.isEmpty ? (model.latestOriginal.map { [$0] } ?? []) : model.latestOriginals\n        return (model.latestRendered.map { [$0] } ?? []) + model.latestRenderedSeries.filter { $0 != model.latestRendered } + source\n    }"
+    },
+    {
+      "id": "share-direct",
+      "path": "ios/PhotoP/UI/CaptureReviewView.swift",
+      "sha256": "28cb7a29b9cd98bbc77e06a2cdd6a65d4fde46eb3fdb938bb9fc4b3289de3967",
+      "startLine": 84,
+      "endLine": 91,
+      "excerpt": "\n    private var actions: some View {\n        HStack(spacing: 12) {\n            if let current {\n                ShareLink(item: current) { Label(\"공유\", systemImage: \"square.and.arrow.up\") }.buttonStyle(.bordered)\n                if !model.savedToPhotos {\n                    Button { Task { await model.saveLatestToPhotos() } } label: { Label(\"사진 앱에 저장\", systemImage: \"photo.badge.plus\") }\n                        .buttonStyle(.bordered).disabled(model.busy)"
+    },
+    {
+      "id": "combined-model-role",
+      "path": "ios/PhotoP/Processing/CaptureResultProcessor.swift",
+      "sha256": "099fc56b1e3178edd1b7054b0272d1de3b84d47142bb8804d440369769264bb7",
+      "startLine": 218,
+      "endLine": 245,
+      "excerpt": "            if let request = experimentalRequest, request.preferences.photoSubjectSelection, aperture != nil {\n                do {\n                    let selected = try ExperimentalPhotoSubjectSelector().refine(original: original, focus: focus, request: request)\n                    matte = selected.0; experiment = selected.1\n                } catch is CancellationError { throw CancellationError() }\n                catch {\n                    let failure = error as? ExperimentalSelectionFailure ?? .inferenceFailed\n                    experiment = .init(outcome: .fallback, failure: failure, focusX: Double(focus.x), focusY: Double(focus.y))\n                }\n            }\n            if let request = experimentalRequest, request.preferences.photoPortraitMatte, aperture != nil {\n                do {\n                    let refined = try ExperimentalPortraitMatte().refine(original: original, focus: focus, request: request)\n                    matte = refined.0; portrait = refined.1\n                } catch is CancellationError { throw CancellationError() }\n                catch {\n                    portrait = .init(outcome: .fallback, failure: error as? ExperimentalSelectionFailure ?? .inferenceFailed,\n                                     focusX: Double(focus.x), focusY: Double(focus.y))\n                    let failure = error as NSError\n                    portrait?.diagnosticCode = String((failure.domain + \":\" + String(failure.code)).prefix(160))\n                }\n            }\n            var credits = look?.provenance.map { [\"\\($0.requiredCredit)\\nSource: \\($0.source)\\n\\($0.previewDescription)\"] } ?? []\n            if experiment?.outcome == .applied { credits.append(\"PhotoP AI photo selection (experimental) · \\(ExperimentalDepthRecord.modelID) · original preserved\") }\n            if portrait?.outcome == .applied { credits.append(\"PhotoP AI portrait matte (experimental) · \\(ExperimentalPortraitRecord.modelID) · original preserved\") }\n            let credit = credits.isEmpty ? nil : credits.joined(separator: \"\\n\")\n            let result = try await HighResolutionPhotoProcessor.shared.renderJPEG(original: original,\n                destination: pending.appendingPathComponent(\"photo.jpg\"), lut: look?.lut, settings: settings ?? ProcessingLookSettings(),"
+    },
+    {
+      "id": "matte-read-cap",
+      "path": "ios/PhotoP/Processing/CaptureResultProcessor.swift",
+      "sha256": "099fc56b1e3178edd1b7054b0272d1de3b84d47142bb8804d440369769264bb7",
+      "startLine": 153,
+      "endLine": 159,
+      "excerpt": "        var matte: DepthMatteSurface?\n        if let hash = recipe.matteSHA256 {\n            guard let mw = recipe.matteWidth, let mh = recipe.matteHeight, (3...512).contains(mw), (3...512).contains(mh) else { throw CameraError.invalidPhotoData }\n            let data = try bounded(folder.appendingPathComponent(\"matte.f32\"), limit: mw * mh * 28)\n            guard LUTPhotoEditor.hash(data) == hash, let decoded = DepthMatteSurface.decode(data, width: mw, height: mh) else { throw CameraError.invalidPhotoData }\n            matte = decoded\n        }"
+    },
+    {
+      "id": "surface-cap",
+      "path": "ios/PhotoP/Processing/DepthProcessingCore.swift",
+      "sha256": "c6de7641303a74745f25d28f722247807d5cc84b6624704bee8955f0d89c22c4",
+      "startLine": 209,
+      "endLine": 225,
+      "excerpt": "    func encoded() -> Data {\n        var words: [UInt32] = []; words.reserveCapacity(width * height * 7)\n        for i in alpha.indices {\n            for v in [alpha[i], foreground[i].x, foreground[i].y, foreground[i].z,\n                      background[i].x, background[i].y, background[i].z] { words.append(v.bitPattern.littleEndian) }\n        }\n        return words.withUnsafeBytes { Data($0) }\n    }\n    static func decode(_ data: Data, width: Int, height: Int) -> Self? {\n        guard width >= 3, height >= 3, width <= 512, height <= 512, data.count == width * height * 28 else { return nil }\n        let values: [Float] = data.withUnsafeBytes { raw in\n            (0..<(width * height * 7)).map { Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 4, as: UInt32.self))) }\n        }\n        guard values.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { return nil }\n        var alpha: [Float] = [], f: [SIMD3<Float>] = [], b: [SIMD3<Float>] = []\n        for i in 0..<(width * height) {\n            let o = i * 7; alpha.append(values[o]); f.append(SIMD3(values[o + 1], values[o + 2], values[o + 3])); b.append(SIMD3(values[o + 4], values[o + 5], values[o + 6]))"
+    },
+    {
+      "id": "portrait-working-size",
+      "path": "ios/PhotoP/Processing/ExperimentalPortraitMatte.swift",
+      "sha256": "5fb5a3b50db359552cca066106c561c465cdc9899b068eca545bb9c587db2db0",
+      "startLine": 44,
+      "endLine": 64,
+      "excerpt": "            let model = try MatAnyoneCoreML(modelsDir: folder, computeUnits: units)\n            guard model.workingW == 288, model.workingH == 512, model.modelURLs.count == 6 else {\n                throw ExperimentalSelectionFailure.invalidOutput\n            }\n            let extent = CGRect(x: 0, y: 0, width: 288, height: 512)\n            let upright = color.transformed(by: CGAffineTransform(translationX: -color.extent.minX, y: -color.extent.minY))\n            let placed = upright.transformed(by: CGAffineTransform(scaleX: CGFloat(geometry.width) / upright.extent.width,\n                y: CGFloat(geometry.height) / upright.extent.height)).transformed(by: CGAffineTransform(translationX: CGFloat(geometry.x),\n                y: CGFloat(512 - geometry.y - geometry.height)))\n            let working = placed.composited(over: CIImage(color: .black).cropped(to: extent)).cropped(to: extent)\n            guard let cg = context.createCGImage(working, from: extent, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else {\n                throw ExperimentalSelectionFailure.invalidOutput\n            }\n            let raster = try SDRImage.rasterize(cg), count = 288 * 512\n            var rgb = [Float](repeating: 0, count: count * 3), mask = [Float](repeating: 0, count: count)\n            raster.rgba.withUnsafeBytes { raw in\n                let bytes = raw.bindMemory(to: UInt8.self)\n                for i in 0..<count {\n                    rgb[i] = Float(bytes[i * 4]) / 255\n                    rgb[count + i] = Float(bytes[i * 4 + 1]) / 255\n                    rgb[2 * count + i] = Float(bytes[i * 4 + 2]) / 255"
+    },
+    {
+      "id": "new-photo-gate",
+      "path": "ios/PhotoP/Processing/ExperimentalDepthPolicy.swift",
+      "sha256": "e7e359964061813a6e19d686b965bd6af5701c6d54f6525e8658e34d696c75d4",
+      "startLine": 1,
+      "endLine": 90,
+      "excerpt": "import Foundation\n\nenum ExperimentalDepthMode: String, Sendable { case photo, savedVideo, live }\n\n/// Only newly introduced experiments live here. Baseline depth/AI/AF preferences\n/// are neither read nor written by this store.\nstruct ExperimentalDepthPreferences: Codable, Equatable, Sendable {\n    var version = 1\n    var photoSubjectSelection = false\n    var photoPortraitMatte = false\n    init() {}\n    init(from decoder: Decoder) throws {\n        let values = try decoder.container(keyedBy: CodingKeys.self)\n        version = try values.decode(Int.self, forKey: .version)\n        photoSubjectSelection = try values.decodeIfPresent(Bool.self, forKey: .photoSubjectSelection) ?? false\n        photoPortraitMatte = try values.decodeIfPresent(Bool.self, forKey: .photoPortraitMatte) ?? false\n    }\n    var hasPhotoExperiment: Bool { photoSubjectSelection || photoPortraitMatte }\n    var valid: Bool { version == 1 }\n}\n\nfinal class ExperimentalDepthRuntime: @unchecked Sendable {\n    static let shared = ExperimentalDepthRuntime()\n    static let preferenceKey = \"photop.experimental.depth.preferences.v1\"\n    private let lock = NSLock()\n    private let defaults: UserDefaults\n    private var preferences: ExperimentalDepthPreferences\n    private var generation: UInt64 = 0\n\n    init(defaults: UserDefaults = .standard) {\n        self.defaults = defaults\n        if let data = defaults.data(forKey: Self.preferenceKey), data.count <= 4096,\n           let value = try? JSONDecoder().decode(ExperimentalDepthPreferences.self, from: data), value.valid {\n            preferences = value\n        } else { preferences = .init() }\n    }\n    var current: ExperimentalDepthPreferences { lock.withLock { preferences } }\n    func setPhotoSelection(_ enabled: Bool) {\n        lock.withLock {\n            guard preferences.photoSubjectSelection != enabled else { return }\n            preferences.photoSubjectSelection = enabled\n            generation &+= 1\n            if let data = try? JSONEncoder().encode(preferences) { defaults.set(data, forKey: Self.preferenceKey) }\n        }\n    }\n    func setPortraitMatte(_ enabled: Bool) {\n        lock.withLock {\n            guard preferences.photoPortraitMatte != enabled else { return }\n            preferences.photoPortraitMatte = enabled; generation &+= 1\n            if let data = try? JSONEncoder().encode(preferences) { defaults.set(data, forKey: Self.preferenceKey) }\n        }\n    }\n    func request(for mode: ExperimentalDepthMode) -> ExperimentalPhotoRequest? {\n        lock.withLock {\n            guard mode == .photo, preferences.hasPhotoExperiment else { return nil }\n            return ExperimentalPhotoRequest(owner: self, generation: generation, preferences: preferences)\n        }\n    }\n    fileprivate func current(_ epoch: UInt64) -> Bool {\n        lock.withLock { preferences.hasPhotoExperiment && generation == epoch }\n    }\n    fileprivate func publish(_ epoch: UInt64, _ action: () throws -> Void) rethrows -> Bool {\n        try lock.withLock {\n            guard preferences.hasPhotoExperiment, generation == epoch else { return false }\n            try action()\n            return true\n        }\n    }\n}\n\nstruct ExperimentalPhotoRequest: Sendable {\n    fileprivate let owner: ExperimentalDepthRuntime\n    fileprivate let generation: UInt64\n    let preferences: ExperimentalDepthPreferences\n    var isCurrent: Bool { owner.current(generation) }\n    func publishIfCurrent(_ action: () throws -> Void) rethrows -> Bool { try owner.publish(generation, action) }\n}\n\nenum ExperimentalSelectionFailure: String, Codable, Sendable, Error {\n    case unavailable, noSubject, invalidOutput, inferenceFailed, disabled, notPerson, ambiguousPerson\n    var title: String {\n        switch self {\n        case .unavailable: return \"정밀 선택 모델을 준비하지 못했습니다.\"\n        case .noSubject: return \"터치한 피사체를 확실하게 선택하지 못했습니다.\"\n        case .invalidOutput: return \"정밀 선택 결과를 사용할 수 없습니다.\"\n        case .inferenceFailed: return \"정밀 선택 처리를 완료하지 못했습니다.\"\n        case .disabled: return \"실험 기능을 꺼 기존 방식으로 처리했습니다.\"\n        case .notPerson: return \"선택한 위치에서 인물을 확인하지 못했습니다.\"\n        case .ambiguousPerson: return \"인물이 겹쳐 경계를 확실하게 구분하지 못했습니다.\"\n        }"
+    },
+    {
+      "id": "mutex",
+      "path": "ios/PhotoP/Processing/OnDeviceInferenceGate.swift",
+      "sha256": "39d9bc2df35daccee4c3f60a1d8587ed0b222c3f611a26b2eee3b5ebda0884f5",
+      "startLine": 1,
+      "endLine": 7,
+      "excerpt": "import Foundation\n\n// A single synchronous owner for Vision/Core ML batches across composition,\n// photo review and depth. Only analysis/processing executors may wait here.\nenum OnDeviceInferenceGate {\n    static let lock = NSLock()\n}"
+    },
+    {
+      "id": "quality-sampling",
+      "path": "ios/PhotoP/Processing/HighResolutionPhotoProcessor.swift",
+      "sha256": "0cc140e50df0057804be24dff4dc68fef43def753a0c80b858c90860315af545",
+      "startLine": 125,
+      "endLine": 138,
+      "excerpt": "            if !SoftwareDepthPolicy.supports(width: width, height: height), depthSource == .measured, depthOverride == nil {\n                // Preserve the pre-existing 64MP measured-depth baseline. Do not\n                // claim this variable blur is the new Natural lens renderer.\n                let depth = try MeasuredDepthEffect.make(original: original, color: color, width: width, height: height, aperture: aperture, focus: focus)\n                color = depth.image; distance = depth.focus; absolute = depth.absolute\n            } else {\n                let depth = try depthEngine.render(original: original, color: color, width: width, height: height,\n                    aperture: aperture, focus: focus, source: depthSource, override: depthOverride,\n                    profile: profile, savedMatte: savedMatte, qualityPairs: width * height > 12_600_000 ? 8 : 16,\n                    includeMatte: depthOverride == nil)\n                renderedDepth = depth; color = depth.image; absolute = depth.field.units == .inverseMetres\n                distance = absolute ? 1 / depth.focusInverse : depth.focusInverse\n            }\n        }"
+    },
+    {
+      "id": "sdk-routing",
+      "path": ".github/workflows/ios.yml",
+      "sha256": "4bf37835c36c1eb7e90c71d6016e44f68ed033efa7280d7ef9ddb3d1a1449f68",
+      "startLine": 86,
+      "endLine": 102,
+      "excerpt": "    runs-on: ${{ inputs.xcode == '26.6' && inputs.runner_arch == 'intel' && 'macos-26-intel' || (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}\n    timeout-minutes: 35\n    steps:\n      - uses: actions/checkout@v4\n      - name: Select and report SDK (never infer support from documentation alone)\n        env:\n          REQUESTED_XCODE: ${{ inputs.xcode || '26.3' }}\n        run: |\n          developer_dir=\"/Applications/Xcode_${REQUESTED_XCODE}.app/Contents/Developer\"\n          if [ ! -d \"$developer_dir\" ]; then\n            echo \"::error::Requested Xcode is not installed on this runner. Choose a compatible runner; iOS27 validation has NOT passed.\"\n            exit 1\n          fi\n          echo \"DEVELOPER_DIR=$developer_dir\" >> \"$GITHUB_ENV\"\n          DEVELOPER_DIR=\"$developer_dir\" xcodebuild -version\n          DEVELOPER_DIR=\"$developer_dir\" xcrun --sdk iphoneos --show-sdk-version\n      - name: Verify pinned offline depth model"
+    },
+    {
+      "id": "library-scan",
+      "path": "ios/PhotoP/Processing/CaptureResultProcessor.swift",
+      "sha256": "099fc56b1e3178edd1b7054b0272d1de3b84d47142bb8804d440369769264bb7",
+      "startLine": 103,
+      "endLine": 122,
+      "excerpt": "    func list(documents: URL? = nil) throws -> [DepthResultSummary] {\n        let root = try documents ?? FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)\n        let folder = root.appendingPathComponent(\"CaptureResults\", isDirectory: true)\n        guard FileManager.default.fileExists(atPath: folder.path) else { return [] }\n        try recoverInterruptedResults(in: folder)\n        return try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.creationDateKey, .isSymbolicLinkKey])\n            .compactMap { entry -> DepthResultSummary? in\n                guard UUID(uuidString: entry.lastPathComponent) != nil,\n                      (try? entry.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == false,\n                      let data = try? bounded(entry.appendingPathComponent(\"recipe.json\"), limit: 131_072),\n                      let recipe = try? JSONDecoder().decode(CaptureResultRecipe.self, from: data),\n                      [2, 3, 4].contains(recipe.version), recipe.depthMapFilename == \"depth.f32\", let aperture = recipe.aperture,\n                      recipe.originalFilename == (recipe.originalFilename as NSString).lastPathComponent,\n                      !recipe.originalFilename.isEmpty, !recipe.originalFilename.hasPrefix(\".\"),\n                      FileManager.default.fileExists(atPath: entry.appendingPathComponent(\"photo.jpg\").path) else { return nil }\n                return .init(result: entry.appendingPathComponent(\"photo.jpg\"),\n                    original: root.appendingPathComponent(\"Originals\").appendingPathComponent(recipe.originalFilename),\n                    date: (try? entry.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast, aperture: aperture)\n            }.sorted { $0.date > $1.date }\n    }"
+    },
+    {
+      "id": "live-budget",
+      "path": "ios/PhotoP/Processing/PreviewBudget.swift",
+      "sha256": "7c5050b846216430e5145c4101f4d5a10c2b6de7fb9553be1372fc263e01447e",
+      "startLine": 13,
+      "endLine": 21,
+      "excerpt": "    init(thermal: ProcessInfo.ThermalState, lowPower: Bool) {\n        switch thermal {\n        case .critical: maximumDimension = 480; framesPerSecond = 10; analysisInterval = .infinity; histogramInterval = 1\n        case .serious: maximumDimension = 720; framesPerSecond = 20; analysisInterval = 1; histogramInterval = 0.5\n        default: maximumDimension = lowPower ? 720 : 1024; framesPerSecond = lowPower ? 30 : 60; analysisInterval = lowPower ? 1 : 0.5; histogramInterval = lowPower ? 0.5 : 0.25\n        }\n    }\n    func admits(time: Double, after previous: Double) -> Bool { time.isFinite && time >= previous && time - previous >= 1 / framesPerSecond }\n}"
+    }
+  ],
+  "observedFacts": {
+    "webFetchesSucceeded": 36,
+    "webFetchesFailed": 5,
+    "githubSDK27Image": "Image Version 20261104.0337.1; /Applications/Xcode_27.2.app; iphoneos27.2 and iphonesimulator27.2",
+    "parity": {
+      "jutsu-results-parity-fp16-ane-masked-vs-stock": false,
+      "jutsu-results-parity-fp16-gpu-masked-vs-stock": false,
+      "jutsu-results-parity-fp32-cpu-masked-vs-stock": false,
+      "jutsu-results-parity-fp32-cpu-vs-stock": false,
+      "jutsu-results-parity-fp32-cpu": true
+    },
+    "acceptanceAudit": {
+      "photoExit": 2,
+      "realPhotos": 0,
+      "videoExit": 2,
+      "realVideos": 0
+    },
+    "existingCIStatusOnly": [
+      {
+        "run": 44784405939,
+        "source": "19b343a",
+        "conclusion": "success"
+      },
+      {
+        "run": 44784461745,
+        "source": "19b343a",
+        "conclusion": "success"
+      },
+      {
+        "run": 44789014833,
+        "source": "19b343a",
+        "conclusion": "success",
+        "branch": "main"
+      }
+    ]
+  }
+}

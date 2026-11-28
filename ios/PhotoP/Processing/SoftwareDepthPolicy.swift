@@ -15,16 +15,23 @@ struct SoftwareDepthField: Sendable {
     // Top-left rows. Larger means nearer. Zero means invalid, not infinity.
     let inverseDepth: [Float]
     let units: Units
+    let nativeMetadata: NativeDepthMetadata?
     let bounds: (lower: Float, upper: Float)?
-    init?(width: Int, height: Int, inverseDepth: [Float], units: Units) {
+    init?(width: Int, height: Int, inverseDepth: [Float], units: Units, nativeMetadata: NativeDepthMetadata? = nil) {
         guard width >= 3, height >= 3, width <= 4096, height <= 4096, width * height <= 2_097_152,
-              width * height == inverseDepth.count, inverseDepth.contains(where: { $0.isFinite && $0 > 0 }) else { return nil }
+              width * height == inverseDepth.count, inverseDepth.contains(where: { $0.isFinite && $0 > 0 }),
+              nativeMetadata?.valid != false,
+              nativeMetadata.map({ $0.absoluteAccuracy == (units == .inverseMetres) }) != false else { return nil }
         self.width = width; self.height = height; self.units = units
+        self.nativeMetadata = nativeMetadata
         self.inverseDepth = inverseDepth.map { $0.isFinite && $0 > 0 ? $0 : 0 }
-        self.bounds = Self.normalizationBounds(self.inverseDepth)
+        if let refinement = nativeMetadata?.refinement {
+            self.bounds = (refinement.normalizationLower, refinement.normalizationUpper)
+        } else { self.bounds = Self.normalizationBounds(self.inverseDepth) }
     }
-    private init(width: Int, height: Int, validDepth: [Float], units: Units, bounds: (lower: Float, upper: Float)?) {
+    private init(width: Int, height: Int, validDepth: [Float], units: Units, bounds: (lower: Float, upper: Float)?, nativeMetadata: NativeDepthMetadata?) {
         self.width = width; self.height = height; self.inverseDepth = validDepth; self.units = units; self.bounds = bounds
+        self.nativeMetadata = nativeMetadata
     }
     // Current-frame motion invalidation must not re-sort/re-normalize a model
     // frame. Removing a foreground pixel cannot stretch the background blur.
@@ -32,24 +39,16 @@ struct SoftwareDepthField: Sendable {
         var data = inverseDepth
         for i in data.indices where invalid(i) { data[i] = 0 }
         guard data.contains(where: { $0 > 0 }) else { return nil }
-        return Self(width: width, height: height, validDepth: data, units: units, bounds: bounds)
+        return Self(width: width, height: height, validDepth: data, units: units, bounds: bounds, nativeMetadata: nativeMetadata)
     }
     // Manual correction keeps the original scale; brush size cannot renormalize
     // the untouched background or mutate the saved base map.
     func replacingDepthPreservingBounds(_ values: [Float]) -> Self? {
         guard values.count == inverseDepth.count, values.allSatisfy({ $0.isFinite && $0 >= 0 }), values.contains(where: { $0 > 0 }) else { return nil }
-        return Self(width: width, height: height, validDepth: values, units: units, bounds: bounds)
+        return Self(width: width, height: height, validDepth: values, units: units, bounds: bounds, nativeMetadata: nativeMetadata)
     }
     func focusValue(x: Double, y: Double) -> Float? {
-        guard x.isFinite, y.isFinite, (0...1).contains(x), (0...1).contains(y) else { return nil }
-        let cx = min(width - 1, Int(x * Double(width))), cy = min(height - 1, Int(y * Double(height)))
-        var values: [Float] = []
-        for row in max(0, cy - 1)...min(height - 1, cy + 1) {
-            for col in max(0, cx - 1)...min(width - 1, cx + 1) {
-                let d = inverseDepth[row * width + col]; if d > 0 { values.append(d) }
-            }
-        }
-        values.sort(); return values.count >= 3 ? values[values.count / 2] : nil
+        DepthFocusEstimator.value(in: self, x: x, y: y)
     }
     private static func normalizationBounds(_ depth: [Float]) -> (lower: Float, upper: Float)? {
         let valid = depth.filter { $0 > 0 }.sorted()

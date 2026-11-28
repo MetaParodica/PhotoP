@@ -20,6 +20,7 @@ struct NaturalDepthResult {
 // Owned only by the high-resolution processing actor.
 final class NaturalDepthEngine {
     private let estimator = ExternalDepthEstimator()
+    private let nativeRefiner = NativeDepthRefiner()
     private let matteRefiner = DepthMatteRefiner()
     private let backgroundExtension = DepthBackgroundExtension()
     private let lensFilter = DepthLensFilter()
@@ -39,30 +40,35 @@ final class NaturalDepthEngine {
             throw ImageEditingError.invalid("심도 처리는 최대64MP·긴 변16384px 일반 사진에서 지원합니다. 원본은 보존됩니다.")
         }
         try Task.checkCancellation()
-        let measured = source == .ai || override != nil ? nil : try Self.measured(original)
-        var field: SoftwareDepthField
-        var origin: String
-        var fusionError: Double?
+        let measured = source == .ai || override != nil ? nil : try NativePhotoDepthReader.read(original, colorWidth: width, colorHeight: height)?.field
+        let field: SoftwareDepthField
+        let origin: String
         if let override { field = override; origin = "saved-depth" }
-        else if let measured { field = measured; origin = "photo-depth" }
+        else if let measured {
+            field = try nativeRefiner.refine(measured, color: color)
+            origin = field.nativeMetadata?.refinement == nil ? "photo-depth" : "photo-depth-guided"
+        }
         else {
-            guard source != .measured else {
+            guard PhotoDepthPolicy.infersDepth(source: source, nativePresent: false) else {
                 throw ImageEditingError.invalid("사진 깊이 데이터가 없습니다. AI 대체를 선택하거나 원본을 사용하세요.")
             }
             field = try estimator.estimate(color); origin = SoftwareDepthPolicy.modelID
         }
-        if override == nil, source == .automatic, measured != nil,
-           field.inverseDepth.contains(0), let prediction = try? estimator.estimate(color) {
-            let fusion = DepthFusionCore.fuse(measured: field, predicted: prediction)
-            if fusion.filled > 0 { field = fusion.field; origin = "photo-depth+calibrated-ai"; fusionError = fusion.calibration?.normalizedError }
-        }
+        // A native hole is uncertainty, not permission to run another model
+        // and change depth provenance. AI fallback remains available when the
+        // photo has no native depth, or when explicitly choosing AI input.
         if origin.hasPrefix("photo-depth"), abs((Double(field.width) / Double(field.height)) / (Double(width) / Double(height)) - 1) >= 0.02 {
             throw ImageEditingError.invalid("사진과 센서 깊이 좌표 비율이 다릅니다. 원본은 보존됩니다.")
         }
         let embedded = try Self.portraitMatte(original, extent: color.extent)
-        let matte = savedMatte ?? (includeMatte ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded, maximumDimension: 512) : nil)
+        let native = measured != nil || field.nativeMetadata != nil || source == .measured
+        // Native photos use their delivered matte, if any. New experiments
+        // arrive as savedMatte; they remain explicit. Do not silently invoke
+        // Vision segmentation for every native photo without an embedded matte.
+        let refine = includeMatte && (embedded != nil || !native)
+        let matte = savedMatte ?? (refine ? try? matteRefiner.refine(color: color, focus: focus, embedded: embedded, maximumDimension: 512) : nil)
         return try renderField(color: color, field: field, aperture: aperture, focus: focus, profile: profile,
-            matte: matte, embedded: embedded, source: origin, fusionError: fusionError, qualityPairs: qualityPairs)
+            matte: matte, embedded: embedded, source: origin, qualityPairs: qualityPairs)
     }
 
     func renderField(color: CIImage, field: SoftwareDepthField, aperture: Double, focus: CGPoint,
@@ -229,26 +235,4 @@ final class NaturalDepthEngine {
         return image.transformed(by: CGAffineTransform(scaleX: extent.width / image.extent.width, y: extent.height / image.extent.height))
     }
 
-    private static func measured(_ url: URL) throws -> SoftwareDepthField? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              let dictionary = (CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, kCGImageAuxiliaryDataTypeDepth)
-                ?? CGImageSourceCopyAuxiliaryDataInfoAtIndex(source, 0, kCGImageAuxiliaryDataTypeDisparity)) as? [AnyHashable: Any] else { return nil }
-        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
-        let orientation = CGImagePropertyOrientation(rawValue: (properties?[kCGImagePropertyOrientation] as? UInt32) ?? 1) ?? .up
-        let data = try AVDepthData(fromDictionaryRepresentation: dictionary).applyingExifOrientation(orientation)
-            .converting(toDepthDataType: kCVPixelFormatType_DepthFloat32)
-        let buffer = data.depthDataMap, w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer)
-        guard w >= 3, h >= 3, w <= 4096, h <= 4096, w * h <= 2_097_152,
-              CVPixelBufferLockBaseAddress(buffer, .readOnly) == kCVReturnSuccess else { throw CameraError.invalidPhotoData }
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        let stride = CVPixelBufferGetBytesPerRow(buffer)
-        guard stride >= w * 4, let base = CVPixelBufferGetBaseAddress(buffer) else { throw CameraError.invalidPhotoData }
-        var values = [Float](repeating: 0, count: w * h)
-        for y in 0..<h {
-            let row = base.advanced(by: y * stride).assumingMemoryBound(to: Float.self)
-            for x in 0..<w { let z = row[x]; values[y * w + x] = z.isFinite && z > 0 ? 1 / z : 0 }
-        }
-        return SoftwareDepthField(width: w, height: h, inverseDepth: values,
-                                  units: data.depthDataAccuracy == .absolute ? .inverseMetres : .relativeInverse)
-    }
 }

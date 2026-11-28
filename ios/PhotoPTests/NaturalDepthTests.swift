@@ -84,6 +84,29 @@ final class NaturalDepthTests: XCTestCase {
         XCTAssertNotEqual(result, second); XCTAssertTrue(FileManager.default.fileExists(atPath: result.path))
         XCTAssertEqual(try Data(contentsOf: input.photo), before)
     }
+
+    func testNativeMetadataSurvivesSaveReopenAndReeditAndOldRecipeStillLoads() async throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
+        let input = try fixture()
+        let info = NativeDepthMetadata(mapWidth: 16, mapHeight: 12, quality: .low,
+            filtered: true, absoluteAccuracy: false, originalPixelFormat: 0x66646973,
+            appliedEXIFOrientation: 1, hasCameraCalibration: false)
+        let native = try XCTUnwrap(SoftwareDepthField(width: 16, height: 12,
+            inverseDepth: input.field.inverseDepth, units: .relativeInverse, nativeMetadata: info))
+        let result = try await CaptureResultProcessor.shared.render(original: input.photo, look: nil,
+            aperture: 2.8, focus: CGPoint(x: 0.25, y: 0.5), documents: input.root, depthOverride: native)
+        let session = try await CaptureResultProcessor.shared.loadSession(result: result, original: input.photo, documents: input.root)
+        XCTAssertEqual(session.recipe.nativeDepth, info); XCTAssertEqual(session.field.nativeMetadata, info)
+        let edited = try await CaptureResultProcessor.shared.reprocess(result: result, original: input.photo, aperture: 8, documents: input.root)
+        let restored = try await CaptureResultProcessor.shared.loadSession(result: edited, original: input.photo, documents: input.root)
+        XCTAssertEqual(restored.field.nativeMetadata, info)
+        let recipeURL = result.deletingLastPathComponent().appendingPathComponent("recipe.json")
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recipeURL)) as? [String: Any])
+        legacy.removeValue(forKey: "nativeDepth")
+        try JSONSerialization.data(withJSONObject: legacy).write(to: recipeURL)
+        let old = try await CaptureResultProcessor.shared.loadSession(result: result, original: input.photo, documents: input.root)
+        XCTAssertNil(old.recipe.nativeDepth); XCTAssertNil(old.field.nativeMetadata)
+    }
     func testChangedDepthOrOriginalIsRejectedByReprocessor() async throws {
         guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
         let input = try fixture()

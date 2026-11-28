@@ -282,6 +282,9 @@ struct CameraQuickControls: View {
                 Text(model.liveDepthHasFrame ? "AI 심도 미리보기 · 저장 사진은 센서 깊이에 따라 차이가 날 수 있습니다." : "AI 미리보기 준비/움직임 감지 · 촬영 원본은 보존합니다.")
                     .font(.caption2).foregroundStyle(.secondary)
                 if let error = model.liveDepthError { Text("미리보기: \(error)").font(.caption2).foregroundStyle(.orange) }
+            } else if model.depthEnabled && model.snapshot.capabilities?.depthDeliveryEnabled == true {
+                Text("아이폰 사진 심도로 촬영 후 렌즈 효과를 적용합니다. AI 미리보기는 고급 설정에서 선택할 수 있습니다.")
+                    .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("camera.depth.nativeHint")
             }
             subjectTracking
             DisclosureGroup("심도 고급 설정") {

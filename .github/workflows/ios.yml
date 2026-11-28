@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       xcode:
-        description: 'Installed Xcode to validate (27 requires a runner image that contains Xcode 27)'
+        description: 'Installed Xcode to validate (27/27.2 selects the Xcode 27 runner)'
         type: choice
-        options: ['26.3', '26.6', '27']
+        options: ['26.3', '26.6', '27', '27.2']
         default: '26.3'
       test_scope:
         description: 'Depth/UI isolate an iteration; all is the full regression gate'
@@ -83,7 +83,7 @@ jobs:
           path: diagnostics/
   ios:
     if: inputs.diagnostic_run == ''
-    runs-on: ${{ inputs.xcode == '26.6' && inputs.runner_arch == 'intel' && 'macos-26-intel' || (inputs.xcode == '26.6' || inputs.xcode == '27') && 'macos-26' || 'macos-15' }}
+    runs-on: ${{ (inputs.xcode == '27' || inputs.xcode == '27.2') && 'xcode-27' || inputs.xcode == '26.6' && inputs.runner_arch == 'intel' && 'macos-26-intel' || inputs.xcode == '26.6' && 'macos-26' || 'macos-15' }}
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -91,6 +91,7 @@ jobs:
         env:
           REQUESTED_XCODE: ${{ inputs.xcode || '26.3' }}
         run: |
+          if [ "$REQUESTED_XCODE" = 27 ]; then REQUESTED_XCODE=27.2; fi
           developer_dir="/Applications/Xcode_${REQUESTED_XCODE}.app/Contents/Developer"
           if [ ! -d "$developer_dir" ]; then
             echo "::error::Requested Xcode is not installed on this runner. Choose a compatible runner; iOS27 validation has NOT passed."
@@ -194,7 +195,7 @@ jobs:
           TEST_SCOPE: ${{ inputs.test_scope || 'all' }}
         run: |
           if [ "$TEST_SCOPE" = depth ]; then
-            test_flags=(-only-testing:PhotoPTests/ExperimentalDepthPolicyTests -only-testing:PhotoPTests/ExperimentalPhotoTests -only-testing:PhotoPTests/AdvancedDepthTests -only-testing:PhotoPTests/DepthPSFMetalTests -only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
+            test_flags=(-only-testing:PhotoPTests/NativeDepthQualityPolicyTests -only-testing:PhotoPTests/NativeDepthQualityTests -only-testing:PhotoPTests/DepthResourcePolicyTests -only-testing:PhotoPTests/PreviewBudgetTests -only-testing:PhotoPTests/ExperimentalDepthPolicyTests -only-testing:PhotoPTests/ExperimentalPhotoTests -only-testing:PhotoPTests/AdvancedDepthTests -only-testing:PhotoPTests/DepthPSFMetalTests -only-testing:PhotoPTests/NaturalDepthTests -only-testing:PhotoPTests/DepthPhaseTests -only-testing:PhotoPTests/FocusDepthPolicyTests -only-testing:PhotoPTests/SubjectVideoDepthPolicyTests -only-testing:PhotoPTests/VideoDepthTests)
           else
             test_flags=(-only-testing:PhotoPTests -skip-testing:PhotoPTests/CompanyFilmLibraryTests -skip-testing:PhotoPTests/FilmStyleLibraryTests)
           fi

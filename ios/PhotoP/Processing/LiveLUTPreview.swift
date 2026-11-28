@@ -177,7 +177,9 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
 
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        let budget = PreviewBudget(thermal: ProcessInfo.processInfo.thermalState, lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled)
+        let depthWanted = lock.withLock { depthSettings.enabled && !depthSettings.comparingOriginal }
+        let budget = PreviewBudget(thermal: ProcessInfo.processInfo.thermalState,
+            lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled, depthEnabled: depthWanted)
         let now = ProcessInfo.processInfo.systemUptime
         guard budget.admits(time: now, after: lastFrameTime) else { return }
         lastFrameTime = now
@@ -185,7 +187,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
         subjectTracker.offer(buffer, interval: budget.compositionInterval.isFinite ? min(0.15, budget.compositionInterval) : .infinity) { [weak self] value in
             guard let self else { return }; onTracking(id, value)
         }
-        depthAnalyzer.offer(buffer, minimumInterval: budget.compositionInterval)
+        depthAnalyzer.offer(buffer, minimumInterval: budget.analysisInterval)
         if lock.withLock({ samplesWanted }), now - lastSampleTime >= 1 {
             let generation = lock.withLock { state.generation }
             lastSampleTime = now
@@ -230,7 +232,7 @@ final class LiveLUTPreview: NSObject, @unchecked Sendable, AVCaptureVideoDataOut
             guard let drawable = surface.nextDrawable(), let command = commandQueue.makeCommandBuffer() else { return }
             do {
                 let source = CIImage(cvPixelBuffer: buffer)
-                var depth = depthAnalyzer.current(for: source)
+                var depth = budget.allowsDepthEffects ? depthAnalyzer.current(for: source) : nil
                 if subjectTracker.required {
                     if let focus = subjectTracker.current()?.focus(at: ProcessInfo.processInfo.systemUptime), let frame = depth {
                         var settings = frame.settings; settings.focus = focus

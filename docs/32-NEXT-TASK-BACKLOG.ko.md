@@ -1,8 +1,16 @@
 # 추가 개선·기능 과제 목록
 
+> 2026-11-25 품질 개발 기획: [51 조사](51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 계획](52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md). 다음 구현은 동일 입력 native/공개 Apple filter 기준선과 NativePhotoDepthReader/DepthGeometry다. 이후 MPS 경계/신뢰·초점 안정화, 가시성 PSF, 고해상도 ROI 저장/복원, 실제 사진 인수 뒤 영상으로 진행한다. 이번 조사에서는35웹응답/Apple18·상위5repo·로컬16소스를 대조했으며 앱 추가 수정·성능/화질 측정·새 빌드/푸시는 없다.
+
+> 2026-11-25 개발 시작: [50 1차 구현](50-NATIVE-DEPTH-FIRST-IMPLEMENTATION.ko.md)에 N1 자동 AI/사진 native 분리·preview 열 예산·메타데이터 저장을 반영했다. 공통164통과/190Swift 구문 검사, 새 iOS·실기기 검증/커밋·푸시 없음. N0의 기기 trace·SDK27.2와N2~N5는 후속이다.
+
+> 2026-11-25 최신 우선순위: [49 네이티브 심도·렌즈 계획](49-NATIVE-DEPTH-LENS-PRIORITY.ko.md)의 N0 계측→N1 네이티브 촬영 계약/열 예산→N2 정합/초점 안정→N3 고해상도 경계·가림/PSF 합성을 먼저 진행한다. 사용자 확인한 기본 카메라 HEIC에 깊이 보조 이미지가 존재함을 직접 확인했다. 기존 기능·신규 AI 기본Off는 유지하며, 외부 추적 모델 추가보다 네이티브 심도 품질을 우선한다. 실제 발열/PhotoP A/B는 미검증이고 앱 수정 완료 상태가 아니다.
+
 작성: 2026-11-17. 기준: `main` `004d869`. [29 개선 보고서](29-OPTIMIZATION-AND-ADVANCEMENT-AUDIT.ko.md), [30 최적화 구현](30-OPTIMIZATION-IMPLEMENTATION.ko.md), [31 기능·오픈소스 조사](31-FEATURE-AND-OSS-RESEARCH.ko.md)와 이전 단계 문서에 흩어진 남은 과제를 한곳에 모았다. 과제 정리 문서이며 이번에 앱 코드를 바꾸거나 새로 검증하지 않았다. 2026-11-18 사용자 결정(7절)을 반영했다.
 
 > 2026-11-21 사진 전용 신규 AI 실험 개발: [47 구현 기록](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md). 두 옵션만 기본Off로 추가하며 기존 심도/AI/영상/live는 기본 기능을 유지한다. 새 영상 기억 추적·live 모델·실사 품질/기기 trace gate는 후속 과제다. 검증 앱19b343a를 두 SDK 전체회귀(native423통과/Flow1skip·UI18/각SDK) 후 main push했다. 자세한 결과·후속은47/08/당일 일지를 따른다.
+
+> 최신 추가 개발 조사(2026-11-24): [48 소스·공식 문서 대조](48-ADDITIONAL-DEVELOPMENT-AUDIT.ko.md). P0는27.2 SDK 검증·공유/GPS 계약·실제 최종 모델 역할 표시·실기기 기준선, P1은촬영/후처리 큐·캐시/스케줄러·고해상도 ROI/매트 저장·E4 기억 추적이다. 아래 과거 표의 상태/금지 권고는 작성 당시 기록이며 최신 사용자 지시/현재 소스·48 판정이 우선한다. 이번에는 조사·문서만 갱신했다.
 
 ## 1. 현재 상태
 
@@ -186,3 +194,15 @@
 | P2 | C1~3/빠른 설정/독립 수평계/확대 UX | 기존38 비교표와 현재 미구현을 먼저 대조. 심도 P0보다 우선하지 않음 |
 
 사진 brush는 base 지도·scale을 유지하는 v4 recipe이며 기존v2/v3 읽기/교정 해제를 지원한다. 영상 intent v2는 focus/reciprocal-f 보간을 명시하고 v1 hold를 유지한다. 원본 bytes·hash·공유 위치 정책을 바꾸지 않는다. metadata/위치 F12 등의 기존 미완료 정책도 이 심도 구현으로 완료했다고 간주하지 않는다.
+
+
+## 2026-11-24 추가 개발 조사 — 현행 우선순위
+
+[48 보고서](48-ADDITIONAL-DEVELOPMENT-AUDIT.ko.md)와 [근거 JSON](research/2026-11-24-additional-development-sources.json)을 따른다. 원격main7f0f6c0/앱19b343a 기준이며 새 원격 커밋은 없었다.
+
+- **A:** 공식27 전용 runner의 Xcode27.2/SDK27.2를 실제 CI에 연결, 기기 계측과 분석/최종 합성 모델 역할 표시 정합을 확인한다. 기존26 회귀와 최소18을 유지한다.
+- **B:** 원본 공유의 GPS 제거 보장·명시적 원본 내보내기·생성 시 위치 태깅을 완성한다. 후처리가 촬영 busy를 잡는 구조는 촬영ID/설정 스냅샷·영속 큐·제한 모델 캐시와 함께 개선한다.
+- **C:** NN288×512/저장512 상한과48MP의 샘플 쌍16→8을 구별한다. ROI 고해상도 분석은 매트 patch/피라미드 저장·복원·기존 recipe 호환과 동시에 개발한다. JPEG/SDR HEIC는 실제 품질/메타데이터/처리 비용으로 선택한다.
+- **D:** 기존 선택ID/좌표/AF bridge를 재사용해 새 EdgeTAM memory/MatAnyone2 영상 alpha(E4), 별도 라이브(E5), 정식 실사/trace 인수(E6)로 진행한다. VDA streaming은 별도 깊이 PoC이며 mask/alpha를 깊이로 취급하지 않는다.
+- 기존 심도/AI·사진/영상/live/편집은 기본 제공, 신규 모델만 실험실Off, 사진 독립·SDR·원본 불변·품질/AI/위치 정책을 유지한다. AI 구도 추천·HDR/Log/게인맵/C2PA를 다시 도입하지 않는다. 라이선스 종류로 조사 대상을 제외하지 않는 사용자 후속 지시를 유지하고 실제 복사/배포 조건·고지는 별도 기록한다.
+- 이번에는 앱 수정/새 모델 복사·추론/새 native CI 없이 조사했다. 현재 빈 인수 gate는 사진0장·영상0종으로 직접 실행exit2이며 기존19b CI success는 상태 조회로만 재확인했다. 이번 문서는 미커밋·미푸시다.

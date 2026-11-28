@@ -300,7 +300,8 @@ final class CameraModel: ObservableObject {
         if !enabled { liveDepthPreviewEnabled = false; updateDepthPreview() }
         if enabled, depthSource == .ai || (depthSource == .automatic && snapshot.capabilities?.depthAvailable != true) {
             depthEnabled = true
-            setLiveDepthPreview(true)
+            setLiveDepthPreview(PhotoDepthPolicy.startsAIPreview(source: depthSource,
+                nativeAvailable: snapshot.capabilities?.depthAvailable == true))
             message = "AI 상대 깊이로 촬영 후 처리합니다. 최대64MP이며 실제 거리 측정이 아닙니다. 고해상도는 축소 추론 후 원래 해상도로 합성합니다."
             return
         }
@@ -315,7 +316,7 @@ final class CameraModel: ObservableObject {
             if enabled {
                 try await service.enablePhotoDepth()
                 depthReturnLens = originalLens; depthEnabled = true
-                setLiveDepthPreview(depthSource != .measured)
+                setLiveDepthPreview(PhotoDepthPolicy.startsAIPreview(source: depthSource, nativeAvailable: true))
                 // The new input may have different manual-control capabilities;
                 // use the actual snapshot/readout rather than guessing support.
             } else {

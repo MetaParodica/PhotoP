@@ -567,3 +567,51 @@ b294452 전체CI44778982243(26.3)은 unit405=404통과/Flow1skip·LUT18·UI18로
 - 앱19b343a main 정상FF push 후 원격 main 동일SHA 확인. 문서 후속은 앱·모델·테스트·CI 설정 불변이며 `[skip ci]`로 중복 native 실행을 생략한다. 검증 앱 SHA와 문서 HEAD는 별도로 식별한다.
 
 실제 iPhone15Pro/iOS27.2 촬영/시간·peak memory·열·AF 인수0건, SDK27 빌드0회. NASA1장의 계약/양성 검사와 비인물 그라데이션을100장·영상10종·blind/기기 trace gate로 세지 않는다. 기존 gate는 미인수 상태를 유지한다. 기존 사진/영상/live 심도는 기본 기능, 두 신규 사진 옵션만 Off이며 새 video memory/streaming/live 모델은 후속이다.
+
+
+## 66. 추가 개발 조사·증거 상태 점검 — 2026-11-24
+
+main7f0f6c0/앱19b343a 기준 [48 조사](48-ADDITIONAL-DEVELOPMENT-AUDIT.ko.md). 이번에는 앱·모델·테스트·CI 설정을 변경하지 않았다.
+
+- 직접 실행: 공식 웹36응답(Apple DocC20 포함)·상위7저장소 HEAD/README·VDA streaming 코드·Jutsu parity5파일·runner 목록을 읽고 URL/SHA/크기를 저장했다. DocC URL5건의404응답도 보존했고 API 미존재로 해석하지 않았다. 상세 [근거 JSON](research/2026-11-24-additional-development-sources.json).
+- 공식27 image20261104.0337.1의 Xcode27.2/iphoneos27.2/Simulator27.2와 label을 확인했다. 실제 SDK27 CI/phone 실행 성공으로 세지 않는다.
+- 직접 실행한 사진 gate는sceneCount0/exit2, 영상 gate는realEvidenceRecords0/exit2. 구조만 확인하는 CI validate-only와 정식 인수를 구분한다. 입력 구조 오류나 새 앱 회귀 실패라는 의미가 아니다.
+- 기존 CI44784405939·44784461745 및 main44789014833의19b343a/success는 상태만 조회했다. 새 native/CoreML/실기기 테스트나 경쟁 앱·새 모델 성능을 재현하지 않았다.
+- 조사 문서·링크/형식·JSON/원문 hash·로컬 코드 발췌 대조를 확인한다. 현재 추가 조사 문서는 로컬 미커밋/미푸시이며 이전11/21 로컬 메모를 보존한다.
+
+66절 완료 검사: 웹36파일 원문 hash/크기·로컬 코드13곳 hash/발췌·문서5개 로컬 링크·JSON/변경 형식 통과. 앱/모델/스크립트/프로젝트·CI diff 없음 확인. 새 native 검사는 실행하지 않았다.
+
+## 67. 비교 HEIC 확인·네이티브 심도 우선 계획 — 2026-11-25
+
+main `7f0f6c0`, 앱 `19b343a` 기준 [49 계획](49-NATIVE-DEPTH-LENS-PRIORITY.ko.md). 사용자 답변으로 IMG_3247.heic는 기본 카메라 비교 사진임을 확정했다. 앱 코드는 변경하지 않았다.
+
+- 직접 실행: 원본1,286,932bytes의 SHA256 확인, ImageMagick으로4284×5712 주 이미지 확인·개인정보 없는 축소본 생성/시각 확인, stdlib BMFF 속성 검사와 설치된 libheif의 primary auxiliary 연결·디코딩. item43 depth auxiliary576×768과 item42 HDR gain map2142×2856을 구분했다. 깊이 coded sample8bit/0…255는 물리 거리로 해석하지 않는다. 원본은 변경하지 않았다.
+- 직접 조사: Apple 공식 DocC8응답·원문 hash/크기/발췌 및 로컬 Swift14파일 hash를 [근거 JSON](research/2026-11-25-native-depth-sources.json)에 보존한다. 센서 사진 심도가 있어도 automatic에서 live AI가 켜지는 경로, 이미 있는 thermal budget, measured의 단위 구분, 품질/geometry 계약 부족, 매트/초점/선택과 추적의 역할을 구분했다.
+- 미실행: Apple ImageIO/AVDepthData 실제 복원, PhotoP 동일 입력 A/B, 실제 iPhone 발열/전력·AF·품질, Xcode27.2/native/CoreML/Metal 검사. 이전 CI를 새 실행이나 실제 촬영 인수로 세지 않는다.
+- 개인정보: 원본/EXIF/GPS/미리보기/깊이 raster는 Git에 넣지 않는다. 새 앱 구현·커밋·푸시 없음. 기존 미커밋 문서 변경을 보존했다.
+
+문서/JSON·로컬 링크·소스/웹 hash 대조·변경 형식 검사를 실행하고 결과는 당일 일지에 기록한다.
+
+## 68. 네이티브 심도 우선 1차 개발 — 2026-11-25
+
+main `7f0f6c0`에서 이어서 로컬 구현한 [50 기록](50-NATIVE-DEPTH-FIRST-IMPLEMENTATION.ko.md). 위67절은 코드 변경 전의 조사다. 이 단계는 센서 automatic의 자동 AI preview/결측 채우기/암묵 Vision 분할을 분리하고, 명시적 AI·실험실·저장 매트는 유지한다. preview 별도 열 예산·critical 중지·native 메타데이터 recipe 저장/복원을 추가했다.
+
+- 첫 검사 실패: PATH에 Swift가 없어 공식 Swift6.0.3을 /tmp에 설치했다. 새 타입 파일을 Package.swift에 포함하기 전 시작한 검사는 타입 미발견으로 컴파일 실패했다. 파일 목록을 연결한 뒤 해결했다.
+- 직접 실행: Swift6.0.3 Linux 공통164개/0실패(새 policy6개 포함). 후속 정책 수정 뒤 집중6개/0실패와 최종 전체164개/0실패를 확인했다. 최종 로그 `/tmp/photop-native-validation/portable.log`.
+- 직접 실행: 앱/네이티브 테스트 Swift190파일 `swiftc -frontend -parse` 통과. AVFoundation/SwiftUI/Metal의 SDK type checking/실행 검증을 뜻하지 않는다.
+- 추가하고 미실행: iOS preview 예산 통합1개, native 요약 저장→재열기→재편집→필드 없는 구형 recipe1개. 심도 집중 CI 선택에 DepthResourcePolicyTests/PreviewBudgetTests를 추가했지만 CI를 실행하지 않았다.
+- 유효기간 회귀 검토: 활성 분석 주기0.5초가0.75초 유효기간을 초과하지 않도록 했다. critical에서 기존 snapshot도 심도 합성에 사용하지 않는다. 추론 지연/움직임 시 기존 만료 복귀는 유지하며 실기기 flicker/발열 개선으로 인수하지 않는다.
+- 새 iPhone15Pro/iOS27.2·Xcode/Simulator·Core ML/Metal/UI·품질/전력 측정 없음. 원본 사진·모델 자산 불변. 기존 미커밋 문서를 보존했고 코드/문서 변경은 로컬 미커밋/미푸시다.
+
+문서 링크와 `git diff --check`를 확인한다. N0 전체 계측·SDK27.2, N2 정합/초점, N3 렌더러 고도화 및 이후 단계는 남아 있다.
+
+## 69. 심도 품질 조사·개발 기획 — 2026-11-25
+
+[51 조사](51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 계획](52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md). HEAD7f0f6c0 및 로컬 N1 코드를 기준으로 읽었다. 이번 후속은 조사/문서 작업이며68절의164개 검사를 새로 실행한 것으로 세지 않는다.
+
+- 직접 조회: 성공 웹35응답(Apple DocC18 포함)·저장소 HEAD5개·실패 URL10개, 로컬 소스16파일을 [근거 JSON](research/2026-11-25-depth-quality-sources.json)에 기록했다. URL/SHA/크기·발췌·고정 revision을 남겼다. 실패는 실제 CIContext method reference·사진 필터 속성·notebooks 경로로 일부 대체했으며404를 API 부재로 취급하지 않았다.
+- 직접 확인: 공개 CIContext depthBlurEffectFilter(iOS12)·MPSImageGuidedFilter(iOS11.3), depth quality/accuracy/filtered·calibration·ARKit confidence·stream synchronizer 문서. DrBokeh RGBAD/occlusion CUDA, BokehMe scatter, Bokehlicious 모델, bilateral solver 신뢰 가중 notebook, guided-filter C++ 코드를 읽었다. Apple Camera 전체 파이프라인과 공개 필터를 구분한다.
+- 실행하지 않음: MPS/외부 렌더러 PoC·모델 변환·SDK/native/Metal/UI·실사 A/B/발열 측정. 외부 소스는 /tmp 연구 캐시로만 읽었고 새 외부 코드/가중치를 앱에 복사하지 않았다. 원본/EXIF/GPS도 추가하지 않는다.
+- 작업 시작에 앱/테스트/CI/Package 파일216개의 hash를 저장해 문서 작성 후 불변을 대조한다. 이전 N1 로컬 앱 변경과 모든 미커밋 문서를 보존하며 이번 커밋·푸시는 없다.
+
+웹 원문/로컬 소스 hash·문서 링크·변경 형식·앱 snapshot 대조 결과는 당일 일지에 기록한다. 표의 후속 모듈과 인수 조건은 기획이며 구현/성능 완료 수치가 아니다.

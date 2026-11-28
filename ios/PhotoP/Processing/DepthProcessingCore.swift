@@ -143,7 +143,7 @@ enum DepthGrid {
             let px = min(field.width - 1, max(0, Int(x.rounded()))), py = min(field.height - 1, max(0, Int(y.rounded())))
             return field.inverseDepth[py * field.width + px]
         }
-        return SoftwareDepthField(width: width, height: height, inverseDepth: data, units: field.units)
+        return SoftwareDepthField(width: width, height: height, inverseDepth: data, units: field.units, nativeMetadata: field.nativeMetadata)
     }
 }
 
@@ -193,7 +193,7 @@ enum DepthFusionCore {
             let value = calibration.scale * Double(prediction.inverseDepth[i]) + calibration.offset
             if value.isFinite, value > 0, value <= ceiling { data[i] = Float(value); filled += 1 }
         }
-        guard let field = SoftwareDepthField(width: measured.width, height: measured.height, inverseDepth: data, units: measured.units) else { return (measured, nil, 0) }
+        guard let field = SoftwareDepthField(width: measured.width, height: measured.height, inverseDepth: data, units: measured.units, nativeMetadata: measured.nativeMetadata) else { return (measured, nil, 0) }
         return (field, calibration, filled)
     }
 }
@@ -320,7 +320,7 @@ struct DepthTemporalState: Sendable {
             accepted += 1
         }
         guard accepted * 3 >= data.count * 2,
-              let aligned = SoftwareDepthField(width: w, height: h, inverseDepth: data, units: previous.units) else { return false }
+              let aligned = SoftwareDepthField(width: w, height: h, inverseDepth: data, units: previous.units, nativeMetadata: previous.nativeMetadata) else { return false }
         field = aligned; luma = alignedLuma; historyRegistered = true
         return true
     }
@@ -345,7 +345,7 @@ struct DepthTemporalState: Sendable {
             for i in data.indices where abs(nextLuma[i] - luma[i]) < 0.035 && data[i] > 0 && old[i] > 0 && abs(data[i] - old[i]) <= tolerance {
                 data[i] = data[i] * 0.7 + old[i] * 0.3
             }
-            field = SoftwareDepthField(width: next.width, height: next.height, inverseDepth: data, units: next.units)
+            field = SoftwareDepthField(width: next.width, height: next.height, inverseDepth: data, units: next.units, nativeMetadata: next.nativeMetadata)
         } else { field = next }
         luma = nextLuma; time = nextTime; self.generation = generation
         return field

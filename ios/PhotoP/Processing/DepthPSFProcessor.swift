@@ -31,6 +31,7 @@ final class DepthPSFProcessor: CIImageProcessorKernel {
               let radius = arguments?["radius"] as? Double, let catEye = arguments?["catEye"] as? Double,
               let extent = (arguments?["extent"] as? CIVector)?.cgRectValue,
               var taps = arguments?["taps"] as? [SIMD4<Float>], (9...49).contains(taps.count) else { throw CameraError.configuration }
+        encoder.label = "PhotoP depth PSF"
         defer { encoder.endEncoding() }
         let state = try pipelines.pipeline(destination.device)
         var parameters = [

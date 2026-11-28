@@ -36,6 +36,7 @@ struct CaptureResultRecipe: Codable, Sendable {
     var depthMapRole: String? = nil
     var experimentalDepth: ExperimentalDepthRecord? = nil
     var experimentalPortrait: ExperimentalPortraitRecord? = nil
+    var nativeDepth: NativeDepthMetadata? = nil
     var experimentalSummary: String? {
         let titles = [experimentalDepth?.title, experimentalPortrait?.title].compactMap { $0 }
         return titles.isEmpty ? nil : titles.joined(separator: "\n")
@@ -145,7 +146,7 @@ actor CaptureResultProcessor {
         let values: [Float] = bytes.withUnsafeBytes { raw in
             (0..<(w * h)).map { Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: $0 * 4, as: UInt32.self))) }
         }
-        guard let field = SoftwareDepthField(width: w, height: h, inverseDepth: values, units: unit) else { throw CameraError.invalidPhotoData }
+        guard let field = SoftwareDepthField(width: w, height: h, inverseDepth: values, units: unit, nativeMetadata: recipe.nativeDepth) else { throw CameraError.invalidPhotoData }
         let corrections = recipe.depthCorrections ?? DepthCorrections()
         guard corrections.valid, (recipe.version != 4 || (recipe.depthMapRole == "uncorrected-base" && recipe.depthCorrections != nil)),
               (recipe.version == 4 || corrections.strokes.isEmpty), recipe.experimentalDepth?.valid != false,
@@ -283,6 +284,7 @@ actor CaptureResultProcessor {
                 recipe.matteWidth = matte.width; recipe.matteHeight = matte.height; recipe.matteSHA256 = LUTPhotoEditor.hash(bytes)
             }
             if let field = depthOverride ?? result.depthField {
+                recipe.nativeDepth = field.nativeMetadata
                 let words = field.inverseDepth.map { $0.bitPattern.littleEndian }
                 let bytes = words.withUnsafeBytes { Data($0) }
                 try bytes.write(to: pending.appendingPathComponent("depth.f32"), options: options)

@@ -11,6 +11,12 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
+- 2026-11-25 심도 품질 후속은 [51 조사](docs/51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 기획](docs/52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md)을 따른다. **동일 입력 기준선/공개 Apple depth blur 비교→geometry/신뢰→MPS 유도 경계·초점 안정화→가시성 PSF→고해상도 ROI/재편집→영상** 순서다. 새 neural 전체 모델보다 native 깊이와 자체 렌즈 합성을 우선한다. MPS/Apple API는 직접 문서 조회만 했으며 새 PoC/기기 측정은 아직 없다. 이번 후속은 조사·기획 문서로 N1의 기존 로컬 코드는 보존한다.
+
+- 2026-11-25 후속 [50 네이티브 심도 우선 1차 구현](docs/50-NATIVE-DEPTH-FIRST-IMPLEMENTATION.ko.md): 센서 automatic에서 live AI 자동 실행·결측 AI 채우기·내장 matte 없는 암묵 Vision 분할을 분리하고, 명시적 AI/실험실·기존 편집은 유지한다. 심도 preview720px/30fps·열/저전력 별도 예산·critical 심도 중지, native quality/filtered/accuracy/intrinsics 요약의 recipe 보존을 로컬 구현했다. 공통164개 통과와 Swift190파일 구문 검사까지이며 새 iOS SDK/native/기기 발열·화질 검증 및 커밋/푸시는 아직 없다. 전체 N0~N5 완료로 해석하지 않는다.
+
+- 2026-11-25 최신 심도 개발 우선순위는 [49 네이티브 심도·렌즈 계획](docs/49-NATIVE-DEPTH-LENS-PRIORITY.ko.md)을 따른다. 사용자 발열·불안정한 흐림/추적 피드백에 따라 **공개 API의 네이티브 사진 심도를 주 데이터로 자체 렌즈 시뮬레이션을 집중 개발**한다. 계측·불필요한 live AI 비용·심도 정합/초점 안정화·고해상도 경계/occlusion 합성이 새 외부 추적 모델 확대보다 우선이다. 기존 기능/설정은 유지하고 신규 AI는 실험실 선택 보조다. 첨부 HEIC는 사용자 확인한 기본 카메라 비교본이며576×768 depth auxiliary를 확인했지만 PhotoP A/B·실기기 발열 검증은 아니다. 이번 변경은 계획 문서이며 앱 구현 완료로 해석하지 않는다.
+
 - 2026-11-21 사진 AI 실험은 [47 구현·검증](docs/47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md)을 따른다. 검증 앱 소스 `19b343a`, 전체 CI44784405939(Xcode26.3)/44784461745(26.6) success. 각 환경 native424 중423통과/기존Flow1skip·UI18·portable158·Python34. 실제 모델 양성·비인물 거부·저장/Off 재편집을 포함한다. 앱 소스를 main에 정상FF push했다. 신규 정밀 선택/인물 경계만 기본Off이며 기존 심도/AI/영상/live·편집은 기본 유지한다. E3 실기기 점검·새 영상/live 모델·정식 품질 인수는 후속이다.
 
 - 2026-11-20 사용자 후속 결정은 [46 실험적 AI 심도 기획](docs/46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md)이 우선한다. **기존 사진/영상/라이브 심도·Depth Anything/Vision·추적·64MP·편집은 기본 기능으로 유지하고 이번에 새로 추가하는 외부 AI 기능만 실험실에 둔다.** 신규 실험 항목만 기본Off·설정 활성화, 기존 설정은 보존한다. 사진 전용 신규 기능은 영상 전체 추적과 독립 제공한다. 실험 공개와 정식 품질 인수를 구별한다. 2026-11-21 사진용 두 옵션/실제 모델·저장/재편집을 구현했으며 [47 구현 기록](docs/47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md)에서 검증·게시 상태를 확인한다. 영상 memory/새 live 모델과 실기기 품질 인수는 후속이다.

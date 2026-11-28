@@ -1,0 +1,181 @@
+{
+  "date": "2026-11-25",
+  "timezone": "Asia/Seoul",
+  "repositoryHead": "7f0f6c0ebaa80d38451238b8815e12e6d62199ea",
+  "appSource": "19b343ac42f95555790ca75f60bcd53270d83d6c",
+  "reference": {
+    "fileName": "IMG_3247.heic",
+    "attribution": "User confirmed: Apple Camera comparison photo, not PhotoP output",
+    "bytes": 1286932,
+    "sha256": "b5d5bcfd4023d87d5445fa12df72abecaaae9446d269e50a391f81bbb401ae66",
+    "primaryDimensions": [
+      4284,
+      5712
+    ],
+    "auxiliaryImages": [
+      {
+        "id": 42,
+        "type": "urn:com:apple:photo:2020:aux:hdrgainmap",
+        "width": 2142,
+        "height": 2856
+      },
+      {
+        "id": 43,
+        "type": "urn:mpeg:hevc:2015:auxid:2",
+        "width": 576,
+        "height": 768,
+        "bits": 8,
+        "storageBits": 8,
+        "codeMin": 0,
+        "codeMax": 255,
+        "note": "decoded coded samples; not metres; no AVDepthData reconstruction performed"
+      }
+    ],
+    "method": "ImageMagick identify/decode plus stdlib ISO-BMFF item/property inspection and installed libheif primary auxiliary enumeration/decode. Coded samples are not metric depth. AVDepthData was not reconstructed on Linux.",
+    "privacy": "No EXIF/GPS, original image, preview or depth raster included."
+  },
+  "appleSources": [
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata.json",
+      "file": "avfoundation_avdepthdata.json",
+      "bytes": 49706,
+      "sha256": "2f3a9dbc3ce6e115771535e8368ff350e5da7370c09de175b8d4b5c8e765f9a4",
+      "title": "AVDepthData",
+      "excerpt": "A container for per-pixel distance or disparity information captured by compatible camera devices. Depth data  is a generic term for a map of per-pixel data containing depth-related information. A depth data object wraps a disparity or depth map and provides conversion methods, focus information, and camera calibration data to aid in using the map for rendering or computer vision tasks. A depth map describes at each pixel the distance to an object, in meters. A disparity map describes normalized shift values for use in comparing two images. The value for each pixel in the map is in units of 1/meters: ( ). The capture pipeline generates disparity or depth maps from camera images containing nonrectilinear data. Camera lenses have small imperfections that cause small distortions in their resultant images compared to an ideal pinhole camera model, so   maps contain nonrectilinear (nondistortion-corrected) data as well. The maps’ values are warped to match the lens distortion characteristics present in the YUV image pixel buffers captured at the same time. Because a depth data map is nonrectilinear, you can use an   map as a proxy for depth when rendering effects to its accompanying image, but not to correlate points in 3D space. To use depth data for computer vision tasks, use the data in the   property to rectify the depth data. There are two ways to capture depth data: The   class captures and delivers depth data in a stream (similar to how the   delivers video data). The   class delivers depth data as a property of an   object containing the captured image. You can also create   objects using information obtained from image files with the   framework. When editing images containing depth information, use the methods listed in Transforming and Processing to generate derivative   objects reflecting the edits that have been performed."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/depthdataaccuracy.json",
+      "file": "avfoundation_avdepthdata_depthdataaccuracy.json",
+      "bytes": 14014,
+      "sha256": "f5de335183ac6a98f437f22e8df70b8f085c0882417e80e2bae85500f5d46bac",
+      "title": "depthDataAccuracy",
+      "excerpt": "The general accuracy of depth data map values. The accuracy of a depth data map is highly dependent on the camera calibration data used to generate it. If the camera’s focal length cannot be precisely determined at the time of capture, a scaling error in the z (depth) plane is introduced. If the camera’s optical center can’t be precisely determined at capture time, a principal point error is introduced, leading to an offset error in the disparity estimate.   constants report the accuracy of a map’s values with respect to its reported units."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/depthdataquality.json",
+      "file": "avfoundation_avdepthdata_depthdataquality.json",
+      "bytes": 16511,
+      "sha256": "41a37682c1c36476311edfd8770cbee5dc93de55b86acb6d999f5a838b3be782",
+      "title": "depthDataQuality",
+      "excerpt": "The overall quality of the depth map. A device typically generates depth data maps by comparing images and calculating disparity. If features are lacking in either input image, it may be difficult to find matching key points, resulting in a depth data map with substantial holes. These holes can be filled with depth data filtering, but still may produce a map of overall poor quality. If a depth data map suffers from insufficient features, the capture system marks it as   quality, indicating that the depth map is a poor candidate for rendering high-quality depth effects or reconstructing a 3D scene. A depth map with   quality is feature-rich, contains a high level of detail, making it a good candidate for rendering high-quality depth effects or reconstructing a 3D scene."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/cameracalibrationdata.json",
+      "file": "avfoundation_avdepthdata_cameracalibrationdata.json",
+      "bytes": 12602,
+      "sha256": "d18e3d2258b669f24a9751b40ff241124ed89491d6c5ca85c81b14a5e37e9105",
+      "title": "cameraCalibrationData",
+      "excerpt": "The imaging parameters with which this depth data was captured. Using depth or disparity map data to render effects into a corresponding image or to perform computer vision tasks requires knowledge of the camera parameters that generated the depth data. Depth data captured by an   object contains camera calibration data that includes such information.    Depth data read from a file (see the   initializer) or transformed through arbitrary editing of its data map might not contain calibration data."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avdepthdata/isdepthdatafiltered.json",
+      "file": "avfoundation_avdepthdata_isdepthdatafiltered.json",
+      "bytes": 19235,
+      "sha256": "57976601475079e0884ad10740a214425429c4887b37be0fb60520efe8d7abef",
+      "title": "isDepthDataFiltered",
+      "excerpt": "A Boolean value indicating whether the depth map contains temporally smoothed data. The capture system can smooth noise and fill in missing values (caused by low light or lens occlusion) in depth data maps by temporally interpolating between previous and subsequent frames of captured depth data. Use the     property to control filtering for streaming depth capture, or the     property to control filtering for depth data captured alongside photo capture. Filtering depth data makes it more useful for applying visual effects to a companion image, but alters the data such that it may no longer be suitable for computer vision tasks. (In an unfiltered depth map, missing values are represented as  .)"
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotosettings/embedsdepthdatainphoto.json",
+      "file": "avfoundation_avcapturephotosettings_embedsdepthdatainphoto.json",
+      "bytes": 15541,
+      "sha256": "b0f9068cebe929cae7f5567e4d57a1e082c14b1b5ce00f8538912e6e7c037a50",
+      "title": "embedsDepthDataInPhoto",
+      "excerpt": "A Boolean value that determines whether any depth data captured with the photo is included when generating output file data. When this property is   (the default), and depth data capture is enabled with the   property, the   class includes the depth map as an embedded attachment when you flatten the photo data for output in compatible file formats. Set this property to   if you wish to capture depth data with a photo but not include depth data in  output."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/avfoundation/avcapturephotooutput/isdepthdatadeliverysupported.json",
+      "file": "avfoundation_avcapturephotooutput_isdepthdatadeliverysupported.json",
+      "bytes": 15264,
+      "sha256": "4e547bdcc4025fb3fa73443a67373c9abaa91ca1b0f875d697a4aebfb73be6be",
+      "title": "isDepthDataDeliverySupported",
+      "excerpt": "A Boolean value indicating whether the capture output currently supports depth data capture. Depth data captures a per-pixel map of scene depth information delivered alongside the photo image and optionally embedded in image file output. Depth data can be used for purposes such as applying depth-sensitive photo filter effects (like that seen in the iOS Camera app’s Portrait mode) and performing computer vision tasks. Not all devices and capture formats support depth capture. This property’s value can change if the   property of the current capture session or the   property of the underlying capture device changes. If a camera or format change causes this property’s value to become  , the   property’s value also becomes  . This property is key-value observable."
+    },
+    {
+      "url": "https://developer.apple.com/tutorials/data/documentation/imageio/cgimagesourcecopyauxiliarydatainfoatindex(_:_:_:).json",
+      "file": "imageio_cgimagesourcecopyauxiliarydatainfoatindex(___).json",
+      "bytes": 24607,
+      "sha256": "7ff1aca89f6a16dd6065ef02662412bbed97b2219335f1ba8a9434bf5aba5ca0",
+      "title": "CGImageSourceCopyAuxiliaryDataInfoAtIndex(_:_:_:)",
+      "excerpt": "Returns auxiliary data, such as mattes and depth information, that accompany the image. The image source that contains the image data. The zero-based index into the images of the image source. If the index is invalid, this method returns  . The auxiliary data to retrieve. For a list of possible values, see   and  . A dictionary that contains the auxiliary data, or   if an error occurs. The image source that contains the image data. The zero-based index into the images of the image source. If the index is invalid, this method returns  . The auxiliary data to retrieve. For a list of possible values, see   and  . A dictionary that contains the auxiliary data, or   if an error occurs."
+    }
+  ],
+  "localSources": [
+    {
+      "path": "ios/PhotoP/Camera/CameraModel.swift",
+      "bytes": 69135,
+      "sha256": "305d89a0aa4fea5b033ff861ae189a3bdabb9f686311837f3ac2525364262360"
+    },
+    {
+      "path": "ios/PhotoP/Camera/CameraService.swift",
+      "bytes": 69517,
+      "sha256": "75f5c0e2af3c3a027f7da4152f375bb1cf94a1f45e7318c670b69f26a5cd24e2"
+    },
+    {
+      "path": "ios/PhotoP/Processing/NaturalDepthEngine.swift",
+      "bytes": 17858,
+      "sha256": "4a5642c54cb23d989f5419066a5b6ab9733c4697ab6e188c6ffb4380e3de7d24"
+    },
+    {
+      "path": "ios/PhotoP/Processing/SoftwareDepthPolicy.swift",
+      "bytes": 7755,
+      "sha256": "5ab301a20bd132525c2fbf6160ba412cd4daf64fff0fcbc727cd4407d2821696"
+    },
+    {
+      "path": "ios/PhotoP/Processing/LiveDepthAnalyzer.swift",
+      "bytes": 8473,
+      "sha256": "518dc45987453422175d033423bf69376cbac565f9854bc9a5c867cd61544b6a"
+    },
+    {
+      "path": "ios/PhotoP/Processing/LivePreviewImageProcessor.swift",
+      "bytes": 9314,
+      "sha256": "05b3bdc2d61b42d52736590bc184fea25cbb803163ee93af609e6fdc5a252538"
+    },
+    {
+      "path": "ios/PhotoP/Processing/PreviewBudget.swift",
+      "bytes": 1093,
+      "sha256": "7c5050b846216430e5145c4101f4d5a10c2b6de7fb9553be1372fc263e01447e"
+    },
+    {
+      "path": "ios/PhotoP/Processing/CaptureResultProcessor.swift",
+      "bytes": 27924,
+      "sha256": "099fc56b1e3178edd1b7054b0272d1de3b84d47142bb8804d440369769264bb7"
+    },
+    {
+      "path": "ios/PhotoP/Processing/ExperimentalPhotoSubjectSelector.swift",
+      "bytes": 13714,
+      "sha256": "e66fa5e05c93b1e05df1a40b39b94e7c887771a04b4f177b6d5b16e56f6386d6"
+    },
+    {
+      "path": "ios/PhotoP/Processing/ExperimentalPortraitMatte.swift",
+      "bytes": 11375,
+      "sha256": "5fb5a3b50db359552cca066106c561c465cdc9899b068eca545bb9c587db2db0"
+    },
+    {
+      "path": "ios/PhotoP/Processing/OnDeviceInferenceGate.swift",
+      "bytes": 235,
+      "sha256": "39d9bc2df35daccee4c3f60a1d8587ed0b222c3f611a26b2eee3b5ebda0884f5"
+    },
+    {
+      "path": "ios/PhotoP/Processing/SubjectTrackingAnalyzer.swift",
+      "bytes": 6020,
+      "sha256": "d20747d59b70520a90e67ddee8b9df41f031b0664d595a2d17557a183d8d5e9f"
+    },
+    {
+      "path": "ios/PhotoP/Processing/DepthProcessingCore.swift",
+      "bytes": 20464,
+      "sha256": "c6de7641303a74745f25d28f722247807d5cc84b6624704bee8955f0d89c22c4"
+    },
+    {
+      "path": "ios/PhotoP/Processing/HighResolutionPhotoProcessor.swift",
+      "bytes": 12946,
+      "sha256": "0cc140e50df0057804be24dff4dc68fef43def753a0c80b858c90860315af545"
+    }
+  ],
+  "notPerformed": [
+    "Physical iPhone heat/AF/bokeh measurements",
+    "PhotoP versus Apple same-input quantitative comparison",
+    "Xcode/native/CoreML/Metal runtime checks",
+    "Apple ImageIO/AVDepthData reconstruction of attachment"
+  ]
+}

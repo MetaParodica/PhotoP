@@ -3,6 +3,20 @@ import Metal
 @testable import PhotoP
 
 final class PreviewBudgetTests: XCTestCase {
+    func testDepthBudgetDoesNotReduceLUTOnlyOrTrackingBudget() {
+        let lut = PreviewBudget(thermal: .nominal, lowPower: false)
+        let depth = PreviewBudget(thermal: .nominal, lowPower: false, depthEnabled: true)
+        XCTAssertEqual(lut.maximumDimension, 1024); XCTAssertEqual(lut.framesPerSecond, 60)
+        XCTAssertEqual(depth.maximumDimension, 720); XCTAssertEqual(depth.framesPerSecond, 30)
+        XCTAssertEqual(depth.compositionInterval, lut.compositionInterval)
+        XCTAssertEqual(depth.analysisInterval, 0.5)
+        let serious = PreviewBudget(thermal: .serious, lowPower: false, depthEnabled: true)
+        XCTAssertEqual(serious.maximumDimension, 480); XCTAssertEqual(serious.framesPerSecond, 15)
+        let critical = PreviewBudget(thermal: .critical, lowPower: false, depthEnabled: true)
+        XCTAssertFalse(critical.allowsDepthEffects)
+        XCTAssertFalse(critical.analysisInterval.isFinite)
+    }
+
     func testThermalAndLowPowerBudgetsBoundPixelsAndAnalysis() {
         let nominal = PreviewBudget(thermal: .nominal, lowPower: false)
         let low = PreviewBudget(thermal: .nominal, lowPower: true)
