@@ -160,7 +160,8 @@ jobs:
         timeout-minutes: 8
         shell: bash
         run: |
-          selection=$(xcrun simctl list devices available -j | python3 -c 'import json,re,sys; d=json.load(sys.stdin); choices=[(tuple(map(int,re.findall(r"\d+",k.split("iOS-")[-1]))),x["udid"]) for k,v in d["devices"].items() if "iOS-" in k for x in v if "iPhone" in x["name"]]; choices=[x for x in choices if x[0]>=(18,0)]; assert choices,"No available iPhone Simulator with iOS >=18.0"; version,udid=max(choices); print(".".join(map(str,version)),udid)')
+          simulator_sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          selection=$(xcrun simctl list devices available -j | python3 ../scripts/select_ios_simulator.py --sdk-version "$simulator_sdk")
           read -r runtime_version device_id <<< "$selection"
           echo "::notice::Selected iOS Simulator runtime: $runtime_version (minimum 18.0)"
           echo "PHOTOP_SIMULATOR=$device_id" >> "$GITHUB_ENV"
