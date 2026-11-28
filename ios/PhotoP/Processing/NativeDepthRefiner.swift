@@ -34,7 +34,7 @@ final class NativeDepthRefiner {
         let weights = try texture(field.width, field.height, .r32Float, shared: true)
         let lowGuide = try texture(field.width, field.height, .rgba16Float)
         let highGuide = try texture(size.width, size.height, .rgba16Float)
-        let coefficients = try texture(field.width, field.height, .rgba32Float)
+        let coefficients = try texture(field.width, field.height, .rgba32Float, shared: true)
         let output = try texture(size.width, size.height, .r32Float, shared: true)
         let normalized = field.inverseDepth.map { $0 > 0 ? ($0-lo)/range : 0 }
         let validity = field.inverseDepth.map { $0 > 0 ? Float(1) : 0 }
@@ -60,11 +60,21 @@ final class NativeDepthRefiner {
         command.commit(); command.waitUntilCompleted()
         guard command.status == .completed else { throw command.error ?? CameraError.configuration }
         try Task.checkCancellation()
+        // Coefficients A describe the learned RGB/depth relationship. Uniform
+        // guidance has A~=0 and must not turn a depth jump into an average.
+        // This is structural evidence, not a sensor confidence/probability.
+        var coefficientValues = [Float](repeating: 0,count: field.width*field.height*4)
+        coefficientValues.withUnsafeMutableBytes { coefficients.getBytes($0.baseAddress!,bytesPerRow: field.width*16,
+            from: .init(origin: .init(x: 0,y: 0,z: 0),size: .init(width: field.width,height: field.height,depth: 1)),mipmapLevel: 0) }
+        let evidence: [UInt8] = (0..<(field.width*field.height)).map { i in
+            let r = coefficientValues[i*4], g = coefficientValues[i*4+1], b = coefficientValues[i*4+2]
+            return r.isFinite && g.isFinite && b.isFinite && abs(r)+abs(g)+abs(b) > 0.05 ? 1 : 0
+        }
         var values = [Float](repeating: 0, count: size.width*size.height)
         values.withUnsafeMutableBytes { output.getBytes($0.baseAddress!, bytesPerRow: size.width*4,
             from: .init(origin: .init(x: 0, y: 0, z: 0), size: .init(width: size.width, height: size.height, depth: 1)), mipmapLevel: 0) }
         for i in values.indices { values[i] = values[i]*range+lo }
-        guard let refined = DepthRefinementPolicy.constrained(base: field, candidate: values, width: size.width, height: size.height,
+        guard let refined = DepthRefinementPolicy.constrained(base: field, candidate: values, width: size.width, height: size.height,guideEvidence: evidence,
             isCancelled: { Task.isCancelled }) else {
             try Task.checkCancellation(); throw CameraError.invalidPhotoData
         }

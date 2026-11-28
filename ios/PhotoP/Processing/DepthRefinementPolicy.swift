@@ -1,14 +1,14 @@
 import Foundation
 
 struct NativeDepthRefinement: Codable, Equatable, Sendable {
-    static let method = "mps-guided-native-v2"
+    static let method = "mps-guided-native-v3"
     let methodID: String
     let outputWidth: Int
     let outputHeight: Int
     let normalizationLower: Float
     let normalizationUpper: Float
     var valid: Bool {
-        [Self.method,"mps-guided-native-v1"].contains(methodID) && (3...4096).contains(outputWidth) && (3...4096).contains(outputHeight)
+        [Self.method,"mps-guided-native-v1","mps-guided-native-v2"].contains(methodID) && (3...4096).contains(outputWidth) && (3...4096).contains(outputHeight)
         && outputWidth * outputHeight <= 2_097_152 && normalizationLower.isFinite && normalizationUpper.isFinite
         && normalizationLower > 0 && normalizationUpper > normalizationLower
     }
@@ -31,10 +31,11 @@ enum DepthRefinementPolicy {
     // ringing is clamped to LOCAL observed depths, missing nearest cells stay
     // missing. No neural inference, invented metres or cross-edge hole filling.
     static func constrained(base: SoftwareDepthField, candidate: [Float], width: Int, height: Int,
+                            guideEvidence: [UInt8]? = nil,
                             isCancelled: () -> Bool = { false }) -> SoftwareDepthField? {
         guard let info = base.nativeMetadata, info.refinement == nil, let bounds = base.bounds,
               (3...4096).contains(width), (3...4096).contains(height), width*height <= 2_097_152,
-              candidate.count == width*height,
+              candidate.count == width*height, guideEvidence == nil || guideEvidence?.count == base.inverseDepth.count,
               abs(Double(width)*Double(base.height)/(Double(height)*Double(base.width))-1) < 0.02 else { return nil }
         // Each native neighborhood is reused by several output pixels. Compute
         // its envelope once, rather than scanning 3x3 again per derived pixel.
@@ -63,7 +64,7 @@ enum DepthRefinementPolicy {
                 let index = y*base.width+x, anchor = base.inverseDepth[index]
                 let range = upper[index]-lower[index]
                 let significant = max(span*0.08,base.units == .inverseMetres ? anchor*0.1 : 0)
-                guard anchor > 0, range > significant else { continue }
+                guard anchor > 0, range > significant, guideEvidence?[index] != 1 else { continue }
                 let middle = lower[index]+range*0.5
                 var low = lower[index], high = upper[index]
                 for j in max(0,y-1)...min(base.height-1,y+1) {

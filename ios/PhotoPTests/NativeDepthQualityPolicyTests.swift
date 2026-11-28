@@ -141,7 +141,25 @@ final class NativeDepthQualityPolicyTests: XCTestCase {
     func testPriorRefinementRecordRemainsReadable() {
         XCTAssertTrue(NativeDepthRefinement(methodID: "mps-guided-native-v1",outputWidth: 10,outputHeight: 10,
             normalizationLower: 0.2,normalizationUpper: 2).valid)
+        XCTAssertTrue(NativeDepthRefinement(methodID: "mps-guided-native-v2",outputWidth: 10,outputHeight: 10,
+            normalizationLower: 0.2,normalizationUpper: 2).valid)
         XCTAssertFalse(NativeDepthRefinement(methodID: "unrecognized",outputWidth: 10,outputHeight: 10,
             normalizationLower: 0.2,normalizationUpper: 2).valid)
+    }
+
+    func testRealGuidanceEvidenceKeepsEstimateButNeverFillsMissingNativeCells() throws {
+        let source = try base()
+        let evidence = [UInt8](repeating: 1,count: 25)
+        let out = try XCTUnwrap(DepthRefinementPolicy.constrained(base: source,
+            candidate: .init(repeating: 1.1,count: 100),width: 10,height: 10,guideEvidence: evidence))
+        XCTAssertEqual(out.inverseDepth[5*10+4],1.1)
+        var values = source.inverseDepth; values[12] = 0
+        let field = try XCTUnwrap(SoftwareDepthField(width: 5,height: 5,inverseDepth: values,
+            units: source.units,nativeMetadata: source.nativeMetadata))
+        let missing = try XCTUnwrap(DepthRefinementPolicy.constrained(base: field,
+            candidate: .init(repeating: 1.1,count: 100),width: 10,height: 10,guideEvidence: evidence))
+        XCTAssertEqual(missing.inverseDepth[5*10+4],0)
+        XCTAssertNil(DepthRefinementPolicy.constrained(base: source,candidate: .init(repeating: 1.1,count: 100),
+            width: 10,height: 10,guideEvidence: [1]))
     }
 }
