@@ -615,3 +615,18 @@ main `7f0f6c0`에서 이어서 로컬 구현한 [50 기록](50-NATIVE-DEPTH-FIRS
 - 작업 시작에 앱/테스트/CI/Package 파일216개의 hash를 저장해 문서 작성 후 불변을 대조한다. 이전 N1 로컬 앱 변경과 모든 미커밋 문서를 보존하며 이번 커밋·푸시는 없다.
 
 웹 원문/로컬 소스 hash·문서 링크·변경 형식·앱 snapshot 대조 결과는 당일 일지에 기록한다. 표의 후속 모듈과 인수 조건은 기획이며 구현/성능 완료 수치가 아니다.
+
+## 70. 네이티브 심도 품질 구현·반복 검증 — 2026-11-28
+
+[53 구현](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md), [검증 근거 JSON](research/2026-11-28-native-depth-quality-validation.json). 기존11/25 로컬 변경을 보존해 작업 브랜치에 게시했다. 새 neural 모델/가중치는 추가하지 않았다.
+
+- 직접 Linux 실행: Swift6.0.3 공통177개/0실패·Swift197파일 구문 검사·YAML 파싱·변경 형식. 동일색 경계에 가상 중간 깊이를 만드는 순수 실패1개를 먼저 재현하고v2 보호/연속경사/v1호환과GPU 회귀를 추가했다.
+- 중간47c4a7f [전체46137072747](https://github.com/MetaParodica/PhotoP/actions/runs/46137072747) success: Xcode26.3 iPhone/Simulator 빌드,unit428중427통과/기존Flow1skip·LUT18·UI18. 신규MPS/HEIC/저장5개도 실제통과했다. 최종v2source의통과수치로합치지않는다.
+- 중간47c4a7f [전체46137082280](https://github.com/MetaParodica/PhotoP/actions/runs/46137082280) failure: Xcode27.2 iPhone빌드는성공했고simulator의10분build상한을초과했다. 원시로그에는Swift컴파일오류없이시간초과후test bundle링크/생성까지남았다. 빌드를프로세스그룹관리로감싸27에서만14분command/16분step상한·긴함수/expression 경고·timing summary를추가했다. 단위/UI 시간·assertion·선택범위는그대로다.
+- 최적화6d04337: [26.3 전체46138642762](https://github.com/MetaParodica/PhotoP/actions/runs/46138642762), [27.2 전체46138642929](https://github.com/MetaParodica/PhotoP/actions/runs/46138642929) 실행중. 그뒤v2guard를추가한source와구분한다.
+- v2현재7a79099: [26.3 전체46139474721](https://github.com/MetaParodica/PhotoP/actions/runs/46139474721), [27.2 depth46139475424](https://github.com/MetaParodica/PhotoP/actions/runs/46139475424) 실행중. depth집중을UI/LUT포함전체로세지않는다.
+- 실제순수제약CPUprobe:768×576→1536×1152,Swift -O Linux3회0.1464/0.0750/0.0735초·프로세스RSS46,608KiB. MPS·decode·export제외이며iPhone열/시간/전체앱메모리인수가아니다.
+
+실제iPhone15Pro/iOS27.2·100장/10종영상/3명blind·열/전력인수는미실행. 원본/이전결과·구형recipe는보존하고native파생method/원래scale·방향정보를저장한다. 현재커밋/CI최종상태는당일일지와53에이어기록한다.
+
+70절 후속: source7a79099의v2는26.3 unit433중2실패/기존Flow1skip,27.2 depth124중같은2실패/Flow1skip이었다. 색 단서가있는좋은추정까지보호가제거한원인을확인해 MPS 회귀계수기반v3로수정했다. assertion을낮추지않았고현재139c5d1의공통178개가통과했다. 최종[26.3 전체46140950741](https://github.com/MetaParodica/PhotoP/actions/runs/46140950741)·[27.2 depth46140950851](https://github.com/MetaParodica/PhotoP/actions/runs/46140950851)는진행중이다. 중간6d04337의26.3 전체46138642762는unit429중428통과/Flow1skip·LUT18·UI18로success,27.2 unit도동일통과후나머지검사중이다.

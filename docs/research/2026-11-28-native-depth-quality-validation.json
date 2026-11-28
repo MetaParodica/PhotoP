@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-28",
+  "timezone": "Asia/Seoul",
+  "appSource": "139c5d1bc3d9e60e1ebafc887b2e61a0aa62f5a1",
+  "portableTests": {
+    "compiler": "Swift6.0.3 Linux",
+    "count": 178,
+    "failures": 0
+  },
+  "swiftSyntaxFiles": 197,
+  "cpuConstraintProbe": {
+    "checksum": 1909555.2126617432,
+    "host": "Linux x86_64, Swift6.0.3 -O",
+    "input": [
+      768,
+      576
+    ],
+    "output": [
+      1536,
+      1152
+    ],
+    "scope": "Production CPU constraint only; excludes MPS/decoding/export; not an iPhone heat measurement",
+    "seconds": [
+      0.14641217500002313,
+      0.07498898299991197,
+      0.07353653900008794
+    ],
+    "processPeakRSSKiB": 46608,
+    "source": "7a79099 (v2 CPU-only; excludes later coefficient readback)"
+  },
+  "sources": [
+    {
+      "path": "ios/PhotoP/Processing/DepthGeometry.swift",
+      "sha256": "18844f695895920e36009c5433930562b7db86022cca94d5a430aec3322d26c8"
+    },
+    {
+      "path": "ios/PhotoP/Processing/DepthRefinementPolicy.swift",
+      "sha256": "0bd557df3514f9e48676051ceb36b725729ee07d419c8ba9d37e05c58cc7032f"
+    },
+    {
+      "path": "ios/PhotoP/Processing/DepthResourcePolicy.swift",
+      "sha256": "76678b177e073cb21f422fbcfcf59142c345b353d903fa73560713146b306dfc"
+    },
+    {
+      "path": "ios/PhotoP/Processing/NativePhotoDepthReader.swift",
+      "sha256": "523f9aa4284cc0714e428096c80ac8adcddaf429f796af25d3cb932687141563"
+    },
+    {
+      "path": "ios/PhotoP/Processing/NativeDepthRefiner.swift",
+      "sha256": "f3b5e9f4d62017e53121bae4f90298cdbb6b3c27e7a8df41cac3e05c7d6b3661"
+    },
+    {
+      "path": "ios/PhotoP/Processing/NativeDepthReferenceRenderer.swift",
+      "sha256": "5a2ae87e2f954b83b93b32437dd10a6a01d6b1cc40bb2c848a207c83eca2c82d"
+    },
+    {
+      "path": "ios/PhotoP/Processing/NaturalDepthEngine.swift",
+      "sha256": "b64ed9cbc3b7ac7dd2bc9232a829f7d70e8ba91209bf60fdfd4b64602472044a"
+    },
+    {
+      "path": "ios/PhotoP/Processing/DepthPhotoEditor.swift",
+      "sha256": "b981465995ea16440f329d652fd97f650994d22da4bf485e2cf65154d66a0ed0"
+    },
+    {
+      "path": "ios/PhotoP/Processing/SoftwareDepthPolicy.swift",
+      "sha256": "45dee28313d72fa00c1be61af1d337c111b0894d22a9997796491b28c2fa1901"
+    },
+    {
+      "path": "ios/PhotoP/Processing/DepthProcessingCore.swift",
+      "sha256": "448540e53d117ffb02c316910d1b4bccdfc71ebe37a379b8ecafcb93c326387a"
+    },
+    {
+      "path": "ios/PhotoPTests/NativeDepthQualityPolicyTests.swift",
+      "sha256": "92e40a7fb81ae508b125c844d10ddbbca5b6bf14a55df9a79c7cf5e0875e8a01"
+    },
+    {
+      "path": "ios/PhotoPTests/NativeDepthQualityTests.swift",
+      "sha256": "fbc63e29b8b0f8f3e501603393de7175889d40bc271b5b8aa98faee950e3a782"
+    }
+  ],
+  "runs": [
+    {
+      "id": 46137072747,
+      "source": "47c4a7f",
+      "xcode": "26.3",
+      "scope": "all",
+      "status": "success",
+      "unit": {
+        "total": 428,
+        "passed": 427,
+        "skipped": 1
+      },
+      "lut": 18,
+      "ui": 18
+    },
+    {
+      "id": 46137082280,
+      "source": "47c4a7f",
+      "xcode": "27.2",
+      "scope": "all",
+      "status": "failure",
+      "reason": "10-minute simulator build timeout; iPhone build succeeded; no Swift errors in retained log"
+    },
+    {
+      "id": 46138642762,
+      "source": "6d04337",
+      "xcode": "26.3",
+      "scope": "all",
+      "status": "success",
+      "unit": {
+        "total": 429,
+        "passed": 428,
+        "skipped": 1
+      },
+      "lut": 18,
+      "ui": 18
+    },
+    {
+      "id": 46138642929,
+      "source": "6d04337",
+      "xcode": "27.2",
+      "scope": "all",
+      "status": "in_progress",
+      "unit": {
+        "total": 429,
+        "passed": 428,
+        "skipped": 1
+      }
+    },
+    {
+      "id": 46139474721,
+      "source": "7a79099",
+      "xcode": "26.3",
+      "scope": "all",
+      "status": "cancelled after unit failure",
+      "unit": {
+        "total": 433,
+        "failed": 2,
+        "skipped": 1
+      },
+      "reason": "v2 incorrectly rejected color-supported boundary estimates"
+    },
+    {
+      "id": 46139475424,
+      "source": "7a79099",
+      "xcode": "27.2",
+      "scope": "depth",
+      "status": "failure",
+      "unit": {
+        "total": 124,
+        "failed": 2,
+        "skipped": 1
+      },
+      "reason": "same two v2 boundary regressions"
+    },
+    {
+      "id": 46140950741,
+      "source": "139c5d1",
+      "xcode": "26.3",
+      "scope": "all",
+      "status": "in_progress"
+    },
+    {
+      "id": 46140950851,
+      "source": "139c5d1",
+      "xcode": "27.2",
+      "scope": "depth",
+      "status": "in_progress"
+    }
+  ],
+  "notPerformed": [
+    "iPhone15Pro physical capture/thermal/AF",
+    "100 scenes/10 real video categories/3-person blind acceptance",
+    "Native video depth stream and full-resolution alpha ROI"
+  ]
+}
