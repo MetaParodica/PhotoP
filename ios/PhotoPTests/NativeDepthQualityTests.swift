@@ -46,6 +46,14 @@ final class NativeDepthQualityTests: XCTestCase {
         XCTAssertEqual(refined.inverseDepth[168*256+128],0.2,accuracy: 0.00001)
     }
 
+    func testUniformColorCannotInventDepthBetweenTwoNativeSurfaces() throws {
+        guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
+        let (original,field) = try fixture()
+        let color = CIImage(color: CIColor(red: 0.5,green: 0.5,blue: 0.5)).cropped(to: original.extent)
+        let refined = try NativeDepthRefiner().refine(field,color: color)
+        XCTAssertEqual(refined.inverseDepth[96*256+131],0.2,accuracy: 0.0001)
+    }
+
     func testDerivedDepthAndScaleSurvivePhotoSaveReopenAndReedit() async throws {
         guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
         let (small,field) = try fixture()

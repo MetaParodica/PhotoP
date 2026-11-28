@@ -1,14 +1,14 @@
 import Foundation
 
 struct NativeDepthRefinement: Codable, Equatable, Sendable {
-    static let method = "mps-guided-native-v1"
+    static let method = "mps-guided-native-v2"
     let methodID: String
     let outputWidth: Int
     let outputHeight: Int
     let normalizationLower: Float
     let normalizationUpper: Float
     var valid: Bool {
-        methodID == Self.method && (3...4096).contains(outputWidth) && (3...4096).contains(outputHeight)
+        [Self.method,"mps-guided-native-v1"].contains(methodID) && (3...4096).contains(outputWidth) && (3...4096).contains(outputHeight)
         && outputWidth * outputHeight <= 2_097_152 && normalizationLower.isFinite && normalizationUpper.isFinite
         && normalizationLower > 0 && normalizationUpper > normalizationLower
     }
@@ -51,6 +51,32 @@ enum DepthRefinementPolicy {
                 }
             }
         }
+        // A strong two-surface jump has no observed middle plane. Without
+        // useful RGB contrast the guided filter averages the two surfaces;
+        // reject that unsupported center instead of inventing a sloped edge.
+        var gapLower = [Float](repeating: 0,count: base.inverseDepth.count)
+        var gapUpper = gapLower
+        let span = bounds.upper-bounds.lower
+        for y in 0..<base.height {
+            if isCancelled() { return nil }
+            for x in 0..<base.width {
+                let index = y*base.width+x, anchor = base.inverseDepth[index]
+                let range = upper[index]-lower[index]
+                let significant = max(span*0.08,base.units == .inverseMetres ? anchor*0.1 : 0)
+                guard anchor > 0, range > significant else { continue }
+                let middle = lower[index]+range*0.5
+                var low = lower[index], high = upper[index]
+                for j in max(0,y-1)...min(base.height-1,y+1) {
+                    for i in max(0,x-1)...min(base.width-1,x+1) {
+                        let v = base.inverseDepth[j*base.width+i]
+                        if v > 0 {
+                            if v <= middle { low = max(low,v) } else { high = min(high,v) }
+                        }
+                    }
+                }
+                if high-low > range*0.55 { gapLower[index] = low; gapUpper[index] = high }
+            }
+        }
         var values = [Float](repeating: 0, count: width*height)
         for y in 0..<height {
             if isCancelled() { return nil }
@@ -61,7 +87,10 @@ enum DepthRefinementPolicy {
                 let anchor = base.inverseDepth[sourceIndex]
                 guard anchor > 0 else { continue }
                 let v = candidate[y*width+x]
-                values[y*width+x] = v.isFinite && v > 0 ? min(upper[sourceIndex],max(lower[sourceIndex],v)) : anchor
+                var value = v.isFinite && v > 0 ? min(upper[sourceIndex],max(lower[sourceIndex],v)) : anchor
+                let gap = gapUpper[sourceIndex]-gapLower[sourceIndex]
+                if gap > 0, value > gapLower[sourceIndex]+gap*0.2, value < gapUpper[sourceIndex]-gap*0.2 { value = anchor }
+                values[y*width+x] = value
             }
         }
         var metadata = info

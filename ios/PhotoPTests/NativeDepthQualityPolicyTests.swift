@@ -118,4 +118,30 @@ final class NativeDepthQualityPolicyTests: XCTestCase {
         XCTAssertEqual(small.bounds?.lower,field.bounds?.lower)
         XCTAssertEqual(small.bounds?.upper,field.bounds?.upper)
     }
+
+    func testBimodalEdgeDoesNotCreateAnIntermediateSurface() throws {
+        let field = try base()
+        let out = try XCTUnwrap(DepthRefinementPolicy.constrained(base: field,
+            candidate: .init(repeating: 1.1,count: 100),width: 10,height: 10))
+        // Two observed surfaces are 2 and 0.2. A uniform-color guided average
+        // must not turn their discontinuity into a fictitious middle plane.
+        XCTAssertEqual(out.inverseDepth[5*10+4],2)
+    }
+
+    func testSmoothDepthGradientStillAcceptsGuidedInterpolation() throws {
+        let source = try base()
+        let values = (0..<25).map { Float($0%5)*0.1+1 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 5,height: 5,inverseDepth: values,
+            units: .inverseMetres,nativeMetadata: source.nativeMetadata))
+        let out = try XCTUnwrap(DepthRefinementPolicy.constrained(base: field,
+            candidate: .init(repeating: 1.25,count: 100),width: 10,height: 10))
+        XCTAssertEqual(out.inverseDepth[5*10+4],1.25,accuracy: 0.00001)
+    }
+
+    func testPriorRefinementRecordRemainsReadable() {
+        XCTAssertTrue(NativeDepthRefinement(methodID: "mps-guided-native-v1",outputWidth: 10,outputHeight: 10,
+            normalizationLower: 0.2,normalizationUpper: 2).valid)
+        XCTAssertFalse(NativeDepthRefinement(methodID: "unrecognized",outputWidth: 10,outputHeight: 10,
+            normalizationLower: 0.2,normalizationUpper: 2).valid)
+    }
 }
