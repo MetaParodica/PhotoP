@@ -48,7 +48,8 @@ final class NativeDepthQualityTests: XCTestCase {
 
     func testDerivedDepthAndScaleSurvivePhotoSaveReopenAndReedit() async throws {
         guard MTLCreateSystemDefaultDevice() != nil else { throw XCTSkip("Metal unavailable") }
-        let (color,field) = try fixture()
+        let (small,field) = try fixture()
+        let color = small.transformed(by: CGAffineTransform(scaleX: 4,y: 4))
         let refined = try NativeDepthRefiner().refine(field,color: color)
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root,withIntermediateDirectories: true)
@@ -64,6 +65,10 @@ final class NativeDepthQualityTests: XCTestCase {
         let session = try await CaptureResultProcessor.shared.loadSession(result: result,original: photo,documents: root)
         XCTAssertEqual(session.field.nativeMetadata,refined.nativeMetadata)
         XCTAssertEqual(session.field.bounds?.upper,field.bounds?.upper)
+        let preview = try await DepthPhotoEditor(session: session).preview(aperture: 4,focus: CGPoint(x: 0.25,y: 0.5),
+            profile: .natural,original: false)
+        XCTAssertEqual(preview.width,768); XCTAssertEqual(preview.height,576)
+        XCTAssertEqual(session.field.width,1024); XCTAssertEqual(session.field.height,768)
         let again = try await CaptureResultProcessor.shared.reprocess(result: result,original: photo,aperture: 8,documents: root)
         let restored = try await CaptureResultProcessor.shared.loadSession(result: again,original: photo,documents: root)
         XCTAssertEqual(restored.field.inverseDepth,refined.inverseDepth)
@@ -81,9 +86,12 @@ final class NativeDepthQualityTests: XCTestCase {
         let distances: [Float] = (0..<(16*12)).map { $0%16 < 8 ? 1 : 5 }
         let data = distances.withUnsafeBytes { Data($0) }
         let metadata = try XCTUnwrap(CGImageMetadataCreateMutable())
+        let description: [CFString:Any] = [
+            kCGImagePropertyWidth:NSNumber(value: 16), kCGImagePropertyHeight:NSNumber(value: 12),
+            kCGImagePropertyBytesPerRow:NSNumber(value: 64),
+            kCGImagePropertyPixelFormat:NSNumber(value: kCVPixelFormatType_DepthFloat32)]
         let info: [CFString:Any] = [kCGImageAuxiliaryDataInfoData: data,
-            kCGImageAuxiliaryDataInfoDataDescription: [kCGImagePropertyWidth:16,kCGImagePropertyHeight:12,
-                kCGImagePropertyBytesPerRow:16*4,kCGImagePropertyPixelFormat:kCVPixelFormatType_DepthFloat32],
+            kCGImageAuxiliaryDataInfoDataDescription: description,
             kCGImageAuxiliaryDataInfoMetadata:metadata]
         CGImageDestinationAddAuxiliaryDataInfo(destination,kCGImageAuxiliaryDataTypeDepth,info as CFDictionary)
         XCTAssertTrue(CGImageDestinationFinalize(destination))

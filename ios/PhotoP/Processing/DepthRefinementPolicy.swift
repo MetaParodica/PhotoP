@@ -36,23 +36,32 @@ enum DepthRefinementPolicy {
               (3...4096).contains(width), (3...4096).contains(height), width*height <= 2_097_152,
               candidate.count == width*height,
               abs(Double(width)*Double(base.height)/(Double(height)*Double(base.width))-1) < 0.02 else { return nil }
+        // Each native neighborhood is reused by several output pixels. Compute
+        // its envelope once, rather than scanning 3x3 again per derived pixel.
+        var lower = base.inverseDepth, upper = base.inverseDepth
+        for y in 0..<base.height {
+            if isCancelled() { return nil }
+            for x in 0..<base.width where base.inverseDepth[y*base.width+x] > 0 {
+                let index = y*base.width+x
+                for j in max(0,y-1)...min(base.height-1,y+1) {
+                    for i in max(0,x-1)...min(base.width-1,x+1) {
+                        let v = base.inverseDepth[j*base.width+i]
+                        if v > 0 { lower[index] = min(lower[index],v); upper[index] = max(upper[index],v) }
+                    }
+                }
+            }
+        }
         var values = [Float](repeating: 0, count: width*height)
         for y in 0..<height {
             if isCancelled() { return nil }
             let sy = min(base.height-1, Int((Double(y)+0.5)*Double(base.height)/Double(height)))
             for x in 0..<width {
                 let sx = min(base.width-1, Int((Double(x)+0.5)*Double(base.width)/Double(width)))
-                let anchor = base.inverseDepth[sy*base.width+sx]
+                let sourceIndex = sy*base.width+sx
+                let anchor = base.inverseDepth[sourceIndex]
                 guard anchor > 0 else { continue }
-                var lo = anchor, hi = anchor
-                for j in max(0,sy-1)...min(base.height-1,sy+1) {
-                    for i in max(0,sx-1)...min(base.width-1,sx+1) {
-                        let v = base.inverseDepth[j*base.width+i]
-                        if v > 0 { lo = min(lo,v); hi = max(hi,v) }
-                    }
-                }
                 let v = candidate[y*width+x]
-                values[y*width+x] = v.isFinite && v > 0 ? min(hi,max(lo,v)) : anchor
+                values[y*width+x] = v.isFinite && v > 0 ? min(upper[sourceIndex],max(lower[sourceIndex],v)) : anchor
             }
         }
         var metadata = info

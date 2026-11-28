@@ -1,5 +1,7 @@
 # 심도 품질 개선 개발 기획
 
+> 2026-11-28 개발: [53 구현](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md)에 N0 비교 adapter/SDK 연결·N2 reader/geometry/국소 제약 MPS·지점 초점 군집과 저장/편집을 반영했다. 아래 표는 전체 목표이며 미구현 후속과 실제 검증 상태는53 및 당일 일지를 따른다.
+
 2026-11-25 KST. 근거는 [51 조사](51-DEPTH-QUALITY-RESEARCH.ko.md)와 [직접 조회 기록](research/2026-11-25-depth-quality-sources.json). [49 방향](49-NATIVE-DEPTH-LENS-PRIORITY.ko.md)·[50 로컬 N1 구현](50-NATIVE-DEPTH-FIRST-IMPLEMENTATION.ko.md)을 이어가는 실행 계획이다. **이 문서의 후속 알고리즘/모듈은 아직 구현·기기 인수되지 않았다.**
 
 ## 1. 목표와 이번 기획에서 정한 선택

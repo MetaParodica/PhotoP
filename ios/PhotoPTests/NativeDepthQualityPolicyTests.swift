@@ -108,4 +108,14 @@ final class NativeDepthQualityPolicyTests: XCTestCase {
         let restored = try JSONDecoder().decode(NativeDepthMetadata.self,from: JSONEncoder().encode(info))
         XCTAssertNil(restored.geometry); XCTAssertNil(restored.refinement); XCTAssertTrue(restored.valid)
     }
+
+    func testDisplayGridKeepsOriginalScaleWhenSmallSurfaceIsNotSampled() throws {
+        var values = [Float](repeating: 0.2,count: 10000)
+        for i in 0..<10 { values[i] = 2 }
+        let field = try XCTUnwrap(SoftwareDepthField(width: 100,height: 100,inverseDepth: values,units: .relativeInverse))
+        let small = try XCTUnwrap(DepthGrid.resized(field,width: 3,height: 3))
+        XCTAssertTrue(small.inverseDepth.allSatisfy { $0 == 0.2 })
+        XCTAssertEqual(small.bounds?.lower,field.bounds?.lower)
+        XCTAssertEqual(small.bounds?.upper,field.bounds?.upper)
+    }
 }

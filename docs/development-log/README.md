@@ -45,5 +45,4 @@ docs/development-log/
 | [2026-11-21](2026-11-21.md) | 기획46 사진 실험2개·기존 기능 유지, EdgeTAM2/MatAnyone2 6모델·소스/권리 고정·독립Off/저장·CPU head 복원·인물 확인/비인물 거부, 양 SDK 전체 native423통과/Flow1skip·UI18·portable158/Python34,19b343a main push·47 구현/온보딩·기기 미인수,7f0f6c0 원격 게시/일지 작성 상태 확인(확인 메모는 로컬) | 현재까지 정리 · KST |
 | [2026-11-24](2026-11-24.md) | main7f0f6c0 추가 개발 조사48·공식웹36/Apple20·상위7repo/원시parity/streaming 재확인,27.2CI·GPS/공유·모델역할표시·촬영큐/캐시·고해상도ROI/저장·E4/E5 권장, 실사gate0/exit2·새앱검사미실행 | 현재까지 정리 · KST |
 | [2026-11-25](2026-11-25.md) | HEIC/native 조사49·50 N1 코드(공통164/Swift190구문), 후속 품질51/기획52·Apple 공개 filter/MPS·가림/신뢰/ROI 조사(웹35/Apple18·5repo), 앱216불변·로컬 미커밋/미푸시 | 현재까지 정리 · KST |
-
 | [2026-11-28](2026-11-28.md) | 52 기획 후속 native reader/geometry·GPU guided 정밀화·얇은 물체 초점·저장/비교 adapter, 공통173/Swift197구문 통과·native CI 준비 | 진행 중 · KST |

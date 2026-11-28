@@ -10,15 +10,16 @@
 - **초점:** 터치 주변의 다수 배경에 묻힌 얇은 물체라도 터치 깊이에 일치하는3개 이상 표본이 있으면 그 군집을 사용한다. 고립 spike는 초점을 고정하지 못하고 기존 중앙값으로 안전 복귀한다. 광학 AF/대상 identity의 전체 시간 안정화는 별도 후속이다.
 - **저장/재편집:** refinement method·출력 지도 크기·원래 normalization bounds와geometry를 선택 metadata로 보존한다. 새 사진은 한 번 정밀화한 지도를 저장하고, 재편집은 모델/MPS를 다시 호출하지 않는다. 기존2/3/4 recipe의 선택 필드가 없는 경우도 유지한다. 기존 JPEG/원본을 덮어쓰지 않는다.
 - **참조 렌더러:** 같은 색상·원래 disparity에 Apple 공개 depthBlurEffectFilter를 적용하는 adapter를 추가한다. 반환 필터의 aperture 지원과 미적용 focus를 명시하고, 미지원은nil로 보고한다. Apple Camera의 비공개 파이프라인이나 모든 조건의 동일 초점 비교로 표현하지 않는다. 기본 사용자 흐름을 바꾸는 대체 렌더러가 아니다.
+- **편집 반응성:** 저장 지도보다 작은768px 편집 프리뷰용 grid를 교정마다 한 번 캐시한다. 최종 저장에는 원래 해상도의 정밀화 지도를 계속 사용한다. stencil 국소 범위도 native 셀마다 한 번 계산해 여러 파생 픽셀에서 재사용한다.
 - **자원:** refinement와 bounded GPU readback은 촬영 후 executor 전용이다. live/영상 프레임마다 실행하지 않는다. 원래N1 preview 예산과 critical 중지를 유지하며, 실제 발열 감소는 아직 측정하지 않았다.
 
 원래 intrinsics/전체 calibration은 원본 사진에 남는다. 요약은 원래 첨부 좌표를 설명하며 리사이즈된 지도 좌표의 intrinsics로 직접 사용하지 않는다. guided 결과는 센서 직접 측정치가 아니라 `mps-guided-native-v1`로 구별한 파생 깊이다.
 
 ## 검증 진행
 
-- Linux Swift6.0.3 공통173개 통과, Swift197파일 구문 검사·변경 형식 통과. 이번에 실제 실행했으며11/25의164개를 재인용한 수치가 아니다.
-- 신규 순수9개: EXIF8방향/역변환·crop/미러·잘못된 geometry 거부·얇은 표면/고립 spike·상대 scale/offset·메모리 크기·국소 anchor/원래 scale·결측/NaN/취소·구형 metadata.
+- Linux Swift6.0.3 공통174개 통과, Swift197파일 구문 검사·변경 형식 통과. 이번에 실제 실행했으며11/25의164개를 재인용한 수치가 아니다.
+- 신규 순수10개: EXIF8방향/역변환·crop/미러·잘못된 geometry 거부·얇은 표면/고립 spike·상대 scale/offset·메모리 크기·국소 anchor/원래 scale·결측/NaN/취소·구형 metadata·표시 지도 축소 시 원래 깊이 범위 보존.
 - 신규 iOS5개: MPS 경계 이동/상수 anchor·세로 방향·저장/재열기/재편집·synthetic HEIC8방향·Apple 참조 지원 조건. iPhone/Simulator·Metal 실행은 CI로 검증 중이며 결과 확정 전 성공으로 세지 않는다.
 - CI에Xcode27.2를 실제`xcode-27` runner로 연결하고 심도 집중 선택에 새 테스트를 추가했다. 공식 image 확인과 실제 빌드 결과는 구분한다.
 
-실제 iPhone15Pro/iOS27.2 화질·열·전체100장/10종 영상/3명 blind 인수는 미실행이다. N3 가시성 PSF·전체 고해상도alpha ROI 저장·시간/identity 추적 통합·영상 native stream은 아직 남아 있다. 이 변경을 전체 계획 완료나 DSLR 동급 화질 인수로 표시하지 않는다.
+실제 iPhone15Pro/iOS27.2 화질·열·전체100장/10종 영상/3명 blind 인수는 미실행이다. N3 가시성 PSF·전체 고해상도alpha ROI 저장·시간/identity 추적 통합·영상 native stream 및 실험실 모델의 반복 초기화 비용은 아직 남아 있다. 이 변경을 전체 계획 완료나 DSLR 동급 화질 인수로 표시하지 않는다.

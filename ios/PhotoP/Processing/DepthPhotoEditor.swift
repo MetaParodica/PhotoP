@@ -10,7 +10,8 @@ actor DepthPhotoEditor {
         .workingColorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!])
     private var image: CIImage?
     private var renderer: MetalLUTRenderer?
-    private var corrected: (DepthCorrections, SoftwareDepthField)?
+    private var previewEdits: DepthCorrections?
+    private var previewField: SoftwareDepthField?
     init(session: DepthEditSession) { self.session = session }
 
     func preview(aperture: Double, focus: CGPoint, profile: DepthLensProfile, original: Bool, corrections: DepthCorrections? = nil, diagnostic: DepthDiagnostic = .result) async throws -> SDRImage {
@@ -21,13 +22,17 @@ actor DepthPhotoEditor {
         }
         guard let image else { throw CameraError.invalidPhotoData }
         let edits = corrections ?? session.corrections
-        if corrected?.0 != edits {
+        if previewEdits != edits {
             guard let field = edits.applying(to: session.field, isCancelled: { Task.isCancelled }) else {
                 try Task.checkCancellation(); throw CameraError.invalidSettings
             }
-            corrected = (edits, field)
+            let width = min(field.width,Int(image.extent.width)), height = min(field.height,Int(image.extent.height))
+            // A saved guided map may be much larger than this 768px preview.
+            // Cache its bounded display grid; export still uses the full map.
+            guard let grid = DepthGrid.resized(field,width: width,height: height) else { throw CameraError.invalidPhotoData }
+            previewField = grid; previewEdits = edits
         }
-        guard let field = corrected?.1 else { throw CameraError.invalidPhotoData }
+        guard let field = previewField else { throw CameraError.invalidPhotoData }
         if !original, diagnostic != .result {
             return try diagnosticPixels(image: image, field: field, focus: focus, aperture: aperture, profile: profile, mode: diagnostic)
         }
@@ -59,7 +64,7 @@ actor DepthPhotoEditor {
             aperture: aperture, focus: focus, profile: profile, corrections: corrections, request: request)
         let updated = try await CaptureResultProcessor.shared.loadSession(result: result, original: session.original)
         try Task.checkCancellation()
-        session = updated; corrected = nil
+        session = updated; previewEdits = nil; previewField = nil
         return (updated.recipe.experimentalSummary, updated.matte != nil)
     }
     private func diagnosticPixels(image: CIImage, field: SoftwareDepthField, focus: CGPoint, aperture: Double,

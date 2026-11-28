@@ -11,6 +11,8 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
+- 2026-11-28 [53 네이티브 품질 구현](docs/53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md): Reader/geometry 검증·MPS guided 경계 정밀화·얇은 물체 초점 군집·파생 깊이/원래 scale 저장·Apple 공개 비교 adapter를 구현했다. 촬영 후에만 bounded refinement를 수행하고 editor는768px grid를 캐시하며 원래 지도는 보존한다. 작업 브랜치 `codex/native-depth-quality-20261128`, 정확한 최종SHA/CI/실행 결과는53·08·11/28 일지를 따른다. 새 neural 모델·N3 가시성 PSF·full-resolution alpha ROI·영상 native stream·실기기 품질/열 인수 완료를 뜻하지 않는다.
+
 - 2026-11-25 심도 품질 후속은 [51 조사](docs/51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 기획](docs/52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md)을 따른다. **동일 입력 기준선/공개 Apple depth blur 비교→geometry/신뢰→MPS 유도 경계·초점 안정화→가시성 PSF→고해상도 ROI/재편집→영상** 순서다. 새 neural 전체 모델보다 native 깊이와 자체 렌즈 합성을 우선한다. MPS/Apple API는 직접 문서 조회만 했으며 새 PoC/기기 측정은 아직 없다. 이번 후속은 조사·기획 문서로 N1의 기존 로컬 코드는 보존한다.
 
 - 2026-11-25 후속 [50 네이티브 심도 우선 1차 구현](docs/50-NATIVE-DEPTH-FIRST-IMPLEMENTATION.ko.md): 센서 automatic에서 live AI 자동 실행·결측 AI 채우기·내장 matte 없는 암묵 Vision 분할을 분리하고, 명시적 AI/실험실·기존 편집은 유지한다. 심도 preview720px/30fps·열/저전력 별도 예산·critical 심도 중지, native quality/filtered/accuracy/intrinsics 요약의 recipe 보존을 로컬 구현했다. 공통164개 통과와 Swift190파일 구문 검사까지이며 새 iOS SDK/native/기기 발열·화질 검증 및 커밋/푸시는 아직 없다. 전체 N0~N5 완료로 해석하지 않는다.

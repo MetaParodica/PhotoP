@@ -47,6 +47,12 @@ struct SoftwareDepthField: Sendable {
         guard values.count == inverseDepth.count, values.allSatisfy({ $0.isFinite && $0 >= 0 }), values.contains(where: { $0 > 0 }) else { return nil }
         return Self(width: width, height: height, validDepth: values, units: units, bounds: bounds, nativeMetadata: nativeMetadata)
     }
+    func resampled(width: Int, height: Int, inverseDepth: [Float]) -> Self? {
+        guard (3...4096).contains(width), (3...4096).contains(height), width*height <= 2_097_152,
+              inverseDepth.count == width*height, inverseDepth.allSatisfy({ $0.isFinite && $0 >= 0 }),
+              inverseDepth.contains(where: { $0 > 0 }) else { return nil }
+        return Self(width: width,height: height,validDepth: inverseDepth,units: units,bounds: bounds,nativeMetadata: nativeMetadata)
+    }
     func focusValue(x: Double, y: Double) -> Float? {
         DepthFocusEstimator.value(in: self, x: x, y: y)
     }

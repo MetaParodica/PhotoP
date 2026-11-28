@@ -143,7 +143,7 @@ enum DepthGrid {
             let px = min(field.width - 1, max(0, Int(x.rounded()))), py = min(field.height - 1, max(0, Int(y.rounded())))
             return field.inverseDepth[py * field.width + px]
         }
-        return SoftwareDepthField(width: width, height: height, inverseDepth: data, units: field.units, nativeMetadata: field.nativeMetadata)
+        return field.resampled(width: width,height: height,inverseDepth: data)
     }
 }
 
