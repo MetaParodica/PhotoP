@@ -91,7 +91,8 @@
         "skipped": 1
       },
       "lut": 18,
-      "ui": 18
+      "ui": 18,
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46137072747"
     },
     {
       "id": 46137082280,
@@ -99,7 +100,8 @@
       "xcode": "27.2",
       "scope": "all",
       "status": "failure",
-      "reason": "10-minute simulator build timeout; iPhone build succeeded; no Swift errors in retained log"
+      "reason": "10-minute simulator build timeout; iPhone build succeeded; no Swift errors in retained log",
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46137082280"
     },
     {
       "id": 46138642762,
@@ -113,19 +115,33 @@
         "skipped": 1
       },
       "lut": 18,
-      "ui": 18
+      "ui": 18,
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46138642762"
     },
     {
       "id": 46138642929,
       "source": "6d04337",
       "xcode": "27.2",
       "scope": "all",
-      "status": "in_progress",
+      "status": "cancelled",
       "unit": {
         "total": 429,
         "passed": 428,
         "skipped": 1
-      }
+      },
+      "reason": "35-minute overall job limit; old selector chose iPhone Duo engineering iOS27.2.19.4; UI incomplete; partial UI log also records two failing cases / three assertions, not merely incomplete execution",
+      "lut": 18,
+      "partialUI": {
+        "completedSuite": "CameraInteractionTests",
+        "executed": 12,
+        "failedAssertions": 3,
+        "failingCases": [
+          "testBoxedViewfinderDoesNotOverlapSettingsInBothOrientations",
+          "testLongExposureDurationIsFirstAndSupportsDirectEntry"
+        ],
+        "remainingSuite": "incomplete at job cancellation"
+      },
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46138642929"
     },
     {
       "id": 46139474721,
@@ -138,7 +154,8 @@
         "failed": 2,
         "skipped": 1
       },
-      "reason": "v2 incorrectly rejected color-supported boundary estimates"
+      "reason": "v2 incorrectly rejected color-supported boundary estimates",
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46139474721"
     },
     {
       "id": 46139475424,
@@ -151,26 +168,103 @@
         "failed": 2,
         "skipped": 1
       },
-      "reason": "same two v2 boundary regressions"
+      "reason": "same two v2 boundary regressions",
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46139475424"
     },
     {
       "id": 46140950741,
       "source": "139c5d1",
       "xcode": "26.3",
       "scope": "all",
-      "status": "in_progress"
+      "status": "success",
+      "unit": {
+        "total": 434,
+        "passed": 433,
+        "skipped": 1,
+        "failed": 0
+      },
+      "nativeQualityTests": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0
+      },
+      "lut": 18,
+      "ui": 18,
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46140950741"
     },
     {
       "id": 46140950851,
       "source": "139c5d1",
       "xcode": "27.2",
       "scope": "depth",
-      "status": "in_progress"
+      "status": "success",
+      "unit": {
+        "total": 125,
+        "passed": 124,
+        "skipped": 1,
+        "failed": 0
+      },
+      "nativeQualityTests": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0
+      },
+      "runtime": "27.2.19.4 engineering / iPhone Duo (old selector); standard 27.2 all run recorded separately",
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46140950851"
+    },
+    {
+      "id": 46142012643,
+      "source": "66bf20d",
+      "appSource": "139c5d1",
+      "xcode": "27.2",
+      "scope": "all",
+      "status": "success",
+      "selectionPolicy": "SDK major/minor match; standard iPhone Pro; excludes four-component engineering runtime",
+      "unit": {
+        "total": 434,
+        "passed": 433,
+        "skipped": 1,
+        "failed": 0
+      },
+      "lut": 18,
+      "nativeQualityTests": {
+        "total": 6,
+        "passed": 6,
+        "failed": 0
+      },
+      "url": "https://github.com/MetaParodica/PhotoP/actions/runs/46142012643",
+      "ui": 18,
+      "runtime": "iOS27.2 / iPhone18Pro",
+      "regressionCases": {
+        "boxedViewfinderPortraitAndLandscape": "passed",
+        "longExposureDirectInput": "passed"
+      }
     }
   ],
   "notPerformed": [
     "iPhone15Pro physical capture/thermal/AF",
     "100 scenes/10 real video categories/3-person blind acceptance",
-    "Native video depth stream and full-resolution alpha ROI"
-  ]
+    "Native video depth stream and full-resolution alpha ROI",
+    "Same-input PhotoP/Apple-camera real-photo quality comparison"
+  ],
+  "pythonTests": {
+    "count": 41,
+    "failures": 0,
+    "includesSimulatorSelection": 7,
+    "host": "Linux (local execution against CI source 66bf20d)"
+  },
+  "sourceComparison": {
+    "appTree": "139c5d1bc3d9e60e1ebafc887b2e61a0aa62f5a1",
+    "ciTree": "66bf20d119c7835db7b33cf9b98dc38aabdac558",
+    "unchangedPaths": [
+      "ios",
+      "Package.swift"
+    ],
+    "verification": "git diff 139c5d1 -- ios Package.swift was empty"
+  },
+  "publication": {
+    "mainCodeCommit": "66bf20d119c7835db7b33cf9b98dc38aabdac558",
+    "confirmed": "git push and git ls-remote origin refs/heads/main",
+    "documentationFollowupChangesAppOrTests": false
+  }
 }

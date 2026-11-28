@@ -1,6 +1,6 @@
 # 추가 개선·기능 과제 목록
 
-> 2026-11-28 구현 후속: [53 기록](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md)에 native reader/geometry·MPS 경계 정밀화·지점 초점 군집·저장/재편집·공개 Apple reference adapter를 연결했다. 공통178개/Swift197구문 검사를 실행했고,26.3/27.2 iPhone 빌드 후 native CI를 확인 중이다. 최종 상태는53/08/당일 일지가 우선한다. N2 시간/identity 안정화·N3 가시성/고해상도 alpha ROI·실사/열 인수·native 영상은 남아 있다.
+> 2026-11-28 구현·main 반영: [53 기록](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md)에 native reader/geometry·MPS 경계 정밀화·지점 초점 군집·저장/재편집·공개 Apple reference adapter를 연결했다. 앱139c5d1/CI66bf20d, Xcode26.3·27.2 전체 success(각 unit433통과/Flow1skip·LUT18·UI18), 직접 공통178·Python41. 기능/CI66bf20d를 main에 FF push했다. N2 시간/identity 안정화·N3 가시성/고해상도 alpha ROI·실사/열 인수·native 영상은 남아 있다.
 
 > 2026-11-25 품질 개발 기획: [51 조사](51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 계획](52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md). 다음 구현은 동일 입력 native/공개 Apple filter 기준선과 NativePhotoDepthReader/DepthGeometry다. 이후 MPS 경계/신뢰·초점 안정화, 가시성 PSF, 고해상도 ROI 저장/복원, 실제 사진 인수 뒤 영상으로 진행한다. 이번 조사에서는35웹응답/Apple18·상위5repo·로컬16소스를 대조했으며 앱 추가 수정·성능/화질 측정·새 빌드/푸시는 없다.
 

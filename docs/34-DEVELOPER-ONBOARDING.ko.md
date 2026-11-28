@@ -1,5 +1,7 @@
 # PhotoP 개발 온보딩
 
+> 네이티브 심도 품질 main 반영(2026-11-28): [53 구현·검증](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md). 앱139c5d1/CI66bf20d, Xcode26.3·27.2 전체 success(각 unit433통과/Flow1skip·LUT18·UI18), 직접 공통178·Python41. 기능/CI66bf20d를 main에 정상FF push했다. 새 진입점은 NativePhotoDepthReader·DepthGeometry·NativeDepthRefiner이며 저장 지도/원래 scale 재사용과768px 편집 캐시를 확인한다. 기존 기능과 신규AI 실험실Off를 유지한다. 실제 기기 화질/열 인수·가시성PSF·고해상도alpha ROI·영상 native stream은 후속이다. 아래는 날짜별 이전 상태다.
+
 > 사진 AI 실험 main 반영(2026-11-21): [47 구현·검증](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md). 검증 앱 소스 `19b343a`, 전체 CI44784405939(Xcode26.3)/44784461745(26.6) success. 각 환경 native424 중423통과/기존Flow1skip·UI18·portable158·Python34. 실제 모델 양성·비인물 거부·저장/Off 재편집을 포함한다. 기존 기능은 기본 유지하고 새 두 사진 옵션만 실험실Off다. 원본/sidecar·provenance·CPU mask-head 복원과 인물 확인 계약을 먼저 확인한다. 실기기·새 영상/live 모델은 후속이다.
 
 > 최신 제품 기획(2026-11-20): [46 실험적 AI 심도](46-EXPERIMENTAL-AI-DEPTH-PLAN.ko.md). 기존 심도·기존 AI 모델·사진/영상/라이브 추적·고해상도/편집은 기본 기능으로 유지한다. **이번 신규 외부 AI 기능만 실험실 기본Off·설정 활성화**로 추가한다. 사진 전용 신규 기능부터 독립 제공하며 기존 설정/기능을 실험실로 옮기지 않는다. 기존45의영상 우선 권고보다 이 사용자 결정이 우선한다. 사진 실험의 실제 통합·소스/가중치·설정/저장 계약·검증 상태는 [47 구현 기록](47-EXPERIMENTAL-PHOTO-DEPTH-IMPLEMENTATION.ko.md)을 먼저 확인한다. 영상 memory/새 live 모델은 후속이다.

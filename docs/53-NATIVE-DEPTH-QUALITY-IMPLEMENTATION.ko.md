@@ -16,17 +16,34 @@
 
 원래 intrinsics/전체 calibration은 원본 사진에 남는다. 요약은 원래 첨부 좌표를 설명하며 리사이즈된 지도 좌표의 intrinsics로 직접 사용하지 않는다. guided 결과는 센서 직접 측정치가 아니라 `mps-guided-native-v3`로 구별한 파생 깊이다. 기존v1/v2 파생 지도도 읽을 수 있다.
 
-## 검증 진행
+## 검증 결과
 
-- Linux Swift6.0.3 공통178개 통과, Swift197파일 구문 검사·변경 형식 통과. 이번에 실제 실행했으며11/25의164개를 재인용한 수치가 아니다.
-- 신규 순수14개: EXIF8방향/역변환·crop/미러·잘못된 geometry 거부·얇은 표면/고립 spike·상대 scale/offset·메모리 크기·국소 anchor/원래 scale·결측/NaN/취소·구형 metadata·표시 지도 축소 시 원래 깊이 범위 보존.
-- 신규 iOS6개: MPS 경계 이동/상수 anchor·세로 방향·저장/재열기/재편집·synthetic HEIC8방향·Apple 참조 지원 조건·동일색 앞뒤 물체의 가상 중간 면 방지. iPhone/Simulator·Metal 실행은 CI로 검증 중이며 결과 확정 전 성공으로 세지 않는다.
-- CI에Xcode27.2를 실제`xcode-27` runner로 연결하고 심도 집중 선택에 새 테스트를 추가했다. 공식 image 확인과 실제 빌드 결과는 구분한다.
+검증 앱 소스는 `139c5d1`, 수정한 CI 선택기는 `66bf20d`다. 두 커밋의 `ios`·`Package.swift`는 동일하다. 기능/CI를 포함한 `66bf20d`를 main에 정상 fast-forward push하고 원격 ref도 확인했다. 이 문서의 최종 정리는 앱·모델·테스트·CI를 변경하지 않는다.
 
-실제 iPhone15Pro/iOS27.2 화질·열·전체100장/10종 영상/3명 blind 인수는 미실행이다. N3 가시성 PSF·전체 고해상도alpha ROI 저장·시간/identity 추적 통합·영상 native stream 및 실험실 모델의 반복 초기화 비용은 아직 남아 있다. 이 변경을 전체 계획 완료나 DSLR 동급 화질 인수로 표시하지 않는다.
+| 환경·실행 | 실제 결과 |
+|---|---|
+| [Xcode26.3 전체46140950741](https://github.com/MetaParodica/PhotoP/actions/runs/46140950741), 앱139c5d1 | **success**. iPhone/Simulator 빌드·unit434개 중433통과/기존Flow1skip·LUT18·UI18 |
+| [Xcode27.2 전체46142012643](https://github.com/MetaParodica/PhotoP/actions/runs/46142012643), CI66bf20d/앱139c5d1 | **success**. SDK/Simulator27.2·iPhone18Pro 선택을 로그로 확인. iPhone/Simulator 빌드·unit434개 중433통과/Flow1skip·LUT18·UI18 |
+
+각 환경의 신규 GPU/HEIC/저장6개는 모두 실제 통과했다. unit/LUT/UI 원시 로그와 XCTest summary의 수치·전체 결론을 직접 대조했다. native 합계는 각452개 중451통과/기존Flow1skip이며 UI18개는 별도다. 실사 화질 인수 수치가 아니다.
+
+- 직접 Linux 실행: Swift6.0.3 공통178개/0실패, Python41개/0실패(선택기7개 포함), Swift197파일 구문 검사·변경 형식 통과.
+- 신규 순수14개: EXIF8방향/역변환·crop/미러·잘못된 geometry 거부·얇은 표면/고립 spike·상대 scale/offset·크기 상한·국소 anchor/원래 scale·결측/NaN/취소·구형 metadata·표시 지도 축소 시 범위 보존·색 단서/동일색 경계 보호.
+- 신규 iOS6개: MPS 경계 이동/상수 anchor·세로 방향·저장/재열기/재편집·synthetic HEIC8방향·Apple 참조 지원 조건·동일색 앞뒤 표면의 가상 중간 면 방지.
+- [검증 근거 JSON](research/2026-11-28-native-depth-quality-validation.json)에 소스 fingerprint·실행 SHA·중간 실패·CPU probe 범위를 보존했다. 상세 이력은 [08의70절](08-STEP-VALIDATION.ko.md#70-네이티브-심도-품질-구현반복-검증--2026-11-28)과 [당일 일지](development-log/2026-11-28.md)를 따른다.
+
+## 실패와 수정
+
+v2는 동일색 경계의 가상 중간 면을 막았지만, 실제 GPU의 강한색 경계2개에서 좋은 guided 추정까지 제거했다. MPS RGB 회귀계수의 구조적 단서를 사용하는v3로 수정했고 기존 `>0.7` 조건과 동일색 보호를 모두 유지해 재검증했다. 이 계수는 센서 confidence/확률이 아니다.
+
+이전27.2 전체 실행은35분 job 상한으로 취소됐고, 종료 전 뷰파인더 배치·장노출 입력2케이스/3assertion 실패도 있었다. 기존 최대 버전 선택식은 표준27.2 대신 engineering27.2.19.4/iPhone Duo를 골랐다. SDK 일치 표준 Pro를 선택하도록 수정했으며, 표준27.2의 최종 전체 실행에서 해당 두 UI 케이스가 모두 통과했다. engineering Duo 호환 문제의 원인을 확정하거나 앱 UI를 수정했다고 표시하지 않는다.
 
 ## CPU 작업량 점검
 
-실제production 순수제약코드를Swift6.0.3 `-O`로직접컴파일해768×576 native→1536×1152 파생그리드로3회실행했다. Linux x86_64에서0.1464/0.0750/0.0735초,해당probe프로세스peakRSS46,608KiB였다. MPS·디코딩·사진export를제외한CPU단계만의synthetic결과이며iPhone시간/앱메모리/발열감소로환산하지않는다. [검증근거JSON](research/2026-11-28-native-depth-quality-validation.json)에sourcehash와CI/측정범위를구분한다.
+실제 production 순수 제약 코드5파일을 Swift6.0.3 `-O`로 직접 컴파일해768×576→1536×1152 그리드로3회 실행했다. Linux x86_64에서0.1464/0.0750/0.0735초, 해당 probe 프로세스 peakRSS46,608KiB였다. **v2 CPU 단계만의 synthetic 결과**로 MPS·디코딩·export·v3 coefficient readback을 제외한다. iPhone 처리 시간·앱 메모리·발열 감소로 환산하지 않는다.
 
-v2의 과도한 보호는 실제GPU 강한색경계2개에서실패했다. 회귀계수기반v3를구현하고기존>0.7조건/동일색보호를유지한다. 상세 실패와최종검증은당일일지/08의70절을따른다. CPUprobe는v2의순수단계수치이며추가coefficient readback을포함한전체v3앱메모리로세지않는다.
+## 남은 범위
+
+실제 iPhone15Pro/iOS27.2 화질·열·전력·AF, 동일 입력 PhotoP/Apple 실사 비교 및100장/10종 영상/3명 blind 인수는 미실행이다. N3 가시성 PSF·전체 고해상도 alpha ROI 저장·시간/identity 추적 통합·영상 native stream·실험실 모델의 반복 초기화 비용은 후속이다. 이 변경을 전체 계획 완료나 DSLR 동급 화질 인수로 표시하지 않는다.
+
+전체27.2 회귀 재실행: `gh workflow run ios.yml --ref main -f xcode=27.2 -f test_scope=all`.

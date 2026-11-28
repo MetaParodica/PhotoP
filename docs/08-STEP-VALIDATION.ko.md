@@ -618,15 +618,33 @@ main `7f0f6c0`에서 이어서 로컬 구현한 [50 기록](50-NATIVE-DEPTH-FIRS
 
 ## 70. 네이티브 심도 품질 구현·반복 검증 — 2026-11-28
 
-[53 구현](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md), [검증 근거 JSON](research/2026-11-28-native-depth-quality-validation.json). 기존11/25 로컬 변경을 보존해 작업 브랜치에 게시했다. 새 neural 모델/가중치는 추가하지 않았다.
+[53 구현](53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md), [검증 근거 JSON](research/2026-11-28-native-depth-quality-validation.json), [당일 일지](development-log/2026-11-28.md). 기존11/25 로컬 변경을 보존해 작업 브랜치에 게시했다. 새 neural 모델/가중치는 추가하지 않았다.
 
-- 직접 Linux 실행: Swift6.0.3 공통177개/0실패·Swift197파일 구문 검사·YAML 파싱·변경 형식. 동일색 경계에 가상 중간 깊이를 만드는 순수 실패1개를 먼저 재현하고v2 보호/연속경사/v1호환과GPU 회귀를 추가했다.
-- 중간47c4a7f [전체46137072747](https://github.com/MetaParodica/PhotoP/actions/runs/46137072747) success: Xcode26.3 iPhone/Simulator 빌드,unit428중427통과/기존Flow1skip·LUT18·UI18. 신규MPS/HEIC/저장5개도 실제통과했다. 최종v2source의통과수치로합치지않는다.
-- 중간47c4a7f [전체46137082280](https://github.com/MetaParodica/PhotoP/actions/runs/46137082280) failure: Xcode27.2 iPhone빌드는성공했고simulator의10분build상한을초과했다. 원시로그에는Swift컴파일오류없이시간초과후test bundle링크/생성까지남았다. 빌드를프로세스그룹관리로감싸27에서만14분command/16분step상한·긴함수/expression 경고·timing summary를추가했다. 단위/UI 시간·assertion·선택범위는그대로다.
-- 최적화6d04337: [26.3 전체46138642762](https://github.com/MetaParodica/PhotoP/actions/runs/46138642762), [27.2 전체46138642929](https://github.com/MetaParodica/PhotoP/actions/runs/46138642929) 실행중. 그뒤v2guard를추가한source와구분한다.
-- v2현재7a79099: [26.3 전체46139474721](https://github.com/MetaParodica/PhotoP/actions/runs/46139474721), [27.2 depth46139475424](https://github.com/MetaParodica/PhotoP/actions/runs/46139475424) 실행중. depth집중을UI/LUT포함전체로세지않는다.
-- 실제순수제약CPUprobe:768×576→1536×1152,Swift -O Linux3회0.1464/0.0750/0.0735초·프로세스RSS46,608KiB. MPS·decode·export제외이며iPhone열/시간/전체앱메모리인수가아니다.
+### 구현·로컬 검사
 
-실제iPhone15Pro/iOS27.2·100장/10종영상/3명blind·열/전력인수는미실행. 원본/이전결과·구형recipe는보존하고native파생method/원래scale·방향정보를저장한다. 현재커밋/CI최종상태는당일일지와53에이어기록한다.
+- NativePhotoDepthReader·8방향 geometry·MPS guided 경계 정밀화·얇은 표면 초점 군집·원래 깊이 범위/파생 metadata 저장·768px editor grid 캐시·Apple 공개 비교 adapter를 연결했다. 이전 N1의 native automatic 암묵 AI 분리·별도 열 예산도 포함한다.
+- 앱 소스 `139c5d1`(v3): 직접 Linux Swift6.0.3 전체178개/0실패, Swift197파일 구문 검사, 변경 형식 검사 통과. SDK type checking과 구분한다. 순수 신규14개·네이티브 신규6개가 포함된다.
+- CI 선택기 `66bf20d`: Python41개/0실패, 이 중7개는 SDK 일치·표준 Pro 우선·engineering runtime 거부 회귀다. 앱/테스트는139c5d1과 동일하다.
+- CPU probe는 **v2의 순수 제약 단계만** production5파일을 Swift `-O`로 직접 컴파일한 결과다. 768×576→1536×1152, Linux3회0.1464/0.0750/0.0735초·프로세스peakRSS46,608KiB. MPS·decode·export·v3 coefficient readback 제외이며 iPhone 시간/열/전체 앱 메모리 인수가 아니다.
 
-70절 후속: source7a79099의v2는26.3 unit433중2실패/기존Flow1skip,27.2 depth124중같은2실패/Flow1skip이었다. 색 단서가있는좋은추정까지보호가제거한원인을확인해 MPS 회귀계수기반v3로수정했다. assertion을낮추지않았고현재139c5d1의공통178개가통과했다. 최종[26.3 전체46140950741](https://github.com/MetaParodica/PhotoP/actions/runs/46140950741)·[27.2 depth46140950851](https://github.com/MetaParodica/PhotoP/actions/runs/46140950851)는진행중이다. 중간6d04337의26.3 전체46138642762는unit429중428통과/Flow1skip·LUT18·UI18로success,27.2 unit도동일통과후나머지검사중이다.
+### 실패와 수정 이력
+
+| 소스·실행 | 실제 결과·대응 |
+|---|---|
+| 47c4a7f / [26.3 전체46137072747](https://github.com/MetaParodica/PhotoP/actions/runs/46137072747) | success. unit428 중427통과/기존Flow1skip·LUT18·UI18. 신규MPS/HEIC/저장5개 통과. 후속 소스의 결과로 합치지 않음 |
+| 47c4a7f / [27.2 전체46137082280](https://github.com/MetaParodica/PhotoP/actions/runs/46137082280) | iPhone 빌드 성공, Simulator10분 build timeout 실패. 원시 로그에 Swift 오류 없이 test bundle 링크/생성까지 확인. build를 프로세스 그룹으로 관리하고27계열만14분command/16분step 상한·컴파일 진단 추가. 단위/UI timeout·assertion은 유지 |
+| 6d04337 / [26.3 전체46138642762](https://github.com/MetaParodica/PhotoP/actions/runs/46138642762) | success. unit429 중428통과/Flow1skip·LUT18·UI18 |
+| 6d04337 / [27.2 전체46138642929](https://github.com/MetaParodica/PhotoP/actions/runs/46138642929) | unit429 중428통과/Flow1skip·LUT18통과. 전체35분 상한으로 취소돼UI 미완료. 종료 전 CameraInteraction12개에서뷰파인더배치2assertion·장노출clear1assertion실패도확인. 기존 selector가 일반27.2가 아닌 engineering27.2.19.4/iPhone Duo를 고름을 로그로 확인.66bf20d에서 SDK 일치 표준 Pro 선택으로 수정 |
+| 7a79099(v2) / [26.3 전체46139474721](https://github.com/MetaParodica/PhotoP/actions/runs/46139474721), [27.2 depth46139475424](https://github.com/MetaParodica/PhotoP/actions/runs/46139475424) | unit433·집중124 모두 강한색 경계2개 실패/기존Flow1skip. 동일색 보호는 통과했지만 보호가 좋은 guided 추정까지 제거.26전체는 실패 확인 후 대체·취소 |
+
+동일색 앞뒤 표면에서 가상 중간 깊이를 만드는 순수 실패를 먼저 재현하고v2 보호를 구현했다. 실제GPU에서 발견한 위2개 회귀는 MPS RGB 회귀계수의 구조적 단서를 사용한v3로 수정했다. 기존 `>0.7` 경계 assertion과 동일색 보호를 모두 유지했으며, 계수를 하드웨어 confidence/확률로 표시하지 않는다.
+
+### 최종 소스 검증 결과
+
+- [26.3 전체46140950741](https://github.com/MetaParodica/PhotoP/actions/runs/46140950741), 앱139c5d1: **success**. unit434 중433통과/Flow1skip·LUT18·UI18. 신규6개 모두 통과. unit/LUT/UI 원시 로그와 전체 결론을 직접 확인했다.
+- [27.2 depth46140950851](https://github.com/MetaParodica/PhotoP/actions/runs/46140950851), 앱139c5d1: **success**.125개 중124통과/Flow1skip·신규6개 통과. 이전 selector의27.2.19.4/Duo 실행이다. 집중 실행을 표준27.2 전체 UI/LUT 검증으로 세지 않는다.
+- [27.2 전체46142012643](https://github.com/MetaParodica/PhotoP/actions/runs/46142012643), CI66bf20d/앱139c5d1: **success**. SDK/Simulator27.2·iPhone18Pro 선택을 원시 로그로 확인했다. unit434 중433통과/Flow1skip·LUT18·UI18·신규6개 모두통과. 이전에 실패한 가로 배치·장노출 입력2케이스도 통과했다. 원시 log·xcresult summary와 전체 결론을 대조했으며 engineering Duo 문제의 원인을 확정한 것은 아니다.
+
+실제 iPhone15Pro/iOS27.2·100장/10종 영상/3명blind·열/전력 인수는 미실행이다. 영상 native stream·가시성 PSF·고해상도 alpha ROI·전체 identity/초점 시간 안정화는 남아 있다. 현재 원본/이전 결과·구형recipe를 보존하며 native 파생 method/원래scale·방향 정보를 저장한다. 커밋/푸시 및 최종 상태는 당일 일지·53과 함께 갱신한다.
+
+70절 게시 확인: 검증한 기능/CI66bf20d를main에정상FF push하고원격동일SHA를확인했다. 공통178·Python41·Swift197구문·소스fingerprint12개·문서링크검사를직접실행했다. 최종문서후속은앱/모델/테스트/CI를변경하지않으며앱검증소스139c5d1과구분한다.

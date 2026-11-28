@@ -11,7 +11,7 @@ iPhone 전문 카메라 앱(SwiftUI + AVFoundation + Metal). iOS 18+, Swift 5 �
 
 ## 처음 시작할 때
 
-- 2026-11-28 [53 네이티브 품질 구현](docs/53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md): Reader/geometry 검증·MPS guided 경계 정밀화·얇은 물체 초점 군집·파생 깊이/원래 scale 저장·Apple 공개 비교 adapter를 구현했다. 촬영 후에만 bounded refinement를 수행하고 editor는768px grid를 캐시하며 원래 지도는 보존한다. 작업 브랜치 `codex/native-depth-quality-20261128`, 정확한 최종SHA/CI/실행 결과는53·08·11/28 일지를 따른다. 새 neural 모델·N3 가시성 PSF·full-resolution alpha ROI·영상 native stream·실기기 품질/열 인수 완료를 뜻하지 않는다.
+- 2026-11-28 [53 네이티브 품질 구현](docs/53-NATIVE-DEPTH-QUALITY-IMPLEMENTATION.ko.md): Reader/geometry 검증·MPS guided 경계 정밀화·얇은 물체 초점 군집·파생 깊이/원래 scale 저장·Apple 공개 비교 adapter를 구현했다. 촬영 후에만 bounded refinement를 수행하고 editor는768px grid를 캐시하며 원래 지도는 보존한다. 앱139c5d1/CI66bf20d를 main에 FF push했다. Xcode26.3·27.2 전체 success(각 unit433통과/Flow1skip·LUT18·UI18), 직접 공통178·Python41. 정확한 검증 SHA/실행 이력은53·08·11/28 일지를 따른다. 새 neural 모델·N3 가시성 PSF·full-resolution alpha ROI·영상 native stream·실기기 품질/열 인수 완료를 뜻하지 않는다.
 
 - 2026-11-25 심도 품질 후속은 [51 조사](docs/51-DEPTH-QUALITY-RESEARCH.ko.md)·[52 실행 기획](docs/52-DEPTH-QUALITY-DEVELOPMENT-PLAN.ko.md)을 따른다. **동일 입력 기준선/공개 Apple depth blur 비교→geometry/신뢰→MPS 유도 경계·초점 안정화→가시성 PSF→고해상도 ROI/재편집→영상** 순서다. 새 neural 전체 모델보다 native 깊이와 자체 렌즈 합성을 우선한다. MPS/Apple API는 직접 문서 조회만 했으며 새 PoC/기기 측정은 아직 없다. 이번 후속은 조사·기획 문서로 N1의 기존 로컬 코드는 보존한다.
 
