@@ -20,7 +20,7 @@ struct NaturalDepthResult {
 // Owned only by the high-resolution processing actor.
 final class NaturalDepthEngine {
     private let estimator = ExternalDepthEstimator()
-    private let nativeRefiner = NativeDepthRefiner()
+    private lazy var nativeRefiner = NativeDepthRefiner()
     private let matteRefiner = DepthMatteRefiner()
     private let backgroundExtension = DepthBackgroundExtension()
     private let lensFilter = DepthLensFilter()

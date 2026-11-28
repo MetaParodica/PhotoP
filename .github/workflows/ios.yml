@@ -171,11 +171,18 @@ jobs:
       - name: Build application and tests for Simulator
         id: simulator_build
         working-directory: ios
-        timeout-minutes: 10
+        timeout-minutes: ${{ (inputs.xcode == '27' || inputs.xcode == '27.2') && 16 || 10 }}
+        env:
+          REQUESTED_XCODE: ${{ inputs.xcode || '26.3' }}
         run: |
           mkdir -p diagnostics
-          set -o pipefail
-          if xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO build-for-testing 2>&1 | tee diagnostics/simulator-build.log; then
+          build_timeout=540
+          swift_diagnostics=()
+          if [[ "$REQUESTED_XCODE" == 27* ]]; then
+            build_timeout=840
+            swift_diagnostics=('OTHER_SWIFT_FLAGS=$(inherited) -Xfrontend -warn-long-function-bodies=500 -Xfrontend -warn-long-expression-type-checking=500')
+          fi
+          if python3 ../scripts/run_test_process.py --timeout "$build_timeout" --log diagnostics/simulator-build.log -- xcodebuild -project PhotoP.xcodeproj -scheme PhotoP -destination "platform=iOS Simulator,id=$PHOTOP_SIMULATOR" -derivedDataPath .simulatorbuild -parallel-testing-enabled NO -showBuildTimingSummary "${swift_diagnostics[@]}" CODE_SIGNING_ALLOWED=NO build-for-testing; then
             exit 0
           fi
           python3 - <<'PYERRORS'
